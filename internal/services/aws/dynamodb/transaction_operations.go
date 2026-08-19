@@ -81,7 +81,22 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 		})
 	}
 
+	// Resolve every referenced table and validate its key types before
+	// the snapshot view: a missing table is a ResourceNotFoundException,
+	// not an empty Item slot, and key attribute types must match the
+	// table's attribute definitions.
+	for _, gi := range getItems {
+		table, tableErr := store.Tables().Get(gi.tableName)
+		if tableErr != nil || table == nil {
+			return nil, ErrTableNotFound
+		}
+		if keyErr := validateKeyTypes(table, gi.key); keyErr != nil {
+			return nil, keyErr
+		}
+	}
+
 	var responses []map[string]interface{}
+	foundKeys := make(map[string][]map[string]*dbstore.AttributeValue)
 
 	err = store.View(ctx, func(txn *dbstore.DynamoDBTxn) error {
 		for _, gi := range getItems {
@@ -102,12 +117,20 @@ func (s *DynamoDBService) TransactGetItems(ctx context.Context, reqCtx *request.
 			responses = append(responses, map[string]interface{}{
 				"Item": buildItemResponse(attrs),
 			})
+			foundKeys[gi.tableName] = append(foundKeys[gi.tableName], gi.key)
 		}
 		return nil
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("transact get items: snapshot view: %w", err)
+	}
+
+	// Every item the transactional read actually returned counts as one
+	// read event per tracked key layout. The counters cannot update inside
+	// the read-only view, so they are applied after it succeeds.
+	for tableName, keys := range foundKeys {
+		s.recordContributorReads(ctx, store, tableName, keys)
 	}
 
 	resp := map[string]interface{}{
@@ -187,7 +210,6 @@ func (s *DynamoDBService) TransactWriteItems(ctx context.Context, reqCtx *reques
 	requestHash := ""
 	claimedToken := false
 	if clientRequestToken != "" {
-		s.ensureIdempotencySweeper()
 		requestHash = hashTransactWriteRequest(req.Parameters)
 
 		// The claim section is serialised per token so concurrent retries
@@ -479,11 +501,20 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 		}))
 	}
 
+	// Contributor write events queue on each executor's transaction wrapper
+	// and are applied to the access counters after the commit succeeds; the
+	// validators and executors run sequentially inside one storage
+	// transaction, so plain collection needs no lock.
+	var contributorEvents []dbstore.ContributorWriteEvent
 	for i := range operations {
 		opPtr := &operations[i]
 		twoPhase.AddExecutor(storage.ExecutorFunc(func(ctx context.Context, txn storage.Transaction) error {
 			dbTxn := store.NewTxn(txn)
-			return executeWriteOperation(dbTxn, opPtr)
+			if err := executeWriteOperation(dbTxn, opPtr); err != nil {
+				return err
+			}
+			contributorEvents = append(contributorEvents, dbTxn.TakeContributorWrites()...)
+			return nil
 		}))
 	}
 
@@ -520,6 +551,8 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 		}
 		return ErrTransactionCanceled
 	}
+
+	store.FlushContributorWrites(ctx, contributorEvents)
 
 	return nil
 }

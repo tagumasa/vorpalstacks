@@ -66,13 +66,10 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, ErrInvalidParameter
 	}
 
-	if attrName != "" {
-		if !validateTimeToLiveAttributeName(attrName) {
-			return nil, ErrInvalidParameter
-		}
+	if attrName == "" {
+		return nil, ErrInvalidParameter
 	}
-
-	if enabled && attrName == "" {
+	if !validateTimeToLiveAttributeName(attrName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -81,8 +78,14 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// Read the existing TTL state to determine the correct response status.
+	// Enabling TTL on a table that already has TTL enabled is rejected;
+	// renaming the TTL attribute requires disabling TTL first. Disabling
+	// is always allowed and is the documented path for changing the
+	// attribute.
 	existingTTL, _ := s.describeTimeToLiveCore(store, table.Name)
+	if enabled && existingTTL != nil && existingTTL.Enabled {
+		return nil, ErrInvalidParameter
+	}
 
 	ttl, err := s.updateTimeToLiveCore(ctx, store, UpdateTimeToLiveInput{
 		TableName:     table.Name,
@@ -93,26 +96,10 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// If the requested state matches the existing state, the table is
-	// already in the desired state — return ENABLED/DISABLED instead of
-	// the transition state ENABLING/DISABLING.
-	status := "ENABLING"
-	if !ttl.Enabled {
-		status = "DISABLING"
-	}
-	if existingTTL != nil && existingTTL.Enabled == ttl.Enabled {
-		if ttl.Enabled {
-			status = "ENABLED"
-		} else {
-			status = "DISABLED"
-		}
-	}
-
 	return map[string]interface{}{
 		"TimeToLiveSpecification": map[string]interface{}{
-			"Enabled":          ttl.Enabled,
-			"AttributeName":    ttl.AttributeName,
-			"TimeToLiveStatus": status,
+			"Enabled":       ttl.Enabled,
+			"AttributeName": ttl.AttributeName,
 		},
 	}, nil
 }

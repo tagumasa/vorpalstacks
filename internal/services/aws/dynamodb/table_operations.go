@@ -26,6 +26,12 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	var provThroughput *dbstore.ProvisionedThroughput
 	if billingMode == dbstore.BillingModeProvisioned {
 		provThroughput = parseProvisionedThroughput(req.Parameters)
+	} else if billingMode == dbstore.BillingModePayPerRequest {
+		// ProvisionedThroughput cannot be specified together with
+		// PAY_PER_REQUEST billing.
+		if _, ok := req.Parameters["ProvisionedThroughput"].(map[string]interface{}); ok {
+			return nil, ErrInvalidParameter
+		}
 	}
 
 	gsi, err := parseGlobalSecondaryIndexes(req.Parameters)

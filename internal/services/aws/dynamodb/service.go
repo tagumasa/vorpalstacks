@@ -16,26 +16,43 @@ import (
 
 // DynamoDBService provides DynamoDB operations for managing tables, items, and other resources.
 type DynamoDBService struct {
-	accountID               string
-	stores                  sync.Map // region → dynamodbstore.DynamoDBStoreInterface
-	storageManager          *storage.RegionStorageManager
-	busStoreFactory         *dynamodbstore.DynamoDBStoreFactory
-	bus                     eventbus.Bus
-	bgCtx                   context.Context
-	bgCancel                context.CancelFunc
-	bgWg                    sync.WaitGroup
-	idempotencySweepOnce    sync.Once
+	accountID            string
+	stores               sync.Map // region → dynamodbstore.DynamoDBStoreInterface
+	storageManager       *storage.RegionStorageManager
+	busStoreFactory      *dynamodbstore.DynamoDBStoreFactory
+	bus                  eventbus.Bus
+	bgCtx                context.Context
+	bgCancel             context.CancelFunc
+	bgWg                 sync.WaitGroup
+	idempotencySweepOnce sync.Once
+	journalSweepOnce     sync.Once
+	streamSweepOnce      sync.Once
+	// kinesisDestMu serialises Kinesis streaming destination transitions
+	// (handler writes and the delayed background transitions) so a stale
+	// write-back can never resurrect a destination a newer request has
+	// disabled or removed.
+	kinesisDestMu           sync.Mutex
 	clientRequestTokenLocks [clientRequestTokenLockShards]sync.Mutex
 }
 
-// NewDynamoDBService creates a new DynamoDB service instance.
+// NewDynamoDBService creates a new DynamoDB service instance. The
+// background pruners (stream and contributor retention, journals,
+// transaction idempotency tokens) start here rather than on first use of
+// the operations that feed them: enablement paths such as CreateTable
+// with a stream specification or UpdateContributorInsights never touch
+// those operations, and after a restart the sweeper must resume pruning
+// without waiting for a triggering request.
 func NewDynamoDBService(accountID string) *DynamoDBService {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &DynamoDBService{
+	s := &DynamoDBService{
 		accountID: accountID,
 		bgCtx:     ctx,
 		bgCancel:  cancel,
 	}
+	s.ensureRetentionSweeper()
+	s.ensureJournalSweeper()
+	s.ensureIdempotencySweeper()
+	return s
 }
 
 // Close stops background goroutines (TTL workers, state-transition

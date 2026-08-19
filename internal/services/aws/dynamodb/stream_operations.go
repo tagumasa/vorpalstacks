@@ -117,9 +117,12 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 		return nil, ErrInvalidParameter
 	}
 
-	tableName, fromSeq, err := decodeShardIterator(iterator)
+	tableName, fromSeq, issuedAt, err := decodeShardIterator(iterator)
 	if err != nil {
 		return nil, ErrInvalidParameter
+	}
+	if shardIteratorExpired(issuedAt, streamTimeNow()) {
+		return nil, ErrExpiredIterator
 	}
 
 	store, err := s.store(reqCtx)
@@ -160,24 +163,37 @@ func extractTableNameFromStreamArn(streamArn string) string {
 
 // encodeShardIterator creates an opaque iterator string from the table
 // name and sequence number. Format: "tableName|seqNum".
+// shardIteratorTTL is the documented shard iterator lifetime: a shard
+// iterator expires fifteen minutes after it was issued.
+const shardIteratorTTL = 15 * time.Minute
+
 func encodeShardIterator(tableName string, seq int64) string {
-	return fmt.Sprintf("%s|%d", tableName, seq)
+	return fmt.Sprintf("%s|%d|%d", tableName, seq, streamTimeNow().Unix())
 }
 
 // decodeShardIterator parses an iterator string back into table name and
 // sequence number.
-func decodeShardIterator(iterator string) (string, int64, error) {
-	idx := strings.LastIndex(iterator, "|")
-	if idx < 0 {
-		return "", 0, fmt.Errorf("invalid iterator format")
+func decodeShardIterator(iterator string) (string, int64, int64, error) {
+	parts := strings.Split(iterator, "|")
+	if len(parts) != 3 {
+		return "", 0, 0, fmt.Errorf("invalid iterator format")
 	}
-	tableName := iterator[:idx]
-	seqStr := iterator[idx+1:]
-	seq, err := strconv.ParseInt(seqStr, 10, 64)
+	tableName := parts[0]
+	seq, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		return "", 0, err
+		return "", 0, 0, err
 	}
-	return tableName, seq, nil
+	issuedAt, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	return tableName, seq, issuedAt, nil
+}
+
+// shardIteratorExpired reports whether an iterator issued at the given
+// unix time has passed the documented fifteen-minute lifetime.
+func shardIteratorExpired(issuedAtUnix int64, now time.Time) bool {
+	return now.Unix()-issuedAtUnix >= int64(shardIteratorTTL/time.Second)
 }
 
 // streamTimeNow returns the current time. Extracted for potential testing.

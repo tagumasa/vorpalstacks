@@ -21,7 +21,7 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, ErrResourceNotFound.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ResourceInUseException: Resource already exists", ErrResourceAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrResourceAlreadyExists.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrResourceAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazon.coral.validate#ValidationException: Invalid parameter", ErrInvalidParameter.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrInvalidParameter.GetHTTPStatusCode())
@@ -30,7 +30,7 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, ErrTableNotFound.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ResourceInUseException: Table already exists", ErrTableAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrTableAlreadyExists.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrTableAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ResourceInUseException: Table is not in ACTIVE state", ErrTableNotActive.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrTableNotActive.GetHTTPStatusCode())
@@ -51,16 +51,16 @@ func TestDynamoDBErrors(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, ErrBackupNotFound.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#BackupInUseException: Backup already exists", ErrBackupAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrBackupAlreadyExists.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrBackupAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#GlobalTableNotFoundException: Global table not found", ErrGlobalTableNotFound.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrGlobalTableNotFound.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#GlobalTableAlreadyExistsException: Global table already exists", ErrGlobalTableAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrGlobalTableAlreadyExists.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrGlobalTableAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ReplicaAlreadyExistsException: Replica already exists", ErrReplicaAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrReplicaAlreadyExists.GetHTTPStatusCode())
+		assert.Equal(t, http.StatusBadRequest, ErrReplicaAlreadyExists.GetHTTPStatusCode())
 
 		assert.Equal(t, "com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException: Replica not found", ErrReplicaNotFound.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrReplicaNotFound.GetHTTPStatusCode())

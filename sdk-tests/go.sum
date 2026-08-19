@@ -36,6 +36,8 @@ github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.64.1 h1:wit+fADA
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.64.1/go.mod h1:a5X5qds6BTk0qIdRdN7iQVk6NdcMMF60OSyQzO/bjao=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.60.1 h1:JX6naxruLi55bTc6XGz7t/FK6zBAF/on9P1eBvSdo44=
 github.com/aws/aws-sdk-go-v2/service/dynamodb v1.60.1/go.mod h1:HnWoC3m6VmjUSg+kBL6OgQsXdyRAGzBYWb7B3J2f+JM=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.36.6 h1:UfZHd3ek/txK8upfaOm2b/oNn+P3wPHdfqMWQmkbjuE=
+github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.36.6/go.mod h1:DyvyvK9RZk8IFy+GlAPCpEKoNoafHnvHQ5Gd8GuiK/I=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.316.1 h1:x3XE3BMK8aUpGx/m4CwmCmxc1LnN6saZujJ5K6pIFXU=
 github.com/aws/aws-sdk-go-v2/service/ec2 v1.316.1/go.mod h1:eoF0SIRbTgKWnTcTPYckiURPba/7ilfEkvwL4V1iHK4=
 github.com/aws/aws-sdk-go-v2/service/eventbridge v1.47.1 h1:dRpu/A28oj2z+FpfR7v55PrhgG8ewU5doVYdfHbXpRo=

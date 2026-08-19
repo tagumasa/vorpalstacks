@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
@@ -252,6 +253,12 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, store 
 		return nil, err
 	}
 	table.Status = dbstore.TableStatusActive
+	table.RestoreSummary = &dbstore.RestoreSummary{
+		SourceBackupArn:   backup.BackupArn,
+		SourceTableArn:    backup.SourceTableArn,
+		RestoreDateTime:   backup.BackupCreationDateTime,
+		RestoreInProgress: false,
+	}
 	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
@@ -269,6 +276,7 @@ type RestoreTableToPointInTimeCoreInput struct {
 	SSEDesc         *dbstore.SSEDescription
 	GSI             []*dbstore.GlobalSecondaryIndex
 	LSI             []*dbstore.LocalSecondaryIndex
+	RestoreDateTime time.Time
 }
 
 // restoreTableToPointInTimeCore creates a new table by copying the source
@@ -308,12 +316,17 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, sto
 
 	sourceTableName := in.SourceTable.Name
 
-	// Scan source items and copy to target in buffered chunks. Each
-	// chunk is a single atomic transaction; if any chunk fails, the
-	// partially-populated CREATING table is left for startup recovery.
+	// Snapshot the source as of the restore point (the current state with
+	// every journaled mutation newer than the restore time undone) and
+	// write it to the target in buffered chunks. Each chunk is a single
+	// atomic transaction; if any chunk fails, the partially-populated
+	// CREATING table is left for startup recovery.
+	snapshot, err := snapshotItemsAsOf(store, sourceTableName, in.RestoreDateTime)
+	if err != nil {
+		return nil, err
+	}
 	buffer := make([]*dbstore.Item, 0, restoreChunkSize)
-
-	err = store.Items().Scan(sourceTableName, func(item *dbstore.Item) error {
+	for _, item := range snapshot {
 		buffer = append(buffer, &dbstore.Item{
 			TableName:  in.TargetTableName,
 			Key:        copyAttributes(item.Key),
@@ -321,16 +334,11 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, sto
 		})
 		if len(buffer) >= restoreChunkSize {
 			if err := s.flushRestoreChunk(ctx, store, in.TargetTableName, buffer); err != nil {
-				return err
+				return nil, err
 			}
 			buffer = buffer[:0]
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
-
 	// Flush remaining items.
 	if len(buffer) > 0 {
 		if err := s.flushRestoreChunk(ctx, store, in.TargetTableName, buffer); err != nil {
@@ -345,6 +353,11 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, sto
 		return nil, err
 	}
 	table.Status = dbstore.TableStatusActive
+	table.RestoreSummary = &dbstore.RestoreSummary{
+		SourceTableArn:    in.SourceTable.ARN,
+		RestoreDateTime:   in.RestoreDateTime,
+		RestoreInProgress: false,
+	}
 	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}

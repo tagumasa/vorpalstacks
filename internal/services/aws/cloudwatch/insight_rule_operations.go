@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,6 +91,21 @@ func (s *CloudWatchService) DescribeInsightRules(ctx context.Context, reqCtx *re
 		results = append(results, insightRuleToResponse(r))
 	}
 
+	// DynamoDB-derived contributor rules are merged into the final page of
+	// the listing; they live on the DynamoDB side and are derived from
+	// insights-enabled tables.
+	if nextMarker == "" && s.bus != nil && s.bus.DynamoDBInvoker() != nil {
+		if dynamoRules, err := s.bus.DynamoDBInvoker().ContributorRules(ctx, reqCtx.Region); err == nil {
+			for _, r := range dynamoRules {
+				results = append(results, map[string]interface{}{
+					"Name":        r.Name,
+					"State":       "ENABLED",
+					"ManagedRule": true,
+				})
+			}
+		}
+	}
+
 	resp := map[string]interface{}{
 		"InsightRules": results,
 	}
@@ -143,6 +159,14 @@ func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *re
 	}
 
 	ruleName := getAlarmStringParam(req.Parameters, "RuleName", "ruleName")
+
+	// DynamoDB contributor rules are derived from insights-enabled tables;
+	// their reports come from the DynamoDB access aggregation through the
+	// bus instead of the CloudTrail event path.
+	if tableName, layout, isDynamo := dynamoDBContributorRuleParts(ruleName); isDynamo {
+		return s.getDynamoDBContributorReport(ctx, reqCtx, ruleName, tableName, layout, req.Parameters)
+	}
+
 	rule, err := s.getInsightRuleCore(store, ruleName)
 	if err != nil {
 		return nil, err
@@ -243,6 +267,105 @@ func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *re
 		"ApproximateUniqueCount": len(contributorMap),
 		"Contributors":           contributorList,
 		"MetricDatapoints":       buildInsightMetricDatapointsFromEvents(events, startTime, endTime, period, periodDuration, contributorKeyField),
+	}, nil
+}
+
+// dynamoDBContributorRulePrefix is the rule-name prefix of the DynamoDB
+// contributor insights rules surfaced through the DynamoDB API.
+const dynamoDBContributorRulePrefix = "DynamoDBContributorInsights-"
+
+// dynamoDBContributorRuleParts reports whether a rule name is a
+// DynamoDB-derived contributor insights rule and extracts the tracked
+// table and key layout from it. Table names may contain hyphens, so the
+// layout is the first segment, the creation timestamp the last, and
+// everything between them the table name.
+func dynamoDBContributorRuleParts(ruleName string) (tableName, layout string, ok bool) {
+	rest, found := strings.CutPrefix(ruleName, dynamoDBContributorRulePrefix)
+	if !found {
+		return "", "", false
+	}
+	parts := strings.Split(rest, "-")
+	if len(parts) < 3 {
+		return "", "", false
+	}
+	switch parts[0] {
+	case "PKC", "SKC", "PKT", "SKT":
+	default:
+		return "", "", false
+	}
+	if _, err := strconv.ParseInt(parts[len(parts)-1], 10, 64); err != nil {
+		return "", "", false
+	}
+	return strings.Join(parts[1:len(parts)-1], "-"), parts[0], true
+}
+
+// getDynamoDBContributorReport serves GetInsightRuleReport for a
+// DynamoDB-derived rule from the DynamoDB key access aggregation. Only
+// MaxContributorValue and Maximum carry meaningful values, matching the
+// documented behaviour for DynamoDB-managed rules.
+func (s *CloudWatchService) getDynamoDBContributorReport(ctx context.Context, reqCtx *request.RequestContext, ruleName, tableName, layout string, params map[string]interface{}) (interface{}, error) {
+	startTime := parseTimestampFromMap(params, "StartTime")
+	endTime := parseTimestampFromMap(params, "EndTime")
+	period := getAlarmIntParam(params, "Period", "period")
+	maxContributorCount := getAlarmIntParam(params, "MaxContributorCount", "maxContributorCount")
+	if maxContributorCount <= 0 {
+		maxContributorCount = 10
+	}
+	// DynamoDB-managed rules expose at most twenty-five contributors.
+	if maxContributorCount > 25 {
+		maxContributorCount = 25
+	}
+	if period <= 0 {
+		period = 60
+	}
+
+	if s.bus == nil || s.bus.DynamoDBInvoker() == nil {
+		return nil, awserrors.NewResourceNotFoundException("InsightRule", ruleName)
+	}
+	stats, err := s.bus.DynamoDBInvoker().ContributorStats(ctx, reqCtx.Region, tableName, layout, startTime, endTime, maxContributorCount)
+	if err != nil {
+		return nil, err
+	}
+
+	keyLabels := []string{"PartitionKey"}
+	if layout == "SKC" || layout == "SKT" {
+		keyLabels = []string{"PartitionKey", "SortKey"}
+	}
+
+	contributors := make([]interface{}, 0, len(stats))
+	aggregateValue := 0.0
+	maxContributorValue := 0.0
+	for _, stat := range stats {
+		aggregateValue += stat.Units
+		if stat.Units > maxContributorValue {
+			maxContributorValue = stat.Units
+		}
+		contributors = append(contributors, map[string]interface{}{
+			"Keys": stat.Keys,
+			// Each contributor carries its own approximate contribution,
+			// not the metric-level statistics.
+			"ApproximateAggregateValue": stat.Units,
+			"Datapoints": []map[string]interface{}{{
+				"Timestamp":        endTime.Unix(),
+				"ApproximateValue": stat.Units,
+			}},
+		})
+	}
+
+	return map[string]interface{}{
+		"KeyLabels":              keyLabels,
+		"AggregationStatistic":   "Sum",
+		"AggregationPeriod":      period,
+		"AggregateValue":         aggregateValue,
+		"ApproximateUniqueCount": len(stats),
+		"Contributors":           contributors,
+		// For DynamoDB-managed rules only MaxContributorValue and Maximum
+		// carry useful statistics in the metric-level data points.
+		"MetricDatapoints": []map[string]interface{}{{
+			"Timestamp":           endTime.Unix(),
+			"MaxContributorValue": maxContributorValue,
+			"Maximum":             aggregateValue,
+		}},
 	}, nil
 }
 

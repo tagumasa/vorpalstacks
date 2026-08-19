@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -68,8 +69,7 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 		return nil, err
 	}
 
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
+	if _, err := store.Tables().Get(tableName); err != nil {
 		// Smithy declares TableNotFoundException (not the general
 		// ResourceNotFoundException) for ExportTableToPointInTime.
 		return nil, ErrTableNotFoundException
@@ -78,6 +78,17 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 	pitr, err := store.Tables().GetPointInTimeRecovery(tableName)
 	if err != nil || pitr == nil || pitr.Status != dbstore.PITRStatusEnabled {
 		return nil, ErrPITRNotEnabled
+	}
+
+	// The export snapshots the table at the requested time, which must lie
+	// inside the restorable window; an omitted time exports the present.
+	now := time.Now()
+	exportTime, hasExportTime := parseTimestampParam(req.Parameters, "ExportTime")
+	if !hasExportTime {
+		exportTime = now
+	}
+	if exportTime.Before(pitr.EarliestRestorableDateTime) || exportTime.After(now) {
+		return nil, ErrInvalidExportTime
 	}
 
 	exportFormat := request.GetStringParam(req.Parameters, "ExportFormat")
@@ -93,30 +104,35 @@ func (s *DynamoDBService) ExportTableToPointInTime(ctx context.Context, reqCtx *
 	}
 
 	export, err := s.exportTableCore(ctx, store, ExportTableCoreInput{
-		TableArn:       tableArn,
-		TableName:      tableName,
-		ExportFormat:   exportFormat,
-		S3Bucket:       s3Bucket,
-		S3Prefix:       s3Prefix,
-		ClientToken:    clientToken,
-		Region:         reqCtx.GetRegion(),
-		TableItemCount: table.ItemCount,
+		TableArn:     tableArn,
+		TableName:    tableName,
+		ExportFormat: exportFormat,
+		S3Bucket:     s3Bucket,
+		S3Prefix:     s3Prefix,
+		ClientToken:  clientToken,
+		Region:       reqCtx.GetRegion(),
+		ExportTime:   exportTime,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	result := map[string]interface{}{
-		"ExportArn":       export.ExportArn,
-		"ExportStatus":    export.ExportStatus,
-		"StartTime":       export.StartTime.Unix(),
-		"EndTime":         export.EndTime.Unix(),
-		"TableArn":        export.TableArn,
-		"ExportFormat":    export.ExportFormat,
-		"S3Bucket":        export.S3Bucket,
-		"S3Prefix":        export.S3Prefix,
-		"ItemCount":       export.ItemCount,
-		"BilledSizeBytes": export.BilledSizeBytes,
+		"ExportArn":    export.ExportArn,
+		"ExportStatus": export.ExportStatus,
+		"StartTime":    export.StartTime.Unix(),
+		"ExportTime":   exportTime.Unix(),
+		"TableArn":     export.TableArn,
+		"ExportFormat": export.ExportFormat,
+		"S3Bucket":     export.S3Bucket,
+		"S3Prefix":     export.S3Prefix,
+	}
+	if export.ItemCount > 0 {
+		result["ItemCount"] = export.ItemCount
+		result["BilledSizeBytes"] = export.BilledSizeBytes
+	}
+	if !export.EndTime.IsZero() {
+		result["EndTime"] = export.EndTime.Unix()
 	}
 	if export.FailureCode != "" {
 		result["FailureCode"] = export.FailureCode
@@ -162,17 +178,30 @@ func (s *DynamoDBService) DescribeExport(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
+	description := map[string]interface{}{
+		"ExportArn":    export.ExportArn,
+		"ExportStatus": export.ExportStatus,
+		"StartTime":    export.StartTime.Unix(),
+		"TableArn":     export.TableArn,
+		"ExportFormat": export.ExportFormat,
+	}
+	if !export.ExportTime.IsZero() {
+		description["ExportTime"] = export.ExportTime.Unix()
+	}
+	if !export.EndTime.IsZero() {
+		description["EndTime"] = export.EndTime.Unix()
+	}
+	if export.ItemCount > 0 {
+		description["ItemCount"] = export.ItemCount
+		description["BilledSizeBytes"] = export.BilledSizeBytes
+	}
+	if export.FailureCode != "" {
+		description["FailureCode"] = export.FailureCode
+		description["FailureMessage"] = export.FailureMessage
+	}
+
 	return map[string]interface{}{
-		"ExportDescription": map[string]interface{}{
-			"ExportArn":       export.ExportArn,
-			"ExportStatus":    export.ExportStatus,
-			"StartTime":       export.StartTime.Unix(),
-			"EndTime":         export.EndTime.Unix(),
-			"TableArn":        export.TableArn,
-			"ExportFormat":    export.ExportFormat,
-			"ItemCount":       export.ItemCount,
-			"BilledSizeBytes": export.BilledSizeBytes,
-		},
+		"ExportDescription": description,
 	}, nil
 }
 
@@ -242,7 +271,9 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		return nil, ErrInvalidParameter
 	}
 
-	s3Prefix, _ := s3BucketSourceParam["S3Prefix"].(string)
+	// The S3BucketSource member is named S3KeyPrefix on the wire (the
+	// Smithy member name; ImportTable has no jsonName override).
+	s3Prefix, _ := s3BucketSourceParam["S3KeyPrefix"].(string)
 	if !validateS3Prefix(s3Prefix) {
 		return nil, ErrInvalidParameter
 	}
@@ -347,7 +378,7 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		}
 	}
 
-	imp, err := s.importTableCore(ctx, store, reqCtx.GetRegion(), ImportTableCoreInput{
+	imp, err := s.importTableCore(store, reqCtx.GetRegion(), ImportTableCoreInput{
 		TableName:      tableName,
 		KeySchema:      keySchema,
 		AttributeDefs:  attrDefs,
@@ -367,21 +398,32 @@ func (s *DynamoDBService) ImportTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"ImportTableDescription": map[string]interface{}{
-			"ImportArn":          imp.ImportArn,
-			"ImportStatus":       imp.ImportStatus,
-			"StartTime":          imp.StartTime.Unix(),
-			"EndTime":            imp.EndTime.Unix(),
-			"TableArn":           imp.TableArn,
-			"InputFormat":        imp.InputFormat,
-			"ProcessedItemCount": imp.ProcessedItemCount,
-			"S3BucketSource": map[string]interface{}{
-				"S3Bucket":      s3Bucket,
-				"S3Prefix":      s3Prefix,
-				"S3BucketOwner": s3BucketOwner,
-			},
+	description := map[string]interface{}{
+		"ImportArn":    imp.ImportArn,
+		"ImportStatus": imp.ImportStatus,
+		"StartTime":    imp.StartTime.Unix(),
+		"TableArn":     imp.TableArn,
+		"InputFormat":  imp.InputFormat,
+		"S3BucketSource": map[string]interface{}{
+			"S3Bucket":      s3Bucket,
+			"S3KeyPrefix":   s3Prefix,
+			"S3BucketOwner": s3BucketOwner,
 		},
+	}
+	if !imp.EndTime.IsZero() {
+		description["EndTime"] = imp.EndTime.Unix()
+	}
+	if imp.ProcessedItemCount > 0 {
+		description["ProcessedItemCount"] = imp.ProcessedItemCount
+		description["ProcessedSizeBytes"] = imp.ProcessedSizeBytes
+	}
+	if imp.FailureCode != "" {
+		description["FailureCode"] = imp.FailureCode
+		description["FailureMessage"] = imp.FailureMessage
+	}
+
+	return map[string]interface{}{
+		"ImportTableDescription": description,
 	}, nil
 }
 
@@ -567,15 +609,23 @@ func (s *DynamoDBService) DescribeImport(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
+	description := map[string]interface{}{
+		"ImportArn":          imp.ImportArn,
+		"ImportStatus":       imp.ImportStatus,
+		"StartTime":          imp.StartTime.Unix(),
+		"TableArn":           imp.TableArn,
+		"ProcessedItemCount": imp.ProcessedItemCount,
+	}
+	if !imp.EndTime.IsZero() {
+		description["EndTime"] = imp.EndTime.Unix()
+	}
+	if imp.FailureCode != "" {
+		description["FailureCode"] = imp.FailureCode
+		description["FailureMessage"] = imp.FailureMessage
+	}
+
 	return map[string]interface{}{
-		"ImportTableDescription": map[string]interface{}{
-			"ImportArn":          imp.ImportArn,
-			"ImportStatus":       imp.ImportStatus,
-			"StartTime":          imp.StartTime.Unix(),
-			"EndTime":            imp.EndTime.Unix(),
-			"TableArn":           imp.TableArn,
-			"ProcessedItemCount": imp.ProcessedItemCount,
-		},
+		"ImportTableDescription": description,
 	}, nil
 }
 

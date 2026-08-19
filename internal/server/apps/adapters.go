@@ -2,6 +2,7 @@ package apps
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -10,8 +11,10 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
+	dynamodbsvc "vorpalstacks/internal/services/aws/dynamodb"
 	"vorpalstacks/internal/services/aws/rds/rdsdata"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
@@ -24,6 +27,7 @@ import (
 	storesqs "vorpalstacks/internal/store/aws/sqs"
 	timestreamstore "vorpalstacks/internal/store/aws/timestream"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	"vorpalstacks/internal/utils/aws/arn"
 )
 
 // sqsInvokerAdapter adapts the SQS store to the eventbus.SQSInvoker
@@ -257,7 +261,69 @@ func (a *snsInvokerAdapter) DeleteStoredMessage(_ context.Context, key string) e
 // kinesisInvokerAdapter adapts the Kinesis concrete store to the
 // eventbus.KinesisInvoker interface.
 type kinesisInvokerAdapter struct {
-	store storekinesis.KinesisStoreInterface
+	store         *storekinesis.KinesisStore
+	accountID     string
+	defaultRegion string
+	// storageMgr lazily builds stores for regions other than
+	// defaultRegion; it is nil only when the manager is unavailable at
+	// wiring time, in which case only the default region resolves.
+	storageMgr *storage.RegionStorageManager
+	stores     sync.Map
+}
+
+// getOrCreateStore returns the KinesisStore for the region, building it from
+// the region's storage on first use.
+func (a *kinesisInvokerAdapter) getOrCreateStore(region string) (*storekinesis.KinesisStore, error) {
+	if cached, ok := a.stores.Load(region); ok {
+		return cached.(*storekinesis.KinesisStore), nil
+	}
+	if a.storageMgr == nil {
+		if region == a.defaultRegion {
+			return a.store, nil
+		}
+		return nil, fmt.Errorf("kinesis: regional store unavailable for region %s", region)
+	}
+	regionStorage, err := a.storageMgr.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("kinesis: storage for region %s does not support 2PC", region)
+	}
+	store := storekinesis.NewKinesisStore(tstore, a.accountID, region)
+	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
+		return actual.(*storekinesis.KinesisStore), nil
+	}
+	return store, nil
+}
+
+// StreamExists reports whether the stream addressed by the ARN exists in the
+// given region. A DynamoDB streaming destination may only target a stream in
+// the table's own region, so the ARN region must match the requested region.
+func (a *kinesisInvokerAdapter) StreamExists(_ context.Context, region, streamARN string) (bool, error) {
+	parsed, err := arn.ParseARN(streamARN)
+	if err != nil {
+		return false, nil
+	}
+	if parsed.Region != region {
+		return false, nil
+	}
+	streamName := strings.TrimPrefix(parsed.Resource, "stream/")
+	if streamName == "" || streamName == parsed.Resource {
+		return false, nil
+	}
+	store, err := a.getOrCreateStore(region)
+	if err != nil {
+		return false, err
+	}
+	if _, err := store.GetStream(streamName); err != nil {
+		if errors.Is(err, storekinesis.ErrStreamNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // ListShards lists the shards in the given Kinesis stream.
@@ -386,12 +452,69 @@ type dynamoDBStoreProvider interface {
 // dynamoDBInvokerAdapter adapts the DynamoDB store to the eventbus.DynamoDBInvoker
 // interface, so that cross-service consumers (e.g. AppSync GraphQL resolvers)
 // perform item operations through the bus instead of holding a direct store reference.
+// Writes go through the store transaction so PITR journaling and
+// contributor-insights accounting commit together with the item, exactly like
+// direct data-plane writes.
 type dynamoDBInvokerAdapter struct {
 	provider dynamoDBStoreProvider
 }
 
 func (a *dynamoDBInvokerAdapter) store(ctx context.Context, region string) (dynamodbstore.DynamoDBStoreInterface, error) {
 	return a.provider.GetStoreForRegion(region)
+}
+
+// recordContributorReads credits one read event per returned key, mirroring
+// how the data plane counts every read item. Monitoring must never fail the
+// read it observes, so failures are logged and dropped.
+func (a *dynamoDBInvokerAdapter) recordContributorReads(ctx context.Context, s dynamodbstore.DynamoDBStoreInterface, tableName string, keys []map[string]*dynamodbstore.AttributeValue) {
+	if len(keys) == 0 {
+		return
+	}
+	if err := s.RecordContributorReads(ctx, tableName, keys); err != nil {
+		logs.Warn("failed to record contributor reads",
+			logs.String("table", tableName), logs.Err(err))
+	}
+}
+
+// recordContributorQuery credits a query as a single read event on the
+// partition-key series, regardless of how many items the query returned.
+// The partition value is typed from the table's attribute definitions so
+// the event lands on the same key series as item writes. Failures are
+// logged and dropped like read events.
+func (a *dynamoDBInvokerAdapter) recordContributorQuery(ctx context.Context, s dynamodbstore.DynamoDBStoreInterface, table *dynamodbstore.Table, partitionKeyValue string) {
+	if !table.ContributorInsightsEnabled {
+		return
+	}
+	pkName := ""
+	for _, ks := range table.KeySchema {
+		if ks.KeyType == dynamodbstore.KeyTypeHash {
+			pkName = ks.AttributeName
+			break
+		}
+	}
+	if pkName == "" {
+		return
+	}
+	pkType := dynamodbstore.ScalarAttributeTypeS
+	for _, def := range table.AttributeDefinitions {
+		if def.AttributeName == pkName {
+			pkType = def.AttributeType
+			break
+		}
+	}
+	value := &dynamodbstore.AttributeValue{}
+	switch pkType {
+	case dynamodbstore.ScalarAttributeTypeN:
+		value.N = &partitionKeyValue
+	case dynamodbstore.ScalarAttributeTypeB:
+		value.B = []byte(partitionKeyValue)
+	default:
+		value.S = &partitionKeyValue
+	}
+	if err := s.RecordContributorQuery(ctx, table.Name, map[string]*dynamodbstore.AttributeValue{pkName: value}); err != nil {
+		logs.Warn("failed to record contributor query event",
+			logs.String("table", table.Name), logs.Err(err))
+	}
 }
 
 // GetItem retrieves a single item from DynamoDB by key.
@@ -405,6 +528,7 @@ func (a *dynamoDBInvokerAdapter) GetItem(ctx context.Context, region, tableName 
 	if err != nil {
 		return nil, err
 	}
+	a.recordContributorReads(ctx, s, tableName, []map[string]*dynamodbstore.AttributeValue{dynamoKey})
 	return dynamoItemToPlainMap(item), nil
 }
 
@@ -416,13 +540,17 @@ func (a *dynamoDBInvokerAdapter) PutItem(ctx context.Context, region, tableName 
 	}
 	dynamoKey := dynamoMapToKey(key)
 	dynamoAttrs := dynamoMapToAttrs(attributes)
-	item, err := s.Items().Put(tableName, dynamoKey, dynamoAttrs)
-	if err != nil {
+	if err := s.Update(ctx, func(txn *dynamodbstore.DynamoDBTxn) error {
+		return txn.PutItem(tableName, dynamoKey, dynamoAttrs)
+	}); err != nil {
 		return nil, err
 	}
-	result := dynamoItemToPlainMap(item)
-	if result == nil {
-		result = map[string]interface{}{}
+	result := make(map[string]interface{}, len(key)+len(attributes))
+	for k, v := range attributes {
+		result[k] = v
+	}
+	for k, v := range key {
+		result[k] = v
 	}
 	return result, nil
 }
@@ -434,7 +562,9 @@ func (a *dynamoDBInvokerAdapter) DeleteItem(ctx context.Context, region, tableNa
 		return err
 	}
 	dynamoKey := dynamoMapToKey(key)
-	return s.Items().Delete(tableName, dynamoKey)
+	return s.Update(ctx, func(txn *dynamodbstore.DynamoDBTxn) error {
+		return txn.DeleteItem(tableName, dynamoKey)
+	})
 }
 
 var errScanLimitReached = fmt.Errorf("scan limit reached")
@@ -449,18 +579,21 @@ func (a *dynamoDBInvokerAdapter) Scan(ctx context.Context, region, tableName str
 		limit = 1000
 	}
 	var results []map[string]interface{}
+	readKeys := make([]map[string]*dynamodbstore.AttributeValue, 0, limit)
 	count := 0
 	scanErr := s.Items().Scan(tableName, func(item *dynamodbstore.Item) error {
 		if count >= limit {
 			return errScanLimitReached
 		}
 		results = append(results, dynamoItemToPlainMap(item))
+		readKeys = append(readKeys, item.Key)
 		count++
 		return nil
 	})
 	if scanErr != nil && scanErr != errScanLimitReached {
 		return nil, scanErr
 	}
+	a.recordContributorReads(ctx, s, tableName, readKeys)
 	return results, nil
 }
 
@@ -470,12 +603,16 @@ func (a *dynamoDBInvokerAdapter) Query(ctx context.Context, region, tableName, p
 	if err != nil {
 		return nil, err
 	}
+	table, err := s.Tables().Get(tableName)
+	if err != nil {
+		return nil, err
+	}
 	if limit <= 0 {
 		limit = 1000
 	}
 	var results []map[string]interface{}
 	count := 0
-	queryErr := s.Items().ScanByPartitionKey(tableName, partitionKeyValue, func(item *dynamodbstore.Item) error {
+	_, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, partitionKeyValue, dynamodbstore.ScanOptions{}, func(item *dynamodbstore.Item) error {
 		if count >= limit {
 			return errScanLimitReached
 		}
@@ -486,6 +623,7 @@ func (a *dynamoDBInvokerAdapter) Query(ctx context.Context, region, tableName, p
 	if queryErr != nil && queryErr != errScanLimitReached {
 		return nil, queryErr
 	}
+	a.recordContributorQuery(ctx, s, table, partitionKeyValue)
 	return results, nil
 }
 
@@ -497,8 +635,9 @@ func (a *dynamoDBInvokerAdapter) UpdateItem(ctx context.Context, region, tableNa
 	}
 	dynamoKey := dynamoMapToKey(key)
 	dynamoAttrs := dynamoMapToAttrs(attributes)
-	_, err = s.Items().Put(tableName, dynamoKey, dynamoAttrs)
-	return err
+	return s.Update(ctx, func(txn *dynamodbstore.DynamoDBTxn) error {
+		return txn.PutItem(tableName, dynamoKey, dynamoAttrs)
+	})
 }
 
 // ScanWithPagination performs a paginated scan of a DynamoDB table.
@@ -514,13 +653,16 @@ func (a *dynamoDBInvokerAdapter) ScanWithPagination(ctx context.Context, region,
 	}
 	opts := dynamodbstore.ScanOptions{Limit: limit, Marker: exclusiveStartKey}
 	var results []map[string]interface{}
+	readKeys := make([]map[string]*dynamodbstore.AttributeValue, 0, limit)
 	nextMarker, scanErr := s.Items().ScanWithOptions(tableName, opts, func(item *dynamodbstore.Item) error {
 		results = append(results, dynamoItemToPlainMap(item))
+		readKeys = append(readKeys, item.Key)
 		return nil
 	})
 	if scanErr != nil && !errors.Is(scanErr, errScanLimitReached) {
 		return nil, "", scanErr
 	}
+	a.recordContributorReads(ctx, s, tableName, readKeys)
 	return results, nextMarker, nil
 }
 
@@ -531,19 +673,83 @@ func (a *dynamoDBInvokerAdapter) QueryWithPagination(ctx context.Context, region
 	if err != nil {
 		return nil, "", err
 	}
+	table, err := s.Tables().Get(tableName)
+	if err != nil {
+		return nil, "", err
+	}
 	if limit <= 0 {
 		limit = 1000
 	}
 	opts := dynamodbstore.ScanOptions{Limit: limit, Marker: exclusiveStartKey}
 	var results []map[string]interface{}
-	nextMarker, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, nil, partitionKeyValue, opts, func(item *dynamodbstore.Item) error {
+	nextMarker, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, partitionKeyValue, opts, func(item *dynamodbstore.Item) error {
 		results = append(results, dynamoItemToPlainMap(item))
 		return nil
 	})
 	if queryErr != nil && !errors.Is(queryErr, errScanLimitReached) {
 		return nil, "", queryErr
 	}
+	a.recordContributorQuery(ctx, s, table, partitionKeyValue)
 	return results, nextMarker, nil
+}
+
+// ContributorRules lists the DynamoDB contributor insights rule names
+// derived from the insights-enabled tables of one region.
+func (a *dynamoDBInvokerAdapter) ContributorRules(ctx context.Context, region string) ([]eventbus.ContributorInsightRule, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	var rules []eventbus.ContributorInsightRule
+	marker := ""
+	for {
+		tables, next, err := s.Tables().List(marker, 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range tables {
+			for _, name := range dynamodbsvc.ContributorInsightsRuleNames(t) {
+				rules = append(rules, eventbus.ContributorInsightRule{Name: name})
+			}
+		}
+		if next == "" {
+			break
+		}
+		marker = next
+	}
+	return rules, nil
+}
+
+// ContributorStats returns the most accessed tracked keys of one table
+// inside the half-open time window.
+func (a *dynamoDBInvokerAdapter) ContributorStats(ctx context.Context, region, tableName, layout string, start, end time.Time, max int) ([]eventbus.ContributorKeyStat, error) {
+	s, err := a.store(ctx, region)
+	if err != nil {
+		return nil, err
+	}
+	stats, err := s.Contributors().TopKeys(tableName, layout, start, end, max)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]eventbus.ContributorKeyStat, 0, len(stats))
+	for _, stat := range stats {
+		var keys []string
+		_ = json.Unmarshal([]byte(stat.Key), &keys)
+		// The aggregation encodes each key value with a type prefix to
+		// keep same-text values of different types distinct; the report
+		// exposes the bare values.
+		for i, k := range keys {
+			if _, rest, found := strings.Cut(k, ":"); found {
+				keys[i] = rest
+			}
+		}
+		out = append(out, eventbus.ContributorKeyStat{
+			Keys:  keys,
+			Count: stat.Count,
+			Units: stat.Units,
+		})
+	}
+	return out, nil
 }
 
 func dynamoMapToKey(m map[string]interface{}) map[string]*dynamodbstore.AttributeValue {

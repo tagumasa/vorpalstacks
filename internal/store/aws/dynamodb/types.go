@@ -234,6 +234,15 @@ type Table struct {
 	OnDemandThroughput            *OnDemandThroughput             `json:"on_demand_throughput,omitempty"`
 	GlobalTableSourceArn          string                          `json:"global_table_source_arn,omitempty"`
 	TableClass                    string                          `json:"table_class,omitempty"`
+	RestoreSummary                *RestoreSummary                 `json:"restore_summary,omitempty"`
+}
+
+// RestoreSummary records how a table was created by a restore operation.
+type RestoreSummary struct {
+	SourceBackupArn   string    `json:"source_backup_arn,omitempty"`
+	SourceTableArn    string    `json:"source_table_arn,omitempty"`
+	RestoreDateTime   time.Time `json:"restore_date_time,omitempty"`
+	RestoreInProgress bool      `json:"restore_in_progress"`
 }
 
 // Backup represents a DynamoDB table backup.
@@ -281,7 +290,7 @@ type KinesisDataStreamDestination struct {
 	StreamArn                            string `json:"stream_arn"`
 	DestinationStatus                    string `json:"destination_status"`
 	DestinationStatusDescription         string `json:"destination_status_description,omitempty"`
-	ApproximateCreationDateTimePrecision int    `json:"approximate_creation_date_time_precision,omitempty"`
+	ApproximateCreationDateTimePrecision string `json:"approximate_creation_date_time_precision,omitempty"`
 }
 
 // WarmThroughput represents the warm throughput for a DynamoDB table.
@@ -486,6 +495,7 @@ type ExportDescription struct {
 	ManifestFilesSize int64     `json:"manifest_files_size,omitempty"`
 	ItemCount         int64     `json:"item_count,omitempty"`
 	BilledSizeBytes   int64     `json:"billed_size_bytes,omitempty"`
+	ExportTime        time.Time `json:"export_time,omitempty"`
 	TableArn          string    `json:"table_arn,omitempty"`
 	TableId           string    `json:"table_id,omitempty"`
 	ExportFormat      string    `json:"export_format,omitempty"`

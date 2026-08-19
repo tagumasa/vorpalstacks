@@ -56,7 +56,12 @@ func (a *App) wireCrossServiceDeps() {
 		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, kvStore: st.snsStoreInstance.BaseStore, publisher: pub})
 	}
 	if st.kinesisStoreInstance != nil {
-		eb.SetKinesisInvoker(&kinesisInvokerAdapter{store: st.kinesisStoreInstance})
+		eb.SetKinesisInvoker(&kinesisInvokerAdapter{
+			store:         st.kinesisStoreInstance,
+			accountID:     st.accountID,
+			defaultRegion: st.region,
+			storageMgr:    a.server.StorageManager(),
+		})
 	}
 	if st.eventsStoreInstance != nil {
 		eb.SetEventsInvoker(&eventsInvokerAdapter{putFn: st.eventsStoreInstance.Put})
@@ -135,6 +140,12 @@ func (a *App) wireCrossServiceDeps() {
 
 	if st.eventBridgeService != nil {
 		st.eventBridgeService.SetEventBus(eb)
+	}
+
+	// DynamoDB needs the bus for its S3 invoker: table exports upload to
+	// S3 and table imports read from it through the event bus invoker.
+	if st.dynamoDBService != nil {
+		st.dynamoDBService.SetEventBus(eb)
 	}
 
 	if st.lambdaService != nil {

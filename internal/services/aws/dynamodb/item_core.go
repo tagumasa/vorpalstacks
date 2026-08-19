@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -29,8 +30,50 @@ type ConditionChecker func(existing *dbstore.Item, isNotFound bool) error
 
 // getItemCore retrieves a single item by primary key. It returns
 // dbstore.ItemNotFound when the item does not exist.
-func (s *DynamoDBService) getItemCore(store dbstore.DynamoDBStoreInterface, tableName string, key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
-	return store.Items().Get(tableName, key)
+func (s *DynamoDBService) getItemCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string, key map[string]*dbstore.AttributeValue) (*dbstore.Item, error) {
+	item, err := store.Items().Get(tableName, key)
+	if err == nil {
+		s.recordContributorReads(ctx, store, tableName, []map[string]*dbstore.AttributeValue{key})
+	}
+	return item, err
+}
+
+// recordContributorReads counts one read event per key in the contributor
+// access aggregation of tables with contributor insights enabled. Reads
+// count as one unit of ConsumedThroughputUnits. Failures are ignored:
+// monitoring must never fail the read it observes.
+func (s *DynamoDBService) recordContributorReads(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string, keys []map[string]*dbstore.AttributeValue) {
+	if len(keys) == 0 {
+		return
+	}
+	if err := store.RecordContributorReads(ctx, tableName, keys); err != nil {
+		logs.Warn("failed to record contributor reads",
+			logs.String("table", tableName), logs.Err(err))
+	}
+}
+
+// recordQueryContributorEvent counts the single read event a Query
+// contributes to the partition-key series of tables with contributor
+// insights enabled. Failures are ignored: monitoring must never fail the
+// read it observes.
+func (s *DynamoDBService) recordQueryContributorEvent(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, pkValue *dbstore.AttributeValue) {
+	if !table.ContributorInsightsEnabled || pkValue == nil {
+		return
+	}
+	pkName := ""
+	for _, ks := range table.KeySchema {
+		if ks.KeyType == dbstore.KeyTypeHash {
+			pkName = ks.AttributeName
+			break
+		}
+	}
+	if pkName == "" {
+		return
+	}
+	if err := store.RecordContributorQuery(ctx, table.Name, map[string]*dbstore.AttributeValue{pkName: pkValue}); err != nil {
+		logs.Warn("failed to record contributor query event",
+			logs.String("table", table.Name), logs.Err(err))
+	}
 }
 
 // ---------------------------------------------------------------------------

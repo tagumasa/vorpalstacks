@@ -22,7 +22,7 @@ func (h *AdminHandler) GetItem(ctx context.Context, req *connect.Request[pb.GetI
 	}
 
 	region := svccommon.GetRegionFromHeader(req.Header())
-	attrs, err := h.service.adminGetItem(region, req.Msg.GetTablename(), req.Msg.GetKey())
+	attrs, err := h.service.adminGetItem(ctx, region, req.Msg.GetTablename(), req.Msg.GetKey())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

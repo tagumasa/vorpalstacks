@@ -45,6 +45,13 @@ func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, d
 // under a prefix.
 const maxListAllKeys = 100000
 
+// BucketExists implements the eventbus.S3Invoker interface. It reports
+// whether the bucket exists so cross-service consumers can tell a missing
+// source bucket apart from an empty one.
+func (s *S3Service) BucketExists(ctx context.Context, region, bucket string) (bool, error) {
+	return s.s3Store.Buckets(region).Exists(bucket), nil
+}
+
 // ListObjects lists objects in an S3 bucket via the cross-service invoker.
 // When maxKeys <= 0, all objects are returned by paginating through the
 // full result set, up to maxListAllKeys. When maxKeys > 0, at most maxKeys

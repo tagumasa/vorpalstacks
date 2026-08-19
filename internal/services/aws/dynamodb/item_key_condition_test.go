@@ -24,7 +24,7 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 	// Binary partition keys must be base64-encoded so that the resulting
 	// lookup string is comparable across API and storage layers.
 	t.Run("binary key encoded as base64", func(t *testing.T) {
-		hashKey, _ := extractPrimaryKeyCondition(table, "id = :v", nil, values)
+		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, values)
 		expected := base64.StdEncoding.EncodeToString(rawBytes)
 		assert.Equal(t, expected, hashKey,
 			"binary key should be base64-encoded, not raw string()")
@@ -34,7 +34,7 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		strValues := map[string]*dbstore.AttributeValue{
 			":v": {S: ptrStr("my-key")},
 		}
-		hashKey, _ := extractPrimaryKeyCondition(table, "id = :v", nil, strValues)
+		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, strValues)
 		assert.Equal(t, "my-key", hashKey)
 	})
 
@@ -42,7 +42,7 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		numValues := map[string]*dbstore.AttributeValue{
 			":v": {N: ptrStr("42")},
 		}
-		hashKey, _ := extractPrimaryKeyCondition(table, "id = :v", nil, numValues)
+		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, numValues)
 		assert.Equal(t, "42", hashKey)
 	})
 }
@@ -62,7 +62,7 @@ func TestExtractPrimaryKeyCondition_WithSortKey(t *testing.T) {
 	}
 
 	t.Run("hash + sort key condition", func(t *testing.T) {
-		hashKey, sortCond := extractPrimaryKeyCondition(table, "pk = :pk AND sk = :sk", nil, values)
+		hashKey, _, sortCond := extractPrimaryKeyCondition(table, "pk = :pk AND sk = :sk", nil, values)
 		assert.Equal(t, "user1", hashKey)
 		assert.NotNil(t, sortCond)
 		assert.Equal(t, "=", sortCond.op)

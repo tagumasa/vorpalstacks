@@ -78,9 +78,12 @@ type StreamRecordData struct {
 	StreamViewType              string                 `json:"StreamViewType"`
 }
 
-// streamSeqCounter is stored per table to atomically allocate sequence numbers.
+// streamSeqCounter is stored per table to atomically allocate sequence
+// numbers. TrimmedFloor records the highest sequence number removed by the
+// retention sweep; reads starting at or below it no longer have data.
 type streamSeqCounter struct {
-	LastSeq int64 `json:"last_seq"`
+	LastSeq      int64 `json:"last_seq"`
+	TrimmedFloor int64 `json:"trimmed_floor,omitempty"`
 }
 
 // StreamStore manages DynamoDB Streams records. Records are stored in a
@@ -301,6 +304,88 @@ func (s *StreamStore) GetLatestSequence(tableName string) (int64, error) {
 		return 0, err
 	}
 	return counter.LastSeq, nil
+}
+
+// StreamRetention is the documented DynamoDB Streams retention window:
+// records older than 24 hours are subject to trimming.
+const StreamRetention = 24 * time.Hour
+
+// TrimOlderThan removes the stream records whose approximate creation time
+// is before the cutoff and advances the table's trimmed floor to the
+// highest removed sequence number. Keys are collected before any delete so
+// the prefix scan never mutates while iterating.
+func (s *StreamStore) TrimOlderThan(tableName string, cutoff time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var counter streamSeqCounter
+	counterKey := streamSeqKey(tableName)
+	if err := s.BaseStore.Get(counterKey, &counter); err != nil {
+		if common.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read stream sequence counter: %w", err)
+	}
+
+	prefix := tableName + keySep
+	var doomed []string
+	var maxTrimmed int64
+	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+		if strings.HasSuffix(key, "__seq_counter__") {
+			return nil
+		}
+		var rec StreamRecord
+		if err := json.Unmarshal(value, &rec); err != nil {
+			return err
+		}
+		if int64(rec.Dynamodb.ApproximateCreationDateTime) >= cutoff.Unix() {
+			return nil
+		}
+		seq, err := strconv.ParseInt(rec.Dynamodb.SequenceNumber, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid sequence number in stream record: %w", err)
+		}
+		doomed = append(doomed, key)
+		if seq > maxTrimmed {
+			maxTrimmed = seq
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if len(doomed) == 0 {
+		return nil
+	}
+	for _, key := range doomed {
+		if err := s.BaseStore.Delete(key); err != nil {
+			return fmt.Errorf("failed to trim stream record: %w", err)
+		}
+	}
+	if maxTrimmed > counter.TrimmedFloor {
+		counter.TrimmedFloor = maxTrimmed
+		if err := s.BaseStore.Put(counterKey, counter); err != nil {
+			return fmt.Errorf("failed to write stream sequence counter: %w", err)
+		}
+	}
+	return nil
+}
+
+// OldestSequence returns the trimmed floor: sequence numbers at or below
+// it have already been removed by retention trimming.
+func (s *StreamStore) OldestSequence(tableName string) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var counter streamSeqCounter
+	counterKey := streamSeqKey(tableName)
+	if err := s.BaseStore.Get(counterKey, &counter); err != nil {
+		if common.IsNotFound(err) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to read stream sequence counter: %w", err)
+	}
+	return counter.TrimmedFloor, nil
 }
 
 // DeleteAllForTable removes all stream records and the sequence counter

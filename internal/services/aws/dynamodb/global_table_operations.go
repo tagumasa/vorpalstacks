@@ -3,9 +3,126 @@ package dynamodb
 
 import (
 	"context"
+
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
+
+// globalTableReplicaRegions extracts the replica regions from a parsed
+// ReplicationGroup member. A region may appear at most once.
+func globalTableReplicaRegions(params map[string]interface{}) ([]string, error) {
+	replicationGroupParams, ok := params["ReplicationGroup"].([]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	seen := make(map[string]bool)
+	var regions []string
+	for _, r := range replicationGroupParams {
+		rMap, ok := r.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		regionName, ok := rMap["RegionName"].(string)
+		if !ok || regionName == "" {
+			return nil, ErrInvalidParameter
+		}
+		if seen[regionName] {
+			return nil, ErrInvalidParameter
+		}
+		seen[regionName] = true
+		regions = append(regions, regionName)
+	}
+	// AWS requires at least one replica in the replication group.
+	if len(regions) == 0 {
+		return nil, ErrInvalidParameter
+	}
+	return regions, nil
+}
+
+// gsiKeySchemasEqual reports whether two GSI lists agree on every index
+// name and key schema, in order.
+func gsiKeySchemasEqual(a, b []*dbstore.GlobalSecondaryIndex) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].IndexName != b[i].IndexName || !keySchemasEqual(a[i].KeySchema, b[i].KeySchema) {
+			return false
+		}
+	}
+	return true
+}
+
+// lsiKeySchemasEqual reports whether two LSI lists agree on every index
+// name and key schema, in order.
+func lsiKeySchemasEqual(a, b []*dbstore.LocalSecondaryIndex) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].IndexName != b[i].IndexName || !keySchemasEqual(a[i].KeySchema, b[i].KeySchema) {
+			return false
+		}
+	}
+	return true
+}
+
+// validateGlobalTableReplica enforces the documented conditions a table must
+// satisfy to join a global table: a table with the same name as the global
+// table exists in the replica region, streams both item images, holds no
+// data, and matches the reference replica's key and index schemas. The
+// reference may be nil for the first replica.
+func (s *DynamoDBService) validateGlobalTableReplica(globalTableName, region string, reference *dbstore.Table) error {
+	replicaStore, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return ErrTableNotFoundException
+	}
+	table, err := replicaStore.Tables().Get(globalTableName)
+	if err != nil || table == nil {
+		return ErrTableNotFoundException
+	}
+	if table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled ||
+		table.StreamSpecification.StreamViewType != dbstore.StreamViewTypeNewAndOldImages {
+		return ErrInvalidParameter
+	}
+	if table.ItemCount > 0 {
+		return ErrInvalidParameter
+	}
+	// The item count is maintained transactionally; a bounded scan guards
+	// against any drift between the counter and stored items.
+	hasItems := false
+	_, _ = replicaStore.Items().ScanWithOptions(globalTableName, dbstore.ScanOptions{Limit: 1}, func(item *dbstore.Item) error {
+		hasItems = true
+		return nil
+	})
+	if hasItems {
+		return ErrInvalidParameter
+	}
+	if reference != nil {
+		if !keySchemasEqual(reference.KeySchema, table.KeySchema) ||
+			!gsiKeySchemasEqual(reference.GlobalSecondaryIndexes, table.GlobalSecondaryIndexes) ||
+			!lsiKeySchemasEqual(reference.LocalSecondaryIndexes, table.LocalSecondaryIndexes) {
+			return ErrInvalidParameter
+		}
+	}
+	return nil
+}
+
+// referenceReplicaTable fetches the table backing the first recorded replica
+// region, for schema comparison when a new replica joins.
+func (s *DynamoDBService) referenceReplicaTable(globalTableName string, replicas []*dbstore.Replica) *dbstore.Table {
+	for _, replica := range replicas {
+		store, err := s.GetStoreForRegion(replica.RegionName)
+		if err != nil {
+			continue
+		}
+		table, err := store.Tables().Get(globalTableName)
+		if err == nil && table != nil {
+			return table
+		}
+	}
+	return nil
+}
 
 // CreateGlobalTable creates a new global table.
 func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -14,32 +131,34 @@ func (s *DynamoDBService) CreateGlobalTable(ctx context.Context, reqCtx *request
 		return nil, ErrInvalidParameter
 	}
 
-	replicationGroupParams, ok := req.Parameters["ReplicationGroup"].([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
+	regions, err := globalTableReplicaRegions(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Every replica region must hold a qualifying table before the global
+	// table record is created; the first validated table is the schema
+	// reference for the remaining regions.
+	var reference *dbstore.Table
+	for _, region := range regions {
+		if err := s.validateGlobalTableReplica(globalTableName, region, reference); err != nil {
+			return nil, err
+		}
+		if reference == nil {
+			if store, storeErr := s.GetStoreForRegion(region); storeErr == nil {
+				if table, tableErr := store.Tables().Get(globalTableName); tableErr == nil {
+					reference = table
+				}
+			}
+		}
 	}
 
 	var replicationGroup []*dbstore.Replica
-	for _, r := range replicationGroupParams {
-		rMap, ok := r.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		regionName, ok := rMap["RegionName"].(string)
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		if regionName != "" {
-			replicationGroup = append(replicationGroup, &dbstore.Replica{
-				RegionName:    regionName,
-				ReplicaStatus: "ACTIVE",
-			})
-		}
-	}
-
-	// AWS requires at least one replica in the replication group
-	if len(replicationGroup) == 0 {
-		return nil, ErrInvalidParameter
+	for _, region := range regions {
+		replicationGroup = append(replicationGroup, &dbstore.Replica{
+			RegionName:    region,
+			ReplicaStatus: "ACTIVE",
+		})
 	}
 
 	store, err := s.store(reqCtx)
@@ -96,6 +215,15 @@ func (s *DynamoDBService) DescribeGlobalTableSettings(ctx context.Context, reqCt
 		return nil, ErrGlobalTableNotFound
 	}
 
+	return map[string]interface{}{
+		"GlobalTableName": globalTable.GlobalTableName,
+		"ReplicaSettings": buildGlobalTableReplicaSettings(globalTable),
+	}, nil
+}
+
+// buildGlobalTableReplicaSettings renders the per-replica settings list
+// shared by the global table settings operations.
+func buildGlobalTableReplicaSettings(globalTable *dbstore.GlobalTable) []map[string]interface{} {
 	replicaSettings := make([]map[string]interface{}, 0, len(globalTable.ReplicationGroup))
 	for _, replica := range globalTable.ReplicationGroup {
 		settings := map[string]interface{}{
@@ -111,11 +239,7 @@ func (s *DynamoDBService) DescribeGlobalTableSettings(ctx context.Context, reqCt
 		}
 		replicaSettings = append(replicaSettings, settings)
 	}
-
-	return map[string]interface{}{
-		"GlobalTableName": globalTable.GlobalTableName,
-		"ReplicaSettings": replicaSettings,
-	}, nil
+	return replicaSettings
 }
 
 // ListGlobalTables lists the global tables for a given account.
@@ -222,6 +346,9 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 	if !ok {
 		return nil, ErrInvalidParameter
 	}
+	// A joining replica must satisfy the same conditions as one named by
+	// CreateGlobalTable, compared against an existing replica's table.
+	reference := s.referenceReplicaTable(globalTableName, globalTable.ReplicationGroup)
 	for _, update := range updates {
 		updateMap, ok := update.(map[string]interface{})
 		if !ok {
@@ -237,6 +364,9 @@ func (s *DynamoDBService) UpdateGlobalTable(ctx context.Context, reqCtx *request
 				if r.RegionName == regionName {
 					return nil, ErrReplicaAlreadyExists
 				}
+			}
+			if err := s.validateGlobalTableReplica(globalTableName, regionName, reference); err != nil {
+				return nil, err
 			}
 			globalTable.ReplicationGroup = append(globalTable.ReplicationGroup, &dbstore.Replica{
 				RegionName:    regionName,
@@ -325,7 +455,8 @@ func (s *DynamoDBService) UpdateGlobalTableSettings(ctx context.Context, reqCtx 
 	}
 
 	return map[string]interface{}{
-		"GlobalTableDescription": buildGlobalTableDescription(globalTable),
+		"GlobalTableName": globalTable.GlobalTableName,
+		"ReplicaSettings": buildGlobalTableReplicaSettings(globalTable),
 	}, nil
 }
 

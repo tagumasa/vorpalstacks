@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -342,6 +343,9 @@ func (r *TestRunner) dynamoDBDuplicateTableTest(ctx context.Context, client *dyn
 		var ri *types.ResourceInUseException
 		if !errors.As(err, &ri) {
 			return fmt.Errorf("expected ResourceInUseException, got: %T: %v", err, err)
+		}
+		if status := awsHTTPStatus(err); status != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for ResourceInUseException, got %d", status)
 		}
 		return nil
 	}))

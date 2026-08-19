@@ -132,7 +132,7 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	item, err := s.getItemCore(store, tableName, key)
+	item, err := s.getItemCore(ctx, store, tableName, key)
 	if err != nil {
 		if dbstore.IsItemNotFound(err) {
 			return response.EmptyResponse(), nil

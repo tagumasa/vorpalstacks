@@ -71,6 +71,70 @@ func protoToReplicas(p []*pb.Replica) []*Replica {
 }
 
 // TableToProto converts API Table to storage proto.
+func restoreSummaryToProto(r *RestoreSummary) *pb.RestoreSummary {
+	if r == nil {
+		return nil
+	}
+	return &pb.RestoreSummary{
+		SourceBackupArn:   r.SourceBackupArn,
+		SourceTableArn:    r.SourceTableArn,
+		RestoreDateTime:   timestamppb.New(r.RestoreDateTime),
+		RestoreInProgress: r.RestoreInProgress,
+	}
+}
+
+func protoToRestoreSummary(p *pb.RestoreSummary) *RestoreSummary {
+	if p == nil {
+		return nil
+	}
+	return &RestoreSummary{
+		SourceBackupArn:   p.SourceBackupArn,
+		SourceTableArn:    p.SourceTableArn,
+		RestoreDateTime:   p.RestoreDateTime.AsTime(),
+		RestoreInProgress: p.RestoreInProgress,
+	}
+}
+
+func warmThroughputToProto(w *WarmThroughput) *pb.WarmThroughput {
+	if w == nil {
+		return nil
+	}
+	return &pb.WarmThroughput{
+		ReadUnitsPerSecond:  w.ReadUnitsPerSecond,
+		WriteUnitsPerSecond: w.WriteUnitsPerSecond,
+	}
+}
+
+func protoToWarmThroughput(p *pb.WarmThroughput) *WarmThroughput {
+	if p == nil {
+		return nil
+	}
+	return &WarmThroughput{
+		ReadUnitsPerSecond:  p.ReadUnitsPerSecond,
+		WriteUnitsPerSecond: p.WriteUnitsPerSecond,
+	}
+}
+
+func onDemandThroughputToProto(o *OnDemandThroughput) *pb.OnDemandThroughput {
+	if o == nil {
+		return nil
+	}
+	return &pb.OnDemandThroughput{
+		MaxReadRequestUnits:  o.MaxReadRequestUnits,
+		MaxWriteRequestUnits: o.MaxWriteRequestUnits,
+	}
+}
+
+func protoToOnDemandThroughput(p *pb.OnDemandThroughput) *OnDemandThroughput {
+	if p == nil {
+		return nil
+	}
+	return &OnDemandThroughput{
+		MaxReadRequestUnits:  p.MaxReadRequestUnits,
+		MaxWriteRequestUnits: p.MaxWriteRequestUnits,
+	}
+}
+
 func TableToProto(t *Table) *pb.Table {
 	if t == nil {
 		return nil
@@ -103,6 +167,9 @@ func TableToProto(t *Table) *pb.Table {
 		ContributorInsightsEnabled:    t.ContributorInsightsEnabled,
 		ContributorInsightsMode:       t.ContributorInsightsMode,
 		TableClass:                    t.TableClass,
+		WarmThroughput:                warmThroughputToProto(t.WarmThroughput),
+		OnDemandThroughput:            onDemandThroughputToProto(t.OnDemandThroughput),
+		RestoreSummary:                restoreSummaryToProto(t.RestoreSummary),
 	}
 }
 
@@ -139,6 +206,9 @@ func ProtoToTable(p *pb.Table) *Table {
 		ContributorInsightsEnabled:    p.ContributorInsightsEnabled,
 		ContributorInsightsMode:       p.ContributorInsightsMode,
 		TableClass:                    p.GetTableClass(),
+		WarmThroughput:                protoToWarmThroughput(p.WarmThroughput),
+		OnDemandThroughput:            protoToOnDemandThroughput(p.OnDemandThroughput),
+		RestoreSummary:                protoToRestoreSummary(p.RestoreSummary),
 	}
 }
 
@@ -758,9 +828,10 @@ func kinesisDataStreamsToProto(k []*KinesisDataStreamDestination) []*pb.KinesisD
 	result := make([]*pb.KinesisDataStreamDestination, len(k))
 	for i, d := range k {
 		result[i] = &pb.KinesisDataStreamDestination{
-			StreamArn:                    d.StreamArn,
-			DestinationStatus:            d.DestinationStatus,
-			DestinationStatusDescription: d.DestinationStatusDescription,
+			StreamArn:                            d.StreamArn,
+			DestinationStatus:                    d.DestinationStatus,
+			DestinationStatusDescription:         d.DestinationStatusDescription,
+			ApproximateCreationDateTimePrecision: d.ApproximateCreationDateTimePrecision,
 		}
 	}
 	return result
@@ -773,9 +844,10 @@ func protoToKinesisDataStreams(k []*pb.KinesisDataStreamDestination) []*KinesisD
 	result := make([]*KinesisDataStreamDestination, len(k))
 	for i, d := range k {
 		result[i] = &KinesisDataStreamDestination{
-			StreamArn:                    d.StreamArn,
-			DestinationStatus:            d.DestinationStatus,
-			DestinationStatusDescription: d.DestinationStatusDescription,
+			StreamArn:                            d.StreamArn,
+			DestinationStatus:                    d.DestinationStatus,
+			DestinationStatusDescription:         d.DestinationStatusDescription,
+			ApproximateCreationDateTimePrecision: d.ApproximateCreationDateTimePrecision,
 		}
 	}
 	return result

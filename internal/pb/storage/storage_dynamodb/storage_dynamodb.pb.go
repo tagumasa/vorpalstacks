@@ -712,6 +712,178 @@ func (x *AttributeDefinition) GetAttributeType() ScalarAttributeType {
 }
 
 // ProvisionedThroughput represents the provisioned throughput.
+type WarmThroughput struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	ReadUnitsPerSecond  int64                  `protobuf:"varint,1,opt,name=read_units_per_second,json=readUnitsPerSecond,proto3" json:"read_units_per_second,omitempty"`
+	WriteUnitsPerSecond int64                  `protobuf:"varint,2,opt,name=write_units_per_second,json=writeUnitsPerSecond,proto3" json:"write_units_per_second,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *WarmThroughput) Reset() {
+	*x = WarmThroughput{}
+	mi := &file_storage_dynamodb_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WarmThroughput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WarmThroughput) ProtoMessage() {}
+
+func (x *WarmThroughput) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_dynamodb_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WarmThroughput.ProtoReflect.Descriptor instead.
+func (*WarmThroughput) Descriptor() ([]byte, []int) {
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *WarmThroughput) GetReadUnitsPerSecond() int64 {
+	if x != nil {
+		return x.ReadUnitsPerSecond
+	}
+	return 0
+}
+
+func (x *WarmThroughput) GetWriteUnitsPerSecond() int64 {
+	if x != nil {
+		return x.WriteUnitsPerSecond
+	}
+	return 0
+}
+
+type RestoreSummary struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	SourceBackupArn   string                 `protobuf:"bytes,1,opt,name=source_backup_arn,json=sourceBackupArn,proto3" json:"source_backup_arn,omitempty"`
+	SourceTableArn    string                 `protobuf:"bytes,2,opt,name=source_table_arn,json=sourceTableArn,proto3" json:"source_table_arn,omitempty"`
+	RestoreDateTime   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=restore_date_time,json=restoreDateTime,proto3" json:"restore_date_time,omitempty"`
+	RestoreInProgress bool                   `protobuf:"varint,4,opt,name=restore_in_progress,json=restoreInProgress,proto3" json:"restore_in_progress,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *RestoreSummary) Reset() {
+	*x = RestoreSummary{}
+	mi := &file_storage_dynamodb_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreSummary) ProtoMessage() {}
+
+func (x *RestoreSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_dynamodb_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreSummary.ProtoReflect.Descriptor instead.
+func (*RestoreSummary) Descriptor() ([]byte, []int) {
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RestoreSummary) GetSourceBackupArn() string {
+	if x != nil {
+		return x.SourceBackupArn
+	}
+	return ""
+}
+
+func (x *RestoreSummary) GetSourceTableArn() string {
+	if x != nil {
+		return x.SourceTableArn
+	}
+	return ""
+}
+
+func (x *RestoreSummary) GetRestoreDateTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RestoreDateTime
+	}
+	return nil
+}
+
+func (x *RestoreSummary) GetRestoreInProgress() bool {
+	if x != nil {
+		return x.RestoreInProgress
+	}
+	return false
+}
+
+type OnDemandThroughput struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	MaxReadRequestUnits  int64                  `protobuf:"varint,1,opt,name=max_read_request_units,json=maxReadRequestUnits,proto3" json:"max_read_request_units,omitempty"`
+	MaxWriteRequestUnits int64                  `protobuf:"varint,2,opt,name=max_write_request_units,json=maxWriteRequestUnits,proto3" json:"max_write_request_units,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *OnDemandThroughput) Reset() {
+	*x = OnDemandThroughput{}
+	mi := &file_storage_dynamodb_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OnDemandThroughput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OnDemandThroughput) ProtoMessage() {}
+
+func (x *OnDemandThroughput) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_dynamodb_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OnDemandThroughput.ProtoReflect.Descriptor instead.
+func (*OnDemandThroughput) Descriptor() ([]byte, []int) {
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *OnDemandThroughput) GetMaxReadRequestUnits() int64 {
+	if x != nil {
+		return x.MaxReadRequestUnits
+	}
+	return 0
+}
+
+func (x *OnDemandThroughput) GetMaxWriteRequestUnits() int64 {
+	if x != nil {
+		return x.MaxWriteRequestUnits
+	}
+	return 0
+}
+
 type ProvisionedThroughput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	ReadCapacityUnits      int64                  `protobuf:"varint,1,opt,name=read_capacity_units,json=readCapacityUnits,proto3" json:"read_capacity_units,omitempty"`
@@ -725,7 +897,7 @@ type ProvisionedThroughput struct {
 
 func (x *ProvisionedThroughput) Reset() {
 	*x = ProvisionedThroughput{}
-	mi := &file_storage_dynamodb_proto_msgTypes[2]
+	mi := &file_storage_dynamodb_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -737,7 +909,7 @@ func (x *ProvisionedThroughput) String() string {
 func (*ProvisionedThroughput) ProtoMessage() {}
 
 func (x *ProvisionedThroughput) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[2]
+	mi := &file_storage_dynamodb_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +922,7 @@ func (x *ProvisionedThroughput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProvisionedThroughput.ProtoReflect.Descriptor instead.
 func (*ProvisionedThroughput) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{2}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ProvisionedThroughput) GetReadCapacityUnits() int64 {
@@ -799,7 +971,7 @@ type Projection struct {
 
 func (x *Projection) Reset() {
 	*x = Projection{}
-	mi := &file_storage_dynamodb_proto_msgTypes[3]
+	mi := &file_storage_dynamodb_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -811,7 +983,7 @@ func (x *Projection) String() string {
 func (*Projection) ProtoMessage() {}
 
 func (x *Projection) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[3]
+	mi := &file_storage_dynamodb_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -824,7 +996,7 @@ func (x *Projection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Projection.ProtoReflect.Descriptor instead.
 func (*Projection) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{3}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Projection) GetProjectionType() string {
@@ -858,7 +1030,7 @@ type GlobalSecondaryIndex struct {
 
 func (x *GlobalSecondaryIndex) Reset() {
 	*x = GlobalSecondaryIndex{}
-	mi := &file_storage_dynamodb_proto_msgTypes[4]
+	mi := &file_storage_dynamodb_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -870,7 +1042,7 @@ func (x *GlobalSecondaryIndex) String() string {
 func (*GlobalSecondaryIndex) ProtoMessage() {}
 
 func (x *GlobalSecondaryIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[4]
+	mi := &file_storage_dynamodb_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,7 +1055,7 @@ func (x *GlobalSecondaryIndex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalSecondaryIndex.ProtoReflect.Descriptor instead.
 func (*GlobalSecondaryIndex) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{4}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GlobalSecondaryIndex) GetIndexName() string {
@@ -956,7 +1128,7 @@ type LocalSecondaryIndex struct {
 
 func (x *LocalSecondaryIndex) Reset() {
 	*x = LocalSecondaryIndex{}
-	mi := &file_storage_dynamodb_proto_msgTypes[5]
+	mi := &file_storage_dynamodb_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +1140,7 @@ func (x *LocalSecondaryIndex) String() string {
 func (*LocalSecondaryIndex) ProtoMessage() {}
 
 func (x *LocalSecondaryIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[5]
+	mi := &file_storage_dynamodb_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,7 +1153,7 @@ func (x *LocalSecondaryIndex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LocalSecondaryIndex.ProtoReflect.Descriptor instead.
 func (*LocalSecondaryIndex) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{5}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *LocalSecondaryIndex) GetIndexName() string {
@@ -1030,7 +1202,7 @@ type StreamSpecification struct {
 
 func (x *StreamSpecification) Reset() {
 	*x = StreamSpecification{}
-	mi := &file_storage_dynamodb_proto_msgTypes[6]
+	mi := &file_storage_dynamodb_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1042,7 +1214,7 @@ func (x *StreamSpecification) String() string {
 func (*StreamSpecification) ProtoMessage() {}
 
 func (x *StreamSpecification) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[6]
+	mi := &file_storage_dynamodb_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1055,7 +1227,7 @@ func (x *StreamSpecification) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamSpecification.ProtoReflect.Descriptor instead.
 func (*StreamSpecification) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{6}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *StreamSpecification) GetStreamEnabled() bool {
@@ -1085,7 +1257,7 @@ type SSEDescription struct {
 
 func (x *SSEDescription) Reset() {
 	*x = SSEDescription{}
-	mi := &file_storage_dynamodb_proto_msgTypes[7]
+	mi := &file_storage_dynamodb_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1097,7 +1269,7 @@ func (x *SSEDescription) String() string {
 func (*SSEDescription) ProtoMessage() {}
 
 func (x *SSEDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[7]
+	mi := &file_storage_dynamodb_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1110,7 +1282,7 @@ func (x *SSEDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SSEDescription.ProtoReflect.Descriptor instead.
 func (*SSEDescription) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{7}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SSEDescription) GetStatus() string {
@@ -1152,7 +1324,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_storage_dynamodb_proto_msgTypes[8]
+	mi := &file_storage_dynamodb_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1164,7 +1336,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[8]
+	mi := &file_storage_dynamodb_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1177,7 +1349,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{8}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Tag) GetKey() string {
@@ -1206,7 +1378,7 @@ type TimeToLiveSpecification struct {
 
 func (x *TimeToLiveSpecification) Reset() {
 	*x = TimeToLiveSpecification{}
-	mi := &file_storage_dynamodb_proto_msgTypes[9]
+	mi := &file_storage_dynamodb_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1218,7 +1390,7 @@ func (x *TimeToLiveSpecification) String() string {
 func (*TimeToLiveSpecification) ProtoMessage() {}
 
 func (x *TimeToLiveSpecification) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[9]
+	mi := &file_storage_dynamodb_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1231,7 +1403,7 @@ func (x *TimeToLiveSpecification) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeToLiveSpecification.ProtoReflect.Descriptor instead.
 func (*TimeToLiveSpecification) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{9}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TimeToLiveSpecification) GetEnabled() bool {
@@ -1268,7 +1440,7 @@ type PointInTimeRecoveryDescription struct {
 
 func (x *PointInTimeRecoveryDescription) Reset() {
 	*x = PointInTimeRecoveryDescription{}
-	mi := &file_storage_dynamodb_proto_msgTypes[10]
+	mi := &file_storage_dynamodb_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1280,7 +1452,7 @@ func (x *PointInTimeRecoveryDescription) String() string {
 func (*PointInTimeRecoveryDescription) ProtoMessage() {}
 
 func (x *PointInTimeRecoveryDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[10]
+	mi := &file_storage_dynamodb_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1293,7 +1465,7 @@ func (x *PointInTimeRecoveryDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PointInTimeRecoveryDescription.ProtoReflect.Descriptor instead.
 func (*PointInTimeRecoveryDescription) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{10}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PointInTimeRecoveryDescription) GetStatus() PointInTimeRecoveryStatus {
@@ -1326,17 +1498,18 @@ func (x *PointInTimeRecoveryDescription) GetRecoveryPeriodInDays() int32 {
 
 // KinesisDataStreamDestination represents a Kinesis data stream destination.
 type KinesisDataStreamDestination struct {
-	state                        protoimpl.MessageState `protogen:"open.v1"`
-	StreamArn                    string                 `protobuf:"bytes,1,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
-	DestinationStatus            string                 `protobuf:"bytes,2,opt,name=destination_status,json=destinationStatus,proto3" json:"destination_status,omitempty"`
-	DestinationStatusDescription string                 `protobuf:"bytes,3,opt,name=destination_status_description,json=destinationStatusDescription,proto3" json:"destination_status_description,omitempty"`
-	unknownFields                protoimpl.UnknownFields
-	sizeCache                    protoimpl.SizeCache
+	state                                protoimpl.MessageState `protogen:"open.v1"`
+	StreamArn                            string                 `protobuf:"bytes,1,opt,name=stream_arn,json=streamArn,proto3" json:"stream_arn,omitempty"`
+	DestinationStatus                    string                 `protobuf:"bytes,2,opt,name=destination_status,json=destinationStatus,proto3" json:"destination_status,omitempty"`
+	DestinationStatusDescription         string                 `protobuf:"bytes,3,opt,name=destination_status_description,json=destinationStatusDescription,proto3" json:"destination_status_description,omitempty"`
+	ApproximateCreationDateTimePrecision string                 `protobuf:"bytes,4,opt,name=approximate_creation_date_time_precision,json=approximateCreationDateTimePrecision,proto3" json:"approximate_creation_date_time_precision,omitempty"`
+	unknownFields                        protoimpl.UnknownFields
+	sizeCache                            protoimpl.SizeCache
 }
 
 func (x *KinesisDataStreamDestination) Reset() {
 	*x = KinesisDataStreamDestination{}
-	mi := &file_storage_dynamodb_proto_msgTypes[11]
+	mi := &file_storage_dynamodb_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1348,7 +1521,7 @@ func (x *KinesisDataStreamDestination) String() string {
 func (*KinesisDataStreamDestination) ProtoMessage() {}
 
 func (x *KinesisDataStreamDestination) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[11]
+	mi := &file_storage_dynamodb_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1361,7 +1534,7 @@ func (x *KinesisDataStreamDestination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KinesisDataStreamDestination.ProtoReflect.Descriptor instead.
 func (*KinesisDataStreamDestination) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{11}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *KinesisDataStreamDestination) GetStreamArn() string {
@@ -1381,6 +1554,13 @@ func (x *KinesisDataStreamDestination) GetDestinationStatus() string {
 func (x *KinesisDataStreamDestination) GetDestinationStatusDescription() string {
 	if x != nil {
 		return x.DestinationStatusDescription
+	}
+	return ""
+}
+
+func (x *KinesisDataStreamDestination) GetApproximateCreationDateTimePrecision() string {
+	if x != nil {
+		return x.ApproximateCreationDateTimePrecision
 	}
 	return ""
 }
@@ -1414,13 +1594,16 @@ type Table struct {
 	ContributorInsightsEnabled    bool                            `protobuf:"varint,24,opt,name=contributor_insights_enabled,json=contributorInsightsEnabled,proto3" json:"contributor_insights_enabled,omitempty"`
 	ContributorInsightsMode       string                          `protobuf:"bytes,26,opt,name=contributor_insights_mode,json=contributorInsightsMode,proto3" json:"contributor_insights_mode,omitempty"`
 	TableClass                    string                          `protobuf:"bytes,25,opt,name=table_class,json=tableClass,proto3" json:"table_class,omitempty"`
+	WarmThroughput                *WarmThroughput                 `protobuf:"bytes,27,opt,name=warm_throughput,json=warmThroughput,proto3" json:"warm_throughput,omitempty"`
+	OnDemandThroughput            *OnDemandThroughput             `protobuf:"bytes,28,opt,name=on_demand_throughput,json=onDemandThroughput,proto3" json:"on_demand_throughput,omitempty"`
+	RestoreSummary                *RestoreSummary                 `protobuf:"bytes,29,opt,name=restore_summary,json=restoreSummary,proto3" json:"restore_summary,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *Table) Reset() {
 	*x = Table{}
-	mi := &file_storage_dynamodb_proto_msgTypes[12]
+	mi := &file_storage_dynamodb_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1432,7 +1615,7 @@ func (x *Table) String() string {
 func (*Table) ProtoMessage() {}
 
 func (x *Table) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[12]
+	mi := &file_storage_dynamodb_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1445,7 +1628,7 @@ func (x *Table) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Table.ProtoReflect.Descriptor instead.
 func (*Table) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{12}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Table) GetName() string {
@@ -1630,6 +1813,27 @@ func (x *Table) GetTableClass() string {
 	return ""
 }
 
+func (x *Table) GetWarmThroughput() *WarmThroughput {
+	if x != nil {
+		return x.WarmThroughput
+	}
+	return nil
+}
+
+func (x *Table) GetOnDemandThroughput() *OnDemandThroughput {
+	if x != nil {
+		return x.OnDemandThroughput
+	}
+	return nil
+}
+
+func (x *Table) GetRestoreSummary() *RestoreSummary {
+	if x != nil {
+		return x.RestoreSummary
+	}
+	return nil
+}
+
 // AttributeValue represents a DynamoDB attribute value.
 type AttributeValue struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1652,7 +1856,7 @@ type AttributeValue struct {
 
 func (x *AttributeValue) Reset() {
 	*x = AttributeValue{}
-	mi := &file_storage_dynamodb_proto_msgTypes[13]
+	mi := &file_storage_dynamodb_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1664,7 +1868,7 @@ func (x *AttributeValue) String() string {
 func (*AttributeValue) ProtoMessage() {}
 
 func (x *AttributeValue) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[13]
+	mi := &file_storage_dynamodb_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1677,7 +1881,7 @@ func (x *AttributeValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttributeValue.ProtoReflect.Descriptor instead.
 func (*AttributeValue) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{13}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AttributeValue) GetValue() isAttributeValue_Value {
@@ -1851,7 +2055,7 @@ type StringSet struct {
 
 func (x *StringSet) Reset() {
 	*x = StringSet{}
-	mi := &file_storage_dynamodb_proto_msgTypes[14]
+	mi := &file_storage_dynamodb_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1863,7 +2067,7 @@ func (x *StringSet) String() string {
 func (*StringSet) ProtoMessage() {}
 
 func (x *StringSet) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[14]
+	mi := &file_storage_dynamodb_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1876,7 +2080,7 @@ func (x *StringSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringSet.ProtoReflect.Descriptor instead.
 func (*StringSet) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{14}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *StringSet) GetValues() []string {
@@ -1896,7 +2100,7 @@ type NumberSet struct {
 
 func (x *NumberSet) Reset() {
 	*x = NumberSet{}
-	mi := &file_storage_dynamodb_proto_msgTypes[15]
+	mi := &file_storage_dynamodb_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1908,7 +2112,7 @@ func (x *NumberSet) String() string {
 func (*NumberSet) ProtoMessage() {}
 
 func (x *NumberSet) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[15]
+	mi := &file_storage_dynamodb_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1921,7 +2125,7 @@ func (x *NumberSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumberSet.ProtoReflect.Descriptor instead.
 func (*NumberSet) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{15}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *NumberSet) GetValues() []string {
@@ -1941,7 +2145,7 @@ type BytesSet struct {
 
 func (x *BytesSet) Reset() {
 	*x = BytesSet{}
-	mi := &file_storage_dynamodb_proto_msgTypes[16]
+	mi := &file_storage_dynamodb_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1953,7 +2157,7 @@ func (x *BytesSet) String() string {
 func (*BytesSet) ProtoMessage() {}
 
 func (x *BytesSet) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[16]
+	mi := &file_storage_dynamodb_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1966,7 +2170,7 @@ func (x *BytesSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BytesSet.ProtoReflect.Descriptor instead.
 func (*BytesSet) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{16}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *BytesSet) GetValues() [][]byte {
@@ -1986,7 +2190,7 @@ type MapValue struct {
 
 func (x *MapValue) Reset() {
 	*x = MapValue{}
-	mi := &file_storage_dynamodb_proto_msgTypes[17]
+	mi := &file_storage_dynamodb_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1998,7 +2202,7 @@ func (x *MapValue) String() string {
 func (*MapValue) ProtoMessage() {}
 
 func (x *MapValue) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[17]
+	mi := &file_storage_dynamodb_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2011,7 +2215,7 @@ func (x *MapValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapValue.ProtoReflect.Descriptor instead.
 func (*MapValue) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{17}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *MapValue) GetEntries() map[string]*AttributeValue {
@@ -2031,7 +2235,7 @@ type ListValue struct {
 
 func (x *ListValue) Reset() {
 	*x = ListValue{}
-	mi := &file_storage_dynamodb_proto_msgTypes[18]
+	mi := &file_storage_dynamodb_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2043,7 +2247,7 @@ func (x *ListValue) String() string {
 func (*ListValue) ProtoMessage() {}
 
 func (x *ListValue) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[18]
+	mi := &file_storage_dynamodb_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2056,7 +2260,7 @@ func (x *ListValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListValue.ProtoReflect.Descriptor instead.
 func (*ListValue) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{18}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListValue) GetValues() []*AttributeValue {
@@ -2075,7 +2279,7 @@ type NullValue struct {
 
 func (x *NullValue) Reset() {
 	*x = NullValue{}
-	mi := &file_storage_dynamodb_proto_msgTypes[19]
+	mi := &file_storage_dynamodb_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2087,7 +2291,7 @@ func (x *NullValue) String() string {
 func (*NullValue) ProtoMessage() {}
 
 func (x *NullValue) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[19]
+	mi := &file_storage_dynamodb_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2100,7 +2304,7 @@ func (x *NullValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NullValue.ProtoReflect.Descriptor instead.
 func (*NullValue) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{19}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{22}
 }
 
 // Item represents a DynamoDB item.
@@ -2115,7 +2319,7 @@ type Item struct {
 
 func (x *Item) Reset() {
 	*x = Item{}
-	mi := &file_storage_dynamodb_proto_msgTypes[20]
+	mi := &file_storage_dynamodb_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2127,7 +2331,7 @@ func (x *Item) String() string {
 func (*Item) ProtoMessage() {}
 
 func (x *Item) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[20]
+	mi := &file_storage_dynamodb_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2140,7 +2344,7 @@ func (x *Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Item.ProtoReflect.Descriptor instead.
 func (*Item) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{20}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Item) GetTableName() string {
@@ -2191,7 +2395,7 @@ type Backup struct {
 
 func (x *Backup) Reset() {
 	*x = Backup{}
-	mi := &file_storage_dynamodb_proto_msgTypes[21]
+	mi := &file_storage_dynamodb_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2203,7 +2407,7 @@ func (x *Backup) String() string {
 func (*Backup) ProtoMessage() {}
 
 func (x *Backup) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[21]
+	mi := &file_storage_dynamodb_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2216,7 +2420,7 @@ func (x *Backup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Backup.ProtoReflect.Descriptor instead.
 func (*Backup) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{21}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Backup) GetBackupName() string {
@@ -2359,7 +2563,7 @@ type Replica struct {
 
 func (x *Replica) Reset() {
 	*x = Replica{}
-	mi := &file_storage_dynamodb_proto_msgTypes[22]
+	mi := &file_storage_dynamodb_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2371,7 +2575,7 @@ func (x *Replica) String() string {
 func (*Replica) ProtoMessage() {}
 
 func (x *Replica) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[22]
+	mi := &file_storage_dynamodb_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2384,7 +2588,7 @@ func (x *Replica) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Replica.ProtoReflect.Descriptor instead.
 func (*Replica) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{22}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *Replica) GetRegionName() string {
@@ -2436,7 +2640,7 @@ type GlobalTable struct {
 
 func (x *GlobalTable) Reset() {
 	*x = GlobalTable{}
-	mi := &file_storage_dynamodb_proto_msgTypes[23]
+	mi := &file_storage_dynamodb_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2448,7 +2652,7 @@ func (x *GlobalTable) String() string {
 func (*GlobalTable) ProtoMessage() {}
 
 func (x *GlobalTable) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[23]
+	mi := &file_storage_dynamodb_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2461,7 +2665,7 @@ func (x *GlobalTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GlobalTable.ProtoReflect.Descriptor instead.
 func (*GlobalTable) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{23}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GlobalTable) GetGlobalTableName() string {
@@ -2511,7 +2715,7 @@ type TTLSpecification struct {
 
 func (x *TTLSpecification) Reset() {
 	*x = TTLSpecification{}
-	mi := &file_storage_dynamodb_proto_msgTypes[24]
+	mi := &file_storage_dynamodb_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2523,7 +2727,7 @@ func (x *TTLSpecification) String() string {
 func (*TTLSpecification) ProtoMessage() {}
 
 func (x *TTLSpecification) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[24]
+	mi := &file_storage_dynamodb_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2536,7 +2740,7 @@ func (x *TTLSpecification) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TTLSpecification.ProtoReflect.Descriptor instead.
 func (*TTLSpecification) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{24}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *TTLSpecification) GetTableName() string {
@@ -2571,7 +2775,7 @@ type Endpoint struct {
 
 func (x *Endpoint) Reset() {
 	*x = Endpoint{}
-	mi := &file_storage_dynamodb_proto_msgTypes[25]
+	mi := &file_storage_dynamodb_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2583,7 +2787,7 @@ func (x *Endpoint) String() string {
 func (*Endpoint) ProtoMessage() {}
 
 func (x *Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[25]
+	mi := &file_storage_dynamodb_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2596,7 +2800,7 @@ func (x *Endpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Endpoint.ProtoReflect.Descriptor instead.
 func (*Endpoint) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{25}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *Endpoint) GetAddress() string {
@@ -2625,7 +2829,7 @@ type S3BucketSource struct {
 
 func (x *S3BucketSource) Reset() {
 	*x = S3BucketSource{}
-	mi := &file_storage_dynamodb_proto_msgTypes[26]
+	mi := &file_storage_dynamodb_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2637,7 +2841,7 @@ func (x *S3BucketSource) String() string {
 func (*S3BucketSource) ProtoMessage() {}
 
 func (x *S3BucketSource) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[26]
+	mi := &file_storage_dynamodb_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2650,7 +2854,7 @@ func (x *S3BucketSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use S3BucketSource.ProtoReflect.Descriptor instead.
 func (*S3BucketSource) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{26}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *S3BucketSource) GetS3Bucket() string {
@@ -2695,7 +2899,7 @@ type ImportTableDescription struct {
 
 func (x *ImportTableDescription) Reset() {
 	*x = ImportTableDescription{}
-	mi := &file_storage_dynamodb_proto_msgTypes[27]
+	mi := &file_storage_dynamodb_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2707,7 +2911,7 @@ func (x *ImportTableDescription) String() string {
 func (*ImportTableDescription) ProtoMessage() {}
 
 func (x *ImportTableDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[27]
+	mi := &file_storage_dynamodb_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2720,7 +2924,7 @@ func (x *ImportTableDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportTableDescription.ProtoReflect.Descriptor instead.
 func (*ImportTableDescription) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{27}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ImportTableDescription) GetImportArn() string {
@@ -2823,13 +3027,15 @@ type ExportDescription struct {
 	S3Prefix          string                 `protobuf:"bytes,11,opt,name=s3_prefix,json=s3Prefix,proto3" json:"s3_prefix,omitempty"`
 	FailureCode       string                 `protobuf:"bytes,12,opt,name=failure_code,json=failureCode,proto3" json:"failure_code,omitempty"`
 	FailureMessage    string                 `protobuf:"bytes,13,opt,name=failure_message,json=failureMessage,proto3" json:"failure_message,omitempty"`
+	BilledSizeBytes   int64                  `protobuf:"varint,14,opt,name=billed_size_bytes,json=billedSizeBytes,proto3" json:"billed_size_bytes,omitempty"`
+	ExportTime        *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=export_time,json=exportTime,proto3" json:"export_time,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ExportDescription) Reset() {
 	*x = ExportDescription{}
-	mi := &file_storage_dynamodb_proto_msgTypes[28]
+	mi := &file_storage_dynamodb_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2841,7 +3047,7 @@ func (x *ExportDescription) String() string {
 func (*ExportDescription) ProtoMessage() {}
 
 func (x *ExportDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[28]
+	mi := &file_storage_dynamodb_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2854,7 +3060,7 @@ func (x *ExportDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportDescription.ProtoReflect.Descriptor instead.
 func (*ExportDescription) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{28}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ExportDescription) GetExportArn() string {
@@ -2948,6 +3154,20 @@ func (x *ExportDescription) GetFailureMessage() string {
 	return ""
 }
 
+func (x *ExportDescription) GetBilledSizeBytes() int64 {
+	if x != nil {
+		return x.BilledSizeBytes
+	}
+	return 0
+}
+
+func (x *ExportDescription) GetExportTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExportTime
+	}
+	return nil
+}
+
 // ContributorInsightsSummary represents the contributor insights summary.
 type ContributorInsightsSummary struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
@@ -2960,7 +3180,7 @@ type ContributorInsightsSummary struct {
 
 func (x *ContributorInsightsSummary) Reset() {
 	*x = ContributorInsightsSummary{}
-	mi := &file_storage_dynamodb_proto_msgTypes[29]
+	mi := &file_storage_dynamodb_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2972,7 +3192,7 @@ func (x *ContributorInsightsSummary) String() string {
 func (*ContributorInsightsSummary) ProtoMessage() {}
 
 func (x *ContributorInsightsSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_dynamodb_proto_msgTypes[29]
+	mi := &file_storage_dynamodb_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2985,7 +3205,7 @@ func (x *ContributorInsightsSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContributorInsightsSummary.ProtoReflect.Descriptor instead.
 func (*ContributorInsightsSummary) Descriptor() ([]byte, []int) {
-	return file_storage_dynamodb_proto_rawDescGZIP(), []int{29}
+	return file_storage_dynamodb_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ContributorInsightsSummary) GetTableName() string {
@@ -3019,7 +3239,18 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\bkey_type\x18\x02 \x01(\x0e2\x19.storage.dynamodb.KeyTypeR\akeyType\"\x8a\x01\n" +
 	"\x13AttributeDefinition\x12%\n" +
 	"\x0eattribute_name\x18\x01 \x01(\tR\rattributeName\x12L\n" +
-	"\x0eattribute_type\x18\x02 \x01(\x0e2%.storage.dynamodb.ScalarAttributeTypeR\rattributeType\"\xda\x02\n" +
+	"\x0eattribute_type\x18\x02 \x01(\x0e2%.storage.dynamodb.ScalarAttributeTypeR\rattributeType\"x\n" +
+	"\x0eWarmThroughput\x121\n" +
+	"\x15read_units_per_second\x18\x01 \x01(\x03R\x12readUnitsPerSecond\x123\n" +
+	"\x16write_units_per_second\x18\x02 \x01(\x03R\x13writeUnitsPerSecond\"\xde\x01\n" +
+	"\x0eRestoreSummary\x12*\n" +
+	"\x11source_backup_arn\x18\x01 \x01(\tR\x0fsourceBackupArn\x12(\n" +
+	"\x10source_table_arn\x18\x02 \x01(\tR\x0esourceTableArn\x12F\n" +
+	"\x11restore_date_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0frestoreDateTime\x12.\n" +
+	"\x13restore_in_progress\x18\x04 \x01(\bR\x11restoreInProgress\"\x80\x01\n" +
+	"\x12OnDemandThroughput\x123\n" +
+	"\x16max_read_request_units\x18\x01 \x01(\x03R\x13maxReadRequestUnits\x125\n" +
+	"\x17max_write_request_units\x18\x02 \x01(\x03R\x14maxWriteRequestUnits\"\xda\x02\n" +
 	"\x15ProvisionedThroughput\x12.\n" +
 	"\x13read_capacity_units\x18\x01 \x01(\x03R\x11readCapacityUnits\x120\n" +
 	"\x14write_capacity_units\x18\x02 \x01(\x03R\x12writeCapacityUnits\x12Q\n" +
@@ -3074,12 +3305,13 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\x0e2+.storage.dynamodb.PointInTimeRecoveryStatusR\x06status\x12]\n" +
 	"\x1dearliest_restorable_date_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x1aearliestRestorableDateTime\x12Y\n" +
 	"\x1blatest_restorable_date_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x18latestRestorableDateTime\x125\n" +
-	"\x17recovery_period_in_days\x18\x04 \x01(\x05R\x14recoveryPeriodInDays\"\xb2\x01\n" +
+	"\x17recovery_period_in_days\x18\x04 \x01(\x05R\x14recoveryPeriodInDays\"\x8a\x02\n" +
 	"\x1cKinesisDataStreamDestination\x12\x1d\n" +
 	"\n" +
 	"stream_arn\x18\x01 \x01(\tR\tstreamArn\x12-\n" +
 	"\x12destination_status\x18\x02 \x01(\tR\x11destinationStatus\x12D\n" +
-	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\"\x9e\r\n" +
+	"\x1edestination_status_description\x18\x03 \x01(\tR\x1cdestinationStatusDescription\x12V\n" +
+	"(approximate_creation_date_time_precision\x18\x04 \x01(\tR$approximateCreationDateTimePrecision\"\x8c\x0f\n" +
 	"\x05Table\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
 	"\x03arn\x18\x02 \x01(\tR\x03arn\x125\n" +
@@ -3112,7 +3344,10 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x1ccontributor_insights_enabled\x18\x18 \x01(\bR\x1acontributorInsightsEnabled\x12:\n" +
 	"\x19contributor_insights_mode\x18\x1a \x01(\tR\x17contributorInsightsMode\x12\x1f\n" +
 	"\vtable_class\x18\x19 \x01(\tR\n" +
-	"tableClass\"\xfe\x02\n" +
+	"tableClass\x12I\n" +
+	"\x0fwarm_throughput\x18\x1b \x01(\v2 .storage.dynamodb.WarmThroughputR\x0ewarmThroughput\x12V\n" +
+	"\x14on_demand_throughput\x18\x1c \x01(\v2$.storage.dynamodb.OnDemandThroughputR\x12onDemandThroughput\x12I\n" +
+	"\x0frestore_summary\x18\x1d \x01(\v2 .storage.dynamodb.RestoreSummaryR\x0erestoreSummary\"\xfe\x02\n" +
 	"\x0eAttributeValue\x12\x0e\n" +
 	"\x01s\x18\x01 \x01(\tH\x00R\x01s\x12\x0e\n" +
 	"\x01n\x18\x02 \x01(\tH\x00R\x01n\x12\x0e\n" +
@@ -3217,7 +3452,7 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	"\x10s3_bucket_source\x18\n" +
 	" \x01(\v2 .storage.dynamodb.S3BucketSourceR\x0es3BucketSource\x12!\n" +
 	"\ffailure_code\x18\v \x01(\tR\vfailureCode\x12'\n" +
-	"\x0ffailure_message\x18\f \x01(\tR\x0efailureMessage\"\xfb\x03\n" +
+	"\x0ffailure_message\x18\f \x01(\tR\x0efailureMessage\"\xe4\x04\n" +
 	"\x11ExportDescription\x12\x1d\n" +
 	"\n" +
 	"export_arn\x18\x01 \x01(\tR\texportArn\x12#\n" +
@@ -3235,7 +3470,10 @@ const file_storage_dynamodb_proto_rawDesc = "" +
 	" \x01(\tR\bs3Bucket\x12\x1b\n" +
 	"\ts3_prefix\x18\v \x01(\tR\bs3Prefix\x12!\n" +
 	"\ffailure_code\x18\f \x01(\tR\vfailureCode\x12'\n" +
-	"\x0ffailure_message\x18\r \x01(\tR\x0efailureMessage\"\x9a\x01\n" +
+	"\x0ffailure_message\x18\r \x01(\tR\x0efailureMessage\x12*\n" +
+	"\x11billed_size_bytes\x18\x0e \x01(\x03R\x0fbilledSizeBytes\x12;\n" +
+	"\vexport_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"exportTime\"\x9a\x01\n" +
 	"\x1aContributorInsightsSummary\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12\x1d\n" +
@@ -3312,7 +3550,7 @@ func file_storage_dynamodb_proto_rawDescGZIP() []byte {
 }
 
 var file_storage_dynamodb_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
-var file_storage_dynamodb_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_storage_dynamodb_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_storage_dynamodb_proto_goTypes = []any{
 	(TableStatus)(0),                       // 0: storage.dynamodb.TableStatus
 	(BillingMode)(0),                       // 1: storage.dynamodb.BillingMode
@@ -3327,108 +3565,116 @@ var file_storage_dynamodb_proto_goTypes = []any{
 	(PointInTimeRecoveryStatus)(0),         // 10: storage.dynamodb.PointInTimeRecoveryStatus
 	(*KeySchemaElement)(nil),               // 11: storage.dynamodb.KeySchemaElement
 	(*AttributeDefinition)(nil),            // 12: storage.dynamodb.AttributeDefinition
-	(*ProvisionedThroughput)(nil),          // 13: storage.dynamodb.ProvisionedThroughput
-	(*Projection)(nil),                     // 14: storage.dynamodb.Projection
-	(*GlobalSecondaryIndex)(nil),           // 15: storage.dynamodb.GlobalSecondaryIndex
-	(*LocalSecondaryIndex)(nil),            // 16: storage.dynamodb.LocalSecondaryIndex
-	(*StreamSpecification)(nil),            // 17: storage.dynamodb.StreamSpecification
-	(*SSEDescription)(nil),                 // 18: storage.dynamodb.SSEDescription
-	(*Tag)(nil),                            // 19: storage.dynamodb.Tag
-	(*TimeToLiveSpecification)(nil),        // 20: storage.dynamodb.TimeToLiveSpecification
-	(*PointInTimeRecoveryDescription)(nil), // 21: storage.dynamodb.PointInTimeRecoveryDescription
-	(*KinesisDataStreamDestination)(nil),   // 22: storage.dynamodb.KinesisDataStreamDestination
-	(*Table)(nil),                          // 23: storage.dynamodb.Table
-	(*AttributeValue)(nil),                 // 24: storage.dynamodb.AttributeValue
-	(*StringSet)(nil),                      // 25: storage.dynamodb.StringSet
-	(*NumberSet)(nil),                      // 26: storage.dynamodb.NumberSet
-	(*BytesSet)(nil),                       // 27: storage.dynamodb.BytesSet
-	(*MapValue)(nil),                       // 28: storage.dynamodb.MapValue
-	(*ListValue)(nil),                      // 29: storage.dynamodb.ListValue
-	(*NullValue)(nil),                      // 30: storage.dynamodb.NullValue
-	(*Item)(nil),                           // 31: storage.dynamodb.Item
-	(*Backup)(nil),                         // 32: storage.dynamodb.Backup
-	(*Replica)(nil),                        // 33: storage.dynamodb.Replica
-	(*GlobalTable)(nil),                    // 34: storage.dynamodb.GlobalTable
-	(*TTLSpecification)(nil),               // 35: storage.dynamodb.TTLSpecification
-	(*Endpoint)(nil),                       // 36: storage.dynamodb.Endpoint
-	(*S3BucketSource)(nil),                 // 37: storage.dynamodb.S3BucketSource
-	(*ImportTableDescription)(nil),         // 38: storage.dynamodb.ImportTableDescription
-	(*ExportDescription)(nil),              // 39: storage.dynamodb.ExportDescription
-	(*ContributorInsightsSummary)(nil),     // 40: storage.dynamodb.ContributorInsightsSummary
-	nil,                                    // 41: storage.dynamodb.MapValue.EntriesEntry
-	nil,                                    // 42: storage.dynamodb.Item.KeyEntry
-	nil,                                    // 43: storage.dynamodb.Item.AttributesEntry
-	(*timestamppb.Timestamp)(nil),          // 44: google.protobuf.Timestamp
+	(*WarmThroughput)(nil),                 // 13: storage.dynamodb.WarmThroughput
+	(*RestoreSummary)(nil),                 // 14: storage.dynamodb.RestoreSummary
+	(*OnDemandThroughput)(nil),             // 15: storage.dynamodb.OnDemandThroughput
+	(*ProvisionedThroughput)(nil),          // 16: storage.dynamodb.ProvisionedThroughput
+	(*Projection)(nil),                     // 17: storage.dynamodb.Projection
+	(*GlobalSecondaryIndex)(nil),           // 18: storage.dynamodb.GlobalSecondaryIndex
+	(*LocalSecondaryIndex)(nil),            // 19: storage.dynamodb.LocalSecondaryIndex
+	(*StreamSpecification)(nil),            // 20: storage.dynamodb.StreamSpecification
+	(*SSEDescription)(nil),                 // 21: storage.dynamodb.SSEDescription
+	(*Tag)(nil),                            // 22: storage.dynamodb.Tag
+	(*TimeToLiveSpecification)(nil),        // 23: storage.dynamodb.TimeToLiveSpecification
+	(*PointInTimeRecoveryDescription)(nil), // 24: storage.dynamodb.PointInTimeRecoveryDescription
+	(*KinesisDataStreamDestination)(nil),   // 25: storage.dynamodb.KinesisDataStreamDestination
+	(*Table)(nil),                          // 26: storage.dynamodb.Table
+	(*AttributeValue)(nil),                 // 27: storage.dynamodb.AttributeValue
+	(*StringSet)(nil),                      // 28: storage.dynamodb.StringSet
+	(*NumberSet)(nil),                      // 29: storage.dynamodb.NumberSet
+	(*BytesSet)(nil),                       // 30: storage.dynamodb.BytesSet
+	(*MapValue)(nil),                       // 31: storage.dynamodb.MapValue
+	(*ListValue)(nil),                      // 32: storage.dynamodb.ListValue
+	(*NullValue)(nil),                      // 33: storage.dynamodb.NullValue
+	(*Item)(nil),                           // 34: storage.dynamodb.Item
+	(*Backup)(nil),                         // 35: storage.dynamodb.Backup
+	(*Replica)(nil),                        // 36: storage.dynamodb.Replica
+	(*GlobalTable)(nil),                    // 37: storage.dynamodb.GlobalTable
+	(*TTLSpecification)(nil),               // 38: storage.dynamodb.TTLSpecification
+	(*Endpoint)(nil),                       // 39: storage.dynamodb.Endpoint
+	(*S3BucketSource)(nil),                 // 40: storage.dynamodb.S3BucketSource
+	(*ImportTableDescription)(nil),         // 41: storage.dynamodb.ImportTableDescription
+	(*ExportDescription)(nil),              // 42: storage.dynamodb.ExportDescription
+	(*ContributorInsightsSummary)(nil),     // 43: storage.dynamodb.ContributorInsightsSummary
+	nil,                                    // 44: storage.dynamodb.MapValue.EntriesEntry
+	nil,                                    // 45: storage.dynamodb.Item.KeyEntry
+	nil,                                    // 46: storage.dynamodb.Item.AttributesEntry
+	(*timestamppb.Timestamp)(nil),          // 47: google.protobuf.Timestamp
 }
 var file_storage_dynamodb_proto_depIdxs = []int32{
 	2,  // 0: storage.dynamodb.KeySchemaElement.key_type:type_name -> storage.dynamodb.KeyType
 	3,  // 1: storage.dynamodb.AttributeDefinition.attribute_type:type_name -> storage.dynamodb.ScalarAttributeType
-	44, // 2: storage.dynamodb.ProvisionedThroughput.last_decrease_date_time:type_name -> google.protobuf.Timestamp
-	44, // 3: storage.dynamodb.ProvisionedThroughput.last_increase_date_time:type_name -> google.protobuf.Timestamp
-	11, // 4: storage.dynamodb.GlobalSecondaryIndex.key_schema:type_name -> storage.dynamodb.KeySchemaElement
-	14, // 5: storage.dynamodb.GlobalSecondaryIndex.projection:type_name -> storage.dynamodb.Projection
-	13, // 6: storage.dynamodb.GlobalSecondaryIndex.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
-	6,  // 7: storage.dynamodb.GlobalSecondaryIndex.index_status:type_name -> storage.dynamodb.IndexStatus
-	11, // 8: storage.dynamodb.LocalSecondaryIndex.key_schema:type_name -> storage.dynamodb.KeySchemaElement
-	14, // 9: storage.dynamodb.LocalSecondaryIndex.projection:type_name -> storage.dynamodb.Projection
-	4,  // 10: storage.dynamodb.StreamSpecification.stream_view_type:type_name -> storage.dynamodb.StreamViewType
-	5,  // 11: storage.dynamodb.SSEDescription.sse_type:type_name -> storage.dynamodb.SSEType
-	44, // 12: storage.dynamodb.SSEDescription.inaccessible_encryption_date_time:type_name -> google.protobuf.Timestamp
-	9,  // 13: storage.dynamodb.TimeToLiveSpecification.status:type_name -> storage.dynamodb.TTLStatus
-	10, // 14: storage.dynamodb.PointInTimeRecoveryDescription.status:type_name -> storage.dynamodb.PointInTimeRecoveryStatus
-	44, // 15: storage.dynamodb.PointInTimeRecoveryDescription.earliest_restorable_date_time:type_name -> google.protobuf.Timestamp
-	44, // 16: storage.dynamodb.PointInTimeRecoveryDescription.latest_restorable_date_time:type_name -> google.protobuf.Timestamp
-	0,  // 17: storage.dynamodb.Table.status:type_name -> storage.dynamodb.TableStatus
-	44, // 18: storage.dynamodb.Table.creation_date_time:type_name -> google.protobuf.Timestamp
-	44, // 19: storage.dynamodb.Table.last_updated_date_time:type_name -> google.protobuf.Timestamp
-	11, // 20: storage.dynamodb.Table.key_schema:type_name -> storage.dynamodb.KeySchemaElement
-	12, // 21: storage.dynamodb.Table.attribute_definitions:type_name -> storage.dynamodb.AttributeDefinition
-	13, // 22: storage.dynamodb.Table.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
-	1,  // 23: storage.dynamodb.Table.billing_mode:type_name -> storage.dynamodb.BillingMode
-	15, // 24: storage.dynamodb.Table.global_secondary_indexes:type_name -> storage.dynamodb.GlobalSecondaryIndex
-	16, // 25: storage.dynamodb.Table.local_secondary_indexes:type_name -> storage.dynamodb.LocalSecondaryIndex
-	17, // 26: storage.dynamodb.Table.stream_specification:type_name -> storage.dynamodb.StreamSpecification
-	18, // 27: storage.dynamodb.Table.sse_description:type_name -> storage.dynamodb.SSEDescription
-	19, // 28: storage.dynamodb.Table.tags:type_name -> storage.dynamodb.Tag
-	20, // 29: storage.dynamodb.Table.time_to_live:type_name -> storage.dynamodb.TimeToLiveSpecification
-	21, // 30: storage.dynamodb.Table.point_in_time_recovery:type_name -> storage.dynamodb.PointInTimeRecoveryDescription
-	22, // 31: storage.dynamodb.Table.kinesis_data_stream_destinations:type_name -> storage.dynamodb.KinesisDataStreamDestination
-	25, // 32: storage.dynamodb.AttributeValue.ss:type_name -> storage.dynamodb.StringSet
-	26, // 33: storage.dynamodb.AttributeValue.ns:type_name -> storage.dynamodb.NumberSet
-	27, // 34: storage.dynamodb.AttributeValue.bs:type_name -> storage.dynamodb.BytesSet
-	28, // 35: storage.dynamodb.AttributeValue.m:type_name -> storage.dynamodb.MapValue
-	29, // 36: storage.dynamodb.AttributeValue.l:type_name -> storage.dynamodb.ListValue
-	30, // 37: storage.dynamodb.AttributeValue.null:type_name -> storage.dynamodb.NullValue
-	41, // 38: storage.dynamodb.MapValue.entries:type_name -> storage.dynamodb.MapValue.EntriesEntry
-	24, // 39: storage.dynamodb.ListValue.values:type_name -> storage.dynamodb.AttributeValue
-	42, // 40: storage.dynamodb.Item.key:type_name -> storage.dynamodb.Item.KeyEntry
-	43, // 41: storage.dynamodb.Item.attributes:type_name -> storage.dynamodb.Item.AttributesEntry
-	44, // 42: storage.dynamodb.Backup.source_table_creation_time:type_name -> google.protobuf.Timestamp
-	7,  // 43: storage.dynamodb.Backup.backup_status:type_name -> storage.dynamodb.BackupStatus
-	8,  // 44: storage.dynamodb.Backup.backup_type:type_name -> storage.dynamodb.BackupType
-	44, // 45: storage.dynamodb.Backup.backup_creation_date_time:type_name -> google.protobuf.Timestamp
-	44, // 46: storage.dynamodb.Backup.backup_expiry_date_time:type_name -> google.protobuf.Timestamp
-	11, // 47: storage.dynamodb.Backup.key_schema:type_name -> storage.dynamodb.KeySchemaElement
-	12, // 48: storage.dynamodb.Backup.attribute_definitions:type_name -> storage.dynamodb.AttributeDefinition
-	1,  // 49: storage.dynamodb.Backup.billing_mode:type_name -> storage.dynamodb.BillingMode
-	13, // 50: storage.dynamodb.Backup.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
-	15, // 51: storage.dynamodb.Backup.global_secondary_indexes:type_name -> storage.dynamodb.GlobalSecondaryIndex
-	16, // 52: storage.dynamodb.Backup.local_secondary_indexes:type_name -> storage.dynamodb.LocalSecondaryIndex
-	44, // 53: storage.dynamodb.GlobalTable.creation_date_time:type_name -> google.protobuf.Timestamp
-	33, // 54: storage.dynamodb.GlobalTable.replication_group:type_name -> storage.dynamodb.Replica
-	44, // 55: storage.dynamodb.ImportTableDescription.start_time:type_name -> google.protobuf.Timestamp
-	44, // 56: storage.dynamodb.ImportTableDescription.end_time:type_name -> google.protobuf.Timestamp
-	37, // 57: storage.dynamodb.ImportTableDescription.s3_bucket_source:type_name -> storage.dynamodb.S3BucketSource
-	44, // 58: storage.dynamodb.ExportDescription.start_time:type_name -> google.protobuf.Timestamp
-	44, // 59: storage.dynamodb.ExportDescription.end_time:type_name -> google.protobuf.Timestamp
-	24, // 60: storage.dynamodb.MapValue.EntriesEntry.value:type_name -> storage.dynamodb.AttributeValue
-	24, // 61: storage.dynamodb.Item.KeyEntry.value:type_name -> storage.dynamodb.AttributeValue
-	24, // 62: storage.dynamodb.Item.AttributesEntry.value:type_name -> storage.dynamodb.AttributeValue
-	63, // [63:63] is the sub-list for method output_type
-	63, // [63:63] is the sub-list for method input_type
-	63, // [63:63] is the sub-list for extension type_name
-	63, // [63:63] is the sub-list for extension extendee
-	0,  // [0:63] is the sub-list for field type_name
+	47, // 2: storage.dynamodb.RestoreSummary.restore_date_time:type_name -> google.protobuf.Timestamp
+	47, // 3: storage.dynamodb.ProvisionedThroughput.last_decrease_date_time:type_name -> google.protobuf.Timestamp
+	47, // 4: storage.dynamodb.ProvisionedThroughput.last_increase_date_time:type_name -> google.protobuf.Timestamp
+	11, // 5: storage.dynamodb.GlobalSecondaryIndex.key_schema:type_name -> storage.dynamodb.KeySchemaElement
+	17, // 6: storage.dynamodb.GlobalSecondaryIndex.projection:type_name -> storage.dynamodb.Projection
+	16, // 7: storage.dynamodb.GlobalSecondaryIndex.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
+	6,  // 8: storage.dynamodb.GlobalSecondaryIndex.index_status:type_name -> storage.dynamodb.IndexStatus
+	11, // 9: storage.dynamodb.LocalSecondaryIndex.key_schema:type_name -> storage.dynamodb.KeySchemaElement
+	17, // 10: storage.dynamodb.LocalSecondaryIndex.projection:type_name -> storage.dynamodb.Projection
+	4,  // 11: storage.dynamodb.StreamSpecification.stream_view_type:type_name -> storage.dynamodb.StreamViewType
+	5,  // 12: storage.dynamodb.SSEDescription.sse_type:type_name -> storage.dynamodb.SSEType
+	47, // 13: storage.dynamodb.SSEDescription.inaccessible_encryption_date_time:type_name -> google.protobuf.Timestamp
+	9,  // 14: storage.dynamodb.TimeToLiveSpecification.status:type_name -> storage.dynamodb.TTLStatus
+	10, // 15: storage.dynamodb.PointInTimeRecoveryDescription.status:type_name -> storage.dynamodb.PointInTimeRecoveryStatus
+	47, // 16: storage.dynamodb.PointInTimeRecoveryDescription.earliest_restorable_date_time:type_name -> google.protobuf.Timestamp
+	47, // 17: storage.dynamodb.PointInTimeRecoveryDescription.latest_restorable_date_time:type_name -> google.protobuf.Timestamp
+	0,  // 18: storage.dynamodb.Table.status:type_name -> storage.dynamodb.TableStatus
+	47, // 19: storage.dynamodb.Table.creation_date_time:type_name -> google.protobuf.Timestamp
+	47, // 20: storage.dynamodb.Table.last_updated_date_time:type_name -> google.protobuf.Timestamp
+	11, // 21: storage.dynamodb.Table.key_schema:type_name -> storage.dynamodb.KeySchemaElement
+	12, // 22: storage.dynamodb.Table.attribute_definitions:type_name -> storage.dynamodb.AttributeDefinition
+	16, // 23: storage.dynamodb.Table.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
+	1,  // 24: storage.dynamodb.Table.billing_mode:type_name -> storage.dynamodb.BillingMode
+	18, // 25: storage.dynamodb.Table.global_secondary_indexes:type_name -> storage.dynamodb.GlobalSecondaryIndex
+	19, // 26: storage.dynamodb.Table.local_secondary_indexes:type_name -> storage.dynamodb.LocalSecondaryIndex
+	20, // 27: storage.dynamodb.Table.stream_specification:type_name -> storage.dynamodb.StreamSpecification
+	21, // 28: storage.dynamodb.Table.sse_description:type_name -> storage.dynamodb.SSEDescription
+	22, // 29: storage.dynamodb.Table.tags:type_name -> storage.dynamodb.Tag
+	23, // 30: storage.dynamodb.Table.time_to_live:type_name -> storage.dynamodb.TimeToLiveSpecification
+	24, // 31: storage.dynamodb.Table.point_in_time_recovery:type_name -> storage.dynamodb.PointInTimeRecoveryDescription
+	25, // 32: storage.dynamodb.Table.kinesis_data_stream_destinations:type_name -> storage.dynamodb.KinesisDataStreamDestination
+	13, // 33: storage.dynamodb.Table.warm_throughput:type_name -> storage.dynamodb.WarmThroughput
+	15, // 34: storage.dynamodb.Table.on_demand_throughput:type_name -> storage.dynamodb.OnDemandThroughput
+	14, // 35: storage.dynamodb.Table.restore_summary:type_name -> storage.dynamodb.RestoreSummary
+	28, // 36: storage.dynamodb.AttributeValue.ss:type_name -> storage.dynamodb.StringSet
+	29, // 37: storage.dynamodb.AttributeValue.ns:type_name -> storage.dynamodb.NumberSet
+	30, // 38: storage.dynamodb.AttributeValue.bs:type_name -> storage.dynamodb.BytesSet
+	31, // 39: storage.dynamodb.AttributeValue.m:type_name -> storage.dynamodb.MapValue
+	32, // 40: storage.dynamodb.AttributeValue.l:type_name -> storage.dynamodb.ListValue
+	33, // 41: storage.dynamodb.AttributeValue.null:type_name -> storage.dynamodb.NullValue
+	44, // 42: storage.dynamodb.MapValue.entries:type_name -> storage.dynamodb.MapValue.EntriesEntry
+	27, // 43: storage.dynamodb.ListValue.values:type_name -> storage.dynamodb.AttributeValue
+	45, // 44: storage.dynamodb.Item.key:type_name -> storage.dynamodb.Item.KeyEntry
+	46, // 45: storage.dynamodb.Item.attributes:type_name -> storage.dynamodb.Item.AttributesEntry
+	47, // 46: storage.dynamodb.Backup.source_table_creation_time:type_name -> google.protobuf.Timestamp
+	7,  // 47: storage.dynamodb.Backup.backup_status:type_name -> storage.dynamodb.BackupStatus
+	8,  // 48: storage.dynamodb.Backup.backup_type:type_name -> storage.dynamodb.BackupType
+	47, // 49: storage.dynamodb.Backup.backup_creation_date_time:type_name -> google.protobuf.Timestamp
+	47, // 50: storage.dynamodb.Backup.backup_expiry_date_time:type_name -> google.protobuf.Timestamp
+	11, // 51: storage.dynamodb.Backup.key_schema:type_name -> storage.dynamodb.KeySchemaElement
+	12, // 52: storage.dynamodb.Backup.attribute_definitions:type_name -> storage.dynamodb.AttributeDefinition
+	1,  // 53: storage.dynamodb.Backup.billing_mode:type_name -> storage.dynamodb.BillingMode
+	16, // 54: storage.dynamodb.Backup.provisioned_throughput:type_name -> storage.dynamodb.ProvisionedThroughput
+	18, // 55: storage.dynamodb.Backup.global_secondary_indexes:type_name -> storage.dynamodb.GlobalSecondaryIndex
+	19, // 56: storage.dynamodb.Backup.local_secondary_indexes:type_name -> storage.dynamodb.LocalSecondaryIndex
+	47, // 57: storage.dynamodb.GlobalTable.creation_date_time:type_name -> google.protobuf.Timestamp
+	36, // 58: storage.dynamodb.GlobalTable.replication_group:type_name -> storage.dynamodb.Replica
+	47, // 59: storage.dynamodb.ImportTableDescription.start_time:type_name -> google.protobuf.Timestamp
+	47, // 60: storage.dynamodb.ImportTableDescription.end_time:type_name -> google.protobuf.Timestamp
+	40, // 61: storage.dynamodb.ImportTableDescription.s3_bucket_source:type_name -> storage.dynamodb.S3BucketSource
+	47, // 62: storage.dynamodb.ExportDescription.start_time:type_name -> google.protobuf.Timestamp
+	47, // 63: storage.dynamodb.ExportDescription.end_time:type_name -> google.protobuf.Timestamp
+	47, // 64: storage.dynamodb.ExportDescription.export_time:type_name -> google.protobuf.Timestamp
+	27, // 65: storage.dynamodb.MapValue.EntriesEntry.value:type_name -> storage.dynamodb.AttributeValue
+	27, // 66: storage.dynamodb.Item.KeyEntry.value:type_name -> storage.dynamodb.AttributeValue
+	27, // 67: storage.dynamodb.Item.AttributesEntry.value:type_name -> storage.dynamodb.AttributeValue
+	68, // [68:68] is the sub-list for method output_type
+	68, // [68:68] is the sub-list for method input_type
+	68, // [68:68] is the sub-list for extension type_name
+	68, // [68:68] is the sub-list for extension extendee
+	0,  // [0:68] is the sub-list for field type_name
 }
 
 func init() { file_storage_dynamodb_proto_init() }
@@ -3436,7 +3682,7 @@ func file_storage_dynamodb_proto_init() {
 	if File_storage_dynamodb_proto != nil {
 		return
 	}
-	file_storage_dynamodb_proto_msgTypes[13].OneofWrappers = []any{
+	file_storage_dynamodb_proto_msgTypes[16].OneofWrappers = []any{
 		(*AttributeValue_S)(nil),
 		(*AttributeValue_N)(nil),
 		(*AttributeValue_B)(nil),
@@ -3454,7 +3700,7 @@ func file_storage_dynamodb_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_dynamodb_proto_rawDesc), len(file_storage_dynamodb_proto_rawDesc)),
 			NumEnums:      11,
-			NumMessages:   33,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

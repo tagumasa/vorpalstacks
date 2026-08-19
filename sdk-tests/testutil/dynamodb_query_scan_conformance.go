@@ -1008,6 +1008,10 @@ func (r *TestRunner) dynamoDBGlobalTableReplicationTests(ctx context.Context, cl
 				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
 			},
 			BillingMode: types.BillingModePayPerRequest,
+			StreamSpecification: &types.StreamSpecification{
+				StreamEnabled:  aws.Bool(true),
+				StreamViewType: types.StreamViewTypeNewAndOldImages,
+			},
 		})
 		if err != nil {
 			return append(results, TestResult{

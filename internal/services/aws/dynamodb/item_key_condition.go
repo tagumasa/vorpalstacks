@@ -14,7 +14,7 @@ type sortKeyCondition struct {
 	valueTo  *dbstore.AttributeValue
 }
 
-func extractPrimaryKeyCondition(table *dbstore.Table, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *sortKeyCondition) {
+func extractPrimaryKeyCondition(table *dbstore.Table, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *dbstore.AttributeValue, *sortKeyCondition) {
 	var hashKeyName, sortKeyName string
 	for _, ks := range table.KeySchema {
 		if ks.KeyType == dbstore.KeyTypeHash {
@@ -26,7 +26,7 @@ func extractPrimaryKeyCondition(table *dbstore.Table, expr string, names map[str
 	return extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr, names, values)
 }
 
-func extractIndexKeyCondition(table *dbstore.Table, indexName, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *sortKeyCondition) {
+func extractIndexKeyCondition(table *dbstore.Table, indexName, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *dbstore.AttributeValue, *sortKeyCondition) {
 	var hashKeyName, sortKeyName string
 	for _, gsi := range table.GlobalSecondaryIndexes {
 		if gsi.IndexName == indexName {
@@ -60,8 +60,9 @@ func extractIndexKeyCondition(table *dbstore.Table, indexName, expr string, name
 	return extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr, names, values)
 }
 
-func extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *sortKeyCondition) {
+func extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) (string, *dbstore.AttributeValue, *sortKeyCondition) {
 	var hashKeyValue string
+	var hashKeyAttr *dbstore.AttributeValue
 	var sortCond *sortKeyCondition
 
 	tokens := tokenizeExpression(expr)
@@ -75,6 +76,9 @@ func extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr string, names 
 				hashKeyValue = *val.N
 			} else if val != nil && val.B != nil {
 				hashKeyValue = base64.StdEncoding.EncodeToString(val.B)
+			}
+			if val != nil {
+				hashKeyAttr = val
 			}
 			i += 2
 		} else if strings.HasPrefix(strings.ToLower(tokens[i]), "begins_with(") {
@@ -131,7 +135,7 @@ func extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr string, names 
 		}
 	}
 
-	return hashKeyValue, sortCond
+	return hashKeyValue, hashKeyAttr, sortCond
 }
 
 func isGSI(table *dbstore.Table, indexName string) bool {

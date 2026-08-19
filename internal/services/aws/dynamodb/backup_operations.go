@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"math"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -271,6 +273,35 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
+	// Point-in-time restore requires recovery to be enabled on the source
+	// table; the request must then name a point inside the restorable
+	// window.
+	pitr, err := store.Tables().GetPointInTimeRecovery(sourceTableName)
+	if err != nil {
+		return nil, err
+	}
+	if pitr == nil || pitr.Status != dbstore.PITRStatusEnabled {
+		return nil, ErrPITRNotEnabled
+	}
+
+	now := time.Now()
+	restoreDateTime, hasRestoreDateTime := parseTimestampParam(req.Parameters, "RestoreDateTime")
+	useLatest := false
+	if raw, present := req.Parameters["UseLatestRestorableTime"]; present {
+		if b, isBool := raw.(bool); isBool {
+			useLatest = b
+		}
+	}
+	switch {
+	case useLatest:
+		restoreDateTime = now
+	case !hasRestoreDateTime:
+		return nil, ErrInvalidParameter
+	}
+	if restoreDateTime.Before(pitr.EarliestRestorableDateTime) || restoreDateTime.After(now) {
+		return nil, ErrInvalidRestoreTime
+	}
+
 	// Parse optional overrides.
 	billingMode := sourceTable.BillingMode
 	provThroughput := sourceTable.ProvisionedThroughput
@@ -291,10 +322,16 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		}
 	}
 	if gsiOverrides := parseGSIOverrideList(req.Parameters); len(gsiOverrides) > 0 {
-		gsi = applyGSIOverrides(gsi, gsiOverrides)
+		gsi, err = selectGSIOverrides(gsi, gsiOverrides)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if lsiOverrideList := parseLSIOverrideList(req.Parameters); len(lsiOverrideList) > 0 {
-		lsi = lsiOverrideList
+		lsi, err = selectLSIOverrides(lsi, lsiOverrideList)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	table, err := s.restoreTableToPointInTimeCore(ctx, store, RestoreTableToPointInTimeCoreInput{
@@ -305,14 +342,34 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		SSEDesc:         sseDesc,
 		GSI:             gsi,
 		LSI:             lsi,
+		RestoreDateTime: restoreDateTime,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// The restore summary travels with the table description (both the
+	// restore response and later DescribeTable reads) from the persisted
+	// table record.
+	description := s.buildTableDescription(table)
+
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(table),
+		"TableDescription": description,
 	}, nil
+}
+
+// parseTimestampParam reads an epoch-seconds timestamp parameter. AWS JSON
+// protocols serialise timestamps as numbers, which arrive as float64 after
+// body decoding.
+func parseTimestampParam(params map[string]interface{}, key string) (time.Time, bool) {
+	switch v := params[key].(type) {
+	case float64:
+		seconds, fraction := math.Modf(v)
+		return time.Unix(int64(seconds), int64(fraction*1e9)), true
+	case int64:
+		return time.Unix(v, 0), true
+	}
+	return time.Time{}, false
 }
 
 // parseProvisionedThroughputOverride extracts the ProvisionedThroughputOverride
@@ -381,6 +438,13 @@ func parseGSIOverrideList(params map[string]interface{}) []*dbstore.GlobalSecond
 			if pt, ok := proj["ProjectionType"].(string); ok {
 				idx.Projection.ProjectionType = pt
 			}
+			if nkaList, ok := proj["NonKeyAttributes"].([]interface{}); ok {
+				for _, nkaRaw := range nkaList {
+					if nka, ok := nkaRaw.(string); ok {
+						idx.Projection.NonKeyAttributes = append(idx.Projection.NonKeyAttributes, nka)
+					}
+				}
+			}
 		}
 		if pt, ok := m["ProvisionedThroughput"].(map[string]interface{}); ok {
 			idx.ProvisionedThroughput = &dbstore.ProvisionedThroughput{}
@@ -434,37 +498,86 @@ func parseLSIOverrideList(params map[string]interface{}) []*dbstore.LocalSeconda
 			if pt, ok := proj["ProjectionType"].(string); ok {
 				idx.Projection.ProjectionType = pt
 			}
+			if nkaList, ok := proj["NonKeyAttributes"].([]interface{}); ok {
+				for _, nkaRaw := range nkaList {
+					if nka, ok := nkaRaw.(string); ok {
+						idx.Projection.NonKeyAttributes = append(idx.Projection.NonKeyAttributes, nka)
+					}
+				}
+			}
 		}
 		result = append(result, idx)
 	}
 	return result
 }
 
-// applyGSIOverrides merges override GSI definitions into the existing set,
-// matching by IndexName.
-func applyGSIOverrides(existing []*dbstore.GlobalSecondaryIndex, overrides []*dbstore.GlobalSecondaryIndex) []*dbstore.GlobalSecondaryIndex {
-	byName := make(map[string]*dbstore.GlobalSecondaryIndex)
+// selectGSIOverrides narrows the restored table's global secondary indexes
+// to those named by the override list, applying the provided projection and
+// throughput settings. Restore overrides select from the existing indexes:
+// an override naming an unknown index, or one replacing the key schema, is
+// a validation error.
+func selectGSIOverrides(existing []*dbstore.GlobalSecondaryIndex, overrides []*dbstore.GlobalSecondaryIndex) ([]*dbstore.GlobalSecondaryIndex, error) {
+	byName := make(map[string]*dbstore.GlobalSecondaryIndex, len(existing))
 	for _, g := range existing {
 		byName[g.IndexName] = g
 	}
+	selected := make([]*dbstore.GlobalSecondaryIndex, 0, len(overrides))
 	for _, ov := range overrides {
-		if existingGSI, ok := byName[ov.IndexName]; ok {
-			if len(ov.KeySchema) > 0 {
-				existingGSI.KeySchema = ov.KeySchema
-			}
-			if ov.Projection != nil {
-				existingGSI.Projection = ov.Projection
-			}
-			if ov.ProvisionedThroughput != nil {
-				existingGSI.ProvisionedThroughput = ov.ProvisionedThroughput
-			}
-		} else {
-			byName[ov.IndexName] = ov
+		base, ok := byName[ov.IndexName]
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		if len(ov.KeySchema) > 0 && !keySchemasEqual(ov.KeySchema, base.KeySchema) {
+			return nil, ErrInvalidParameter
+		}
+		restored := *base
+		if ov.Projection != nil {
+			restored.Projection = ov.Projection
+		}
+		if ov.ProvisionedThroughput != nil {
+			restored.ProvisionedThroughput = ov.ProvisionedThroughput
+		}
+		selected = append(selected, &restored)
+	}
+	return selected, nil
+}
+
+// selectLSIOverrides narrows the restored table's local secondary indexes
+// to those named by the override list, applying the provided projection.
+// Local secondary index key schemas cannot change, so an override naming an
+// unknown index or a different key schema is a validation error.
+func selectLSIOverrides(existing []*dbstore.LocalSecondaryIndex, overrides []*dbstore.LocalSecondaryIndex) ([]*dbstore.LocalSecondaryIndex, error) {
+	byName := make(map[string]*dbstore.LocalSecondaryIndex, len(existing))
+	for _, l := range existing {
+		byName[l.IndexName] = l
+	}
+	selected := make([]*dbstore.LocalSecondaryIndex, 0, len(overrides))
+	for _, ov := range overrides {
+		base, ok := byName[ov.IndexName]
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		if len(ov.KeySchema) > 0 && !keySchemasEqual(ov.KeySchema, base.KeySchema) {
+			return nil, ErrInvalidParameter
+		}
+		restored := *base
+		if ov.Projection != nil {
+			restored.Projection = ov.Projection
+		}
+		selected = append(selected, &restored)
+	}
+	return selected, nil
+}
+
+// keySchemasEqual compares two key schemas element by element.
+func keySchemasEqual(a, b []*dbstore.KeySchemaElement) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].AttributeName != b[i].AttributeName || a[i].KeyType != b[i].KeyType {
+			return false
 		}
 	}
-	result := make([]*dbstore.GlobalSecondaryIndex, 0, len(byName))
-	for _, g := range byName {
-		result = append(result, g)
-	}
-	return result
+	return true
 }

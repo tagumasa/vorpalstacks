@@ -91,7 +91,7 @@ var (
 	// DynamoDB uses the awsJson1_0 protocol where ALL client errors are HTTP 400.
 	ErrResourceNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceNotFoundException", "Requested resource not found", http.StatusBadRequest)
 	// ErrResourceAlreadyExists is returned when a resource already exists with the same identifier.
-	ErrResourceAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Resource already exists", http.StatusConflict)
+	ErrResourceAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Resource already exists", http.StatusBadRequest)
 	// ErrInvalidParameter is returned when a request parameter fails validation.
 	ErrInvalidParameter = NewAPIError("com.amazon.coral.validate#ValidationException", "Invalid parameter", http.StatusBadRequest)
 
@@ -101,6 +101,16 @@ var (
 	ErrTypeMismatch = errors.New("TYPE_MISMATCH: Type mismatch for attribute to update")
 	// ErrInternal is returned when an internal error occurs during stream operations.
 	ErrInternal = NewAPIError("com.amazonaws.dynamodb.v20120810#InternalServerError", "Internal error", http.StatusInternalServerError)
+
+	// ErrExpiredIterator is returned when a shard iterator is used more
+	// than fifteen minutes after it was issued.
+	ErrExpiredIterator = NewAPIError("com.amazonaws.dynamodbstreams#ExpiredIteratorException",
+		"The shard iterator has expired and can no longer be used to retrieve stream records", http.StatusBadRequest)
+
+	// ErrTrimmedDataAccess is returned when a read starts below the oldest
+	// stream record retained by the 24-hour retention window.
+	ErrTrimmedDataAccess = NewAPIError("com.amazonaws.dynamodbstreams#TrimmedDataAccessException",
+		"The operation attempted to read past the oldest stream record in a shard", http.StatusBadRequest)
 	// ErrTableNotFound is returned when the specified table does not exist.
 	// Uses the general ResourceNotFoundException code so that callers checked
 	// against ResourceNotFoundException (the vast majority of DynamoDB ops)
@@ -118,17 +128,17 @@ var (
 	// targets a name that is already in use. Uses the general
 	// ResourceInUseException code per Smithy (CreateTable/ImportTable declare
 	// ResourceInUseException, not TableAlreadyExistsException).
-	ErrTableAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Table already exists", http.StatusConflict)
+	ErrTableAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Table already exists", http.StatusBadRequest)
 	// ErrTableAlreadyExistsException is the Smithy-specific
 	// TableAlreadyExistsException used by RestoreTableFromBackup and
 	// RestoreTableToPointInTime, whose Smithy models declare it instead of
 	// the general ResourceInUseException.
-	ErrTableAlreadyExistsException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableAlreadyExistsException", "Table already exists", http.StatusConflict)
+	ErrTableAlreadyExistsException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableAlreadyExistsException", "Table already exists", http.StatusBadRequest)
 	// ErrTableInUseException is the Smithy-specific TableInUseException
 	// declared by CreateBackup, RestoreTableFromBackup, and
 	// RestoreTableToPointInTime. It signals that the target table is in a
 	// transitional (CREATING/DELETING/UPDATING) state.
-	ErrTableInUseException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableInUseException", "Table is in use; it is being created or deleted", http.StatusConflict)
+	ErrTableInUseException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableInUseException", "Table is in use; it is being created or deleted", http.StatusBadRequest)
 	// ErrInvalidEndpoint is the Smithy InvalidEndpointException (declared by
 	// 44 DynamoDB operations). Smithy sets httpError 421 (Misdirected
 	// Request). Currently defined for completeness; the vorpalstacks endpoint
@@ -154,13 +164,13 @@ var (
 	// ErrBackupNotFound is returned when the specified backup does not exist.
 	ErrBackupNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupNotFoundException", "Backup not found", http.StatusBadRequest)
 	// ErrBackupAlreadyExists is returned when a backup already exists with the same name.
-	ErrBackupAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupInUseException", "Backup already exists", http.StatusConflict)
+	ErrBackupAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#BackupInUseException", "Backup already exists", http.StatusBadRequest)
 	// ErrGlobalTableNotFound is returned when the specified global table does not exist.
 	ErrGlobalTableNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#GlobalTableNotFoundException", "Global table not found", http.StatusBadRequest)
 	// ErrGlobalTableAlreadyExists is returned when a global table already exists with the same name.
-	ErrGlobalTableAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#GlobalTableAlreadyExistsException", "Global table already exists", http.StatusConflict)
+	ErrGlobalTableAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#GlobalTableAlreadyExistsException", "Global table already exists", http.StatusBadRequest)
 	// ErrReplicaAlreadyExists is returned when the specified replica already exists on the global table.
-	ErrReplicaAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaAlreadyExistsException", "Replica already exists", http.StatusConflict)
+	ErrReplicaAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaAlreadyExistsException", "Replica already exists", http.StatusBadRequest)
 	// ErrReplicaNotFound is returned when the specified replica does not exist on the global table.
 	ErrReplicaNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicaNotFoundException", "Replica not found", http.StatusBadRequest)
 	// ErrTransactionConflict is returned when an operation conflicts with an ongoing transaction for the item.
@@ -178,9 +188,11 @@ var (
 	// ErrIndexNotFound is returned when the specified secondary index does not exist on the table.
 	ErrIndexNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#IndexNotFoundException", "Index not found", http.StatusBadRequest)
 	// ErrIndexAlreadyExists is returned when a secondary index already exists with the same name on the table.
-	ErrIndexAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Index already exists", http.StatusConflict)
-	// ErrPITRNotEnabled is returned when point-in-time recovery is not enabled for the table.
-	ErrPITRNotEnabled = NewAPIError("com.amazonaws.dynamodb.v20120810#PointInTimeRecoveryUnavailableException", "Point in time recovery is not enabled for this table", http.StatusBadRequest)
+	ErrIndexAlreadyExists = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Index already exists", http.StatusBadRequest)
+	// ErrPITRNotEnabled is the PointInTimeRecoveryUnavailableException
+	// returned by point-in-time restores whose source table does not have
+	// recovery enabled.
+	ErrPITRNotEnabled = NewAPIError("com.amazonaws.dynamodb.v20120810#PointInTimeRecoveryUnavailableException", "Point in time recovery has not yet been enabled for this source table", http.StatusBadRequest)
 	// ErrContinuousBackupsUnavailable is returned when continuous backups are unavailable.
 	ErrContinuousBackupsUnavailable = NewAPIError("com.amazonaws.dynamodb.v20120810#ContinuousBackupsUnavailableException", "Backups are not available for this table", http.StatusBadRequest)
 	// ErrDuplicateItem is returned when a batch write contains duplicate items.
@@ -190,8 +202,6 @@ var (
 	ErrDuplicateKeys = NewAPIError("com.amazon.coral.validate#ValidationException", "Provided list of item keys contains duplicates", http.StatusBadRequest)
 	// ErrExportConflict is returned when an export operation conflicts with an existing export.
 	ErrExportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportConflictException", "Export conflict", http.StatusBadRequest)
-	// ErrFailure is returned when a generic failure occurs during import or export.
-	ErrFailure = NewAPIError("com.amazonaws.dynamodb.v20120810#FailureException", "Failure", http.StatusInternalServerError)
 	// ErrImportConflict is returned when an import operation conflicts with an existing import.
 	ErrImportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ImportConflictException", "Import conflict", http.StatusBadRequest)
 	// ErrItemCollectionSizeLimitExceeded is returned when an item collection exceeds the size limit.
@@ -206,8 +216,10 @@ var (
 	ErrThrottling = NewAPIError("com.amazonaws.dynamodb.v20120810#ThrottlingException", "Rate of requests exceeds throughput limit", http.StatusBadRequest)
 	// ErrTransactionInProgress is returned when a client request token is retried while the transaction it identifies is already in progress.
 	ErrTransactionInProgress = NewAPIError("com.amazonaws.dynamodb.v20120810#TransactionInProgressException", "The transaction with the given request token is already in progress.", http.StatusBadRequest)
-	// ErrInvalidExportTime is returned when the requested export time is invalid.
-	ErrInvalidExportTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidExportTimeException", "Invalid export time", http.StatusBadRequest)
-	// ErrInvalidRestoreTime is returned when the requested restore time is invalid.
-	ErrInvalidRestoreTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidRestoreTimeException", "Invalid restore time", http.StatusBadRequest)
+	// ErrInvalidExportTime is returned when the requested export time falls
+	// outside the point-in-time recovery window.
+	ErrInvalidExportTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidExportTimeException", "The specified ExportTime is outside of the point in time recovery window.", http.StatusBadRequest)
+	// ErrInvalidRestoreTime is returned when the requested restore time falls
+	// outside the table's restorable window.
+	ErrInvalidRestoreTime = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidRestoreTimeException", "An invalid restore time was specified. RestoreDateTime must be between EarliestRestorableDateTime and LatestRestorableDateTime.", http.StatusBadRequest)
 )

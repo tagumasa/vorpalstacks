@@ -69,10 +69,24 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string
 		}
 	}
 
-	desc["WarmThroughput"] = map[string]interface{}{
-		"ReadUnitsPerSecond":  0,
-		"WriteUnitsPerSecond": 0,
-		"Status":              "ACTIVE",
+	if table.WarmThroughput != nil {
+		desc["WarmThroughput"] = map[string]interface{}{
+			"ReadUnitsPerSecond":  table.WarmThroughput.ReadUnitsPerSecond,
+			"WriteUnitsPerSecond": table.WarmThroughput.WriteUnitsPerSecond,
+			"Status":              "ACTIVE",
+		}
+	}
+
+	if table.RestoreSummary != nil {
+		restoreSummary := map[string]interface{}{
+			"SourceTableArn":    table.RestoreSummary.SourceTableArn,
+			"RestoreDateTime":   table.RestoreSummary.RestoreDateTime.Unix(),
+			"RestoreInProgress": table.RestoreSummary.RestoreInProgress,
+		}
+		if table.RestoreSummary.SourceBackupArn != "" {
+			restoreSummary["SourceBackupArn"] = table.RestoreSummary.SourceBackupArn
+		}
+		desc["RestoreSummary"] = restoreSummary
 	}
 
 	tableClass := table.TableClass

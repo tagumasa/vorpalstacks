@@ -75,6 +75,37 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	results = append(results, r.dynamoDBQueryScanConformanceTests(ctx, client)...)
 	results = append(results, r.dynamoDBGlobalTableReplicationTests(ctx, client)...)
 
+	// Phase 4c: Point-in-time recovery (self-contained)
+	results = append(results, r.dynamoDBPITRTests(ctx, client)...)
+
+	// Phase 4d: Export/import lifecycle (self-contained)
+	results = append(results, r.dynamoDBExportImportTests(ctx, client)...)
+
+	// Phase 4e: Kinesis streaming destinations (self-contained)
+	results = append(results, r.dynamoDBKinesisDestinationTests(ctx, client)...)
+
+	// Phase 4f: Global table creation preconditions (self-contained)
+	results = append(results, r.dynamoDBGlobalTableValidationTests(ctx, client)...)
+
+	// Phase 4g: DescribeLimits/DescribeEndpoints shapes (self-contained)
+	results = append(results, r.dynamoDBUtilityTests(ctx, client)...)
+
+	// Phase 4h: TTL update contract (self-contained)
+	results = append(results, r.dynamoDBTTLValidationTests(ctx, client)...)
+
+	// Phase 4i: Input validation contracts (self-contained)
+	results = append(results, r.dynamoDBInputValidationTests(ctx, client)...)
+
+	// Phase 4j: DynamoDB Streams read path (self-contained)
+	results = append(results, r.dynamoDBStreamsTests(ctx, client)...)
+
+	// Phase 4k: Contributor insights rules and access aggregation (self-contained)
+	results = append(results, r.dynamoDBContributorInsightsTests(ctx, client)...)
+	results = append(results, r.dynamoDBContributorReadPathsTests(ctx, client)...)
+
+	// Phase 4l: Baseline coverage for previously untested operations (self-contained)
+	results = append(results, r.dynamoDBBaselineCoverageTests(ctx, client)...)
+
 	// Phase 5: Table edge cases (self-contained)
 	results = append(results, r.dynamoDBTableEdgeCaseTests(ctx, client)...)
 

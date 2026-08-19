@@ -163,7 +163,7 @@ func protoAttrDefsToStore(pbADs []*pb.AttributeDefinition) []*dbstore.AttributeD
 // ---------------------------------------------------------------------------
 
 // adminGetItem retrieves a single item by primary key for the admin console.
-func (s *DynamoDBService) adminGetItem(region, tableName string, pbKey map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
+func (s *DynamoDBService) adminGetItem(ctx context.Context, region, tableName string, pbKey map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func (s *DynamoDBService) adminGetItem(region, tableName string, pbKey map[strin
 		return nil, ErrInvalidParameter
 	}
 
-	item, err := s.getItemCore(store, tableName, key)
+	item, err := s.getItemCore(ctx, store, tableName, key)
 	if err != nil {
 		if dbstore.IsItemNotFound(err) {
 			return map[string]*pb.AttributeValue{}, nil

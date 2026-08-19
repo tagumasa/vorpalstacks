@@ -93,6 +93,11 @@ type KinesisInvoker interface {
 	PutRecord(ctx context.Context, streamName string, partitionKey string, data []byte) (sequenceNumber string, err error)
 	CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string) (iteratorSequenceNumber string, err error)
 	GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32) (records []KinesisRecord, nextSequenceNumber string, err error)
+	// StreamExists reports whether the stream addressed by the ARN exists in
+	// the given region. DynamoDB streaming destinations may only target a
+	// stream in the table's own region, so the ARN region must match and the
+	// stream must exist there.
+	StreamExists(ctx context.Context, region, streamARN string) (bool, error)
 }
 
 // ShardInfo carries the fields of a Kinesis shard that cross-service
@@ -159,6 +164,27 @@ type DynamoDBInvoker interface {
 	UpdateItem(ctx context.Context, region, tableName string, key map[string]interface{}, attributes map[string]interface{}) error
 	ScanWithPagination(ctx context.Context, region, tableName string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error)
 	QueryWithPagination(ctx context.Context, region, tableName, partitionKeyValue string, limit int, exclusiveStartKey string) ([]map[string]interface{}, string, error)
+	// ContributorRules lists the DynamoDB contributor insights rule names
+	// derived from the insights-enabled tables of one region. CloudWatch
+	// merges them into DescribeInsightRules.
+	ContributorRules(ctx context.Context, region string) ([]ContributorInsightRule, error)
+	// ContributorStats returns the most accessed tracked keys of one table
+	// inside the half-open time window, for the GetInsightRuleReport path.
+	ContributorStats(ctx context.Context, region, tableName, layout string, start, end time.Time, max int) ([]ContributorKeyStat, error)
+}
+
+// ContributorInsightRule is one DynamoDB-derived contributor insights
+// rule exposed through the eventbus.
+type ContributorInsightRule struct {
+	Name string
+}
+
+// ContributorKeyStat is one aggregated key of a DynamoDB contributor
+// insights rule. Keys holds the decoded key attribute values.
+type ContributorKeyStat struct {
+	Keys  []string
+	Count int64
+	Units float64
 }
 
 // DynamoDBStreamsInvoker provides DynamoDB Streams operations for
@@ -220,6 +246,10 @@ type S3Invoker interface {
 	GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error)
 	PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error
 	ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error)
+	// BucketExists reports whether the named bucket exists in the region.
+	// Consumers use it to distinguish a missing source bucket from an
+	// empty one, which listing alone cannot do.
+	BucketExists(ctx context.Context, region, bucket string) (bool, error)
 }
 
 // WAFInvoker provides WAF WebACL association operations for cross-service

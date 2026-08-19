@@ -31,6 +31,9 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 		"TableName":                 table.Name,
 		"ContributorInsightsStatus": status,
 	}
+	if ruleNames := ContributorInsightsRuleNames(table); len(ruleNames) > 0 {
+		result["ContributorInsightsRuleList"] = ruleNames
+	}
 	if !table.ContributorInsightsUpdatedAt.IsZero() {
 		result["LastUpdateDateTime"] = table.ContributorInsightsUpdatedAt.Unix()
 	}

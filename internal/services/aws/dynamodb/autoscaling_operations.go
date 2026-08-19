@@ -115,13 +115,13 @@ func (s *DynamoDBService) UpdateTableReplicaAutoScaling(ctx context.Context, req
 				replicas = append(replicas, desc)
 			}
 
-			if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+			if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingUpdate"].(map[string]interface{}); ok {
 				desc["ReplicaProvisionedReadCapacityAutoScalingSettings"] = parseAutoScalingSettings(readAS)
 			}
-			if writeAS, ok := updateMap["ReplicaProvisionedWriteCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+			if writeAS, ok := updateMap["ReplicaProvisionedWriteCapacityAutoScalingUpdate"].(map[string]interface{}); ok {
 				desc["ReplicaProvisionedWriteCapacityAutoScalingSettings"] = parseAutoScalingSettings(writeAS)
 			}
-			if gsiUpdates, ok := updateMap["ReplicaGlobalSecondaryIndexSettingsUpdate"].([]interface{}); ok {
+			if gsiUpdates, ok := updateMap["ReplicaGlobalSecondaryIndexUpdates"].([]interface{}); ok {
 				desc["ReplicaGlobalSecondaryIndexSettings"] = parseGSIAutoScalingSettings(gsiUpdates)
 			}
 		}
@@ -159,20 +159,24 @@ func (s *DynamoDBService) UpdateTableReplicaAutoScaling(ctx context.Context, req
 // parameter map into a response-compatible description map.
 func parseAutoScalingSettings(m map[string]interface{}) map[string]interface{} {
 	desc := map[string]interface{}{}
-	if v, ok := m["MinCapacity"]; ok {
+	if v, ok := m["MinimumUnits"]; ok {
 		desc["MinimumUnits"] = v
 	}
-	if v, ok := m["MaxCapacity"]; ok {
+	if v, ok := m["MaximumUnits"]; ok {
 		desc["MaximumUnits"] = v
+	}
+	if v, ok := m["AutoScalingDisabled"]; ok {
+		desc["AutoScalingDisabled"] = v
 	}
 	if v, ok := m["AutoScalingRoleArn"]; ok {
 		desc["AutoScalingRoleArn"] = v
 	}
-	if v, ok := m["Disabled"]; ok {
-		desc["AutoScalingDisabled"] = v
-	}
-	if v, ok := m["ScalingPolicyName"]; ok {
-		desc["AutoScalingPolicyName"] = v
+	if pol, ok := m["ScalingPolicyUpdate"].(map[string]interface{}); ok {
+		policy := map[string]interface{}{}
+		if name, ok := pol["PolicyName"]; ok {
+			policy["PolicyName"] = name
+		}
+		desc["ScalingPolicies"] = []interface{}{policy}
 	}
 	return desc
 }

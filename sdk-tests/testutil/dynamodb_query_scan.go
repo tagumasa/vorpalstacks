@@ -495,6 +495,27 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 	results = append(results, r.RunTest("dynamodb", "ListGlobalTables_Pagination", func() error {
 		pagGT1 := fmt.Sprintf("PagGT-%d-1", time.Now().UnixNano())
 		pagGT2 := fmt.Sprintf("PagGT-%d-2", time.Now().UnixNano())
+		// A global table links existing replica tables, so each name needs
+		// a backing table streaming both item images.
+		for _, name := range []string{pagGT1, pagGT2} {
+			_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+				TableName: aws.String(name),
+				AttributeDefinitions: []types.AttributeDefinition{
+					{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+				},
+				KeySchema: []types.KeySchemaElement{
+					{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+				},
+				BillingMode: types.BillingModePayPerRequest,
+				StreamSpecification: &types.StreamSpecification{
+					StreamEnabled:  aws.Bool(true),
+					StreamViewType: types.StreamViewTypeNewAndOldImages,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("create backing table %s: %v", name, err)
+			}
+		}
 		_, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
 			GlobalTableName: aws.String(pagGT1),
 			ReplicationGroup: []types.Replica{

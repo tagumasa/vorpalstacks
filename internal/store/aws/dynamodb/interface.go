@@ -48,11 +48,11 @@ type TableStoreInterface interface {
 	GetAutoScalingSettings(name string) (map[string]interface{}, error)
 }
 
-// ItemStoreInterface defines operations for managing DynamoDB items.
+// ItemStoreInterface defines operations for managing DynamoDB items. Item
+// writes go through DynamoDBStoreInterface.Update and the DynamoDBTxn write
+// methods, which journal and account the writes with the item.
 type ItemStoreInterface interface {
 	Get(tableName string, key map[string]*AttributeValue) (*Item, error)
-	Put(tableName string, key map[string]*AttributeValue, attributes map[string]*AttributeValue) (*Item, error)
-	Delete(tableName string, key map[string]*AttributeValue) error
 	Exists(tableName string, key map[string]*AttributeValue) bool
 	List(tableName string, marker string, limit int) ([]*Item, string, error)
 	Scan(tableName string, fn func(item *Item) error) error
@@ -134,12 +134,17 @@ type DynamoDBStoreInterface interface {
 	Exports() ExportStoreInterface
 	Imports() ImportStoreInterface
 	Streams() *StreamStore
+	Contributors() *ContributorStore
 	Idempotency() *IdempotencyStore
+	Journal() *JournalStore
 	Storage() storage.TransactionalStorageWith2PC
 	View(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
 	Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error
 	TwoPhaseTransaction() storage.TwoPhaseTransaction
 	NewTxn(txn storage.Transaction) *DynamoDBTxn
+	RecordContributorReads(ctx context.Context, tableName string, keys []map[string]*AttributeValue) error
+	RecordContributorQuery(ctx context.Context, tableName string, key map[string]*AttributeValue) error
+	FlushContributorWrites(ctx context.Context, events []ContributorWriteEvent)
 }
 
 var (

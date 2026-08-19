@@ -149,6 +149,18 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, t
 		return nil, ErrResourceNotFound
 	}
 
+	// Reads starting at or below the trimmed floor would miss records the
+	// retention window has already removed.
+	floor, err := store.Streams().OldestSequence(tableName)
+	if err != nil {
+		logs.Warn("failed to read stream trim floor",
+			logs.String("table", tableName), logs.Err(err))
+		return nil, ErrInternal
+	}
+	if fromSeq < floor {
+		return nil, ErrTrimmedDataAccess
+	}
+
 	records, nextSeq, err := store.Streams().GetRecords(tableName, fromSeq, limit)
 	if err != nil {
 		logs.Warn("failed to get stream records",

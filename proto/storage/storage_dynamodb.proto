@@ -107,6 +107,23 @@ message AttributeDefinition {
 }
 
 // ProvisionedThroughput represents the provisioned throughput.
+message WarmThroughput {
+  int64 read_units_per_second = 1;
+  int64 write_units_per_second = 2;
+}
+
+message RestoreSummary {
+  string source_backup_arn = 1;
+  string source_table_arn = 2;
+  google.protobuf.Timestamp restore_date_time = 3;
+  bool restore_in_progress = 4;
+}
+
+message OnDemandThroughput {
+  int64 max_read_request_units = 1;
+  int64 max_write_request_units = 2;
+}
+
 message ProvisionedThroughput {
   int64 read_capacity_units = 1;
   int64 write_capacity_units = 2;
@@ -182,6 +199,7 @@ message KinesisDataStreamDestination {
   string stream_arn = 1;
   string destination_status = 2;
   string destination_status_description = 3;
+  string approximate_creation_date_time_precision = 4;
 }
 
 // Table represents a DynamoDB table.
@@ -212,6 +230,9 @@ message Table {
   bool contributor_insights_enabled = 24;
   string contributor_insights_mode = 26;
   string table_class = 25;
+  WarmThroughput warm_throughput = 27;
+  OnDemandThroughput on_demand_throughput = 28;
+  RestoreSummary restore_summary = 29;
 }
 
 // AttributeValue represents a DynamoDB attribute value.
@@ -358,6 +379,8 @@ message ExportDescription {
   string s3_prefix = 11;
   string failure_code = 12;
   string failure_message = 13;
+  int64 billed_size_bytes = 14;
+  google.protobuf.Timestamp export_time = 15;
 }
 
 // ContributorInsightsSummary represents the contributor insights summary.

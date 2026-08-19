@@ -63,6 +63,7 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 
 		var tableItems []map[string]interface{}
 		var unprocessedKeys []interface{}
+		var foundKeys []map[string]*dbstore.AttributeValue
 
 		for _, k := range keys {
 			key, keyErr := parseKey(k)
@@ -97,6 +98,7 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 				continue
 			}
 			tableReadCounts[tableName]++
+			foundKeys = append(foundKeys, key)
 
 			projection, projErr := parseProjectionExpression(tr)
 			if projErr != nil {
@@ -116,6 +118,9 @@ func (s *DynamoDBService) BatchGetItem(ctx context.Context, reqCtx *request.Requ
 		if len(unprocessedKeys) > 0 {
 			unprocessed[tableName] = map[string]interface{}{"Keys": unprocessedKeys}
 		}
+		// Every item the batch actually read counts as one read event per
+		// tracked key layout; requests for nonexistent items read nothing.
+		s.recordContributorReads(ctx, store, tableName, foundKeys)
 	}
 
 	resp := map[string]interface{}{

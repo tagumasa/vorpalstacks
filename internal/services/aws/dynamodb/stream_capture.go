@@ -3,6 +3,7 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"time"
@@ -135,10 +136,27 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 	}
 
 	keysResp := buildItemResponse(keys)
+	// ApproximateCreationDateTime carries millisecond timestamps by default;
+	// a destination configured for MICROSECOND precision receives
+	// microsecond timestamps instead.
+	now := time.Now()
+	precision := kinesisPrecisionMillisecond
+	for _, dest := range table.KinesisDataStreamDestinations {
+		if dest.DestinationStatus == kinesisDestinationActive && dest.ApproximateCreationDateTimePrecision != "" {
+			precision = dest.ApproximateCreationDateTimePrecision
+			break
+		}
+	}
+	var createdAt int64
+	if precision == kinesisPrecisionMicrosecond {
+		createdAt = now.UnixMicro()
+	} else {
+		createdAt = now.UnixMilli()
+	}
 	record := kinesisDestinationRecord{
 		Keys:                        keysResp,
 		EventName:                   string(eventName),
-		ApproximateCreationDateTime: time.Now().Unix(),
+		ApproximateCreationDateTime: createdAt,
 	}
 	if newImage != nil {
 		record.NewImage = buildItemResponse(newImage)
@@ -153,26 +171,30 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 			logs.String("table", table.Name), logs.Err(err))
 		return
 	}
+	// The Kinesis store keeps record payloads in their wire representation
+	// (base64 text), matching records written through the Kinesis API, so
+	// GetRecords consumers decode every record the same way.
+	wireData := base64.StdEncoding.EncodeToString(data)
 
 	partitionKey := extractPartitionKeyForKinesis(keys)
 
 	for _, dest := range table.KinesisDataStreamDestinations {
-		if dest.DestinationStatus != "ACTIVE" {
+		if dest.DestinationStatus != kinesisDestinationActive {
 			continue
 		}
 		streamName := parseStreamNameFromARN(dest.StreamArn)
 		if streamName == "" {
 			continue
 		}
-		go func(sn, pk string, payload []byte) {
+		go func(sn, pk, payload string) {
 			defer func() { resilience.RecoverPanic("dynamodb Kinesis destination emit") }()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			if _, err := kinesisInvoker.PutRecord(ctx, sn, pk, payload); err != nil {
+			if _, err := kinesisInvoker.PutRecord(ctx, sn, pk, []byte(payload)); err != nil {
 				logs.Warn("failed to send record to Kinesis destination",
 					logs.String("stream", sn), logs.Err(err))
 			}
-		}(streamName, partitionKey, data)
+		}(streamName, partitionKey, wireData)
 	}
 }
 

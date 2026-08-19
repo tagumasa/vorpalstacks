@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/logs"
@@ -17,6 +19,17 @@ import (
 const KeySep = "\x00"
 
 const keySep = KeySep
+
+// Default throughput quotas per the DynamoDB quotas documentation, per
+// Region: a table may provision at most 40,000 read and 40,000 write
+// capacity units, and the account-wide total across all provisioned tables
+// and GSIs is 80,000 read and 80,000 write capacity units.
+const (
+	AccountMaxReadCapacityUnits  = 80000
+	AccountMaxWriteCapacityUnits = 80000
+	TableMaxReadCapacityUnits    = 40000
+	TableMaxWriteCapacityUnits   = 40000
+)
 
 // DynamoDBStore provides a unified interface to all DynamoDB store components.
 type DynamoDBStore struct {
@@ -29,8 +42,14 @@ type DynamoDBStore struct {
 	imports      *ImportStore
 	streams      *StreamStore
 	idempotency  *IdempotencyStore
+	journal      *JournalStore
+	contributors *ContributorStore
 	storage      storage.TransactionalStorageWith2PC
 	ttlWorker    *ttlWorker
+	// contributorMu serialises contributor counter updates across the
+	// store: the storage layer offers no cross-transaction isolation, so a
+	// plain read-modify-write can lose increments to a concurrent update.
+	contributorMu sync.Mutex
 }
 
 // NewDynamoDBStore creates a new DynamoDB store with the specified storage, account ID, and region.
@@ -44,6 +63,8 @@ func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, regi
 	importStore := NewImportStore(store, accountID, region)
 	streamStore := NewStreamStore(store, accountID, region)
 	idempotencyStore := NewIdempotencyStore(store, region)
+	journalStore := NewJournalStore(store, region)
+	contributorStore := NewContributorStore(store, region)
 
 	s := &DynamoDBStore{
 		tables:       tableStore,
@@ -55,6 +76,8 @@ func NewDynamoDBStore(store storage.TransactionalStorageWith2PC, accountID, regi
 		imports:      importStore,
 		streams:      streamStore,
 		idempotency:  idempotencyStore,
+		journal:      journalStore,
+		contributors: contributorStore,
 		storage:      store,
 	}
 	s.ttlWorker = newTTLWorker(s)
@@ -88,6 +111,12 @@ func (s *DynamoDBStore) Idempotency() *IdempotencyStore {
 	return s.idempotency
 }
 
+// Journal returns the item-mutation journal store backing point-in-time
+// recovery.
+func (s *DynamoDBStore) Journal() *JournalStore {
+	return s.journal
+}
+
 // Backups returns the backup store for managing DynamoDB backups.
 func (s *DynamoDBStore) Backups() BackupStoreInterface {
 	return s.backups
@@ -113,6 +142,11 @@ func (s *DynamoDBStore) Streams() *StreamStore {
 	return s.streams
 }
 
+// Contributors returns the contributor access aggregation store.
+func (s *DynamoDBStore) Contributors() *ContributorStore {
+	return s.contributors
+}
+
 // Storage returns the underlying storage for this DynamoDB store.
 func (s *DynamoDBStore) Storage() storage.TransactionalStorageWith2PC {
 	return s.storage
@@ -125,11 +159,40 @@ func (s *DynamoDBStore) View(ctx context.Context, fn func(txn *DynamoDBTxn) erro
 	})
 }
 
-// Update executes a read-write transaction on the DynamoDB store.
+// Update executes a read-write transaction on the DynamoDB store. When the
+// transaction commits, the contributor events queued by its item writes are
+// applied to the access counters.
 func (s *DynamoDBStore) Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error {
-	return s.storage.Update(ctx, func(txn storage.Transaction) error {
-		return fn(&DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes})
+	var dtxn *DynamoDBTxn
+	err := s.storage.Update(ctx, func(txn storage.Transaction) error {
+		dtxn = &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
+		return fn(dtxn)
 	})
+	if err != nil {
+		return err
+	}
+	s.FlushContributorWrites(ctx, dtxn.TakeContributorWrites())
+	return nil
+}
+
+// FlushContributorWrites applies queued contributor events to the access
+// counters in one transaction serialised against every other counter
+// update, so concurrent reads and writes cannot lose increments. The
+// carrying item transaction has already committed: a flush failure is
+// logged and never fails the observed operation.
+func (s *DynamoDBStore) FlushContributorWrites(ctx context.Context, events []ContributorWriteEvent) {
+	if len(events) == 0 {
+		return
+	}
+	s.contributorMu.Lock()
+	defer s.contributorMu.Unlock()
+	err := s.storage.Update(ctx, func(txn storage.Transaction) error {
+		dtxn := &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
+		return dtxn.applyContributorWrites(events)
+	})
+	if err != nil {
+		logs.Warn("failed to record contributor writes", logs.Err(err))
+	}
 }
 
 // TwoPhaseTransaction returns a two-phase transaction interface for the DynamoDB store.
@@ -142,16 +205,15 @@ func (s *DynamoDBStore) NewTxn(txn storage.Transaction) *DynamoDBTxn {
 	return &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
 }
 
-// NewDynamoDBTxn creates a new DynamoDB transaction with the given storage transaction and table store.
-func NewDynamoDBTxn(txn storage.Transaction, tableStore *TableStore) *DynamoDBTxn {
-	return &DynamoDBTxn{txn: txn, tableStore: tableStore, indexStore: NewIndexStore(tableStore.region)}
-}
-
 // DynamoDBTxn represents a DynamoDB transaction for atomic operations.
 type DynamoDBTxn struct {
 	txn        storage.Transaction
 	tableStore *TableStore
 	indexStore *IndexStore
+	// contributorWrites collects the item writes observed in this
+	// transaction; the store applies them to the access counters after the
+	// transaction commits.
+	contributorWrites []ContributorWriteEvent
 }
 
 func (t *DynamoDBTxn) region() string {
@@ -253,7 +315,212 @@ func (t *DynamoDBTxn) PutItem(tableName string, key map[string]*AttributeValue, 
 		return fmt.Errorf("marshal item %s: %w", tableName, err)
 	}
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
-	return bucket.Put([]byte(itemKey), data)
+	if err := bucket.Put([]byte(itemKey), data); err != nil {
+		return err
+	}
+	if err := t.journalPut(table, key); err != nil {
+		return err
+	}
+	t.queueContributorWrite(table, key)
+	return nil
+}
+
+// queueContributorWrite defers the contributor access accounting of an
+// item write until the carrying transaction commits. The counters update
+// in their own serialised transaction afterwards, which is the only way to
+// keep the read-modify-write safe against concurrent updates on a storage
+// layer without cross-transaction isolation. Tables without contributor
+// insights queue nothing, so their writes open no extra transaction.
+func (t *DynamoDBTxn) queueContributorWrite(table *Table, key map[string]*AttributeValue) {
+	if table == nil || !table.ContributorInsightsEnabled {
+		return
+	}
+	event := ContributorWriteEvent{TableName: table.Name, Key: make(map[string]*AttributeValue, len(key))}
+	for name, value := range key {
+		event.Key[name] = value
+	}
+	t.contributorWrites = append(t.contributorWrites, event)
+}
+
+// TakeContributorWrites drains the contributor events queued by the item
+// writes of this transaction. The store applies them after the carrying
+// transaction commits.
+func (t *DynamoDBTxn) TakeContributorWrites() []ContributorWriteEvent {
+	events := t.contributorWrites
+	t.contributorWrites = nil
+	return events
+}
+
+// applyContributorWrites credits each queued write event under every
+// contributor layout of its table. A write counts as three units of
+// ConsumedThroughputUnits. Events on the same counter key are aggregated
+// first: the storage layer's read-modify-write reads the committed state,
+// so unaggregated repeats inside one transaction would overwrite each
+// other.
+func (t *DynamoDBTxn) applyContributorWrites(events []ContributorWriteEvent) error {
+	tables := make(map[string]*Table)
+	type counterTarget struct {
+		table  *Table
+		layout string
+		keyStr string
+	}
+	aggregated := make(map[counterTarget]int64)
+	var order []counterTarget
+	for _, event := range events {
+		table := tables[event.TableName]
+		if _, resolved := tables[event.TableName]; !resolved {
+			fetched, err := t.GetTable(event.TableName)
+			if err != nil || fetched == nil || !fetched.ContributorInsightsEnabled {
+				fetched = nil
+			}
+			tables[event.TableName] = fetched
+			table = fetched
+		}
+		if table == nil {
+			continue
+		}
+		for _, layout := range ContributorLayouts(table) {
+			target := counterTarget{table: table, layout: layout, keyStr: ContributorKeyString(table, event.Key, layout)}
+			if _, seen := aggregated[target]; !seen {
+				order = append(order, target)
+			}
+			aggregated[target]++
+		}
+	}
+	at := time.Now()
+	for _, target := range order {
+		if err := RecordAccessTxn(t.txn, t.region(), target.table.Name, target.layout, target.keyStr, at, aggregated[target], ContributorWriteUnits); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// contributorRecordReads credits one read event for every key under each
+// contributor layout of the table, inside the caller's transaction. Reads
+// on the same counter key (items sharing a partition key) are aggregated
+// first: the storage layer's read-modify-write reads the committed state,
+// so unaggregated repeats inside one transaction would overwrite each
+// other.
+func (t *DynamoDBTxn) contributorRecordReads(tableName string, keys []map[string]*AttributeValue) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	table, err := t.GetTable(tableName)
+	if err != nil || table == nil || !table.ContributorInsightsEnabled {
+		return nil
+	}
+	type counterTarget struct {
+		layout string
+		keyStr string
+	}
+	aggregated := make(map[counterTarget]int64)
+	var order []counterTarget
+	for _, key := range keys {
+		for _, layout := range ContributorLayouts(table) {
+			target := counterTarget{layout: layout, keyStr: ContributorKeyString(table, key, layout)}
+			if _, seen := aggregated[target]; !seen {
+				order = append(order, target)
+			}
+			aggregated[target]++
+		}
+	}
+	at := time.Now()
+	for _, target := range order {
+		if err := RecordAccessTxn(t.txn, t.region(), table.Name, target.layout, target.keyStr, at, aggregated[target], ContributorReadUnits); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// contributorRecordQueryEvent credits the single event a Query contributes,
+// on the partition-key series only: a Query is one read event regardless of
+// how many items it returns, and a result set spans many sort keys.
+func (t *DynamoDBTxn) contributorRecordQueryEvent(tableName string, key map[string]*AttributeValue) error {
+	table, err := t.GetTable(tableName)
+	if err != nil || table == nil || !table.ContributorInsightsEnabled {
+		return nil
+	}
+	keyStr := ContributorKeyString(table, key, ContributorLayoutPartitionKey)
+	if keyStr == "" {
+		return nil
+	}
+	return RecordAccessTxn(t.txn, t.region(), table.Name, ContributorLayoutPartitionKey, keyStr, time.Now(), 1, ContributorReadUnits)
+}
+
+// RecordContributorReads credits one read event per key under every
+// contributor layout of the table. The update runs under the contributor
+// lock, so concurrent counter updates cannot lose increments.
+func (s *DynamoDBStore) RecordContributorReads(ctx context.Context, tableName string, keys []map[string]*AttributeValue) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	if table, err := s.Tables().Get(tableName); err != nil || table == nil || !table.ContributorInsightsEnabled {
+		return nil
+	}
+	s.contributorMu.Lock()
+	defer s.contributorMu.Unlock()
+	return s.storage.Update(ctx, func(txn storage.Transaction) error {
+		dtxn := &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
+		return dtxn.contributorRecordReads(tableName, keys)
+	})
+}
+
+// RecordContributorQuery credits the single read event a Query contributes
+// to the partition-key series. The update runs under the contributor lock,
+// so concurrent counter updates cannot lose increments.
+func (s *DynamoDBStore) RecordContributorQuery(ctx context.Context, tableName string, key map[string]*AttributeValue) error {
+	if table, err := s.Tables().Get(tableName); err != nil || table == nil || !table.ContributorInsightsEnabled {
+		return nil
+	}
+	s.contributorMu.Lock()
+	defer s.contributorMu.Unlock()
+	return s.storage.Update(ctx, func(txn storage.Transaction) error {
+		dtxn := &DynamoDBTxn{txn: txn, tableStore: s.tables, indexStore: s.indexes}
+		return dtxn.contributorRecordQueryEvent(tableName, key)
+	})
+}
+
+// journalPut appends a journal record for a put on a table with
+// point-in-time recovery enabled. The record stores the pre-write item so a
+// restore can undo the change; the append shares the caller's transaction,
+// so the journal never diverges from the item state.
+func (t *DynamoDBTxn) journalPut(table *Table, key map[string]*AttributeValue) error {
+	if !pitrEnabled(table) {
+		return nil
+	}
+	beforeImage := t.itemBeforeImage(table.Name, key)
+	return appendJournalTxn(t.txn, t.region(), table.Name, JournalOperationPut, key, beforeImage)
+}
+
+// journalDelete appends a journal record for a delete. Deletes of keys that
+// do not exist are not journaled because they change nothing.
+func (t *DynamoDBTxn) journalDelete(table *Table, key map[string]*AttributeValue) error {
+	if !pitrEnabled(table) {
+		return nil
+	}
+	beforeImage := t.itemBeforeImage(table.Name, key)
+	if beforeImage == nil {
+		return nil
+	}
+	return appendJournalTxn(t.txn, t.region(), table.Name, JournalOperationDelete, key, beforeImage)
+}
+
+// pitrEnabled reports whether the table currently has point-in-time
+// recovery enabled.
+func pitrEnabled(table *Table) bool {
+	return table != nil && table.PointInTimeRecovery != nil && table.PointInTimeRecovery.Status == PITRStatusEnabled
+}
+
+// itemBeforeImage reads the item's current attribute map through the
+// transaction, or nil when the key does not exist.
+func (t *DynamoDBTxn) itemBeforeImage(tableName string, key map[string]*AttributeValue) map[string]*AttributeValue {
+	existing, err := t.GetItem(tableName, key)
+	if err != nil || existing == nil {
+		return nil
+	}
+	return existing.Attributes
 }
 
 // DeleteItem removes an item from a table by its key.
@@ -267,7 +534,14 @@ func (t *DynamoDBTxn) DeleteItem(tableName string, key map[string]*AttributeValu
 		return ErrInvalidKey
 	}
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
-	return bucket.Delete([]byte(itemKey))
+	if err := bucket.Delete([]byte(itemKey)); err != nil {
+		return err
+	}
+	if err := t.journalDelete(table, key); err != nil {
+		return err
+	}
+	t.queueContributorWrite(table, key)
+	return nil
 }
 
 // ItemExists checks whether an item with the given key exists in the table.
@@ -548,6 +822,14 @@ func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
 
 	if err := t.deleteAllByPrefix(streamBucketName(t.region()), name+keySep); err != nil {
 		return fmt.Errorf("delete stream records for table %s: %w", name, err)
+	}
+
+	if err := t.deleteAllByPrefix(journalBucketName(t.region()), name+keySep); err != nil {
+		return fmt.Errorf("delete journal records for table %s: %w", name, err)
+	}
+
+	if err := t.deleteAllByPrefix(contributorBucketName(t.region()), name+keySep); err != nil {
+		return fmt.Errorf("delete contributor counters for table %s: %w", name, err)
 	}
 
 	if err := t.deleteBackupsForTable(name); err != nil {

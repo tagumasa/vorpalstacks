@@ -105,50 +105,6 @@ func (s *ItemStore) Get(tableName string, key map[string]*AttributeValue) (*Item
 	}, nil
 }
 
-// Put stores a DynamoDB item in a table.
-func (s *ItemStore) Put(tableName string, key map[string]*AttributeValue, attributes map[string]*AttributeValue) (*Item, error) {
-	itemKey := s.buildItemKey(tableName, key)
-	if itemKey == "" {
-		return nil, ErrInvalidKey
-	}
-
-	if attributes == nil {
-		attributes = make(map[string]*AttributeValue)
-	}
-	merged := make(map[string]*AttributeValue, len(attributes)+len(key))
-	for k, v := range attributes {
-		merged[k] = v
-	}
-	for k, v := range key {
-		merged[k] = v
-	}
-
-	pbItem := &pb.Item{
-		TableName:  tableName,
-		Key:        attributeValueMapToProtoDirect(key),
-		Attributes: attributeValueMapToProtoDirect(merged),
-	}
-
-	if err := s.BaseStore.PutProto(itemKey, pbItem); err != nil {
-		return nil, err
-	}
-
-	return &Item{
-		TableName:  tableName,
-		Key:        key,
-		Attributes: merged,
-	}, nil
-}
-
-// Delete removes a DynamoDB item by table name and key.
-func (s *ItemStore) Delete(tableName string, key map[string]*AttributeValue) error {
-	itemKey := s.buildItemKey(tableName, key)
-	if itemKey == "" {
-		return ErrInvalidKey
-	}
-	return s.BaseStore.Delete(itemKey)
-}
-
 // Exists checks if a DynamoDB item exists.
 func (s *ItemStore) Exists(tableName string, key map[string]*AttributeValue) bool {
 	itemKey := s.buildItemKey(tableName, key)

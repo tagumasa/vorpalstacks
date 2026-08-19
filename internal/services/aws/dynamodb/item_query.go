@@ -71,6 +71,9 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	var allItems []*dbstore.Item
+	// The typed partition-key equality value feeds the contributor insights
+	// accounting of the query after the page is served.
+	var queryPKValue *dbstore.AttributeValue
 	keyCondExpr := request.GetStringParam(req.Parameters, "KeyConditionExpression")
 	exprAttrNames, err := parseExpressionAttributeNames(req.Parameters)
 	if err != nil {
@@ -113,7 +116,8 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 	alreadySortedAscending := false
 
 	if indexName != "" {
-		hashKeyValue, sortKeyCondition := extractIndexKeyCondition(table, indexName, keyCondExpr, exprAttrNames, exprAttrValues)
+		hashKeyValue, hashKeyAttr, sortKeyCondition := extractIndexKeyCondition(table, indexName, keyCondExpr, exprAttrNames, exprAttrValues)
+		queryPKValue = hashKeyAttr
 		if hashKeyValue == "" {
 			idxHashName, _, _ := indexKeyAttributeNames(table, indexName)
 			return nil, NewAPIError("com.amazon.coral.validate#ValidationException",
@@ -148,7 +152,8 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 			allItems = filterBySortKeyCondition(allItems, sortKeyCondition)
 		}
 	} else {
-		hashKeyValue, sortKeyCondition := extractPrimaryKeyCondition(table, keyCondExpr, exprAttrNames, exprAttrValues)
+		hashKeyValue, hashKeyAttr, sortKeyCondition := extractPrimaryKeyCondition(table, keyCondExpr, exprAttrNames, exprAttrValues)
+		queryPKValue = hashKeyAttr
 		if hashKeyValue == "" {
 			pkAttrName := ""
 			for _, ks := range table.KeySchema {
@@ -252,6 +257,13 @@ func (s *DynamoDBService) Query(ctx context.Context, reqCtx *request.RequestCont
 		capacityUnits := float64(scannedCount) * rcuPerItem(consistentRead, indexName, table)
 		isLSI := indexName != "" && !isGSI(table, indexName)
 		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(tableName, indexName, capacityUnits, isLSI)
+	}
+
+	// A Query is one read event on the queried partition regardless of how
+	// many items it returns. Index-scoped key series are not modelled, so a
+	// query served by a global secondary index is not attributed.
+	if indexName == "" || !isGSI(table, indexName) {
+		s.recordQueryContributorEvent(ctx, store, table, queryPKValue)
 	}
 
 	return resp, nil
@@ -427,6 +439,14 @@ func (s *DynamoDBService) Scan(ctx context.Context, reqCtx *request.RequestConte
 		isLSI := indexName != "" && !isGSI(table, indexName)
 		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithIndex(tableName, indexName, capacityUnits, isLSI)
 	}
+
+	// Every item the page read counts as one read event per tracked key
+	// layout, regardless of the filter expression applied afterwards.
+	scanReadKeys := make([]map[string]*dbstore.AttributeValue, 0, len(scannedItems))
+	for _, item := range scannedItems {
+		scanReadKeys = append(scanReadKeys, item.Key)
+	}
+	s.recordContributorReads(ctx, store, tableName, scanReadKeys)
 
 	return resp, nil
 }
