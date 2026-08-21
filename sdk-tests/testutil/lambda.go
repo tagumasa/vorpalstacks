@@ -68,8 +68,10 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	results = append(results, runLambdaAliasTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
 	results = append(results, runLambdaLayerTests(r, ctx, client)...)
 	results = append(results, runLambdaESMTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaESMEngineTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
 	results = append(results, runLambdaConfigTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
 	results = append(results, runLambdaPermissionTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole, r.region)...)
+	results = append(results, runLambdaReferenceTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
 
 	return results
 }

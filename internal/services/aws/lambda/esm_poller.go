@@ -96,6 +96,19 @@ type esmPoller struct {
 	storageManager *storage.RegionStorageManager
 	kinesisCP      map[string]string // "mappingUUID:streamName:shardID" -> lastSeqNum
 	kinesisCPMu    sync.RWMutex
+	// windows holds the open tumbling-window state per mapping+shard, keyed
+	// like the checkpoint map ("mappingUUID:streamName:shardID" for Kinesis,
+	// "ddb:mappingUUID" for DynamoDB streams).
+	windows   map[string]*shardWindow
+	windowsMu sync.Mutex
+	// buffers holds the batching-window gathering state per mapping+shard,
+	// keyed like the windows map.
+	buffers  map[string]*streamBuffer
+	bufferMu sync.Mutex
+	// invoke overrides the Lambda invoke path; production leaves it nil so
+	// invokeLambda falls through to the LambdaService event-source path.
+	// Tests inject a fake to exercise retry and bisection logic.
+	invoke func(ctx context.Context, functionRef string, payload []byte) (*lambdastore.InvocationResult, error)
 }
 
 // newESMPoller creates a new ESM poller with the given poll interval and
@@ -113,6 +126,8 @@ func newESMPoller(interval time.Duration, workers int, logger logs.Logger) *esmP
 		workers:   workers,
 		logger:    logger,
 		kinesisCP: make(map[string]string),
+		windows:   make(map[string]*shardWindow),
+		buffers:   make(map[string]*streamBuffer),
 	}
 }
 
@@ -180,19 +195,39 @@ func (p *esmPoller) pollAll(ctx context.Context) {
 		}
 	}
 
+	// The checkpoint and window maps are shared across regions, so the
+	// stale-state purges must run once per tick over the union of every
+	// region's active stream mappings. Purging per region would let any
+	// region without Kinesis mappings wipe the checkpoints other regions
+	// just wrote, forcing their shards to restart from TRIM_HORIZON on
+	// every cycle.
+	activeStream := make(map[string]struct{})
+	listingsComplete := true
 	for _, region := range regions {
-		p.pollRegion(ctx, region)
+		active, ok := p.pollRegion(ctx, region)
+		if !ok {
+			listingsComplete = false
+			continue
+		}
+		for uuid := range active {
+			activeStream[uuid] = struct{}{}
+		}
+	}
+	if listingsComplete {
+		p.purgeStaleKinesisCheckpoints(activeStream)
+		p.purgeStaleWindows(activeStream)
+		p.purgeStaleBuffers(activeStream)
 	}
 }
 
-func (p *esmPoller) pollRegion(ctx context.Context, region string) {
+func (p *esmPoller) pollRegion(ctx context.Context, region string) (map[string]struct{}, bool) {
 	var esmStore *lambdastore.EventSourceStore
 	if region == p.region && p.esmStore != nil {
 		esmStore = p.esmStore
 	} else if p.storageManager != nil {
 		st, err := p.storageManager.GetStorage(region)
 		if err != nil {
-			return
+			return nil, true
 		}
 		if cached, ok := p.lambdaSvc.storeCache.Load(region); ok {
 			if typed, ok := cached.(*lambdaStore); ok {
@@ -213,20 +248,23 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		}
 	}
 	if esmStore == nil {
-		return
+		return nil, true
 	}
 
 	result, err := esmStore.ListAllMappings()
 	if err != nil {
+		// The listing failed: report incompleteness so the caller skips the
+		// checkpoint purge rather than wiping checkpoints for mappings it
+		// could not see.
 		p.log("failed to list event source mappings", "error", err)
-		return
+		return nil, false
 	}
 
 	type pollJob struct {
 		mapping *lambdastore.EventSourceMapping
 	}
 	jobs := make(chan pollJob, len(result))
-	activeKinesisUUIDs := make(map[string]struct{})
+	activeStreamUUIDs := make(map[string]struct{})
 	for _, m := range result {
 		if m.State != "Enabled" {
 			continue
@@ -235,14 +273,12 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		if esmService != "sqs" && esmService != "kinesis" && esmService != "dynamodb" {
 			continue
 		}
-		if esmService == "kinesis" {
-			activeKinesisUUIDs[m.UUID] = struct{}{}
+		if esmService == "kinesis" || esmService == "dynamodb" {
+			activeStreamUUIDs[m.UUID] = struct{}{}
 		}
 		jobs <- pollJob{mapping: m}
 	}
 	close(jobs)
-
-	p.purgeStaleKinesisCheckpoints(activeKinesisUUIDs)
 
 	jobCount := len(result)
 	workerCount := p.workers
@@ -250,7 +286,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		workerCount = jobCount
 	}
 	if workerCount == 0 {
-		return
+		return activeStreamUUIDs, true
 	}
 
 	var wg sync.WaitGroup
@@ -270,6 +306,7 @@ func (p *esmPoller) pollRegion(ctx context.Context, region string) {
 		}()
 	}
 	wg.Wait()
+	return activeStreamUUIDs, true
 }
 
 // processMapping polls the SQS source queue for a single event source
@@ -287,6 +324,34 @@ func (p *esmPoller) processMapping(ctx context.Context, mapping *lambdastore.Eve
 		return
 	}
 	p.processSQSMapping(ctx, mapping)
+}
+
+// cycleReport folds one poll cycle's reporting precedence: a failure
+// outranks a discard, which outranks a partial batch response, which
+// outranks success. The end-of-cycle success report is deferred behind
+// this precedence so a batch that failed or was discarded earlier in the
+// same cycle cannot be overwritten by a later successful batch.
+type cycleReport struct {
+	failure      bool
+	discarded    bool
+	processedAny bool
+	// partial counts the records the function reported in
+	// batchItemFailures this cycle; a partial report outranks the
+	// success report but stays behind a failure or discard.
+	partial int
+}
+
+func (c *cycleReport) recordFailure()   { c.failure = true }
+func (c *cycleReport) recordDiscard()   { c.discarded = true }
+func (c *cycleReport) recordProcessed() { c.processedAny = true }
+
+func (c *cycleReport) recordPartial(reported int) { c.partial += reported }
+
+// shouldReportSuccess reports whether the cycle may write the success
+// result: only a cycle without any failure, discard or partial batch
+// response that actually delivered records.
+func (c *cycleReport) shouldReportSuccess() bool {
+	return !c.failure && !c.discarded && c.partial == 0 && c.processedAny
 }
 
 func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdastore.EventSourceMapping) {
@@ -319,53 +384,57 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		batchSize = 10000
 	}
 
-	for _, shard := range shards {
-		if shard.SequenceNumberRangeEnd != "" {
-			continue
-		}
+	windowed := mapping.TumblingWindowInSeconds > 0
+	windowSeconds := int64(mapping.TumblingWindowInSeconds)
+	pf := parallelizationFactorOf(mapping)
+	// A positive batching window gathers records across cycles instead of
+	// invoking every read immediately; tumbling windows bypass it because
+	// their aggregation batches are already window-bound.
+	buffered := !windowed && mapping.MaximumBatchingWindowInSeconds > 0
+	batchingWindow := mapping.MaximumBatchingWindowInSeconds
 
-		cpKey := fmt.Sprintf("%s:%s:%s", mapping.UUID, streamName, shard.ShardID)
+	// report keeps the cycle-level precedence: failure outranks discard,
+	// which outranks the deferred end-of-cycle success report.
+	report := cycleReport{}
 
-		p.kinesisCPMu.RLock()
-		lastSeq := p.kinesisCP[cpKey]
-		p.kinesisCPMu.RUnlock()
-
-		var iteratorType, iteratorSeqNum string
-		if lastSeq != "" {
-			iteratorType = "AFTER_SEQUENCE_NUMBER"
-			iteratorSeqNum = lastSeq
-		} else {
-			// Honour the user-configured StartingPosition for the initial read.
-			// Default to TRIM_HORIZON for backward compatibility.
-			switch mapping.StartingPosition {
-			case "LATEST":
-				iteratorType = "LATEST"
-			case "AT_TIMESTAMP":
-				iteratorType = "AT_TIMESTAMP"
-			default:
-				iteratorType = "TRIM_HORIZON"
+	// reportWindow folds one tumbling-window cycle result into the mapping
+	// status and the per-cycle flags.
+	reportWindow := func(res windowCycleResult, werr error) {
+		if werr != nil {
+			report.recordFailure()
+			p.log("lambda invocation failed for Kinesis ESM tumbling window",
+				"function", mapping.FunctionArn, "stream", streamName, "error", werr)
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, werr.Error()); rerr != nil {
+				logs.Warn("esm: failed to set state after Kinesis window error",
+					logs.String("mapping", mapping.UUID), logs.Err(rerr))
 			}
+			return
 		}
-
-		iteratorSeq, err := p.bus.KinesisInvoker().CreateShardIterator(ctx, streamName, shard.ShardID, iteratorType, iteratorSeqNum)
-		if err != nil {
-			p.log("failed to create shard iterator", "stream", streamName, "shard", shard.ShardID, "error", err)
-			continue
+		if res.discarded {
+			report.recordDiscard()
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+				logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+			return
 		}
-
-		records, _, err := p.bus.KinesisInvoker().GetRecords(ctx, streamName, shard.ShardID, iteratorSeq, batchSize)
-		if err != nil {
-			p.log("failed to get records from Kinesis", "stream", streamName, "shard", shard.ShardID, "error", err)
-			continue
+		if res.processedAny {
+			report.recordProcessed()
 		}
+	}
+	windowCycle := func(cpKey, shardID string, items []windowedStreamItem, readThrough string) {
+		src := streamSource{kind: streamSourceKinesis, streamArn: mapping.EventSourceArn, shardID: shardID}
+		res, werr := p.processStreamWindow(ctx, mapping, cpKey, src, items, readThrough)
+		reportWindow(res, werr)
+	}
 
-		if len(records) == 0 {
-			continue
-		}
-
-		kinesisRecords := make([]map[string]interface{}, 0, len(records))
+	// renderRecords builds the wire-format maps for one batch, recording
+	// each record's arrival time for tumbling window boundaries.
+	renderRecords := func(shardID string, records []eventbus.KinesisRecord) ([]map[string]interface{}, map[string]int64) {
+		arrivals := make(map[string]int64, len(records))
+		rendered := make([]map[string]interface{}, 0, len(records))
 		for _, rec := range records {
-			kinesisRecords = append(kinesisRecords, map[string]interface{}{
+			arrivals[rec.SequenceNumber] = rec.ApproximateArrivalTimestamp.Unix()
+			record := map[string]interface{}{
 				"kinesis": map[string]interface{}{
 					"kinesisSchemaVersion":        "1.0",
 					"partitionKey":                rec.PartitionKey,
@@ -375,67 +444,355 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 				},
 				"eventSource":       "aws:kinesis",
 				"eventVersion":      "1.0",
-				"eventID":           fmt.Sprintf("%s:%s:%s", shard.ShardID, rec.SequenceNumber, mapping.UUID),
+				"eventID":           fmt.Sprintf("%s:%s:%s", shardID, rec.SequenceNumber, mapping.UUID),
 				"awsRegion":         streamRegion,
 				"eventName":         "aws:kinesis:record",
 				"invokeIdentityArn": arnutil.NewARNBuilder(p.lambdaSvc.accountID, "").IAM().Role("vorpalstacks-lambda"),
-			})
+			}
+			if windowed {
+				// The documented KinesisTimeWindowEvent carries the source
+				// ARN on every record as well as at the envelope level.
+				record["eventSourceARN"] = mapping.EventSourceArn
+			}
+			rendered = append(rendered, record)
 		}
+		return rendered, arrivals
+	}
 
-		// Apply event filtering before invocation.
-		kinesisRecords = filterKinesisRecords(kinesisRecords, mapping.FilterCriteria)
-		if len(kinesisRecords) == 0 {
-			// All records were filtered out.  Advance the checkpoint
-			// to avoid re-reading the same records on the next poll.
-			if len(records) > 0 {
-				latestSeq := records[len(records)-1].SequenceNumber
-				p.kinesisCPMu.Lock()
-				p.kinesisCP[cpKey] = latestSeq
-				p.kinesisCPMu.Unlock()
-				if err := p.persistKinesisCheckpoint(cpKey, latestSeq); err != nil {
-					logs.Warn("esm: failed to persist Kinesis checkpoint", logs.String("key", cpKey), logs.Err(err))
+	// dropExpiredKinesis removes records older than
+	// MaximumRecordAgeInSeconds (-1, the default, keeps every record) and
+	// reports the expired batch to the on-failure destination: "Lambda
+	// retries until the records expire, exceed the maximum age ... If the
+	// error handling measures fail, Lambda discards the records".
+	dropExpiredKinesis := func(shardID string, records []eventbus.KinesisRecord) []eventbus.KinesisRecord {
+		if mapping.MaximumRecordAgeInSeconds <= 0 {
+			return records
+		}
+		src := streamSource{kind: streamSourceKinesis, streamArn: mapping.EventSourceArn, shardID: shardID}
+		cutoff := time.Now().Add(-time.Duration(mapping.MaximumRecordAgeInSeconds) * time.Second)
+		fresh := records[:0]
+		var expired []eventbus.KinesisRecord
+		for _, rec := range records {
+			if rec.ApproximateArrivalTimestamp.After(cutoff) {
+				fresh = append(fresh, rec)
+				continue
+			}
+			expired = append(expired, rec)
+		}
+		if len(expired) > 0 {
+			rendered, _ := renderRecords(shardID, expired)
+			items := make([]streamBatchItem, len(rendered))
+			for i, kr := range rendered {
+				items[i] = streamBatchItem{record: kr, seq: kinesisRecordSeq(kr)}
+			}
+			p.deliverDiscardedBatch(ctx, mapping, src, streamFailureBatchInfoOf(src, items),
+				marshalStreamBatch(items), 0, uninvokedBatchResponse())
+		}
+		return fresh
+	}
+
+	// windowedItemsOf renders one batch and pairs the surviving records
+	// with their tumbling window boundaries.
+	windowedItemsOf := func(shardID string, records []eventbus.KinesisRecord) []windowedStreamItem {
+		records = dropExpiredKinesis(shardID, records)
+		rendered, arrivals := renderRecords(shardID, records)
+		rendered = filterKinesisRecords(rendered, mapping.FilterCriteria)
+		items := make([]streamBatchItem, len(rendered))
+		for i, kr := range rendered {
+			items[i] = streamBatchItem{record: kr, seq: kinesisRecordSeq(kr)}
+		}
+		witems := make([]windowedStreamItem, len(items))
+		for i, it := range items {
+			witems[i] = windowedStreamItem{
+				item:        it,
+				windowStart: windowStartOf(arrivals[it.seq], windowSeconds),
+			}
+		}
+		return witems
+	}
+
+	// prepareItems filters and renders one fetched batch into delivery
+	// items, after the age expiry pass, with event filter criteria
+	// dropping non-matching records.
+	prepareItems := func(shardID string, records []eventbus.KinesisRecord) []streamBatchItem {
+		records = dropExpiredKinesis(shardID, records)
+		if len(records) == 0 {
+			return nil
+		}
+		rendered, _ := renderRecords(shardID, records)
+		rendered = filterKinesisRecords(rendered, mapping.FilterCriteria)
+		items := make([]streamBatchItem, len(rendered))
+		for i, kr := range rendered {
+			items[i] = streamBatchItem{record: kr, seq: kinesisRecordSeq(kr)}
+		}
+		return items
+	}
+
+	// processItems delivers prepared items with the retry and bisection
+	// policy.
+	processItems := func(src streamSource, items []streamBatchItem) batchOutcome {
+		return p.processStreamBatch(ctx, mapping, src, items)
+	}
+
+	// processBatch runs the non-windowed, unbuffered delivery pipeline for
+	// one batch. A batch whose records all expired or were all filtered out
+	// still consumes its position.
+	processBatch := func(src streamSource, records []eventbus.KinesisRecord) batchOutcome {
+		latestSeqAll := records[len(records)-1].SequenceNumber
+		items := prepareItems(src.shardID, records)
+		if len(items) == 0 {
+			// Every record expired or was filtered out; advance past the
+			// whole batch to avoid re-reading the same records.
+			return batchOutcome{lastConsumed: latestSeqAll}
+		}
+		return processItems(src, items)
+	}
+
+	fnName := arnutil.ExtractFunctionNameFromARN(mapping.FunctionArn)
+	if fnName == "" {
+		p.log("failed to extract function name from ARN", "arn", mapping.FunctionArn)
+		return
+	}
+
+	for _, shard := range shards {
+		cpKey := fmt.Sprintf("%s:%s:%s", mapping.UUID, streamName, shard.ShardID)
+		src := streamSource{kind: streamSourceKinesis, streamArn: mapping.EventSourceArn, shardID: shard.ShardID}
+
+		if shard.SequenceNumberRangeEnd != "" {
+			// A closed shard never yields new records; deliver the final
+			// invocation for any window still open on it and flush any
+			// records its batching window was still gathering.
+			if windowed {
+				p.closeEndedShardWindow(ctx, mapping, cpKey, shard.ShardID)
+			}
+			if buffered {
+				if items := p.dropStreamBuffer(cpKey); len(items) > 0 {
+					if out := p.flushStreamBuffer(ctx, mapping, src, cpKey, "", items); out.err != nil {
+						p.log("failed to flush batching window of ended shard",
+							"mapping", mapping.UUID, "shard", shard.ShardID, "error", out.err)
+					}
 				}
 			}
 			continue
 		}
 
-		eventPayload := map[string]interface{}{
-			"Records": kinesisRecords,
+		p.kinesisCPMu.RLock()
+		lastSeq := p.kinesisCP[cpKey]
+		p.kinesisCPMu.RUnlock()
+
+		// While a tumbling window is open the read position advances per
+		// delivered chunk; the durable checkpoint only moves when the window
+		// completes. A batching-window buffer likewise reads ahead of the
+		// checkpoint while records are being gathered.
+		readFrom := lastSeq
+		if windowed {
+			p.windowsMu.Lock()
+			if w := p.windows[cpKey]; w != nil && w.readSeq != "" {
+				readFrom = w.readSeq
+			}
+			p.windowsMu.Unlock()
+		} else if buffered {
+			if seq := p.streamBufferReadSeq(cpKey); seq != "" {
+				readFrom = seq
+			}
 		}
-		payload, err := json.Marshal(eventPayload)
+
+		var iteratorType, iteratorSeqNum string
+		var iteratorTimestamp *time.Time
+		if readFrom != "" {
+			iteratorType = "AFTER_SEQUENCE_NUMBER"
+			iteratorSeqNum = readFrom
+		} else {
+			// Honour the user-configured StartingPosition for the initial read.
+			// Default to TRIM_HORIZON for backward compatibility.
+			switch mapping.StartingPosition {
+			case "LATEST":
+				iteratorType = "LATEST"
+			case "AT_TIMESTAMP":
+				iteratorType = "AT_TIMESTAMP"
+				if !mapping.StartingPositionTimestamp.IsZero() {
+					ts := mapping.StartingPositionTimestamp.UTC()
+					iteratorTimestamp = &ts
+				}
+			default:
+				iteratorType = "TRIM_HORIZON"
+			}
+		}
+
+		iteratorSeq, err := p.bus.KinesisInvoker().CreateShardIterator(ctx, streamName, shard.ShardID, iteratorType, iteratorSeqNum, iteratorTimestamp)
 		if err != nil {
-			p.log("failed to marshal Kinesis ESM payload", "stream", streamName, "error", err)
+			p.log("failed to create shard iterator", "stream", streamName, "shard", shard.ShardID, "error", err)
 			continue
 		}
 
-		fnName := arnutil.ExtractFunctionNameFromARN(mapping.FunctionArn)
-		if fnName == "" {
-			p.log("failed to extract function name from ARN", "arn", mapping.FunctionArn)
-			continue
+		// Fetch up to ParallelizationFactor batches; a chained read picks
+		// up strictly after the previous batch's last record. The first
+		// read of a LATEST anchor includes the anchor record itself: the
+		// mapping activates immediately on this platform, without the
+		// activation lag that on AWS lets records published between
+		// CreateEventSourceMapping and the iterator anchoring still be
+		// delivered, so the anchor record — the stream's latest at first
+		// poll — must be read inclusively.
+		anchorInitialLATEST := readFrom == "" && iteratorType == "LATEST"
+		var batches [][]eventbus.KinesisRecord
+		pos := iteratorSeq
+		for i := 0; i < pf; i++ {
+			records, next, gerr := p.bus.KinesisInvoker().GetRecords(ctx, streamName, shard.ShardID, pos, batchSize, i == 0 && anchorInitialLATEST)
+			if gerr != nil {
+				p.log("failed to get records from Kinesis", "stream", streamName, "shard", shard.ShardID, "error", gerr)
+				break
+			}
+			if len(records) == 0 {
+				break
+			}
+			batches = append(batches, records)
+			if int32(len(records)) < batchSize {
+				break
+			}
+			pos = next
+		}
+		if len(batches) == 0 && readFrom == "" {
+			// Persist the initial anchor so the next cycle reads strictly
+			// after it instead of re-anchoring LATEST at a newer latest
+			// record, which would skip everything that arrived in between.
+			// Windowed and buffering mappings need this as well: until their
+			// first window or buffer opens they hold no read position of
+			// their own, so without a durable anchor every empty poll would
+			// re-anchor LATEST and lose all but the newest record of an
+			// inter-poll burst. An open window or gathering buffer always
+			// carries a read position, so the condition cannot fire then.
+			p.advanceCheckpoint(cpKey, iteratorSeq)
 		}
 
-		_, _, invokeErr := p.invokeLambda(ctx, mapping.FunctionArn, payload)
-		if invokeErr != nil {
-			p.log("lambda invocation failed for Kinesis ESM", "function", fnName, "stream", streamName, "error", invokeErr)
-			if err := p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error())); err != nil {
-				logs.Warn("esm: failed to set state after Kinesis invocation error",
-					logs.String("mapping", mapping.UUID), logs.Err(err))
+		if windowed {
+			// The tumbling window state is order-sensitive, so the fetched
+			// batches flow through the window machinery sequentially.
+			for _, records := range batches {
+				windowCycle(cpKey, shard.ShardID, windowedItemsOf(shard.ShardID, records), records[len(records)-1].SequenceNumber)
+			}
+			if len(batches) == 0 {
+				// No records this cycle, but the inactivity grace period may
+				// have expired for an open window.
+				windowCycle(cpKey, shard.ShardID, nil, "")
 			}
 			continue
 		}
 
-		latestSeq := records[len(records)-1].SequenceNumber
+		if buffered {
+			// Gather the surviving records of every fetched batch; the read
+			// position moves with the buffer, the checkpoint only at flush.
+			buf := p.getStreamBuffer(cpKey)
+			for _, records := range batches {
+				items := prepareItems(shard.ShardID, records)
+				if len(items) == 0 {
+					continue
+				}
+				if len(buf.items) == 0 {
+					buf.firstAt = time.Now()
+				}
+				buf.items = append(buf.items, items...)
+				buf.readThrough = records[len(records)-1].SequenceNumber
+			}
+			full, expired := bufferReady(len(buf.items), int(batchSize), buf.firstAt, time.Now(), batchingWindow)
+			if len(buf.items) > 0 && !full && !expired {
+				// The window is still gathering; hold the records.
+				continue
+			}
+			items := p.dropStreamBuffer(cpKey)
+			readThrough := buf.readThrough
+			if len(items) == 0 {
+				// Nothing survived, but the read position still moves.
+				if readThrough != "" {
+					p.advanceCheckpoint(cpKey, readThrough)
+				}
+				continue
+			}
+			outcome := p.flushStreamBuffer(ctx, mapping, src, cpKey, readThrough, items)
+			if outcome.err != nil {
+				report.recordFailure()
+				p.log("lambda invocation failed for Kinesis ESM batching window",
+					"function", fnName, "stream", streamName, "error", outcome.err)
+				if rerr := p.esmStore.SetProcessingResult(mapping.UUID, outcome.err.Error()); rerr != nil {
+					logs.Warn("esm: failed to set state after Kinesis window error",
+						logs.String("mapping", mapping.UUID), logs.Err(rerr))
+				}
+				continue
+			}
+			if outcome.discarded {
+				report.recordDiscard()
+				p.log("discarded failed stream records after exhausting retries", "function", fnName, "stream", streamName)
+				if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+					logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+				}
+			} else if outcome.reported > 0 {
+				report.recordPartial(outcome.reported)
+			} else if outcome.delivered {
+				report.recordProcessed()
+			}
+			continue
+		}
+
+		if len(batches) == 0 {
+			continue
+		}
+
+		// "The number of batches to process from each shard concurrently":
+		// batches run in parallel except where they share a partition key,
+		// and the checkpoint takes the contiguous consumed prefix.
+		keySets := make([]map[string]struct{}, len(batches))
+		for i, records := range batches {
+			keySets[i] = kinesisRecordKeys(records)
+		}
+		outcomes := runOrderedBatches(ctx, len(batches), keySets, func(ctx context.Context, idx int) batchOutcome {
+			return processBatch(src, batches[idx])
+		})
+		lastConsumed, delivered, discarded, reported, failure := prefixOutcome(outcomes)
+		if failure != nil {
+			report.recordFailure()
+			p.log("lambda invocation failed for Kinesis ESM", "function", fnName, "stream", streamName, "error", failure)
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, failure.Error()); rerr != nil {
+				logs.Warn("esm: failed to set state after Kinesis invocation error",
+					logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+		} else if discarded {
+			report.recordDiscard()
+			p.log("discarded failed stream records after exhausting retries", "function", fnName, "stream", streamName)
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+				logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+		}
+		if reported > 0 {
+			report.recordPartial(reported)
+		}
+		if delivered {
+			report.recordProcessed()
+		}
+
+		if lastConsumed == "" {
+			continue
+		}
 		p.kinesisCPMu.Lock()
-		p.kinesisCP[cpKey] = latestSeq
+		p.kinesisCP[cpKey] = lastConsumed
 		p.kinesisCPMu.Unlock()
-		if err := p.persistKinesisCheckpoint(cpKey, latestSeq); err != nil {
+		if err := p.persistKinesisCheckpoint(cpKey, lastConsumed); err != nil {
 			logs.Warn("esm: failed to persist Kinesis checkpoint, in-memory state may diverge on restart",
 				logs.String("key", cpKey), logs.Err(err))
 		}
 	}
 
-	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
-		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
+	// Only a cycle that actually delivered records may report success, and
+	// never over a failure, discard or partial batch response the same
+	// cycle recorded: idle cycles leave the previous result untouched, a
+	// discard stays visible even when a later batch of the same cycle
+	// succeeded, and a partial response reports its records instead.
+	if report.shouldReportSuccess() {
+		if err := p.esmStore.SetProcessingResult(mapping.UUID, "No errors."); err != nil {
+			logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
+		}
+	} else if !report.failure && !report.discarded && report.partial > 0 {
+		if err := p.esmStore.SetProcessingResult(mapping.UUID, streamPartialResult(report.partial)); err != nil {
+			logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
+		}
 	}
 }
 
@@ -477,10 +834,68 @@ func (p *esmPoller) processDynamoDBStreamsMapping(ctx context.Context, mapping *
 	lastSeqStr := p.kinesisCP[checkpointKey]
 	p.kinesisCPMu.RUnlock()
 
+	windowed := mapping.TumblingWindowInSeconds > 0
+	windowSeconds := int64(mapping.TumblingWindowInSeconds)
+
+	// While a tumbling window is open the read position advances per
+	// delivered chunk; the durable checkpoint only moves when the window
+	// completes. A batching-window buffer likewise reads ahead of the
+	// checkpoint while records are being gathered.
+	shardID := invoker.ShardIDForStream(mapping.EventSourceArn)
+	src := streamSource{kind: streamSourceDynamoDB, streamArn: mapping.EventSourceArn, shardID: shardID}
+	buffered := !windowed && mapping.MaximumBatchingWindowInSeconds > 0
+	readFrom := lastSeqStr
+	if windowed {
+		p.windowsMu.Lock()
+		if w := p.windows[checkpointKey]; w != nil && w.readSeq != "" {
+			readFrom = w.readSeq
+		}
+		p.windowsMu.Unlock()
+	} else if buffered {
+		if seq := p.streamBufferReadSeq(checkpointKey); seq != "" {
+			readFrom = seq
+		}
+	}
+
+	// Reads are exclusive of the read position, so the numeric sequence
+	// of a record is a valid "read everything after this" cursor.
 	var fromSeq int64
-	if lastSeqStr != "" {
-		if v, err := strconv.ParseInt(lastSeqStr, 10, 64); err == nil {
+	anchorLATEST := int64(0)
+	anchored := false
+	if readFrom != "" {
+		if v, err := strconv.ParseInt(readFrom, 10, 64); err == nil {
 			fromSeq = v
+		}
+	} else {
+		// No durable read position yet: honour the user-configured
+		// StartingPosition for the initial read, mirroring the Kinesis
+		// path. AT_TIMESTAMP never reaches the poller for DynamoDB —
+		// mapping creation rejects it.
+		switch mapping.StartingPosition {
+		case "LATEST":
+			latest, aerr := invoker.GetLatestSequence(ctx, streamRegion, tableName)
+			if aerr != nil {
+				p.log("failed to read latest DynamoDB stream sequence",
+					"table", tableName, "error", aerr.Error())
+				return
+			}
+			anchorLATEST = latest
+			anchored = true
+			// The anchor is read inclusively: the mapping activates
+			// immediately on this platform, without the activation lag
+			// that on AWS lets records published between
+			// CreateEventSourceMapping and the iterator anchoring still
+			// be delivered, so the anchor record — the stream's latest
+			// at first poll — must be delivered too.
+			fromSeq = latest - 1
+			if fromSeq < 0 {
+				fromSeq = 0
+			}
+		default:
+			// TRIM_HORIZON (or unset): read from the beginning of the
+			// stream. Sequence numbers are assigned from one upwards, so
+			// zero reads every record.
+			fromSeq = 0
 		}
 	}
 
@@ -489,77 +904,252 @@ func (p *esmPoller) processDynamoDBStreamsMapping(ctx context.Context, mapping *
 		batchSize = 100
 	}
 
-	records, nextSeq, err := invoker.GetRecords(ctx, streamRegion, tableName, fromSeq, int(batchSize))
-	if err != nil {
-		p.log("failed to get DynamoDB stream records",
-			"table", tableName, "error", err.Error())
-		return
+	// reportWindow mirrors the Kinesis path's status reporting for the
+	// windowed flow; the non-windowed flow keeps its own inline reporting.
+	// The success write is deferred to the end of the poll behind the
+	// cycle precedence, so a batch discarded earlier in the same cycle
+	// cannot be overwritten by a later successful one.
+	report := cycleReport{}
+	reportWindow := func(res windowCycleResult, werr error) {
+		if werr != nil {
+			report.recordFailure()
+			p.log("failed to invoke function for DynamoDB ESM tumbling window",
+				"function", mapping.FunctionArn, "error", werr.Error())
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, werr.Error()); rerr != nil {
+				logs.Warn("esm: failed to set result after DynamoDB window error",
+					logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+			return
+		}
+		if res.discarded {
+			report.recordDiscard()
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+				logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+			return
+		}
+		if res.processedAny {
+			report.recordProcessed()
+		}
+	}
+	windowCycle := func(items []windowedStreamItem, readThrough string) {
+		res, werr := p.processStreamWindow(ctx, mapping, checkpointKey, src, items, readThrough)
+		reportWindow(res, werr)
 	}
 
-	if len(records) == 0 {
-		return
+	pf := parallelizationFactorOf(mapping)
+
+	// Fetch up to ParallelizationFactor batches; a chained read picks up
+	// strictly after the previous batch's last record. The invoker answers
+	// with the last record's sequence, which is a valid read position
+	// because reads are exclusive of it.
+	type ddbBatch struct {
+		records []eventbus.DynamoDBStreamRecord
+		nextSeq int64
+	}
+	var batches []ddbBatch
+	from := fromSeq
+	for i := 0; i < pf; i++ {
+		records, nextSeq, gerr := invoker.GetRecords(ctx, streamRegion, tableName, from, int(batchSize))
+		if gerr != nil {
+			p.log("failed to get DynamoDB stream records",
+				"table", tableName, "error", gerr.Error())
+			if len(batches) == 0 {
+				return
+			}
+			break
+		}
+		if len(records) == 0 {
+			break
+		}
+		batches = append(batches, ddbBatch{records: records, nextSeq: nextSeq})
+		if int32(len(records)) < batchSize {
+			break
+		}
+		from = nextSeq
 	}
 
-	// Apply event filtering before invocation.
-	records = filterDynamoDBRecords(records, mapping.FilterCriteria)
-	if len(records) == 0 {
-		// All records were filtered out.  Advance the checkpoint to
-		// avoid re-reading the same records on the next poll.
-		if nextSeq > 0 {
-			nextSeqStr := strconv.FormatInt(nextSeq, 10)
-			p.kinesisCPMu.Lock()
-			p.kinesisCP[checkpointKey] = nextSeqStr
-			p.kinesisCPMu.Unlock()
-			if err := p.persistKinesisCheckpoint(checkpointKey, nextSeqStr); err != nil {
-				logs.Warn("esm: failed to persist DynamoDB checkpoint", logs.Err(err))
+	if len(batches) == 0 && anchored {
+		// Persist the initial anchor so the next cycle reads strictly
+		// after it instead of re-anchoring LATEST at a newer latest
+		// record, which would skip everything that arrived in between —
+		// the same inter-poll burst protection the Kinesis path applies.
+		// A cycle that returned records advances the checkpoint through
+		// the normal delivery flow, which never moves it backwards.
+		p.advanceCheckpoint(checkpointKey, strconv.FormatInt(anchorLATEST, 10))
+	}
+
+	if windowed {
+		// The tumbling window state is order-sensitive, so the fetched
+		// batches flow through the window machinery sequentially.
+		for _, b := range batches {
+			readThrough := strconv.FormatInt(b.nextSeq, 10)
+
+			// Apply age expiry and event filtering before invocation.
+			records := p.discardExpiredDynamoDBRecords(ctx, mapping, src, b.records)
+			records = filterDynamoDBRecords(records, mapping.FilterCriteria)
+			if len(records) == 0 {
+				// All records were filtered out; advance the read position
+				// to avoid re-reading them on the next poll.
+				windowCycle(nil, readThrough)
+				continue
+			}
+
+			witems := make([]windowedStreamItem, len(records))
+			for i := range records {
+				witems[i] = windowedStreamItem{
+					item:        streamBatchItem{record: &records[i], seq: dynamoDBRecordSeq(&records[i])},
+					windowStart: windowStartOf(ddbArrivalUnix(&records[i]), windowSeconds),
+				}
+			}
+			windowCycle(witems, readThrough)
+		}
+		if len(batches) == 0 {
+			// No records this cycle, but the inactivity grace period may
+			// have expired for an open window.
+			windowCycle(nil, "")
+		}
+		// Only a cycle without a failure or discard that delivered records
+		// may report success; the deferred write keeps a discard recorded
+		// earlier in the cycle visible.
+		if report.shouldReportSuccess() {
+			if err := p.esmStore.SetProcessingResult(mapping.UUID, "No errors."); err != nil {
+				logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
 			}
 		}
-		if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
-			logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
+		return
+	}
+
+	if buffered {
+		// Gather the surviving records of every fetched batch; the read
+		// position moves with the buffer, the checkpoint only at flush.
+		buf := p.getStreamBuffer(checkpointKey)
+		for _, b := range batches {
+			records := p.discardExpiredDynamoDBRecords(ctx, mapping, src, b.records)
+			records = filterDynamoDBRecords(records, mapping.FilterCriteria)
+			if len(records) == 0 {
+				continue
+			}
+			items := make([]streamBatchItem, len(records))
+			for i := range records {
+				items[i] = streamBatchItem{record: &records[i], seq: dynamoDBRecordSeq(&records[i])}
+			}
+			if len(buf.items) == 0 {
+				buf.firstAt = time.Now()
+			}
+			buf.items = append(buf.items, items...)
+			buf.readThrough = strconv.FormatInt(b.nextSeq, 10)
+		}
+		full, expired := bufferReady(len(buf.items), int(batchSize), buf.firstAt, time.Now(), mapping.MaximumBatchingWindowInSeconds)
+		if len(buf.items) > 0 && !full && !expired {
+			// The window is still gathering; hold the records.
+			return
+		}
+		items := p.dropStreamBuffer(checkpointKey)
+		readThrough := buf.readThrough
+		if len(items) == 0 {
+			// Nothing survived, but the read position still moves.
+			if readThrough != "" {
+				p.advanceCheckpoint(checkpointKey, readThrough)
+			}
+			return
+		}
+		outcome := p.flushStreamBuffer(ctx, mapping, src, checkpointKey, readThrough, items)
+		if outcome.err != nil {
+			p.log("failed to invoke function for DynamoDB ESM batching window",
+				"function", mapping.FunctionArn, "error", outcome.err.Error())
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, outcome.err.Error()); rerr != nil {
+				logs.Warn("esm: failed to set result after DynamoDB window error",
+					logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+			return
+		}
+		if outcome.discarded {
+			if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+				logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+			}
+			return
+		}
+		if outcome.reported > 0 {
+			if err := p.esmStore.SetProcessingResult(mapping.UUID, streamPartialResult(outcome.reported)); err != nil {
+				logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
+			}
+			return
+		}
+		if outcome.delivered {
+			if err := p.esmStore.SetProcessingResult(mapping.UUID, "No errors."); err != nil {
+				logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
+			}
 		}
 		return
 	}
 
-	// Build the Lambda event payload in DynamoDB Streams format.
-	event := map[string]interface{}{
-		"Records": records,
-	}
-
-	payload, err := json.Marshal(event)
-	if err != nil {
-		p.log("failed to marshal DynamoDB Streams event", "error", err.Error())
+	if len(batches) == 0 {
 		return
 	}
 
-	functionName := extractFunctionName(mapping.FunctionArn)
-	fnStore := p.lambdaSvc.GetFunctionStoreForRegion(streamRegion)
-	fn, _, _, err := p.lambdaSvc.resolveQualifier(fnStore, functionName, "")
-	if err != nil {
-		p.log("failed to resolve function for DynamoDB ESM",
-			"function", functionName, "error", err.Error())
-		return
+	// processBatch runs the non-windowed delivery pipeline for one batch;
+	// a batch whose records were all filtered out still consumes its
+	// position.
+	processBatch := func(b ddbBatch) batchOutcome {
+		records := p.discardExpiredDynamoDBRecords(ctx, mapping, src, b.records)
+		records = filterDynamoDBRecords(records, mapping.FilterCriteria)
+		if len(records) == 0 {
+			return batchOutcome{lastConsumed: strconv.FormatInt(b.nextSeq, 10)}
+		}
+
+		items := make([]streamBatchItem, len(records))
+		for i := range records {
+			items[i] = streamBatchItem{record: &records[i], seq: dynamoDBRecordSeq(&records[i])}
+		}
+		return p.processStreamBatch(ctx, mapping, src, items)
 	}
 
-	result, err := p.lambdaSvc.invokeFunction(fn, nil, fnStore, streamRegion, payload, "")
-	if err != nil {
+	// Batches run concurrently except where they share an item key; the
+	// checkpoint takes the contiguous consumed prefix.
+	keySets := make([]map[string]struct{}, len(batches))
+	for i, b := range batches {
+		keySets[i] = dynamoDBRecordKeys(b.records)
+	}
+	outcomes := runOrderedBatches(ctx, len(batches), keySets, func(ctx context.Context, idx int) batchOutcome {
+		return processBatch(batches[idx])
+	})
+	lastConsumed, delivered, discarded, reported, failure := prefixOutcome(outcomes)
+	if failure != nil {
 		p.log("failed to invoke function for DynamoDB ESM",
-			"function", functionName, "error", err.Error())
-		return
+			"function", mapping.FunctionArn, "error", failure.Error())
+		if rerr := p.esmStore.SetProcessingResult(mapping.UUID, failure.Error()); rerr != nil {
+			logs.Warn("esm: failed to set result after DynamoDB invocation error",
+				logs.String("mapping", mapping.UUID), logs.Err(rerr))
+		}
+	} else if discarded {
+		p.log("discarded failed stream records after exhausting retries",
+			"function", mapping.FunctionArn)
+		if rerr := p.esmStore.SetProcessingResult(mapping.UUID, "Records discarded after exhausting retries"); rerr != nil {
+			logs.Warn("esm: failed to set discard result", logs.String("mapping", mapping.UUID), logs.Err(rerr))
+		}
 	}
 
-	// Update checkpoint only on successful invocation.
-	if result != nil {
-		nextSeqStr := strconv.FormatInt(nextSeq, 10)
+	// Advance the checkpoint to the contiguous consumed prefix (the full
+	// batch on success, the prefix before a failure or a partial batch
+	// response).
+	if lastConsumed != "" {
 		p.kinesisCPMu.Lock()
-		p.kinesisCP[checkpointKey] = nextSeqStr
+		p.kinesisCP[checkpointKey] = lastConsumed
 		p.kinesisCPMu.Unlock()
-		if err := p.persistKinesisCheckpoint(checkpointKey, nextSeqStr); err != nil {
+		if err := p.persistKinesisCheckpoint(checkpointKey, lastConsumed); err != nil {
 			logs.Warn("esm: failed to persist DynamoDB checkpoint", logs.Err(err))
 		}
 	}
 
-	if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
-		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
+	if failure == nil && !discarded && delivered {
+		result := "No errors."
+		if reported > 0 {
+			result = streamPartialResult(reported)
+		}
+		if err := p.esmStore.SetProcessingResult(mapping.UUID, result); err != nil {
+			logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.Err(err))
+		}
 	}
 }
 
@@ -636,9 +1226,11 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 
 	records := make([]esmSQSRecord, 0, len(allMessages))
 	receiptHandles := make([]string, 0, len(allMessages))
+	messageIDs := make([]string, 0, len(allMessages))
 	for _, msg := range allMessages {
 		records = append(records, receivedSQSMessageToRecord(msg, mapping.EventSourceArn, region))
 		receiptHandles = append(receiptHandles, msg.ReceiptHandle)
+		messageIDs = append(messageIDs, msg.MessageID)
 	}
 
 	// Apply event filtering before invocation.
@@ -653,7 +1245,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 				p.log("failed to delete filtered-out message", "queue", queueName, "error", err)
 			}
 		}
-		if err := p.esmStore.SetState(mapping.UUID, "Enabled", "Last processing result: No errors."); err != nil {
+		if err := p.esmStore.SetProcessingResult(mapping.UUID, "No errors."); err != nil {
 			logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
 		}
 		return
@@ -672,19 +1264,27 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		return
 	}
 
-	_, _, invokeErr := p.invokeLambda(ctx, mapping.FunctionArn, payload)
+	var report batchResponseReport
+	invokeErr := p.invokeWithRetry(ctx, mapping, payload, batchResponseSink(mapping, &report))
 
 	if invokeErr != nil {
 		p.log("lambda invocation failed", "function", fnName, "queue", queueName, "error", invokeErr)
-		if err := p.esmStore.SetState(mapping.UUID, "Enabled", fmt.Sprintf("Last processing result: %s", invokeErr.Error())); err != nil {
+		if err := p.esmStore.SetProcessingResult(mapping.UUID, invokeErr.Error()); err != nil {
 			logs.Warn("esm: failed to set state after SQS invocation error",
 				logs.String("mapping", mapping.UUID), logs.Err(err))
 		}
 		return
 	}
 
+	// A partial batch response deletes only the messages the function did
+	// not report: "To make messages id2 and id4 visible again in your
+	// queue, your function should return" their identifiers — the reported
+	// messages return with the queue's visibility timeout.
 	deleteFailures := 0
-	for _, handle := range receiptHandles {
+	for i, handle := range receiptHandles {
+		if _, failed := report.failedIDs[messageIDs[i]]; failed {
+			continue
+		}
 		if err := p.bus.SQSInvoker().DeleteMessage(ctx, region, queueURL, handle); err != nil {
 			p.log("failed to delete message", "queue", queueName, "error", err)
 			deleteFailures++
@@ -694,9 +1294,11 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 	lastResult := "No errors."
 	if deleteFailures > 0 {
 		lastResult = fmt.Sprintf("%d message(s) failed to delete", deleteFailures)
+	} else if reported := reportedSQSFailureCount(messageIDs, report); reported > 0 {
+		lastResult = sqsPartialResult(reported)
 	}
 
-	if err := p.esmStore.SetState(mapping.UUID, "Enabled", lastResult); err != nil {
+	if err := p.esmStore.SetProcessingResult(mapping.UUID, lastResult); err != nil {
 		logs.Error("esm: failed to set state", logs.String("mapping", mapping.UUID), logs.String("error", err.Error()))
 	}
 }
@@ -757,59 +1359,40 @@ func receivedSQSMessageToRecord(msg eventbus.ReceivedSQSMessage, eventSourceArn,
 }
 
 // invokeLambda invokes the Lambda function with the given name and payload.
-// It constructs the necessary store context and delegates to the internal
-// invokeFunction method on the LambdaService.
-func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payload []byte) (int64, []byte, error) {
+// It delegates to the event-source invoke path, which resolves name/ARN
+// reference forms (including alias qualifiers), the target region, and —
+// unlike the gateway invoke surface — reports the function-level error
+// classification so failed batches are not acknowledged as successes.
+func (p *esmPoller) invokeLambda(ctx context.Context, functionRef string, payload []byte) (*lambdastore.InvocationResult, error) {
+	if p.invoke != nil {
+		return p.invoke(ctx, functionRef, payload)
+	}
 	if p.lambdaSvc == nil {
-		return 0, nil, fmt.Errorf("esm: lambda service not available")
+		return nil, fmt.Errorf("esm: lambda service not available")
 	}
-
-	region := p.region
-	functionName := functionRef
-	if strings.HasPrefix(functionRef, "arn:") {
-		if _, _, arnRegion, _, _ := arnutil.SplitARN(functionRef); arnRegion != "" {
-			region = arnRegion
-		}
-		functionName = arnutil.ExtractFunctionNameFromARN(functionRef)
-	}
-
-	fnStore := p.lambdaSvc.getOrCreateFunctionStore(region)
-	function, ver, _, err := p.lambdaSvc.resolveQualifier(fnStore, functionName, "")
-	if err != nil {
-		return 0, nil, fmt.Errorf("esm: failed to resolve function %s: %w", functionName, err)
-	}
-
-	result, err := p.lambdaSvc.invokeFunction(function, ver, fnStore, region, payload, "")
-	if err != nil {
-		return 0, nil, fmt.Errorf("esm: invocation failed for %s: %w", functionName, err)
-	}
-	if result == nil {
-		return 0, nil, fmt.Errorf("esm: invocation returned nil result for %s", functionName)
-	}
-
-	return result.StatusCode, result.Payload, nil
+	return p.lambdaSvc.InvokeForEventSource(ctx, functionRef, payload)
 }
 
-// purgeStaleKinesisCheckpoints removes checkpoint entries for Kinesis ESM
-// mappings that no longer exist or are not in the enabled state.
-func (p *esmPoller) purgeStaleKinesisCheckpoints(activeKinesisUUIDs map[string]struct{}) {
+// purgeStaleKinesisCheckpoints removes checkpoint entries for stream ESM
+// mappings — Kinesis and DynamoDB Streams alike — that no longer exist or
+// are not in the enabled state.
+func (p *esmPoller) purgeStaleKinesisCheckpoints(activeUUIDs map[string]struct{}) {
 	p.kinesisCPMu.Lock()
 	for key := range p.kinesisCP {
-		// DynamoDB checkpoints use the "ddb:" prefix and must not be purged
-		// by the Kinesis cleanup pass — they share the kinesisCP map but
-		// belong to a different ESM type.
-		if strings.HasPrefix(key, "ddb:") {
+		// Both key forms share the map: "<uuid>:<stream>:<shard>" for
+		// Kinesis and "ddb:<uuid>" for DynamoDB Streams. The mapping UUID
+		// sits before the first colon either way.
+		uuid := strings.TrimPrefix(key, "ddb:")
+		if idx := strings.IndexByte(uuid, ':'); idx >= 0 {
+			uuid = uuid[:idx]
+		}
+		if uuid == "" {
 			continue
 		}
-		uuidEnd := strings.IndexByte(key, ':')
-		if uuidEnd < 0 {
-			continue
-		}
-		uuid := key[:uuidEnd]
-		if _, active := activeKinesisUUIDs[uuid]; !active {
+		if _, active := activeUUIDs[uuid]; !active {
 			delete(p.kinesisCP, key)
 			if err := p.deleteKinesisCheckpoint(key); err != nil {
-				logs.Warn("esm: failed to delete stale Kinesis checkpoint from persistence",
+				logs.Warn("esm: failed to delete stale stream checkpoint from persistence",
 					logs.String("key", key), logs.Err(err))
 			}
 		}
@@ -862,12 +1445,16 @@ func (p *esmPoller) checkpointBucket() storage.Bucket {
 // log emits a structured log message if a logger is configured on the
 // poller.
 func (p *esmPoller) log(msg string, keyvals ...interface{}) {
-	if p.logger == nil {
-		return
+	// Fall back to the package logger: a nil logger would otherwise drop
+	// every poller diagnostic, leaving event source delivery failures
+	// invisible in the server log.
+	target := p.logger
+	if target == nil {
+		target = logs.Default()
 	}
 	fields := make([]logs.Field, 0, len(keyvals)/2)
 	for i := 0; i+1 < len(keyvals); i += 2 {
 		fields = append(fields, logs.Field{Key: fmt.Sprint(keyvals[i]), Value: keyvals[i+1]})
 	}
-	p.logger.Info(msg, fields...)
+	target.Info(msg, fields...)
 }

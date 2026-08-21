@@ -29,6 +29,26 @@ func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, m
 	return data, nil
 }
 
+// GetObjectVersion implements the eventbus.S3Invoker interface. It
+// retrieves the content of a specific object version; an empty versionID
+// reads the latest version, matching the store's version-aware read.
+func (s *S3Service) GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error) {
+	objs := s.s3Store.Objects(region)
+	reader, _, err := objs.GetWithVersion(ctx, bucket, key, versionID)
+	if err != nil {
+		return nil, fmt.Errorf("s3 GetObjectVersion %s/%s@%s: %w", bucket, key, versionID, err)
+	}
+	defer reader.Close()
+	if maxBytes <= 0 {
+		maxBytes = 5 * 1024 * 1024 * 1024
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
+	if err != nil {
+		return nil, fmt.Errorf("s3 GetObjectVersion read %s/%s@%s: %w", bucket, key, versionID, err)
+	}
+	return data, nil
+}
+
 // PutObject stores an object in S3 via the cross-service invoker.
 func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error {
 	objs := s.s3Store.Objects(region)

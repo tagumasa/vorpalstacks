@@ -364,17 +364,23 @@ func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, 
 }
 
 // CreateShardIterator creates a shard iterator for the given stream and shard.
-func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string) (string, error) {
-	iterator, err := a.store.CreateShardIterator(streamName, shardID, iteratorType, startingSequenceNumber, nil)
+// The timestamp parameter is honoured for AT_TIMESTAMP iterators.
+func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
+	iterator, err := a.store.CreateShardIterator(streamName, shardID, iteratorType, startingSequenceNumber, timestamp)
 	if err != nil {
 		return "", err
 	}
 	return iterator.SequenceNumber, nil
 }
 
-// GetRecords retrieves records from a Kinesis shard starting at the given sequence number.
-func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32) ([]eventbus.KinesisRecord, string, error) {
-	records, nextSeq, err := a.store.GetRecords(streamName, shardID, startingSequenceNumber, limit, true)
+// GetRecords retrieves records from a Kinesis shard strictly after the
+// given sequence number. The poller resumes from checkpoints and chains
+// batch reads, so re-including the boundary record would redeliver it on
+// every cycle; the public API keeps the same exclusive semantics for
+// every iterator type except AT_SEQUENCE_NUMBER. includeStart re-enables
+// the inclusive read for the poller's initial LATEST anchor.
+func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
+	records, nextSeq, err := a.store.GetRecords(streamName, shardID, startingSequenceNumber, limit, includeStart)
 	if err != nil {
 		return nil, "", err
 	}

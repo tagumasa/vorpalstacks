@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"vorpalstacks/internal/eventbus"
+	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // ddbStreamsInvoker adapts the DynamoDB service to the
@@ -65,4 +66,12 @@ func (i *ddbStreamsInvoker) GetLatestSequence(ctx context.Context, region, table
 		return 0, err
 	}
 	return store.Streams().GetLatestSequence(tableName)
+}
+
+// ShardIDForStream returns the deterministic shard identifier of a DynamoDB
+// stream ARN, the same value the DynamoDB Streams API reports for the
+// stream. Lambda's tumbling-window events carry it as the envelope
+// shardId.
+func (i *ddbStreamsInvoker) ShardIDForStream(streamARN string) string {
+	return dbstore.ShardIDForStream(streamARN)
 }

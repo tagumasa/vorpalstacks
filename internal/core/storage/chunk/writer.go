@@ -9,9 +9,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/klauspost/compress/zstd"
 )
+
+// fileSequence uniquifies chunk file names across concurrent writers.
+var fileSequence uint64
 
 var (
 	// ErrEmptyEntries is returned when attempting to write a chunk with no entries.
@@ -152,7 +156,12 @@ func (w *Writer) Flush() (string, error) {
 	entries := w.buffer
 	w.buffer = w.buffer[:0]
 
-	chunkID := fmt.Sprintf("%d-%d", entries[0].Timestamp(), len(entries))
+	// The file name must be unique: concurrent writers flushing batches
+	// whose first entries share a millisecond timestamp and whose entry
+	// counts match would otherwise write to the same path, and every chunk
+	// index pointing at that path would read the one surviving file's
+	// events. The per-process sequence guarantees uniqueness.
+	chunkID := fmt.Sprintf("%d-%d-%d", entries[0].Timestamp(), len(entries), atomic.AddUint64(&fileSequence, 1))
 	chunkPath := filepath.Join(w.opts.ChunksDir, chunkID+".vlog")
 
 	absPath, err := filepath.Abs(chunkPath)

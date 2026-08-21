@@ -9,11 +9,27 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
+// resolveConcurrencyFunction resolves the FunctionName reference forms for
+// the function-level concurrency operations (name, name:qualifier, full or
+// partial ARN — the qualifier is irrelevant because reserved concurrency
+// applies to the whole function).
+func resolveConcurrencyFunction(params map[string]interface{}) (string, error) {
+	functionNameRaw := request.GetStringParam(params, "FunctionName")
+	if functionNameRaw == "" {
+		return "", NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	functionName := extractFunctionName(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return "", err
+	}
+	return functionName, nil
+}
+
 // PutFunctionConcurrency sets the reserved concurrent execution limit for the specified Lambda function.
 func (s *LambdaService) PutFunctionConcurrency(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	functionName, err := resolveConcurrencyFunction(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	concurrency := int64(request.GetIntParam(req.Parameters, "ReservedConcurrentExecutions"))
@@ -40,9 +56,9 @@ func (s *LambdaService) PutFunctionConcurrency(ctx context.Context, reqCtx *requ
 
 // GetFunctionConcurrency retrieves the reserved concurrent execution limit for the specified Lambda function.
 func (s *LambdaService) GetFunctionConcurrency(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	functionName, err := resolveConcurrencyFunction(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -57,7 +73,10 @@ func (s *LambdaService) GetFunctionConcurrency(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 	if concurrency == nil {
-		return response.EmptyResponse(), nil
+		// AWS answers with ResourceNotFoundException when the function has
+		// never had reserved concurrency configured: the concurrency
+		// sub-resource does not exist until PutFunctionConcurrency sets it.
+		return nil, ErrResourceNotFound
 	}
 
 	return map[string]interface{}{
@@ -67,9 +86,9 @@ func (s *LambdaService) GetFunctionConcurrency(ctx context.Context, reqCtx *requ
 
 // DeleteFunctionConcurrency removes the reserved concurrent execution limit from the specified Lambda function.
 func (s *LambdaService) DeleteFunctionConcurrency(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	functionName, err := resolveConcurrencyFunction(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

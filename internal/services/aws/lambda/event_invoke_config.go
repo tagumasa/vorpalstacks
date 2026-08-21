@@ -8,16 +8,31 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
-// PutFunctionEventInvokeConfig creates or updates the configuration for asynchronous invocation of the specified Lambda function.
-func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+// resolveEventInvokeTarget resolves the FunctionName reference forms and
+// merges the Qualifier parameter with an embedded qualifier, defaulting to
+// $LATEST when neither is present. Shared by the event-invoke-config
+// operations.
+func resolveEventInvokeTarget(params map[string]interface{}) (string, string, error) {
+	functionNameRaw := request.GetStringParam(params, "FunctionName")
+	if functionNameRaw == "" {
+		return "", "", NewInvalidParameter("FunctionName", "Function name is required")
 	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
+	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return "", "", err
+	}
+	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
 	if qualifier == "" {
 		qualifier = "$LATEST"
+	}
+	return functionName, qualifier, nil
+}
+
+// PutFunctionEventInvokeConfig creates or updates the configuration for asynchronous invocation of the specified Lambda function.
+func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	functionName, qualifier, err := resolveEventInvokeTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	config := &lambdastore.EventInvokeConfig{}
@@ -28,6 +43,10 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 			return nil, err
 		}
 		config.MaximumEventAgeInSeconds = val
+	} else {
+		// Put replaces the whole configuration; omitted members fall back
+		// to the AWS defaults rather than zero.
+		config.MaximumEventAgeInSeconds = lambdastore.DefaultMaximumEventAgeInSeconds
 	}
 	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
 		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
@@ -35,6 +54,8 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 			return nil, err
 		}
 		config.MaximumRetryAttempts = val
+	} else {
+		config.MaximumRetryAttempts = lambdastore.DefaultMaximumRetryAttempts
 	}
 	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
 		config.DestinationConfig = parseDestinationConfig(destMap)
@@ -57,14 +78,9 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 
 // GetFunctionEventInvokeConfig retrieves the configuration for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) GetFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		qualifier = "$LATEST"
+	functionName, qualifier, err := resolveEventInvokeTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -85,14 +101,9 @@ func (s *LambdaService) GetFunctionEventInvokeConfig(ctx context.Context, reqCtx
 
 // DeleteFunctionEventInvokeConfig deletes the configuration for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) DeleteFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		qualifier = "$LATEST"
+	functionName, qualifier, err := resolveEventInvokeTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -112,9 +123,13 @@ func (s *LambdaService) DeleteFunctionEventInvokeConfig(ctx context.Context, req
 
 // ListFunctionEventInvokeConfigs lists all configurations for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
+	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionNameRaw == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	functionName := extractFunctionName(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -145,14 +160,9 @@ func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqC
 // existing values for unprovided fields are preserved. DestinationConfig is replaced
 // atomically when provided. If no config exists for the qualifier, a new one is created.
 func (s *LambdaService) UpdateFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		qualifier = "$LATEST"
+	functionName, qualifier, err := resolveEventInvokeTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -166,7 +176,12 @@ func (s *LambdaService) UpdateFunctionEventInvokeConfig(ctx context.Context, req
 		return nil, err
 	}
 	if config == nil {
-		config = &lambdastore.EventInvokeConfig{}
+		// Creating the configuration through an update: fields the update
+		// does not specify take the AWS defaults.
+		config = &lambdastore.EventInvokeConfig{
+			MaximumEventAgeInSeconds: lambdastore.DefaultMaximumEventAgeInSeconds,
+			MaximumRetryAttempts:     lambdastore.DefaultMaximumRetryAttempts,
+		}
 	}
 
 	// Overwrite only the fields that were explicitly provided in the request.

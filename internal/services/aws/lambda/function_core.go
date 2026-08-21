@@ -31,6 +31,10 @@ type CreateFunctionInput struct {
 	Publish              bool
 	CodeSigningConfigArn string
 
+	// Region of the request; used to persist per-version code snapshots
+	// when Publish is requested.
+	Region string
+
 	// Code metadata — pre-processed by the caller (S3 fetch, base64
 	// decode, disk storage). Empty values are valid for the admin
 	// handler which creates metadata-only functions.
@@ -76,59 +80,67 @@ type ListFunctionsInput struct {
 // createFunctionCore is the single entry point for function creation logic
 // shared by the HTTP API and the admin gRPC handler. It performs all
 // field validation, constructs the Function struct, persists it, applies
-// tags, and optionally publishes a version.
-func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFunctionInput) (*lambdastore.Function, error) {
+// tags, and optionally publishes a version. The returned Version is
+// non-nil only when in.Publish requested an initial publish; callers use
+// it to answer with the published version's configuration.
+func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFunctionInput) (*lambdastore.Function, *lambdastore.Version, error) {
 	if err := validateFunctionName(in.FunctionName); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if in.Runtime == "" && in.PackageType != "Image" {
-		return nil, NewInvalidParameter("Runtime", "Runtime is required for Zip package type")
+		return nil, nil, NewInvalidParameter("Runtime", "Runtime is required for Zip package type")
 	}
 	if in.Runtime != "" && !ValidateRuntime(in.Runtime) {
-		return nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
+		return nil, nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
 	}
 
 	if in.Handler == "" && in.PackageType != "Image" {
-		return nil, NewInvalidParameter("Handler", "Handler is required for Zip package type")
+		return nil, nil, NewInvalidParameter("Handler", "Handler is required for Zip package type")
 	}
 	if in.Handler != "" && in.Runtime != "" {
 		if err := ValidateHandler(in.Runtime, in.Handler); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	if in.Role == "" {
-		return nil, NewInvalidParameter("Role", "Role ARN is required")
+		return nil, nil, NewInvalidParameter("Role", "Role ARN is required")
 	}
 
 	if err := validateCodeSigningConfigArn(in.CodeSigningConfigArn); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := validatePackageType(in.PackageType); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := validateKMSKeyArn(in.KMSKeyArn); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if in.EphemeralStorage != nil {
 		if err := validateEphemeralStorageSize(in.EphemeralStorage.Size); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	if in.SnapStart != nil {
 		if err := validateSnapStartApplyOn(in.SnapStart.ApplyOn); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		if err := validateSnapStartForRuntime(in.Runtime, in.SnapStart); err != nil {
+			return nil, nil, err
+		}
+	}
+	if err := validateEnvironmentVariables(in.Environment); err != nil {
+		return nil, nil, err
 	}
 
 	for _, arch := range in.Architectures {
 		if err := validateArchitecture(arch); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -137,7 +149,7 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 		timeout = 3
 	}
 	if err := validateTimeout(timeout); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	memorySize := in.MemorySize
@@ -145,7 +157,7 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 		memorySize = 128
 	}
 	if err := validateMemorySize(memorySize); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	function := &lambdastore.Function{
@@ -184,24 +196,26 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 	created, err := stores.Functions.Create(function)
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrFunctionAlreadyExists) {
-			return nil, NewResourceConflict(fmt.Sprintf("Function already exist: %s", function.FunctionName))
+			return nil, nil, NewResourceConflict(fmt.Sprintf("Function already exist: %s", function.FunctionName))
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	if len(in.Tags) > 0 {
 		if err := stores.Functions.TagStore.Tag(in.FunctionName, in.Tags); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
+	var published *lambdastore.Version
 	if in.Publish {
-		if _, err := stores.Functions.PublishVersion(created, ""); err != nil {
-			return nil, err
+		published, err = s.publishVersionWithCode(stores, created, "", in.Region)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 
-	return created, nil
+	return created, published, nil
 }
 
 // deleteFunctionCore is the single entry point for function deletion. It
@@ -231,7 +245,7 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 				}
 			}
 		}
-		return stores.Functions.DeleteVersion(function.FunctionName, qualifier)
+		return mapStoreError(stores.Functions.DeleteVersion(function.FunctionName, qualifier))
 	}
 
 	mappings, err := stores.EventSources.ListByFunction(function.FunctionArn)
@@ -261,7 +275,7 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 		}
 	}
 
-	return stores.Functions.Delete(function.FunctionName)
+	return mapStoreError(stores.Functions.Delete(function.FunctionName))
 }
 
 // listFunctionsCore returns a paginated list of functions. The caller

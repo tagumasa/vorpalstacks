@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -129,6 +130,65 @@ func runLambdaPermissionTests(
 			}
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "AddPermission_ConditionAndQualifierScope", func() error {
+		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(funcName),
+		}); err != nil {
+			return fmt.Errorf("publish: %v", err)
+		}
+		sid := fmt.Sprintf("scoped-%d", time.Now().UnixNano())
+		sourceArn := fmt.Sprintf("arn:aws:s3:::source-bucket-%d", time.Now().UnixNano())
+		_, err := client.AddPermission(ctx, &lambda.AddPermissionInput{
+			FunctionName:        aws.String(funcName),
+			StatementId:         aws.String(sid),
+			Action:              aws.String("lambda:InvokeFunction"),
+			Principal:           aws.String("s3.amazonaws.com"),
+			SourceArn:           aws.String(sourceArn),
+			SourceAccount:       aws.String(r.accountID),
+			Qualifier:           aws.String("1"),
+			FunctionUrlAuthType: types.FunctionUrlAuthTypeNone,
+		})
+		if err != nil {
+			return err
+		}
+
+		policyResp, err := client.GetPolicy(ctx, &lambda.GetPolicyInput{
+			FunctionName: aws.String(funcName),
+		})
+		if err != nil {
+			return err
+		}
+		var policy struct {
+			Statement []struct {
+				Sid       string                       `json:"Sid"`
+				Resource  string                       `json:"Resource"`
+				Condition map[string]map[string]string `json:"Condition"`
+			} `json:"Statement"`
+		}
+		if err := json.Unmarshal([]byte(*policyResp.Policy), &policy); err != nil {
+			return fmt.Errorf("policy is not valid JSON: %v", err)
+		}
+		for _, stmt := range policy.Statement {
+			if stmt.Sid != sid {
+				continue
+			}
+			if !strings.HasSuffix(stmt.Resource, funcName+":1") {
+				return fmt.Errorf("Resource should be scoped with the :1 qualifier, got %s", stmt.Resource)
+			}
+			if stmt.Condition["StringLike"]["aws:SourceArn"] != sourceArn {
+				return fmt.Errorf("Condition should carry aws:SourceArn via StringLike, got %v", stmt.Condition)
+			}
+			if stmt.Condition["StringEquals"]["aws:SourceAccount"] != r.accountID {
+				return fmt.Errorf("Condition should carry aws:SourceAccount via StringEquals, got %v", stmt.Condition)
+			}
+			if stmt.Condition["StringEquals"]["lambda:FunctionUrlAuthType"] != "NONE" {
+				return fmt.Errorf("Condition should carry lambda:FunctionUrlAuthType, got %v", stmt.Condition)
+			}
+			return nil
+		}
+		return fmt.Errorf("statement %s not found in policy", sid)
 	}))
 
 	functionARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", region, r.accountID, funcName)

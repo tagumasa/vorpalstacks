@@ -34,7 +34,11 @@ const (
 	sfnTrustPolicy       = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
 	schedulerTrustPolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
 
-	echoHandlerCode = `exports.handler = async (event) => { return JSON.stringify(event); };`
+	// The handler logs the event (the CloudWatch-verified delivery channel)
+	// and returns it (the payload-verified channel). On AWS the response
+	// payload and the logs are separate channels, so tests asserting on
+	// logs need the explicit console output.
+	echoHandlerCode = `exports.handler = async (event) => { console.log(JSON.stringify(event)); return JSON.stringify(event); };`
 
 	pollInterval         = 300 * time.Millisecond
 	integTestTimeout     = 3 * time.Minute

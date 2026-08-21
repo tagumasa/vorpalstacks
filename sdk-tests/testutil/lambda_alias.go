@@ -289,5 +289,155 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
+	results = append(results, r.RunTest("lambda", "AliasQualifier_ReturnsPublishedVersionConfig", func() error {
+		aqFunc := fmt.Sprintf("AqFunc-%d", time.Now().UnixNano())
+		aqRoleName := fmt.Sprintf("AqRole-%d", time.Now().UnixNano())
+		aqRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, aqRoleName)
+		aqCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip lambda code: %v", err)
+		}
+		if err := createIAMRole(aqRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(aqRoleName)
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(aqFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(aqRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: aqCode},
+		})
+		if err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(aqFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, aqFunc)
+
+		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(aqFunc),
+			Description:  aws.String("version one"),
+		}); err != nil {
+			return fmt.Errorf("publish: %v", err)
+		}
+		if _, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(aqFunc),
+			MemorySize:   aws.Int32(256),
+		}); err != nil {
+			return fmt.Errorf("update configuration: %v", err)
+		}
+		if _, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+			FunctionName:    aws.String(aqFunc),
+			Name:            aws.String("stable"),
+			FunctionVersion: aws.String("1"),
+		}); err != nil {
+			return fmt.Errorf("create alias: %v", err)
+		}
+
+		// An alias qualifier reports the configuration of the published
+		// version the alias points to, not the mutable $LATEST state.
+		cfg, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(aqFunc),
+			Qualifier:    aws.String("stable"),
+		})
+		if err != nil {
+			return err
+		}
+		if cfg.Version == nil || *cfg.Version != "1" {
+			return fmt.Errorf("alias-qualified Version should be 1, got %v", cfg.Version)
+		}
+		if cfg.Description == nil || *cfg.Description != "version one" {
+			return fmt.Errorf("alias-qualified Description should be the published one, got %v", cfg.Description)
+		}
+		if cfg.MemorySize == nil || *cfg.MemorySize != 128 {
+			return fmt.Errorf("alias-qualified MemorySize should be the published 128, got %v", cfg.MemorySize)
+		}
+
+		full, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+			FunctionName: aws.String(aqFunc),
+			Qualifier:    aws.String("stable"),
+		})
+		if err != nil {
+			return err
+		}
+		if full.Configuration == nil || full.Configuration.Version == nil || *full.Configuration.Version != "1" {
+			return fmt.Errorf("GetFunction with alias should carry version 1 configuration")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateAlias_RoutingWeightValidation", func() error {
+		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(funcName),
+		}); err != nil {
+			return fmt.Errorf("publish: %v", err)
+		}
+
+		// A weight outside [0, 1] is rejected.
+		_, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+			FunctionName:    aws.String(funcName),
+			Name:            aws.String("weighted"),
+			FunctionVersion: aws.String("1"),
+			RoutingConfig: &types.AliasRoutingConfiguration{
+				AdditionalVersionWeights: map[string]float64{"2": 1.5},
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+
+		// Routing may only target published versions.
+		_, err = client.CreateAlias(ctx, &lambda.CreateAliasInput{
+			FunctionName:    aws.String(funcName),
+			Name:            aws.String("weighted"),
+			FunctionVersion: aws.String("1"),
+			RoutingConfig: &types.AliasRoutingConfiguration{
+				AdditionalVersionWeights: map[string]float64{"9": 0.5},
+			},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+
+		// A valid routing config is accepted and echoed.
+		resp, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+			FunctionName:    aws.String(funcName),
+			Name:            aws.String("weighted"),
+			FunctionVersion: aws.String("1"),
+			RoutingConfig: &types.AliasRoutingConfiguration{
+				AdditionalVersionWeights: map[string]float64{"2": 0.5},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.RoutingConfig == nil || resp.RoutingConfig.AdditionalVersionWeights["2"] != 0.5 {
+			return fmt.Errorf("RoutingConfig not echoed, got %v", resp.RoutingConfig)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "UpdateAlias_ClearDescription", func() error {
+		if _, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+			FunctionName: aws.String(funcName),
+			Name:         aws.String("weighted"),
+			Description:  aws.String("to be cleared"),
+		}); err != nil {
+			return fmt.Errorf("set description: %v", err)
+		}
+		resp, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+			FunctionName: aws.String(funcName),
+			Name:         aws.String("weighted"),
+			Description:  aws.String(""),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Description != nil && *resp.Description != "" {
+			return fmt.Errorf("empty Description should clear the value, got %q", *resp.Description)
+		}
+		return nil
+	}))
+
 	return results
 }

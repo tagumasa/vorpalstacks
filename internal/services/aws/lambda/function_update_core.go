@@ -23,6 +23,15 @@ type UpdateFunctionCodeInput struct {
 	ImageUri      string
 	Architectures []string
 	Publish       bool
+
+	// Region of the request; used to persist per-version code snapshots
+	// when Publish is requested.
+	Region string
+
+	// RevisionId is an optional precondition: when set, the update fails
+	// with ResourceConflictException if it does not match the function's
+	// current revision.
+	RevisionId string
 }
 
 // UpdateFunctionConfigurationInput carries every field that
@@ -44,6 +53,8 @@ type UpdateFunctionConfigurationInput struct {
 	TracingConfig        *lambdastore.TracingConfig
 	LoggingConfig        *lambdastore.LoggingConfig
 	ImageConfig          *lambdastore.ImageConfig
+	EphemeralStorage     *lambdastore.EphemeralStorage
+	SnapStart            *lambdastore.SnapStart
 	FileSystemConfigs    []lambdastore.FileSystemConfig
 	Layers               []lambdastore.LayerReference
 }
@@ -55,17 +66,22 @@ type UpdateFunctionConfigurationInput struct {
 // updateFunctionCodeCore is the single entry point for function code update
 // logic shared by the HTTP API and the admin gRPC handler. It performs
 // architecture validation, applies the code update atomically, and
-// optionally publishes a new version.
-func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFunctionCodeInput) (*lambdastore.Function, error) {
+// optionally publishes a new version. The returned Version is non-nil only
+// when in.Publish requested a publish; callers use it to answer with the
+// published version's configuration.
+func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFunctionCodeInput) (*lambdastore.Function, *lambdastore.Version, error) {
 	functionName := in.FunctionName
 
 	for _, arch := range in.Architectures {
 		if err := validateArchitecture(arch); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	function, err := stores.Functions.UpdateAtomically(functionName, func(fn *lambdastore.Function) error {
+		if in.RevisionId != "" && fn.RevisionId != in.RevisionId {
+			return NewResourceConflict("The RevisionId provided does not match the current revision of the function")
+		}
 		if in.CodeLocation != "" {
 			fn.CodeLocation = in.CodeLocation
 			fn.CodeSize = in.CodeSize
@@ -85,18 +101,20 @@ func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFu
 	})
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
-			return nil, NewResourceNotFound("Function", functionName)
+			return nil, nil, NewResourceNotFound("Function", functionName)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
+	var published *lambdastore.Version
 	if in.Publish {
-		if _, err := stores.Functions.PublishVersion(function, ""); err != nil {
-			return nil, err
+		published, err = s.publishVersionWithCode(stores, function, "", in.Region)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 
-	return function, nil
+	return function, published, nil
 }
 
 // updateFunctionConfigurationCore is the single entry point for function
@@ -129,6 +147,20 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 		return nil, err
 	}
 
+	if in.EphemeralStorage != nil {
+		if err := validateEphemeralStorageSize(in.EphemeralStorage.Size); err != nil {
+			return nil, err
+		}
+	}
+	if in.SnapStart != nil {
+		if err := validateSnapStartApplyOn(in.SnapStart.ApplyOn); err != nil {
+			return nil, err
+		}
+	}
+	if err := validateEnvironmentVariables(in.Environment); err != nil {
+		return nil, err
+	}
+
 	for _, lr := range in.Layers {
 		if !isValidLayerARN(lr.Arn) {
 			return nil, NewInvalidParameter("Layers", "Invalid layer ARN format: "+lr.Arn)
@@ -138,6 +170,17 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 	var oldContainerID string
 
 	function, err := stores.Functions.UpdateAtomically(functionName, func(fn *lambdastore.Function) error {
+		// SnapStart support depends on the effective runtime after this
+		// update, so the guard runs where the target state is known.
+		if in.SnapStart != nil {
+			effectiveRuntime := in.Runtime
+			if effectiveRuntime == "" {
+				effectiveRuntime = string(fn.Runtime)
+			}
+			if err := validateSnapStartForRuntime(effectiveRuntime, in.SnapStart); err != nil {
+				return err
+			}
+		}
 		if in.Runtime != "" {
 			fn.Runtime = lambdastore.Runtime(in.Runtime)
 		}
@@ -179,6 +222,12 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 		}
 		if in.ImageConfig != nil {
 			fn.ImageConfig = in.ImageConfig
+		}
+		if in.EphemeralStorage != nil {
+			fn.EphemeralStorage = in.EphemeralStorage
+		}
+		if in.SnapStart != nil {
+			fn.SnapStart = in.SnapStart
 		}
 		if in.FileSystemConfigs != nil {
 			fn.FileSystemConfigs = in.FileSystemConfigs

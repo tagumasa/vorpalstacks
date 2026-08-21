@@ -91,8 +91,14 @@ type SubscriptionInfo struct {
 type KinesisInvoker interface {
 	ListShards(ctx context.Context, streamName string) ([]ShardInfo, error)
 	PutRecord(ctx context.Context, streamName string, partitionKey string, data []byte) (sequenceNumber string, err error)
-	CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string) (iteratorSequenceNumber string, err error)
-	GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32) (records []KinesisRecord, nextSequenceNumber string, err error)
+	// CreateShardIterator creates a shard iterator. The timestamp is used
+	// when iteratorType is AT_TIMESTAMP and may be nil otherwise.
+	CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (iteratorSequenceNumber string, err error)
+	// GetRecords reads records from the position onwards. includeStart
+	// also returns the starting record itself, mirroring the store's
+	// AT_SEQUENCE_NUMBER semantics; checkpoint resumes stay strictly
+	// after their position so consumed records are never redelivered.
+	GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) (records []KinesisRecord, nextSequenceNumber string, err error)
 	// StreamExists reports whether the stream addressed by the ARN exists in
 	// the given region. DynamoDB streaming destinations may only target a
 	// stream in the table's own region, so the ARN region must match and the
@@ -193,6 +199,11 @@ type ContributorKeyStat struct {
 type DynamoDBStreamsInvoker interface {
 	GetRecords(ctx context.Context, region, tableName string, fromSeq int64, limit int) ([]DynamoDBStreamRecord, int64, error)
 	GetLatestSequence(ctx context.Context, region, tableName string) (int64, error)
+	// ShardIDForStream returns the deterministic shard identifier of a
+	// DynamoDB stream ARN — the same value the DynamoDB Streams API reports
+	// for the stream. Consumers that need to identify the shard of a stream
+	// (for example Lambda's tumbling-window event envelope) use it.
+	ShardIDForStream(streamARN string) string
 }
 
 // DynamoDBStreamRecord carries a DynamoDB Streams record for cross-service
@@ -244,6 +255,10 @@ type IAMPrincipalResolver interface {
 // call these methods instead of holding a direct reference to the S3 store.
 type S3Invoker interface {
 	GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error)
+	// GetObjectVersion retrieves the content of a specific object
+	// version; an empty versionID reads the latest version, matching the
+	// S3 store's version-aware read.
+	GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error)
 	PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error
 	ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error)
 	// BucketExists reports whether the named bucket exists in the region.

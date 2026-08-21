@@ -25,6 +25,9 @@ const (
 	RuntimeJava21         Runtime = "java21"
 	RuntimeJava17         Runtime = "java17"
 	RuntimeJava11         Runtime = "java11"
+	RuntimeJava17Al2023   Runtime = "java17.al2023"
+	RuntimeJava11Al2023   Runtime = "java11.al2023"
+	RuntimeJava8Al2023    Runtime = "java8.al2023"
 	RuntimeJava8Al2       Runtime = "java8.al2"
 	RuntimeDotnet10       Runtime = "dotnet10"
 	RuntimeDotnet9        Runtime = "dotnet9"
@@ -44,6 +47,47 @@ const (
 	RuntimeDotnet6   Runtime = "dotnet6"
 	RuntimeRuby32    Runtime = "ruby3.2"
 	RuntimeGo1X      Runtime = "go1.x"
+)
+
+// AWS defaults for asynchronous invocation configuration, applied when
+// PutFunctionEventInvokeConfig omits the corresponding member: "By default,
+// Lambda retries an asynchronous invocation twice if the function returns
+// an error. It retains events in a queue for up to six hours."
+const (
+	DefaultMaximumRetryAttempts     = int32(2)
+	DefaultMaximumEventAgeInSeconds = int32(21600)
+)
+
+// Account-level limits reported by GetAccountSettings. UnreservedConcurrentExecutions
+// is derived per region as the concurrency limit minus the sum of reserved
+// concurrency across the region's functions.
+const (
+	AccountLimitTotalCodeSize        = int64(80530636800)
+	AccountLimitCodeSizeUnzipped     = int64(262144000)
+	AccountLimitCodeSizeZipped       = int64(52428800)
+	AccountLimitConcurrentExecutions = int64(1000)
+)
+
+// Environment variable rules: "Environment variables beginning with
+// AWS_LAMBDA_ are reserved" and "The total size of all environment
+// variables doesn't exceed 4 KB" (AWS Lambda configuration documentation).
+// Keys follow "Keys start with a letter and are at least two characters.
+// Keys only contain letters, numbers, and the underscore character (_)".
+const (
+	MaxEnvironmentVariablesSizeBytes = 4096
+	ReservedEnvironmentPrefix        = "AWS_LAMBDA_"
+	// EnvironmentVariableKeyPattern is the documented key shape: an
+	// initial letter, then letters, digits and underscores, minimum two
+	// characters.
+	EnvironmentVariableKeyPattern = `^[a-zA-Z][a-zA-Z0-9_]+$`
+)
+
+// Event source mapping parallelization factor range: "Valid Range:
+// Minimum value of 1. Maximum value of 10." (CreateEventSourceMapping
+// model).
+const (
+	MinParallelizationFactor = int32(1)
+	MaxParallelizationFactor = int32(10)
 )
 
 // State represents the current state of a Lambda function.
@@ -314,6 +358,7 @@ type Layer struct {
 type LayerVersion struct {
 	Version                 int64         `json:"version"`
 	LayerVersionArn         string        `json:"layer_version_arn"`
+	RevisionId              string        `json:"revision_id,omitempty"`
 	Description             string        `json:"description,omitempty"`
 	CompatibleRuntimes      []Runtime     `json:"compatible_runtimes,omitempty"`
 	LicenseInfo             string        `json:"license_info,omitempty"`
@@ -342,6 +387,7 @@ type EventSourceMapping struct {
 	ParallelizationFactor          int32                       `json:"parallelization_factor,omitempty"`
 	EventSourceArn                 string                      `json:"event_source_arn,omitempty"`
 	FunctionArn                    string                      `json:"function_arn"`
+	KMSKeyArn                      string                      `json:"kms_key_arn,omitempty"`
 	LastModified                   time.Time                   `json:"last_modified"`
 	LastProcessingResult           string                      `json:"last_processing_result,omitempty"`
 	State                          string                      `json:"state"`
@@ -476,6 +522,9 @@ var RuntimeImageMapping = map[Runtime]string{
 	RuntimeJava21:         "public.ecr.aws/lambda/java:21",
 	RuntimeJava17:         "public.ecr.aws/lambda/java:17",
 	RuntimeJava11:         "public.ecr.aws/lambda/java:11",
+	RuntimeJava17Al2023:   "public.ecr.aws/lambda/java:17.al2023",
+	RuntimeJava11Al2023:   "public.ecr.aws/lambda/java:11.al2023",
+	RuntimeJava8Al2023:    "public.ecr.aws/lambda/java:8.al2023",
 	RuntimeJava8Al2:       "public.ecr.aws/lambda/java:8.al2",
 	RuntimeDotnet10:       "public.ecr.aws/lambda/dotnet:10",
 	RuntimeDotnet9:        "public.ecr.aws/lambda/dotnet:9",

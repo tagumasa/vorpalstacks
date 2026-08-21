@@ -78,6 +78,30 @@ func runLambdaConfigTests(
 					return nil
 				}))
 
+				results = append(results, r.RunTest("lambda", "PutProvisionedConcurrencyConfig_RejectsLatest", func() error {
+					_, err := client.PutProvisionedConcurrencyConfig(ctx, &lambda.PutProvisionedConcurrencyConfigInput{
+						FunctionName:                    aws.String(pcFuncName),
+						Qualifier:                       aws.String("$LATEST"),
+						ProvisionedConcurrentExecutions: aws.Int32(5),
+					})
+					if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+						return err
+					}
+					return nil
+				}))
+
+				results = append(results, r.RunTest("lambda", "PutProvisionedConcurrencyConfig_UnknownQualifier", func() error {
+					_, err := client.PutProvisionedConcurrencyConfig(ctx, &lambda.PutProvisionedConcurrencyConfigInput{
+						FunctionName:                    aws.String(pcFuncName),
+						Qualifier:                       aws.String("999"),
+						ProvisionedConcurrentExecutions: aws.Int32(5),
+					})
+					if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+						return err
+					}
+					return nil
+				}))
+
 				results = append(results, r.RunTest("lambda", "GetProvisionedConcurrencyConfig", func() error {
 					resp, err := client.GetProvisionedConcurrencyConfig(ctx, &lambda.GetProvisionedConcurrencyConfigInput{
 						FunctionName: aws.String(pcFuncName),
@@ -221,6 +245,31 @@ func runLambdaConfigTests(
 					return fmt.Errorf("MaximumRetryAttempts mismatch, got %v", resp.MaximumRetryAttempts)
 				}
 				return nil
+			}))
+
+			results = append(results, r.RunTest("lambda", "PutFunctionEventInvokeConfig_Defaults", func() error {
+				// A Put that omits the retry and age members applies the AWS
+				// defaults (2 retries, 6 hours) instead of zeros.
+				resp, err := client.PutFunctionEventInvokeConfig(ctx, &lambda.PutFunctionEventInvokeConfigInput{
+					FunctionName: aws.String(eicFuncName),
+				})
+				if err != nil {
+					return err
+				}
+				if resp.MaximumRetryAttempts == nil || *resp.MaximumRetryAttempts != 2 {
+					return fmt.Errorf("default MaximumRetryAttempts should be 2, got %v", resp.MaximumRetryAttempts)
+				}
+				if resp.MaximumEventAgeInSeconds == nil || *resp.MaximumEventAgeInSeconds != 21600 {
+					return fmt.Errorf("default MaximumEventAgeInSeconds should be 21600, got %v", resp.MaximumEventAgeInSeconds)
+				}
+				// Restore the explicit values the subsequent list test
+				// expects to observe.
+				_, err = client.PutFunctionEventInvokeConfig(ctx, &lambda.PutFunctionEventInvokeConfigInput{
+					FunctionName:             aws.String(eicFuncName),
+					MaximumEventAgeInSeconds: aws.Int32(3600),
+					MaximumRetryAttempts:     aws.Int32(2),
+				})
+				return err
 			}))
 
 			results = append(results, r.RunTest("lambda", "ListFunctionEventInvokeConfigs", func() error {
@@ -458,6 +507,63 @@ func runLambdaConfigTests(
 				})
 				if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 					return err
+				}
+				return nil
+			}))
+
+			results = append(results, r.RunTest("lambda", "CreateFunctionUrlConfig_QualifierValidation", func() error {
+				uqFunc := fmt.Sprintf("UqFunc-%d", time.Now().UnixNano())
+				uqRoleName := fmt.Sprintf("UqRole-%d", time.Now().UnixNano())
+				uqRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, uqRoleName)
+				uqCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+				if err != nil {
+					return fmt.Errorf("zip code: %v", err)
+				}
+				if err := createIAMRole(uqRoleName); err != nil {
+					return fmt.Errorf("create role: %v", err)
+				}
+				defer deleteIAMRole(uqRoleName)
+				_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+					FunctionName: aws.String(uqFunc),
+					Runtime:      types.RuntimeNodejs22x,
+					Role:         aws.String(uqRole),
+					Handler:      aws.String("index.handler"),
+					Code:         &types.FunctionCode{ZipFile: uqCode},
+				})
+				if err != nil {
+					return fmt.Errorf("create function: %v", err)
+				}
+				defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(uqFunc)})
+				defer deleteLambdaLogGroup(cwlClient, ctx, uqFunc)
+				if _, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+					FunctionName:    aws.String(uqFunc),
+					Name:            aws.String("live"),
+					FunctionVersion: aws.String("$LATEST"),
+				}); err != nil {
+					return fmt.Errorf("create alias: %v", err)
+				}
+
+				// The URL qualifier names an alias; a numeric version is
+				// not a valid URL qualifier.
+				_, err = client.CreateFunctionUrlConfig(ctx, &lambda.CreateFunctionUrlConfigInput{
+					FunctionName: aws.String(uqFunc),
+					AuthType:     types.FunctionUrlAuthTypeNone,
+					Qualifier:    aws.String("1"),
+				})
+				if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+					return err
+				}
+
+				resp, err := client.CreateFunctionUrlConfig(ctx, &lambda.CreateFunctionUrlConfigInput{
+					FunctionName: aws.String(uqFunc),
+					AuthType:     types.FunctionUrlAuthTypeNone,
+					Qualifier:    aws.String("live"),
+				})
+				if err != nil {
+					return err
+				}
+				if resp.FunctionUrl == nil || *resp.FunctionUrl == "" {
+					return fmt.Errorf("FunctionUrl is nil or empty")
 				}
 				return nil
 			}))

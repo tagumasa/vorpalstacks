@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
@@ -34,12 +35,16 @@ func (r *recordingKinesisInvoker) PutRecord(ctx context.Context, streamName stri
 	return "seq-1", nil
 }
 
-func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string) (string, error) {
+func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
 	return "", nil
 }
 
-func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32) ([]eventbus.KinesisRecord, string, error) {
+func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
 	return nil, "", nil
+}
+
+func (r *recordingKinesisInvoker) StreamExists(ctx context.Context, region, streamARN string) (bool, error) {
+	return true, nil
 }
 
 func (r *recordingKinesisInvoker) keys() []string {

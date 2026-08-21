@@ -2,10 +2,12 @@
 package lambda
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
 // LambdaError represents an error returned by the Lambda service.
@@ -123,6 +125,29 @@ func NewResourceConflict(message string) *LambdaError {
 func IsLambdaError(err error) bool {
 	_, ok := err.(*LambdaError)
 	return ok
+}
+
+// mapStoreError converts raw store-layer sentinel errors into the AWS error
+// contract of the Lambda API. Handlers that surface store errors must route
+// through this mapping so unmapped sentinels never escape to the dispatcher,
+// which would answer them with an internal-error 500.
+func mapStoreError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, lambdastore.ErrEventSourceAlreadyExists):
+		return NewResourceConflict("The event source mapping already exists for this event source and function.")
+	case errors.Is(err, lambdastore.ErrResourceConflict):
+		return NewResourceConflict("The resource conflicts with the current state of the function.")
+	case errors.Is(err, lambdastore.ErrFunctionNotFound),
+		errors.Is(err, lambdastore.ErrVersionNotFound),
+		errors.Is(err, lambdastore.ErrLayerNotFound),
+		errors.Is(err, lambdastore.ErrLayerVersionNotFound),
+		errors.Is(err, lambdastore.ErrAliasNotFound),
+		errors.Is(err, lambdastore.ErrPolicyNotFound):
+		return ErrResourceNotFound
+	}
+	return err
 }
 
 // GetLambdaError extracts a LambdaError from the given error, returning ErrServiceException if not found.

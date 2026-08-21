@@ -103,9 +103,10 @@ func runLambdaESMTests(
 			return fmt.Errorf("no UUID from CreateEventSourceMapping")
 		}
 		resp, err := client.UpdateEventSourceMapping(ctx, &lambda.UpdateEventSourceMappingInput{
-			UUID:      aws.String(esmUUID),
-			BatchSize: aws.Int32(50),
-			Enabled:   aws.Bool(false),
+			UUID:                           aws.String(esmUUID),
+			BatchSize:                      aws.Int32(50),
+			MaximumBatchingWindowInSeconds: aws.Int32(1),
+			Enabled:                        aws.Bool(false),
 		})
 		if err != nil {
 			return err
@@ -167,6 +168,97 @@ func runLambdaESMTests(
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateEventSourceMapping_SQSDefaultBatchSize", func() error {
+		resp, err := client.CreateEventSourceMapping(ctx, &lambda.CreateEventSourceMappingInput{
+			FunctionName:   aws.String(esmFuncName),
+			EventSourceArn: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:default-batch-queue", r.region, r.accountID)),
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteEventSourceMapping(ctx, &lambda.DeleteEventSourceMappingInput{UUID: resp.UUID})
+		// SQS event sources default to a batch size of 10.
+		if resp.BatchSize == nil || *resp.BatchSize != 10 {
+			return fmt.Errorf("default SQS BatchSize should be 10, got %v", resp.BatchSize)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateEventSourceMapping_FIFOBatchSizeCap", func() error {
+		_, err := client.CreateEventSourceMapping(ctx, &lambda.CreateEventSourceMappingInput{
+			FunctionName:   aws.String(esmFuncName),
+			EventSourceArn: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:orders.fifo", r.region, r.accountID)),
+			BatchSize:      aws.Int32(11),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateEventSourceMapping_StartingPositionTimestamp", func() error {
+		ts := time.Unix(time.Now().Add(-1*time.Hour).Unix(), 0).UTC()
+		resp, err := client.CreateEventSourceMapping(ctx, &lambda.CreateEventSourceMappingInput{
+			FunctionName:              aws.String(esmFuncName),
+			EventSourceArn:            aws.String(fmt.Sprintf("arn:aws:kinesis:%s:%s:stream/esm-ts-stream", r.region, r.accountID)),
+			StartingPosition:          types.EventSourcePositionAtTimestamp,
+			StartingPositionTimestamp: aws.Time(ts),
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteEventSourceMapping(ctx, &lambda.DeleteEventSourceMappingInput{UUID: resp.UUID})
+		if resp.StartingPosition != types.EventSourcePositionAtTimestamp {
+			return fmt.Errorf("StartingPosition mismatch, got %v", resp.StartingPosition)
+		}
+		if resp.StartingPositionTimestamp == nil || !resp.StartingPositionTimestamp.Equal(ts) {
+			return fmt.Errorf("StartingPositionTimestamp not echoed, got %v", resp.StartingPositionTimestamp)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "ListEventSourceMappings_MaxItemsCap", func() error {
+		// ListEventSourceMappings allows up to 100 items per response.
+		before, err := client.ListEventSourceMappings(ctx, &lambda.ListEventSourceMappingsInput{
+			FunctionName: aws.String(esmFuncName),
+			MaxItems:     aws.Int32(100),
+		})
+		if err != nil {
+			return fmt.Errorf("list before: %v", err)
+		}
+
+		const mappingCount = 55
+		var uuids []string
+		for i := 0; i < mappingCount; i++ {
+			created, err := client.CreateEventSourceMapping(ctx, &lambda.CreateEventSourceMappingInput{
+				FunctionName:   aws.String(esmFuncName),
+				EventSourceArn: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:cap-queue-%d", r.region, r.accountID, i)),
+			})
+			if err != nil {
+				return fmt.Errorf("create mapping %d: %v", i, err)
+			}
+			uuids = append(uuids, *created.UUID)
+		}
+		defer func() {
+			for _, id := range uuids {
+				_, _ = client.DeleteEventSourceMapping(ctx, &lambda.DeleteEventSourceMappingInput{UUID: aws.String(id)})
+			}
+		}()
+
+		resp, err := client.ListEventSourceMappings(ctx, &lambda.ListEventSourceMappingsInput{
+			FunctionName: aws.String(esmFuncName),
+			MaxItems:     aws.Int32(100),
+		})
+		if err != nil {
+			return err
+		}
+		want := len(before.EventSourceMappings) + mappingCount
+		if len(resp.EventSourceMappings) != want {
+			return fmt.Errorf("expected all %d mappings in one response, got %d", want, len(resp.EventSourceMappings))
 		}
 		return nil
 	}))

@@ -164,6 +164,20 @@ func extractLambdaLayerOperation(path, method string) string {
 			case "POST":
 				return "PublishLayerVersion"
 			}
+		} else if len(parts) >= 4 && parts[3] == "policy" {
+			// Layer version policy subresource:
+			// /layers/{name}/versions/{v}/policy[/{statementId}].
+			if len(parts) == 4 {
+				switch method {
+				case "GET":
+					return "GetLayerVersionPolicy"
+				case "POST":
+					return "AddLayerVersionPermission"
+				}
+			} else if len(parts) >= 5 && method == "DELETE" {
+				return "RemoveLayerVersionPermission"
+			}
+			return ""
 		} else if len(parts) >= 3 {
 			switch method {
 			case "GET":
@@ -361,6 +375,11 @@ func extractLayerPathParams(path string, params map[string]interface{}) {
 	if len(parts) >= 3 && parts[1] == "versions" {
 		if _, ok := params["VersionNumber"]; !ok {
 			params["VersionNumber"] = parts[2]
+		}
+		if len(parts) >= 5 && parts[3] == "policy" {
+			if _, ok := params["StatementId"]; !ok {
+				params["StatementId"] = parts[4]
+			}
 		}
 	}
 }

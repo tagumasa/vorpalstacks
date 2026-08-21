@@ -3,6 +3,8 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +15,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"vorpalstacks-sdk-tests/config"
 )
 
 func runLambdaFunctionTests(
@@ -173,6 +178,128 @@ func runLambdaFunctionTests(
 		return nil
 	}))
 
+	results = append(results, r.RunTest("lambda", "FunctionCode_S3ObjectVersion", func() error {
+		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load config: %v", err)
+		}
+		s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true })
+
+		suffix := time.Now().UnixNano()
+		bucket := fmt.Sprintf("lambda-versioned-code-%d", suffix)
+		key := "code.zip"
+		if _, err := s3Client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)}); err != nil {
+			return fmt.Errorf("create bucket: %v", err)
+		}
+		defer func() {
+			s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
+			s3Client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+		}()
+		if _, err := s3Client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+			Bucket: aws.String(bucket),
+			VersioningConfiguration: &s3types.VersioningConfiguration{
+				Status: s3types.BucketVersioningStatusEnabled,
+			},
+		}); err != nil {
+			return fmt.Errorf("enable versioning: %v", err)
+		}
+
+		zip1, err := zipLambdaCode("exports.handler = async () => 'v1';")
+		if err != nil {
+			return fmt.Errorf("zip v1: %v", err)
+		}
+		zip2, err := zipLambdaCode("exports.handler = async () => 'v2';")
+		if err != nil {
+			return fmt.Errorf("zip v2: %v", err)
+		}
+		put1, err := s3Client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(zip1)})
+		if err != nil {
+			return fmt.Errorf("put v1: %v", err)
+		}
+		put2, err := s3Client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(zip2)})
+		if err != nil {
+			return fmt.Errorf("put v2: %v", err)
+		}
+		version1 := aws.ToString(put1.VersionId)
+		version2 := aws.ToString(put2.VersionId)
+		if version1 == "" || version2 == "" || version1 == version2 {
+			return fmt.Errorf("expected two distinct version ids, got %q and %q", version1, version2)
+		}
+		sum1 := sha256.Sum256(zip1)
+		sum2 := sha256.Sum256(zip2)
+		hash1 := base64.StdEncoding.EncodeToString(sum1[:])
+		hash2 := base64.StdEncoding.EncodeToString(sum2[:])
+
+		fnName := fmt.Sprintf("VersionedCodeFn-%d", suffix)
+		created, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(fnName),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(roleARN),
+			Handler:      aws.String("index.handler"),
+			Code: &types.FunctionCode{
+				S3Bucket:        aws.String(bucket),
+				S3Key:           aws.String(key),
+				S3ObjectVersion: aws.String(version1),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create function pinned to version 1: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(fnName)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, fnName)
+		if aws.ToString(created.CodeSha256) != hash1 {
+			return fmt.Errorf("CodeSHA256 = %s, want version-1 hash %s (latest is version 2)", aws.ToString(created.CodeSha256), hash1)
+		}
+
+		updated, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName:    aws.String(fnName),
+			S3Bucket:        aws.String(bucket),
+			S3Key:           aws.String(key),
+			S3ObjectVersion: aws.String(version2),
+		})
+		if err != nil {
+			return fmt.Errorf("update function code pinned to version 2: %v", err)
+		}
+		if aws.ToString(updated.CodeSha256) != hash2 {
+			return fmt.Errorf("updated CodeSHA256 = %s, want version-2 hash %s", aws.ToString(updated.CodeSha256), hash2)
+		}
+
+		layerName := fmt.Sprintf("versioned-code-layer-%d", suffix)
+		layer, err := client.PublishLayerVersion(ctx, &lambda.PublishLayerVersionInput{
+			LayerName: aws.String(layerName),
+			Content: &types.LayerVersionContentInput{
+				S3Bucket:        aws.String(bucket),
+				S3Key:           aws.String(key),
+				S3ObjectVersion: aws.String(version1),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("publish layer pinned to version 1: %v", err)
+		}
+		defer client.DeleteLayerVersion(ctx, &lambda.DeleteLayerVersionInput{
+			LayerName:     aws.String(layerName),
+			VersionNumber: aws.Int64(layer.Version),
+		})
+		if layer.Content == nil || aws.ToString(layer.Content.CodeSha256) != hash1 {
+			return fmt.Errorf("layer CodeSHA256 = %v, want version-1 hash %s", layer.Content, hash1)
+		}
+
+		if _, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName:    aws.String(fnName),
+			S3Bucket:        aws.String(bucket),
+			S3Key:           aws.String(key),
+			S3ObjectVersion: aws.String("0000000000000000000000000000000000000000"),
+		}); err == nil {
+			return fmt.Errorf("a nonexistent object version must be rejected")
+		} else if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("lambda", "UpdateFunctionConfiguration", func() error {
 		description := "Updated function"
 		resp, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
@@ -188,6 +315,53 @@ func runLambdaFunctionTests(
 		if resp.FunctionName == nil || *resp.FunctionName != functionName {
 			return fmt.Errorf("FunctionName mismatch, got %v", resp.FunctionName)
 		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "Environment_InvalidKeyRejected", func() error {
+		suffix := time.Now().UnixNano()
+		code, err := zipLambdaCode("exports.handler = async () => 'ok';")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+
+		// "Keys start with a letter and are at least two characters. Keys
+		// only contain letters, numbers, and the underscore character (_)."
+		for _, key := range []string{"1BAD", "a-b", "a", "_x"} {
+			_, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+				FunctionName: aws.String(fmt.Sprintf("EnvVarFn-%d", suffix)),
+				Runtime:      types.RuntimeNodejs22x,
+				Role:         aws.String(roleARN),
+				Handler:      aws.String("index.handler"),
+				Code:         &types.FunctionCode{ZipFile: code},
+				Environment: &types.Environment{
+					Variables: map[string]string{key: "v"},
+				},
+			})
+			if err == nil {
+				return fmt.Errorf("environment key %q must be rejected", key)
+			}
+			if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+				return err
+			}
+		}
+
+		validName := fmt.Sprintf("EnvVarFn-%d", suffix)
+		created, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(validName),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(roleARN),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: code},
+			Environment: &types.Environment{
+				Variables: map[string]string{"GOOD_KEY": "v"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("valid environment key rejected: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: created.FunctionName})
+		defer deleteLambdaLogGroup(cwlClient, ctx, validName)
 		return nil
 	}))
 
@@ -241,14 +415,436 @@ func runLambdaFunctionTests(
 		if err != nil {
 			return err
 		}
-		concurrencyResp, err := client.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
+		// Once the limit is removed, the concurrency sub-resource no longer
+		// exists and AWS answers GetFunctionConcurrency with 404
+		// ResourceNotFoundException.
+		_, err = client.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
+			FunctionName: aws.String(functionName),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("GetFunctionConcurrency after delete: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "UpdateFunctionCode_RevisionIdPrecondition", func() error {
+		revCode, err := zipLambdaCode("exports.handler = async () => { return 2; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		_, err = client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName: aws.String(functionName),
+			ZipFile:      revCode,
+			RevisionId:   aws.String("00000000-0000-0000-0000-000000000000"),
+		})
+		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "GetFunctionConfiguration_UnqualifiedVersionIsLatest", func() error {
+		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(functionName),
+		}); err != nil {
+			return fmt.Errorf("publish: %v", err)
+		}
+		// A request without a qualifier addresses the unpublished version,
+		// which AWS always reports as $LATEST even after publishing.
+		resp, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
 			FunctionName: aws.String(functionName),
 		})
 		if err != nil {
-			return fmt.Errorf("GetFunctionConcurrency after delete: %v", err)
+			return err
 		}
-		if concurrencyResp.ReservedConcurrentExecutions != nil {
-			return fmt.Errorf("ReservedConcurrentExecutions should be nil after delete, got %d", *concurrencyResp.ReservedConcurrentExecutions)
+		if resp.Version == nil || *resp.Version != "$LATEST" {
+			return fmt.Errorf("unqualified Version should be $LATEST, got %v", resp.Version)
+		}
+		// The published version itself reports its own number.
+		qualified, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(functionName),
+			Qualifier:    aws.String("1"),
+		})
+		if err != nil {
+			return err
+		}
+		if qualified.Version == nil || *qualified.Version != "1" {
+			return fmt.Errorf("qualified Version should be 1, got %v", qualified.Version)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "GetFunction_IncludesConcurrency", func() error {
+		if _, err := client.PutFunctionConcurrency(ctx, &lambda.PutFunctionConcurrencyInput{
+			FunctionName:                 aws.String(functionName),
+			ReservedConcurrentExecutions: aws.Int32(5),
+		}); err != nil {
+			return fmt.Errorf("put concurrency: %v", err)
+		}
+		resp, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+			FunctionName: aws.String(functionName),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Concurrency == nil {
+			return fmt.Errorf("Concurrency is nil")
+		}
+		if resp.Concurrency.ReservedConcurrentExecutions == nil || *resp.Concurrency.ReservedConcurrentExecutions != 5 {
+			return fmt.Errorf("ReservedConcurrentExecutions mismatch, got %v", resp.Concurrency.ReservedConcurrentExecutions)
+		}
+
+		// Unreserved concurrency reflects the reservation just configured.
+		settings, err := client.GetAccountSettings(ctx, &lambda.GetAccountSettingsInput{})
+		if err != nil {
+			return err
+		}
+		if settings.AccountLimit == nil || settings.AccountLimit.UnreservedConcurrentExecutions == nil {
+			return fmt.Errorf("UnreservedConcurrentExecutions is nil")
+		}
+		if *settings.AccountLimit.UnreservedConcurrentExecutions != 995 {
+			return fmt.Errorf("UnreservedConcurrentExecutions should be 995 after reserving 5, got %d", *settings.AccountLimit.UnreservedConcurrentExecutions)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "GetFunctionConfiguration_ImageConfigResponse", func() error {
+		imgFunc := fmt.Sprintf("ImageFunc-%d", time.Now().UnixNano())
+		created, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(imgFunc),
+			Role:         aws.String(roleARN),
+			PackageType:  types.PackageTypeImage,
+			Code:         &types.FunctionCode{ImageUri: aws.String("123456789012.dkr.ecr.us-east-1.amazonaws.com/test/image:1")},
+			ImageConfig: &types.ImageConfig{
+				Command: []string{"/bin/app"},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create image function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(imgFunc)})
+		if created.ImageConfigResponse == nil {
+			return fmt.Errorf("create response ImageConfigResponse is nil")
+		}
+
+		resp, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(imgFunc),
+		})
+		if err != nil {
+			return err
+		}
+		// The wire member is ImageConfigResponse nesting ImageConfig; a
+		// flat ImageConfig member would leave this nil.
+		if resp.ImageConfigResponse == nil || resp.ImageConfigResponse.ImageConfig == nil {
+			return fmt.Errorf("ImageConfigResponse.ImageConfig is nil")
+		}
+		if len(resp.ImageConfigResponse.ImageConfig.Command) != 1 || resp.ImageConfigResponse.ImageConfig.Command[0] != "/bin/app" {
+			return fmt.Errorf("ImageConfig.Command mismatch, got %v", resp.ImageConfigResponse.ImageConfig.Command)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "PublishedVersion_ExecutesSnapshotCode", func() error {
+		snapFunc := fmt.Sprintf("SnapFunc-%d", time.Now().UnixNano())
+		snapRoleName := fmt.Sprintf("SnapRole-%d", time.Now().UnixNano())
+		snapRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, snapRoleName)
+		v1Code, err := zipLambdaCode("exports.handler = async () => 'v1-output';")
+		if err != nil {
+			return fmt.Errorf("zip v1 code: %v", err)
+		}
+		if err := createIAMRole(snapRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(snapRoleName)
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(snapFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(snapRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: v1Code},
+		})
+		if err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(snapFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, snapFunc)
+
+		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(snapFunc),
+		}); err != nil {
+			return fmt.Errorf("publish: %v", err)
+		}
+
+		// Replace the $LATEST code after publishing; the published version
+		// must keep executing its own snapshot.
+		v2Code, err := zipLambdaCode("exports.handler = async () => 'v2-output';")
+		if err != nil {
+			return fmt.Errorf("zip v2 code: %v", err)
+		}
+		if _, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName: aws.String(snapFunc),
+			ZipFile:      v2Code,
+		}); err != nil {
+			return fmt.Errorf("update code: %v", err)
+		}
+
+		versioned, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(snapFunc),
+			Qualifier:    aws.String("1"),
+		})
+		if err != nil {
+			return err
+		}
+		if versioned.ExecutedVersion == nil || *versioned.ExecutedVersion != "1" {
+			return fmt.Errorf("ExecutedVersion mismatch, got %v", versioned.ExecutedVersion)
+		}
+		if !strings.Contains(string(versioned.Payload), "v1-output") {
+			return fmt.Errorf("published version should execute the v1 snapshot, got payload %q", string(versioned.Payload))
+		}
+
+		latest, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(snapFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(latest.Payload), "v2-output") {
+			return fmt.Errorf("unqualified invoke should execute the updated $LATEST code, got payload %q", string(latest.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "Invoke_FunctionError_Classification", func() error {
+		feFunc := fmt.Sprintf("FeFunc-%d", time.Now().UnixNano())
+		feRoleName := fmt.Sprintf("FeRole-%d", time.Now().UnixNano())
+		feRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, feRoleName)
+		if err := createIAMRole(feRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(feRoleName)
+
+		// A thrown error is intercepted by the runtime: Unhandled.
+		throwCode, err := zipLambdaCode("exports.handler = async () => { throw new Error('boom'); };")
+		if err != nil {
+			return fmt.Errorf("zip throw code: %v", err)
+		}
+		if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(feFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(feRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: throwCode},
+		}); err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(feFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, feFunc)
+
+		unhandled, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(feFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if unhandled.FunctionError == nil || *unhandled.FunctionError != "Unhandled" {
+			return fmt.Errorf("thrown error should classify as Unhandled, got %v", unhandled.FunctionError)
+		}
+
+		// A returned errorMessage envelope is a handled error: HTTP 200
+		// with the error document as the payload.
+		handledCode, err := zipLambdaCode("exports.handler = async () => ({ errorMessage: 'handled-boom', errorType: 'Error' });")
+		if err != nil {
+			return fmt.Errorf("zip handled code: %v", err)
+		}
+		if _, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName: aws.String(feFunc),
+			ZipFile:      handledCode,
+		}); err != nil {
+			return fmt.Errorf("update code: %v", err)
+		}
+		handled, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(feFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if handled.FunctionError == nil || *handled.FunctionError != "Handled" {
+			return fmt.Errorf("returned error document should classify as Handled, got %v", handled.FunctionError)
+		}
+		if !strings.Contains(string(handled.Payload), "handled-boom") {
+			return fmt.Errorf("Handled payload should carry the error document, got %q", string(handled.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "Invoke_HandledErrorWithLogs", func() error {
+		logFunc := fmt.Sprintf("LogFeFunc-%d", time.Now().UnixNano())
+		logRoleName := fmt.Sprintf("LogFeRole-%d", time.Now().UnixNano())
+		logRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, logRoleName)
+		if err := createIAMRole(logRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(logRoleName)
+
+		// Handler console output reaches stdout before the runtime appends
+		// the returned payload, so the error envelope must be read from the
+		// final JSON document rather than the whole output.
+		code, err := zipLambdaCode("exports.handler = async () => { console.log('about to fail'); return { errorMessage: 'logged-boom', errorType: 'Error' }; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(logFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(logRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: code},
+		}); err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(logFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, logFunc)
+
+		result, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(logFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if result.FunctionError == nil || *result.FunctionError != "Handled" {
+			return fmt.Errorf("error envelope after log lines should classify as Handled, got %v", result.FunctionError)
+		}
+		if !strings.Contains(string(result.Payload), "logged-boom") {
+			return fmt.Errorf("payload should carry the error document after the log lines, got %q", string(result.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "Invoke_PayloadExcludesConsoleOutput", func() error {
+		logFunc := fmt.Sprintf("PayloadCleanFn-%d", time.Now().UnixNano())
+		logRoleName := fmt.Sprintf("PayloadCleanRole-%d", time.Now().UnixNano())
+		logRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, logRoleName)
+		if err := createIAMRole(logRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(logRoleName)
+
+		// On AWS the response payload is the handler's return value only;
+		// console output belongs to the logs. A handler that logs before
+		// returning must not leak its log lines into the payload.
+		code, err := zipLambdaCode("exports.handler = async () => { console.log('log-line-should-not-leak'); return { ok: true, value: 7 }; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(logFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(logRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: code},
+		}); err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(logFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, logFunc)
+
+		result, err := client.Invoke(ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(logFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if result.FunctionError != nil {
+			return fmt.Errorf("a returning handler is a success, got FunctionError=%v", *result.FunctionError)
+		}
+		var payload map[string]interface{}
+		if err := json.Unmarshal(result.Payload, &payload); err != nil {
+			return fmt.Errorf("payload must be exactly the returned object, got %q: %v", string(result.Payload), err)
+		}
+		if payload["ok"] != true || payload["value"] != float64(7) {
+			return fmt.Errorf("payload must carry the returned members, got %q", string(result.Payload))
+		}
+		if strings.Contains(string(result.Payload), "log-line-should-not-leak") {
+			return fmt.Errorf("console output must not leak into the response payload, got %q", string(result.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "ListFunctions_AllPaginatesEntries", func() error {
+		listFunc := fmt.Sprintf("ListAllFn-%d", time.Now().UnixNano())
+		listRoleName := fmt.Sprintf("ListAllRole-%d", time.Now().UnixNano())
+		listRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, listRoleName)
+		if err := createIAMRole(listRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(listRoleName)
+
+		code, err := zipLambdaCode("exports.handler = async () => ({});")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(listFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(listRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: code},
+		}); err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(listFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, listFunc)
+
+		for i := 0; i < 3; i++ {
+			if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+				FunctionName: aws.String(listFunc),
+			}); err != nil {
+				return fmt.Errorf("publish version: %v", err)
+			}
+		}
+
+		// The function contributes four entries ($LATEST plus three
+		// published versions); with MaxItems=2 every page must carry at
+		// most two entries and the walk must see each entry exactly once.
+		seen := map[string]int{}
+		marker := ""
+		for page := 0; ; page++ {
+			input := &lambda.ListFunctionsInput{
+				FunctionVersion: types.FunctionVersionAll,
+				MaxItems:        aws.Int32(2),
+			}
+			if marker != "" {
+				input.Marker = aws.String(marker)
+			}
+			out, err := client.ListFunctions(ctx, input)
+			if err != nil {
+				return fmt.Errorf("list functions: %v", err)
+			}
+			if len(out.Functions) > 2 {
+				return fmt.Errorf("page %d carries %d entries, the documented cap is 2", page, len(out.Functions))
+			}
+			for _, f := range out.Functions {
+				if aws.ToString(f.FunctionName) == listFunc {
+					seen[aws.ToString(f.Version)]++
+				}
+			}
+			if out.NextMarker == nil || *out.NextMarker == "" {
+				break
+			}
+			marker = *out.NextMarker
+			if page > 50 {
+				return fmt.Errorf("pagination did not terminate")
+			}
+		}
+
+		wantVersions := map[string]int{"$LATEST": 1, "1": 1, "2": 1, "3": 1}
+		if len(seen) != len(wantVersions) {
+			return fmt.Errorf("expected entries %v for the function, got %v", wantVersions, seen)
+		}
+		for v, count := range wantVersions {
+			if seen[v] != count {
+				return fmt.Errorf("version %q seen %d times, want %d", v, seen[v], count)
+			}
 		}
 		return nil
 	}))
@@ -384,6 +980,61 @@ func runLambdaFunctionTests(
 			Role:         aws.String(invRtRole),
 			Handler:      aws.String("index.handler"),
 			Code:         &types.FunctionCode{ZipFile: []byte("code")},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateFunction_JavaAl2023Runtime", func() error {
+		alRtFuncName := fmt.Sprintf("AlRtFunc-%d", time.Now().UnixNano())
+		alRtRoleName := fmt.Sprintf("AlRtRole-%d", time.Now().UnixNano())
+		alRtRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, alRtRoleName)
+		alRtCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if err := createIAMRole(alRtRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(alRtRoleName)
+		resp, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(alRtFuncName),
+			Role:         aws.String(alRtRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: alRtCode},
+			Runtime:      types.RuntimeJava17al2023,
+		})
+		if err != nil {
+			return err
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(alRtFuncName)})
+		if resp.Runtime != types.RuntimeJava17al2023 {
+			return fmt.Errorf("Runtime mismatch, got %v", resp.Runtime)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "CreateFunction_SnapStartUnsupportedRuntime", func() error {
+		ssFuncName := fmt.Sprintf("SsFunc-%d", time.Now().UnixNano())
+		ssRoleName := fmt.Sprintf("SsRole-%d", time.Now().UnixNano())
+		ssRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, ssRoleName)
+		ssCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if err := createIAMRole(ssRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(ssRoleName)
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(ssFuncName),
+			Role:         aws.String(ssRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: ssCode},
+			Runtime:      types.RuntimeNodejs22x,
+			SnapStart:    &types.SnapStart{ApplyOn: types.SnapStartApplyOnPublishedVersions},
 		})
 		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
 			return err
@@ -615,6 +1266,139 @@ func runLambdaFunctionTests(
 		}
 		if resp.MemorySize == nil || *resp.MemorySize != newMemory {
 			return fmt.Errorf("memory size not updated, got %v", resp.MemorySize)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "UpdateFunctionConfiguration_EphemeralStorageAndSnapStart", func() error {
+		esFunc := fmt.Sprintf("EsFunc-%d", time.Now().UnixNano())
+		esRoleName := fmt.Sprintf("EsRole-%d", time.Now().UnixNano())
+		esRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, esRoleName)
+		esCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %w", err)
+		}
+		if err := createIAMRole(esRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(esRoleName)
+		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(esFunc),
+			Runtime:      types.RuntimeJava21,
+			Role:         aws.String(esRole),
+			Handler:      aws.String("org.example.App::handleRequest"),
+			Code:         &types.FunctionCode{ZipFile: esCode},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(esFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, esFunc)
+
+		if _, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName:     aws.String(esFunc),
+			EphemeralStorage: &types.EphemeralStorage{Size: aws.Int32(1024)},
+			SnapStart:        &types.SnapStart{ApplyOn: types.SnapStartApplyOnPublishedVersions},
+		}); err != nil {
+			return fmt.Errorf("update config: %v", err)
+		}
+
+		resp, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(esFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.EphemeralStorage == nil || resp.EphemeralStorage.Size == nil || *resp.EphemeralStorage.Size != 1024 {
+			return fmt.Errorf("EphemeralStorage not applied, got %v", resp.EphemeralStorage)
+		}
+		if resp.SnapStart == nil || resp.SnapStart.ApplyOn != types.SnapStartApplyOnPublishedVersions {
+			return fmt.Errorf("SnapStart not applied, got %v", resp.SnapStart)
+		}
+
+		// A present-but-negative member is rejected rather than silently
+		// ignored.
+		_, err = client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(esFunc),
+			Timeout:      aws.Int32(-1),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "ListFunctions_FunctionVersionAll", func() error {
+		allFunc := fmt.Sprintf("AllFunc-%d", time.Now().UnixNano())
+		allRoleName := fmt.Sprintf("AllRole-%d", time.Now().UnixNano())
+		allRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, allRoleName)
+		allCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+		if err != nil {
+			return fmt.Errorf("zip code: %v", err)
+		}
+		if err := createIAMRole(allRoleName); err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer deleteIAMRole(allRoleName)
+		if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(allFunc),
+			Runtime:      types.RuntimeNodejs22x,
+			Role:         aws.String(allRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: allCode},
+		}); err != nil {
+			return fmt.Errorf("create function: %v", err)
+		}
+		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(allFunc)})
+		defer deleteLambdaLogGroup(cwlClient, ctx, allFunc)
+		for i := 0; i < 2; i++ {
+			if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+				FunctionName: aws.String(allFunc),
+			}); err != nil {
+				return fmt.Errorf("publish %d: %v", i+1, err)
+			}
+		}
+
+		// With FunctionVersion=ALL the listing includes an entry for every
+		// published version in addition to the $LATEST entry.
+		var entries []string
+		var nextMarker *string
+		for page := 0; page < 20; page++ {
+			resp, err := client.ListFunctions(ctx, &lambda.ListFunctionsInput{
+				FunctionVersion: types.FunctionVersionAll,
+				Marker:          nextMarker,
+			})
+			if err != nil {
+				return err
+			}
+			for _, f := range resp.Functions {
+				if f.FunctionName != nil && *f.FunctionName == allFunc {
+					if f.Version != nil {
+						entries = append(entries, *f.Version)
+					}
+				}
+			}
+			nextMarker = resp.NextMarker
+			if nextMarker == nil {
+				break
+			}
+		}
+		if len(entries) != 3 {
+			return fmt.Errorf("expected $LATEST plus 2 published versions, got %v", entries)
+		}
+		hasLatest, hasOne, hasTwo := false, false, false
+		for _, v := range entries {
+			switch v {
+			case "$LATEST":
+				hasLatest = true
+			case "1":
+				hasOne = true
+			case "2":
+				hasTwo = true
+			}
+		}
+		if !hasLatest || !hasOne || !hasTwo {
+			return fmt.Errorf("missing expected version entries, got %v", entries)
 		}
 		return nil
 	}))

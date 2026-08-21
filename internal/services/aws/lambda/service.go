@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -52,6 +53,14 @@ type LambdaService struct {
 	asyncWg        sync.WaitGroup
 	esmPoller      *esmPoller
 	inflight       sync.Map // functionArn → *atomic.Int32
+	// containerEnsureMu serialises cold container creation per container
+	// name, and containerIDs caches the last ensured container per name.
+	// Concurrent invocations of the same cold function (for example
+	// parallel event source batches) would otherwise race the
+	// check-then-create sequence; the loser fails with a name conflict and
+	// its batch is re-delivered on the next poll.
+	containerEnsureMu sync.Map // container name → *sync.Mutex
+	containerIDs      sync.Map // container name → container ID
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
@@ -332,12 +341,19 @@ func (s *LambdaService) storeCode(functionName, version string, code []byte, reg
 	return codePath, int64(len(code)), nil
 }
 
-func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, region string) ([]byte, error) {
+// fetchCodeFromS3 reads a deployment package from S3. A non-empty
+// versionID reads that specific object version ("For versioned objects,
+// the version of the deployment package object to use"); an empty one
+// reads the latest version.
+func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, versionID, region string) ([]byte, error) {
 	if s.s3Invoker == nil {
 		return nil, fmt.Errorf("S3 invoker not configured")
 	}
-	data, err := s.s3Invoker.GetObject(ctx, region, bucket, key, 250*1024*1024)
+	data, err := s.s3Invoker.GetObjectVersion(ctx, region, bucket, key, versionID, 250*1024*1024)
 	if err != nil {
+		if versionID != "" {
+			return nil, fmt.Errorf("failed to get object version from S3: s3://%s/%s@%s: %w", bucket, key, versionID, err)
+		}
 		return nil, fmt.Errorf("failed to get object from S3: s3://%s/%s: %w", bucket, key, err)
 	}
 	return data, nil
@@ -358,8 +374,75 @@ func (s *LambdaService) loadCode(functionName, version string, region string) ([
 	return code, nil
 }
 
+// publishVersionWithCode publishes a new version of the function and
+// persists the version's code snapshot under its own version directory, so
+// the published version stays executable after the $LATEST code changes or
+// all containers are recycled. Container image packages carry no zip
+// archive and skip the code persistence step. This mirrors how layer
+// versions persist their content at publish time.
+func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *lambdastore.Function, description, region string) (*lambdastore.Version, error) {
+	var latestCode []byte
+	if function.PackageType != "Image" && function.ImageUri == "" {
+		var err error
+		latestCode, err = s.loadCode(function.FunctionName, "$LATEST", region)
+		if err != nil {
+			return nil, NewLambdaError("ServiceException",
+				fmt.Sprintf("The $LATEST code of function %s is not available for publishing.", function.FunctionName),
+				http.StatusInternalServerError)
+		}
+	}
+
+	version, err := stores.Functions.PublishVersion(function, description)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if latestCode != nil {
+		if _, _, err := s.storeCode(function.FunctionName, version.Version, latestCode, region); err != nil {
+			return nil, NewLambdaError("ServiceException",
+				fmt.Sprintf("Failed to persist the code of version %s: %v", version.Version, err),
+				http.StatusInternalServerError)
+		}
+	}
+
+	return version, nil
+}
+
 func (s *LambdaService) getRuntimeImage(runtime lambdastore.Runtime) string {
 	return lambdastore.GetImageForRuntime(runtime)
+}
+
+// executionConfig carries the runtime parameters an execution must use.
+// Published versions execute their own immutable snapshot; only $LATEST
+// follows the live function configuration.
+type executionConfig struct {
+	Runtime     lambdastore.Runtime
+	Handler     string
+	Timeout     int32
+	MemorySize  int32
+	ImageUri    string
+	Environment *lambdastore.Environment
+}
+
+func executionConfigFor(function *lambdastore.Function, ver *lambdastore.Version) executionConfig {
+	if ver != nil {
+		return executionConfig{
+			Runtime:     ver.Runtime,
+			Handler:     ver.Handler,
+			Timeout:     ver.Timeout,
+			MemorySize:  ver.MemorySize,
+			ImageUri:    ver.ImageUri,
+			Environment: ver.Environment,
+		}
+	}
+	return executionConfig{
+		Runtime:     function.Runtime,
+		Handler:     function.Handler,
+		Timeout:     function.Timeout,
+		MemorySize:  function.MemorySize,
+		ImageUri:    function.ImageUri,
+		Environment: function.Environment,
+	}
 }
 
 func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string) (string, error) {
@@ -384,22 +467,40 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		}
 	}
 
-	image := s.getRuntimeImage(function.Runtime)
-	if function.ImageUri != "" {
-		image = function.ImageUri
+	// Serialise creation per container name. Waiters re-check the cache
+	// after acquiring: the goroutine that held the lock created the
+	// container and recorded its ID.
+	muAny, _ := s.containerEnsureMu.LoadOrStore(containerName, &sync.Mutex{})
+	mu := muAny.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	if hintAny, ok := s.containerIDs.Load(containerName); ok {
+		if hint, _ := hintAny.(string); hint != "" {
+			if status, err := s.dockerClient.GetContainerStatus(ctx, hint); err == nil && status == mobyclient.ContainerStatusRunning {
+				return hint, nil
+			}
+		}
+	}
+
+	execCfg := executionConfigFor(function, ver)
+
+	image := s.getRuntimeImage(execCfg.Runtime)
+	if execCfg.ImageUri != "" {
+		image = execCfg.ImageUri
 	}
 
 	envVars := map[string]string{
-		"AWS_LAMBDA_FUNCTION_TIMEOUT":     fmt.Sprintf("%d", function.Timeout),
-		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": fmt.Sprintf("%d", function.MemorySize),
-		"AWS_LAMBDA_FUNCTION_HANDLER":     function.Handler,
+		"AWS_LAMBDA_FUNCTION_TIMEOUT":     fmt.Sprintf("%d", execCfg.Timeout),
+		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": fmt.Sprintf("%d", execCfg.MemorySize),
+		"AWS_LAMBDA_FUNCTION_HANDLER":     execCfg.Handler,
 		"AWS_LAMBDA_FUNCTION_NAME":        function.FunctionName,
 		"AWS_LAMBDA_FUNCTION_VERSION":     version,
 		"AWS_REGION":                      region,
 	}
 
-	if function.Environment != nil {
-		for k, v := range function.Environment.Variables {
+	if execCfg.Environment != nil {
+		for k, v := range execCfg.Environment.Variables {
 			envVars[k] = v
 		}
 	}
@@ -414,7 +515,7 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		PullImage:  true,
 		Env:        envVars,
 		Entrypoint: []string{"/lambda-entrypoint.sh"},
-		Cmd:        []string{function.Handler},
+		Cmd:        []string{execCfg.Handler},
 		Network:    "bridge",
 		AutoRemove: false,
 		ExtraHosts: []string{"host.docker.internal:host-gateway"},
@@ -470,6 +571,8 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 			}
 		}
 	}
+
+	s.containerIDs.Store(containerName, result.ID)
 
 	return result.ID, nil
 }
@@ -540,14 +643,30 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 		version = ver.Version
 	}
 
+	execCfg := executionConfigFor(function, ver)
+
 	code, err := s.loadCode(function.FunctionName, version, region)
-	if err == nil && len(code) > 0 {
-		if err := s.copyCodeToContainer(containerID, code, function.Runtime); err != nil {
+	if err != nil {
+		// A zip-packaged function must have its code on disk; executing an
+		// empty container would silently run stale or no code. Container
+		// image packages carry no zip archive.
+		if execCfg.ImageUri == "" && function.PackageType != "Image" {
+			logs.Error("Function code unavailable for invocation",
+				logs.String("function", function.FunctionName),
+				logs.String("version", version),
+				logs.Err(err))
+			return nil, NewLambdaError("ServiceException",
+				fmt.Sprintf("The code of function %s version %s is not available.", function.FunctionName, version),
+				http.StatusInternalServerError)
+		}
+	}
+	if len(code) > 0 {
+		if err := s.copyCodeToContainer(containerID, code, execCfg.Runtime); err != nil {
 			return nil, fmt.Errorf("failed to copy code to container: %w", err)
 		}
 	}
 
-	handlerParts := strings.Split(function.Handler, ".")
+	handlerParts := strings.Split(execCfg.Handler, ".")
 	moduleFile := handlerParts[0]
 	handlerFunc := "handler"
 	if len(handlerParts) > 1 {
@@ -559,7 +678,7 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 		eventJSON = string(payload)
 	}
 
-	invokeCmd := s.buildInvokeCommand(function.Runtime, moduleFile, handlerFunc, eventJSON)
+	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON)
 
 	execResult, err := s.dockerClient.Exec(ctx, containerID, mobyclient.ExecConfig{
 		Cmd:          invokeCmd,
@@ -570,22 +689,91 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 		return nil, fmt.Errorf("failed to exec in container: %w", err)
 	}
 
-	stdout := strings.TrimSpace(execResult.Stdout)
-
-	s.writeLambdaLogs(function.FunctionName, version, stdout, execResult.Stderr, region)
-
-	var functionError string
-	if execResult.ExitCode != 0 {
-		functionError = execResult.Stderr
+	// The framed region between the markers is exactly the return value and
+	// the output before the opening marker is the handler's console output;
+	// only that part belongs in the CloudWatch logs and the tailed
+	// LogResult. A custom runtime writes no marker, so its whole stdout
+	// remains the payload.
+	payloadOut := strings.TrimSpace(execResult.Stdout)
+	logOut := payloadOut
+	if resultMarker != "" {
+		payloadOut, logOut = splitResultPayload(execResult.Stdout, resultMarker)
 	}
+
+	s.writeLambdaLogs(function.FunctionName, version, logOut, execResult.Stderr, region)
+
+	functionError := classifyFunctionError(execResult.ExitCode, payloadOut)
 
 	return &lambdastore.InvocationResult{
 		StatusCode:      http.StatusOK,
 		ExecutedVersion: version,
-		Payload:         []byte(stdout),
+		Payload:         []byte(payloadOut),
 		FunctionError:   functionError,
-		LogResult:       captureLogResult(logType, stdout, execResult.Stderr),
+		LogResult:       captureLogResult(logType, logOut, execResult.Stderr),
 	}, nil
+}
+
+// finalJSONDocument returns the JSON document the runtime wrapper appended
+// to stdout. Handler console output lands in stdout first and the wrapper
+// writes the returned payload afterwards, so when the whole output does not
+// parse as JSON the payload is the final line. The wrappers serialise the
+// return value without indentation, so the payload document is always a
+// single line.
+func finalJSONDocument(stdout []byte) (json.RawMessage, bool) {
+	trimmed := bytes.TrimSpace(stdout)
+	if json.Valid(trimmed) {
+		return json.RawMessage(trimmed), true
+	}
+	if idx := bytes.LastIndexByte(trimmed, '\n'); idx >= 0 {
+		if line := bytes.TrimSpace(trimmed[idx+1:]); json.Valid(line) {
+			return json.RawMessage(line), true
+		}
+	}
+	return nil, false
+}
+
+// splitResultPayload separates the wrapper-framed return value from the
+// handler's console output in stdout. The wrapper writes the marker, the
+// serialised return value, and the marker again, so the region between the
+// two marker occurrences is exactly the return value — even when a string
+// return spans multiple lines — and everything before the first marker is
+// log output. Stdout without a complete marker pair carries no return
+// value: the execution was killed before the wrapper could write one.
+func splitResultPayload(stdout, marker string) (payload, logs string) {
+	open := strings.Index(stdout, marker)
+	if open < 0 {
+		return "", stdout
+	}
+	rest := stdout[open+len(marker):]
+	closeIdx := strings.Index(rest, marker)
+	if closeIdx < 0 {
+		return "", stdout
+	}
+	return rest[:closeIdx], stdout[:open]
+}
+
+// classifyFunctionError maps a failed execution onto the AWS wire contract
+// for X-Amz-Function-Error. A non-zero exit means the runtime intercepted
+// the failure ("Unhandled"); a successful exit whose payload is the error
+// document the function returned — a JSON envelope carrying errorMessage —
+// is a "Handled" error. A payload without that envelope is a normal
+// success and reports no function error. The envelope is read from the
+// final JSON document of stdout so handler log lines cannot mask it.
+func classifyFunctionError(exitCode int, stdout string) string {
+	if exitCode != 0 {
+		return "Unhandled"
+	}
+	doc, ok := finalJSONDocument([]byte(stdout))
+	if !ok {
+		return ""
+	}
+	var probe struct {
+		ErrorMessage *string `json:"errorMessage"`
+	}
+	if err := json.Unmarshal(doc, &probe); err == nil && probe.ErrorMessage != nil {
+		return "Handled"
+	}
+	return ""
 }
 
 // captureLogResult captures the last 4 KB of execution logs as base64 when
@@ -604,23 +792,34 @@ func captureLogResult(logType, stdout, stderr string) string {
 	return base64.StdEncoding.EncodeToString([]byte(logContent))
 }
 
-func (s *LambdaService) buildInvokeCommand(runtime lambdastore.Runtime, moduleFile, handlerFunc, eventJSON string) []string {
+func (s *LambdaService) buildInvokeCommand(runtime lambdastore.Runtime, moduleFile, handlerFunc, eventJSON string) ([]string, string) {
+	// The node/python wrappers frame the serialised return value with a
+	// per-invocation marker. Handler code cannot emit the marker (a fresh
+	// one is generated per invocation), so the framed region is exactly the
+	// return value and the preceding output is console logging — mirroring
+	// the AWS runtime contract where the response payload and the logs are
+	// separate channels. A custom runtime keeps writing its response as the
+	// whole stdout, so it gets no marker.
+	marker := ""
+	if strings.HasPrefix(string(runtime), "nodejs") || strings.HasPrefix(string(runtime), "python") {
+		marker = fmt.Sprintf("__VORPALSTACKS_RESULT_%s__", uuid.New().String())
+	}
 	if strings.HasPrefix(string(runtime), "nodejs") {
 		escaped := strings.ReplaceAll(strings.ReplaceAll(eventJSON, `\`, `\\`), "'", `\'`)
 		script := fmt.Sprintf(
-			"const m=require('/var/task/%s');const h=typeof m==='function'?m:m['%s'];const p=Promise.resolve(h(JSON.parse('%s')));p.then(r=>{if(r&&typeof r==='object')process.stdout.write(JSON.stringify(r));else if(r!==undefined)process.stdout.write(String(r));}).catch(e=>{process.stderr.write(e.message||String(e));process.exit(1);});",
-			moduleFile, handlerFunc, escaped,
+			"const m=require('/var/task/%s');const h=typeof m==='function'?m:m['%s'];const p=Promise.resolve(h(JSON.parse('%s')));p.then(r=>{if(r&&typeof r==='object')process.stdout.write('%s'+JSON.stringify(r)+'%s');else if(r!==undefined)process.stdout.write('%s'+String(r)+'%s');}).catch(e=>{process.stderr.write(e.message||String(e));process.exit(1);});",
+			moduleFile, handlerFunc, escaped, marker, marker, marker, marker,
 		)
-		return []string{"node", "-e", script}
+		return []string{"node", "-e", script}, marker
 	}
 	if strings.HasPrefix(string(runtime), "python") {
 		escaped := strings.ReplaceAll(eventJSON, "'", `\'`)
 		return []string{"python3", "-c", fmt.Sprintf(
-			"import json,sys;mod=__import__('%s');h=getattr(mod,'%s',mod);r=h(json.loads('%s'));print(json.dumps(r) if isinstance(r,dict) else str(r))",
-			moduleFile, handlerFunc, escaped,
-		)}
+			"import json,sys;mod=__import__('%s');h=getattr(mod,'%s',mod);r=h(json.loads('%s'));print('%s'+(json.dumps(r) if isinstance(r,dict) else str(r))+'%s')",
+			moduleFile, handlerFunc, escaped, marker, marker,
+		)}, marker
 	}
-	return []string{"/var/runtime/bootstrap"}
+	return []string{"/var/runtime/bootstrap"}, marker
 }
 
 func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, region string) {
@@ -725,20 +924,7 @@ func (s *LambdaService) GetFunctionARN(ctx context.Context, functionRef string) 
 // provided, both the region and function name are extracted from it;
 // otherwise the constructor region is used as a fallback.
 func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string, payload []byte) (int64, []byte, error) {
-	region := s.region
-	functionName := functionRef
-	if strings.HasPrefix(functionRef, "arn:") {
-		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
-			region = arnRegion
-		}
-		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
-	}
-	store := s.getOrCreateFunctionStore(region)
-	function, ver, _, err := s.resolveQualifier(store, functionName, "")
-	if err != nil {
-		return 0, nil, err
-	}
-	result, err := s.invokeFunction(function, ver, store, region, payload, "")
+	result, err := s.InvokeForEventSource(ctx, functionRef, payload)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -746,6 +932,31 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string
 		return 0, nil, fmt.Errorf("invocation returned nil result")
 	}
 	return result.StatusCode, result.Payload, nil
+}
+
+// InvokeForEventSource invokes a Lambda function and returns the complete
+// invocation result. Event source consumers must observe FunctionError: the
+// invoke transport succeeds (HTTP 200) even when the function itself fails,
+// and acknowledging a batch in that state would silently drop records that
+// AWS semantics require to be retried, bisected or sent to a failure
+// destination.
+func (s *LambdaService) InvokeForEventSource(ctx context.Context, functionRef string, payload []byte) (*lambdastore.InvocationResult, error) {
+	region := s.region
+	if strings.HasPrefix(functionRef, "arn:") {
+		if _, _, arnRegion, _, _ := svcarn.SplitARN(functionRef); arnRegion != "" {
+			region = arnRegion
+		}
+	}
+	functionName, embeddedQualifier := resolveFunctionRef(functionRef)
+	store := s.getOrCreateFunctionStore(region)
+	function, ver, alias, err := s.resolveQualifier(store, functionName, embeddedQualifier)
+	if err != nil {
+		return nil, err
+	}
+	if alias != nil {
+		ver = resolveAliasTargetVersion(function, alias)
+	}
+	return s.invokeFunction(function, ver, store, region, payload, "")
 }
 
 // GetFunctionStore returns a new FunctionStore for the Lambda service
@@ -823,17 +1034,27 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	}
 
 	var totalCodeSize int64
+	var reservedSum int64
 	for _, fn := range result {
 		totalCodeSize += fn.CodeSize
+		if fn.ReservedConcurrency != nil {
+			reservedSum += *fn.ReservedConcurrency
+		}
+	}
+	// The unreserved concurrency is the regional limit minus the reserved
+	// amounts of every function in the region.
+	unreserved := lambdastore.AccountLimitConcurrentExecutions - reservedSum
+	if unreserved < 0 {
+		unreserved = 0
 	}
 
 	return map[string]interface{}{
 		"AccountLimit": map[string]interface{}{
-			"TotalCodeSize":                  80530636800,
-			"CodeSizeUnzipped":               262144000,
-			"CodeSizeZipped":                 52428800,
-			"ConcurrentExecutions":           1000,
-			"UnreservedConcurrentExecutions": 1000,
+			"TotalCodeSize":                  lambdastore.AccountLimitTotalCodeSize,
+			"CodeSizeUnzipped":               lambdastore.AccountLimitCodeSizeUnzipped,
+			"CodeSizeZipped":                 lambdastore.AccountLimitCodeSizeZipped,
+			"ConcurrentExecutions":           lambdastore.AccountLimitConcurrentExecutions,
+			"UnreservedConcurrentExecutions": unreserved,
 		},
 		"AccountUsage": map[string]interface{}{
 			"TotalCodeSize": totalCodeSize,

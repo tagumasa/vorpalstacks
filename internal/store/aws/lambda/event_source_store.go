@@ -236,6 +236,23 @@ func (s *EventSourceStore) SetState(uuid, state, reason string) error {
 	return s.updateInternal(&mapping)
 }
 
+// SetProcessingResult records the outcome of the latest poll cycle in
+// LastProcessingResult ("No errors." or the failure text). State
+// transitions and their reasons are a separate concern handled by
+// SetState, mirroring the wire contract where StateTransitionReason
+// carries "User action" style reasons.
+func (s *EventSourceStore) SetProcessingResult(uuid, result string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var mapping EventSourceMapping
+	if err := s.BaseStore.Get(uuid, &mapping); err != nil {
+		return ErrEventSourceNotFound
+	}
+	mapping.LastProcessingResult = result
+	return s.updateInternal(&mapping)
+}
+
 // Activate enables an event source mapping.
 func (s *EventSourceStore) Activate(uuid string) error {
 	return s.SetState(uuid, "Enabled", "User action")

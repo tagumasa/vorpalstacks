@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/store/aws/common"
@@ -65,9 +64,15 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 
 	if compats, ok := req.Parameters["CompatibleRuntimes"].([]interface{}); ok {
 		for _, c := range compats {
-			if str, ok := c.(string); ok {
-				version.CompatibleRuntimes = append(version.CompatibleRuntimes, lambdastore.Runtime(str))
+			str, ok := c.(string)
+			if !ok {
+				continue
 			}
+			if !ValidateRuntime(str) {
+				return nil, NewInvalidParameter("CompatibleRuntimes",
+					fmt.Sprintf("Runtime '%s' is not supported", str))
+			}
+			version.CompatibleRuntimes = append(version.CompatibleRuntimes, lambdastore.Runtime(str))
 		}
 	}
 
@@ -85,6 +90,18 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 		decodedZipFile, err = base64.StdEncoding.DecodeString(zipFileStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ZipFile encoding: %w", err)
+		}
+		version.CodeSize = int64(len(decodedZipFile))
+		version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
+	} else if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
+		s3Key, _ := codeMap["S3Key"].(string)
+		if s3Key == "" {
+			return nil, NewInvalidParameter("Content.S3Key", "S3Key is required when S3Bucket is specified")
+		}
+		s3Version, _ := codeMap["S3ObjectVersion"].(string)
+		decodedZipFile, err = s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, reqCtx.GetRegion())
+		if err != nil {
+			return nil, NewInvalidParameter("Content", err.Error())
 		}
 		version.CodeSize = int64(len(decodedZipFile))
 		version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
@@ -254,12 +271,13 @@ func (s *LambdaService) ListLayerVersions(ctx context.Context, reqCtx *request.R
 	}
 
 	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
+	marker := request.GetStringParam(req.Parameters, "Marker")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Layers.ListVersions(layerName, common.ListOptions{MaxItems: maxItems})
+	result, err := store.Layers.ListVersions(layerName, common.ListOptions{Marker: marker, MaxItems: maxItems})
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrLayerNotFound) {
 			return nil, NewResourceNotFound("Layer", layerName)
@@ -377,7 +395,18 @@ func (s *LambdaService) AddLayerVersionPermission(ctx context.Context, reqCtx *r
 		if errors.Is(err, lambdastore.ErrLayerNotFound) || errors.Is(err, lambdastore.ErrLayerVersionNotFound) {
 			return nil, NewResourceNotFound("LayerVersion", layerName)
 		}
-		return nil, err
+		if errors.Is(err, lambdastore.ErrPolicyAlreadyExists) {
+			return nil, NewResourceConflict(fmt.Sprintf("StatementId %s already exists", statementId))
+		}
+		return nil, mapStoreError(err)
+	}
+
+	targetVersion, err := store.Layers.GetVersion(layerName, versionNumber)
+	if err != nil {
+		return nil, NewResourceNotFound("LayerVersion", layerName)
+	}
+	if targetVersion == nil {
+		return nil, NewResourceNotFound("LayerVersion", layerName)
 	}
 
 	statement := map[string]interface{}{
@@ -385,7 +414,7 @@ func (s *LambdaService) AddLayerVersionPermission(ctx context.Context, reqCtx *r
 		"Effect":    "Allow",
 		"Principal": request.GetStringParam(req.Parameters, "Principal"),
 		"Action":    request.GetStringParam(req.Parameters, "Action"),
-		"Resource":  layer.LatestMatchingVersion.LayerVersionArn,
+		"Resource":  targetVersion.LayerVersionArn,
 	}
 
 	statementJSON, err := json.Marshal(statement)
@@ -395,7 +424,7 @@ func (s *LambdaService) AddLayerVersionPermission(ctx context.Context, reqCtx *r
 
 	return map[string]interface{}{
 		"Statement":  string(statementJSON),
-		"RevisionId": uuid.New().String(),
+		"RevisionId": targetVersion.RevisionId,
 	}, nil
 }
 
@@ -484,6 +513,6 @@ func (s *LambdaService) GetLayerVersionPolicy(ctx context.Context, reqCtx *reque
 
 	return map[string]interface{}{
 		"Policy":     string(policyJSON),
-		"RevisionId": uuid.New().String(),
+		"RevisionId": layerVersion.RevisionId,
 	}, nil
 }

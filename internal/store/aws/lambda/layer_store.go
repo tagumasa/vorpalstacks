@@ -110,6 +110,7 @@ func (s *LayerStore) PublishVersion(layer *Layer, version *LayerVersion) (*Layer
 	versionCopy.Version = versionNum
 	versionCopy.LayerVersionArn = s.arnBuilder.LayerVersionArn(layer.LayerName, versionNum)
 	versionCopy.CreatedDate = time.Now().UTC()
+	versionCopy.RevisionId = uuid.New().String()
 
 	if versionCopy.CodeSize > 0 && versionCopy.CodeSha256 == "" {
 		versionCopy.CodeSha256 = GenerateCodeHash([]byte(fmt.Sprintf("%s-%d-%d", layer.LayerName, versionCopy.Version, versionCopy.CodeSize)))
@@ -250,23 +251,31 @@ func (s *LayerStore) ListVersions(layerName string, opts common.ListOptions) (*c
 	}, nil
 }
 
-// AddPolicy adds a permission policy to a Lambda layer version.
+// AddPolicy adds a permission policy to a specific version of a Lambda
+// layer. The statement id must not already exist on that version.
 func (s *LayerStore) AddPolicy(layer *Layer, versionNumber int64, policy *LayerPolicy) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if layer.LatestMatchingVersion == nil || layer.LatestMatchingVersion.Version != versionNumber {
+	target := layerVersionByNumber(layer, versionNumber)
+	if target == nil {
 		return ErrLayerVersionNotFound
 	}
 
 	if policy.Id == "" {
 		policy.Id = uuid.New().String()
 	}
-	layer.LatestMatchingVersion.Policies = append(layer.LatestMatchingVersion.Policies, *policy)
+	for _, p := range target.Policies {
+		if p.Id == policy.Id {
+			return ErrPolicyAlreadyExists
+		}
+	}
+	target.Policies = append(target.Policies, *policy)
 	return s.updateInternal(layer)
 }
 
-// RemovePolicy removes a permission policy from a Lambda layer version.
+// RemovePolicy removes a permission policy from a specific version of a
+// Lambda layer.
 func (s *LayerStore) RemovePolicy(layerName string, versionNumber int64, statementId string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -276,21 +285,30 @@ func (s *LayerStore) RemovePolicy(layerName string, versionNumber int64, stateme
 		return ErrLayerNotFound
 	}
 
-	if layer.LatestMatchingVersion == nil || layer.LatestMatchingVersion.Version != versionNumber {
+	target := layerVersionByNumber(&layer, versionNumber)
+	if target == nil {
 		return ErrLayerVersionNotFound
 	}
 
-	for i, p := range layer.LatestMatchingVersion.Policies {
+	for i, p := range target.Policies {
 		if p.Id == statementId {
-			layer.LatestMatchingVersion.Policies = append(
-				layer.LatestMatchingVersion.Policies[:i],
-				layer.LatestMatchingVersion.Policies[i+1:]...,
-			)
+			target.Policies = append(target.Policies[:i], target.Policies[i+1:]...)
 			return s.updateInternal(&layer)
 		}
 	}
 
 	return ErrPolicyNotFound
+}
+
+// layerVersionByNumber returns the addressed version record within the
+// layer, or nil when the version does not exist.
+func layerVersionByNumber(layer *Layer, versionNumber int64) *LayerVersion {
+	for _, v := range layer.Versions {
+		if v.Version == versionNumber {
+			return v
+		}
+	}
+	return nil
 }
 
 // Update modifies an existing Lambda layer.

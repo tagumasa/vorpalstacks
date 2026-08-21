@@ -58,7 +58,8 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		if s3Key == "" {
 			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
 		}
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, reqCtx.GetRegion())
+		s3Version, _ := codeMap["S3ObjectVersion"].(string)
+		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, reqCtx.GetRegion())
 		if err != nil {
 			return nil, NewInvalidParameter("Code", err.Error())
 		}
@@ -191,7 +192,7 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	created, err := s.createFunctionCore(store, &CreateFunctionInput{
+	created, published, err := s.createFunctionCore(store, &CreateFunctionInput{
 		FunctionName:         functionName,
 		Runtime:              runtime,
 		Role:                 role,
@@ -201,6 +202,7 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		KMSKeyArn:            request.GetStringParam(req.Parameters, "KMSKeyArn"),
 		Publish:              request.GetBoolParam(req.Parameters, "Publish"),
 		CodeSigningConfigArn: request.GetStringParam(req.Parameters, "CodeSigningConfigArn"),
+		Region:               reqCtx.GetRegion(),
 		CodeLocation:         codeLocation,
 		CodeSize:             codeSize,
 		CodeSha256:           codeSha256,
@@ -224,16 +226,24 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
+	// When Publish was requested, the response describes the published
+	// version rather than $LATEST.
+	if published != nil {
+		return s.toVersionConfiguration(published), nil
+	}
 	return s.toFunctionConfiguration(created), nil
 }
 
 // DeleteFunction deletes the specified Lambda function.
 func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
+	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionNameRaw == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
-	functionName = extractFunctionName(functionName)
+	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, err
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -242,7 +252,7 @@ func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.Requ
 
 	if err := s.deleteFunctionCore(ctx, store, &DeleteFunctionInput{
 		FunctionName: functionName,
-		Qualifier:    request.GetStringParam(req.Parameters, "Qualifier"),
+		Qualifier:    mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier),
 	}); err != nil {
 		return nil, err
 	}

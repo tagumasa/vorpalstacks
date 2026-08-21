@@ -98,7 +98,14 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	statusCode, payload, err := s.lambdaInvoker.InvokeForGateway(r.Context(), functionName, eventJSON)
+	// The URL invokes the qualifier recorded in its configuration — an
+	// alias or $LATEST; InvokeForGateway resolves the ":qualifier" suffix.
+	invokeRef := functionName
+	if urlConfig.Qualifier != "" && urlConfig.Qualifier != "$LATEST" {
+		invokeRef = functionName + ":" + urlConfig.Qualifier
+	}
+
+	statusCode, payload, err := s.lambdaInvoker.InvokeForGateway(r.Context(), invokeRef, eventJSON)
 	if err != nil {
 		logs.Error("Function URL invocation failed", logs.String("function", functionName), logs.Err(err))
 		http.Error(w, fmt.Sprintf(`{"message":"Invocation failed: %s"}`, err.Error()), http.StatusBadGateway)
@@ -113,18 +120,23 @@ func (s *FunctionURLServer) HandleRequest(w http.ResponseWriter, r *http.Request
 			Body              string              `json:"body"`
 			IsBase64Encoded   bool                `json:"isBase64Encoded"`
 		}
-		if err := json.Unmarshal(payload, &resp); err == nil && resp.StatusCode > 0 {
-			for k, v := range resp.Headers {
-				w.Header().Set(k, v)
-			}
-			for k, vals := range resp.MultiValueHeaders {
-				for _, v := range vals {
-					w.Header().Add(k, v)
+		// The invoke payload carries any handler log lines ahead of the
+		// response document the runtime appended, so probe the final JSON
+		// document rather than the whole payload.
+		if doc, ok := finalJSONDocument(payload); ok {
+			if err := json.Unmarshal(doc, &resp); err == nil && resp.StatusCode > 0 {
+				for k, v := range resp.Headers {
+					w.Header().Set(k, v)
 				}
+				for k, vals := range resp.MultiValueHeaders {
+					for _, v := range vals {
+						w.Header().Add(k, v)
+					}
+				}
+				w.WriteHeader(resp.StatusCode)
+				fmt.Fprint(w, resp.Body)
+				return
 			}
-			w.WriteHeader(resp.StatusCode)
-			fmt.Fprint(w, resp.Body)
-			return
 		}
 	}
 

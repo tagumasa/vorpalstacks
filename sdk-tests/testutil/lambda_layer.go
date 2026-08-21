@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -41,6 +42,49 @@ func runLambdaLayerTests(
 		}
 		if resp.Content == nil || resp.Content.CodeSha256 == nil {
 			return fmt.Errorf("CodeSha256 is nil")
+		}
+		// Two more versions so pagination has multiple pages.
+		for i := 2; i <= 3; i++ {
+			if _, err := client.PublishLayerVersion(ctx, &lambda.PublishLayerVersionInput{
+				LayerName: aws.String(layerName),
+				Content:   &types.LayerVersionContentInput{ZipFile: []byte(layerZipContent)},
+			}); err != nil {
+				return fmt.Errorf("publish version %d: %v", i, err)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "ListLayerVersions_Pagination", func() error {
+		first, err := client.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
+			LayerName: aws.String(layerName),
+			MaxItems:  aws.Int32(2),
+		})
+		if err != nil {
+			return err
+		}
+		if len(first.LayerVersions) != 2 {
+			return fmt.Errorf("first page should carry 2 versions, got %d", len(first.LayerVersions))
+		}
+		if first.NextMarker == nil || *first.NextMarker == "" {
+			return fmt.Errorf("first page should be truncated with a NextMarker")
+		}
+		second, err := client.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
+			LayerName: aws.String(layerName),
+			Marker:    first.NextMarker,
+		})
+		if err != nil {
+			return err
+		}
+		if len(second.LayerVersions) == 0 {
+			return fmt.Errorf("second page should carry the remaining version")
+		}
+		for _, v := range second.LayerVersions {
+			for _, seen := range first.LayerVersions {
+				if seen.Version == v.Version {
+					return fmt.Errorf("version %d repeated across pages", v.Version)
+				}
+			}
 		}
 		return nil
 	}))
@@ -131,6 +175,53 @@ func runLambdaLayerTests(
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("lambda", "LayerVersionPermission_OlderVersion", func() error {
+		// Version 3 is the latest; version 2 is an older published version.
+		_, err := client.AddLayerVersionPermission(ctx, &lambda.AddLayerVersionPermissionInput{
+			LayerName:     aws.String(layerName),
+			VersionNumber: aws.Int64(2),
+			StatementId:   aws.String("cross-account"),
+			Action:        aws.String("lambda:GetLayerVersion"),
+			Principal:     aws.String("*"),
+		})
+		if err != nil {
+			return fmt.Errorf("add permission on older version: %v", err)
+		}
+
+		policyResp, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
+			LayerName:     aws.String(layerName),
+			VersionNumber: aws.Int64(2),
+		})
+		if err != nil {
+			return err
+		}
+		if policyResp.Policy == nil || !strings.Contains(*policyResp.Policy, "cross-account") {
+			return fmt.Errorf("policy should carry the added statement")
+		}
+		if policyResp.RevisionId == nil || *policyResp.RevisionId == "" {
+			return fmt.Errorf("RevisionId is nil or empty")
+		}
+		again, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
+			LayerName:     aws.String(layerName),
+			VersionNumber: aws.Int64(2),
+		})
+		if err != nil {
+			return err
+		}
+		if again.RevisionId == nil || policyResp.RevisionId == nil || *again.RevisionId != *policyResp.RevisionId {
+			return fmt.Errorf("RevisionId should be stable across reads")
+		}
+
+		if _, err := client.RemoveLayerVersionPermission(ctx, &lambda.RemoveLayerVersionPermissionInput{
+			LayerName:     aws.String(layerName),
+			VersionNumber: aws.Int64(2),
+			StatementId:   aws.String("cross-account"),
+		}); err != nil {
+			return fmt.Errorf("remove permission: %v", err)
 		}
 		return nil
 	}))

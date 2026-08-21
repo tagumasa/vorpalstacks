@@ -2,19 +2,44 @@ package lambda
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CreateEventSourceMapping creates a mapping between an event source and a Lambda function.
 func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionNameRaw == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	// The FunctionName reference may address a version or alias via its
+	// ":qualifier" suffix; the mapping records the qualified ARN so the
+	// poller invokes the addressed qualifier.
+	function, _, _, err := s.resolveQualifier(store.Functions, functionName, embeddedQualifier)
+	if err != nil {
+		return nil, err
+	}
+	functionArn := function.FunctionArn
+	if embeddedQualifier != "" && embeddedQualifier != "$LATEST" {
+		functionArn = function.FunctionArn + ":" + embeddedQualifier
 	}
 
 	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
@@ -32,9 +57,9 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 
 	batchSize := int32(request.GetIntParam(req.Parameters, "BatchSize"))
 	if batchSize <= 0 {
-		batchSize = 100
+		batchSize = defaultESMBatchSize(eventSourceArn)
 	}
-	if err := validateESMBatchSize(batchSize); err != nil {
+	if err := validateESMBatchSizeForSource(batchSize, eventSourceArn); err != nil {
 		return nil, err
 	}
 
@@ -51,10 +76,22 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 	if err := validateStartingPositionTimestamp(startingPosition, hasTimestamp); err != nil {
 		return nil, err
 	}
+	var startingPositionTimestamp time.Time
+	if ts, ok := req.Parameters["StartingPositionTimestamp"].(float64); ok {
+		startingPositionTimestamp = time.Unix(int64(ts), 0).UTC()
+	}
 
 	// Validate MaximumBatchingWindowInSeconds if explicitly provided.
+	batchingWindow := int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))
 	if _, ok := req.Parameters["MaximumBatchingWindowInSeconds"]; ok {
-		if err := validateESMBatchingWindow(int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds"))); err != nil {
+		if err := validateESMBatchingWindow(batchingWindow); err != nil {
+			return nil, err
+		}
+	}
+	// The pairing rule applies "when you set BatchSize to a value greater
+	// than 10" — an explicitly requested size, not the service default.
+	if _, ok := req.Parameters["BatchSize"]; ok {
+		if err := validateESMBatchWindowPair(batchSize, batchingWindow); err != nil {
 			return nil, err
 		}
 	}
@@ -68,13 +105,14 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 	}
 
 	mapping := &lambdastore.EventSourceMapping{
-		FunctionArn:                    function.FunctionArn,
+		FunctionArn:                    functionArn,
 		FunctionName:                   function.FunctionName,
 		EventSourceArn:                 eventSourceArn,
 		BatchSize:                      batchSize,
-		MaximumBatchingWindowInSeconds: int32(request.GetIntParam(req.Parameters, "MaximumBatchingWindowInSeconds")),
+		MaximumBatchingWindowInSeconds: batchingWindow,
 		ParallelizationFactor:          parallelizationFactor,
 		StartingPosition:               startingPosition,
+		StartingPositionTimestamp:      startingPositionTimestamp,
 		State:                          "Enabled",
 	}
 
@@ -121,14 +159,32 @@ func (s *LambdaService) CreateEventSourceMapping(ctx context.Context, reqCtx *re
 	if filterMap := request.GetMapParam(req.Parameters, "FilterCriteria"); filterMap != nil {
 		mapping.FilterCriteria = parseFilterCriteria(filterMap)
 	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+	if kmsKeyArn := request.GetStringParam(req.Parameters, "KMSKeyArn"); kmsKeyArn != "" {
+		mapping.KMSKeyArn = kmsKeyArn
 	}
+	if frts, ok := req.Parameters["FunctionResponseTypes"].([]interface{}); ok {
+		parsed, err := parseFunctionResponseTypes(frts)
+		if err != nil {
+			return nil, err
+		}
+		mapping.FunctionResponseTypes = parsed
+	}
+
 	created, err := store.EventSources.Create(mapping)
 	if err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
+	}
+
+	// "A list of tags to apply to the event source mapping." The tags
+	// share the function tag store under a namespaced key; the mapping
+	// response shape carries no Tags member, so ListTags is the only
+	// reader.
+	if tm, ok := req.Parameters["Tags"].(map[string]interface{}); ok {
+		if tags := tagutil.ToMap(tagutil.MapInterfaceToTags(tm)); len(tags) > 0 {
+			if terr := store.Functions.TagStore.Tag(esmTagResourceKey(created.UUID), tags); terr != nil {
+				return nil, mapStoreError(terr)
+			}
+		}
 	}
 
 	return s.toEventSourceMapping(created), nil
@@ -151,7 +207,13 @@ func (s *LambdaService) DeleteEventSourceMapping(ctx context.Context, reqCtx *re
 	}
 
 	if err := store.EventSources.Delete(uuid); err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
+	}
+
+	// The mapping's tags live in the shared tag store; dropping them here
+	// keeps a same-UUID recreation from inheriting stale tags.
+	if err := store.Functions.TagStore.Delete(esmTagResourceKey(uuid)); err != nil {
+		return nil, mapStoreError(err)
 	}
 
 	return s.toEventSourceMapping(mapping), nil
@@ -193,7 +255,7 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 	}
 
 	if batchSize := request.GetIntParam(req.Parameters, "BatchSize"); batchSize > 0 {
-		if err := validateESMBatchSize(int32(batchSize)); err != nil {
+		if err := validateESMBatchSizeForSource(int32(batchSize), mapping.EventSourceArn); err != nil {
 			return nil, err
 		}
 		mapping.BatchSize = int32(batchSize)
@@ -212,11 +274,23 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 		}
 		mapping.MaximumBatchingWindowInSeconds = val
 	}
-	if parallelFactor := request.GetIntParam(req.Parameters, "ParallelizationFactor"); parallelFactor > 0 {
-		if err := validateESMParallelFactor(int32(parallelFactor)); err != nil {
+	if _, ok := req.Parameters["ParallelizationFactor"]; ok {
+		val := int32(request.GetIntParam(req.Parameters, "ParallelizationFactor"))
+		if err := validateESMParallelFactor(val); err != nil {
 			return nil, err
 		}
-		mapping.ParallelizationFactor = int32(parallelFactor)
+		mapping.ParallelizationFactor = val
+	}
+	// The batch-size/window pairing is validated on the merged mapping when
+	// the request sets either member, so a stored explicitly-set BatchSize
+	// above 10 also constrains a window-lowering update. The rule binds the
+	// setter: requests that set neither member leave defaults alone.
+	_, batchSet := req.Parameters["BatchSize"]
+	_, windowSet := req.Parameters["MaximumBatchingWindowInSeconds"]
+	if batchSet || windowSet {
+		if err := validateESMBatchWindowPair(mapping.BatchSize, mapping.MaximumBatchingWindowInSeconds); err != nil {
+			return nil, err
+		}
 	}
 	if _, ok := req.Parameters["MaximumRecordAgeInSeconds"]; ok {
 		val := int32(request.GetIntParam(req.Parameters, "MaximumRecordAgeInSeconds"))
@@ -251,9 +325,19 @@ func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *re
 	if filterMap := request.GetMapParam(req.Parameters, "FilterCriteria"); filterMap != nil {
 		mapping.FilterCriteria = parseFilterCriteria(filterMap)
 	}
+	if kmsKeyArn := request.GetStringParam(req.Parameters, "KMSKeyArn"); kmsKeyArn != "" {
+		mapping.KMSKeyArn = kmsKeyArn
+	}
+	if frts, ok := req.Parameters["FunctionResponseTypes"].([]interface{}); ok {
+		parsed, err := parseFunctionResponseTypes(frts)
+		if err != nil {
+			return nil, err
+		}
+		mapping.FunctionResponseTypes = parsed
+	}
 
 	if err := store.EventSources.Update(mapping); err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	return s.toEventSourceMapping(mapping), nil
@@ -265,7 +349,7 @@ func (s *LambdaService) ListEventSourceMappings(ctx context.Context, reqCtx *req
 	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
 	marker := request.GetStringParam(req.Parameters, "Marker")
 
-	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
+	maxItems := validateMaxItemsCapped(request.GetIntParam(req.Parameters, "MaxItems"), maxEventSourceMappingListItemsCap)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -332,11 +416,18 @@ func (s *LambdaService) ListEventSourceMappings(ctx context.Context, reqCtx *req
 	return response, nil
 }
 
+// eventSourceMappingArn derives the ESM ARN from the mapping's function
+// ARN region and account: arn:aws:lambda:<region>:<account>:event-source-mapping:<uuid>.
+func eventSourceMappingArn(m *lambdastore.EventSourceMapping) string {
+	_, _, region, accountID, _ := arnutil.SplitARN(m.FunctionArn)
+	return fmt.Sprintf("arn:aws:lambda:%s:%s:event-source-mapping:%s", region, accountID, m.UUID)
+}
+
 func (s *LambdaService) toEventSourceMapping(m *lambdastore.EventSourceMapping) map[string]interface{} {
 	result := map[string]interface{}{
 		"UUID":                           m.UUID,
+		"EventSourceMappingArn":          eventSourceMappingArn(m),
 		"FunctionArn":                    m.FunctionArn,
-		"FunctionName":                   m.FunctionName,
 		"EventSourceArn":                 m.EventSourceArn,
 		"BatchSize":                      m.BatchSize,
 		"MaximumBatchingWindowInSeconds": m.MaximumBatchingWindowInSeconds,
@@ -346,6 +437,15 @@ func (s *LambdaService) toEventSourceMapping(m *lambdastore.EventSourceMapping) 
 		"State":                          m.State,
 		"StateTransitionReason":          m.StateTransitionReason,
 		"StartingPosition":               m.StartingPosition,
+	}
+	if !m.StartingPositionTimestamp.IsZero() {
+		result["StartingPositionTimestamp"] = float64(m.StartingPositionTimestamp.Unix())
+	}
+	if m.KMSKeyArn != "" {
+		result["KMSKeyArn"] = m.KMSKeyArn
+	}
+	if len(m.FunctionResponseTypes) > 0 {
+		result["FunctionResponseTypes"] = m.FunctionResponseTypes
 	}
 
 	if m.DestinationConfig != nil {

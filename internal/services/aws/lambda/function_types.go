@@ -92,16 +92,19 @@ type configFields struct {
 
 func functionToConfigFields(fn *lambdastore.Function) configFields {
 	return configFields{
-		FunctionName:               fn.FunctionName,
-		FunctionArn:                fn.FunctionArn,
-		Role:                       fn.Role,
-		CodeSize:                   fn.CodeSize,
-		Description:                fn.Description,
-		Timeout:                    fn.Timeout,
-		MemorySize:                 fn.MemorySize,
-		LastModified:               fn.LastModified,
-		CodeSha256:                 fn.CodeSha256,
-		Version:                    fn.CurrentVersion,
+		FunctionName: fn.FunctionName,
+		FunctionArn:  fn.FunctionArn,
+		Role:         fn.Role,
+		CodeSize:     fn.CodeSize,
+		Description:  fn.Description,
+		Timeout:      fn.Timeout,
+		MemorySize:   fn.MemorySize,
+		LastModified: fn.LastModified,
+		CodeSha256:   fn.CodeSha256,
+		// The unqualified function view always reports $LATEST: a request
+		// without a qualifier addresses the unpublished version, and the
+		// last published number is internal bookkeeping only.
+		Version:                    "$LATEST",
 		RevisionId:                 fn.RevisionId,
 		State:                      string(fn.State),
 		StateReason:                fn.StateReason,
@@ -300,7 +303,11 @@ func buildConfigMap(f configFields) map[string]interface{} {
 		if f.ImageConfig.WorkingDirectory != "" {
 			ic["WorkingDirectory"] = f.ImageConfig.WorkingDirectory
 		}
-		config["ImageConfig"] = ic
+		// The wire member is ImageConfigResponse, which nests ImageConfig;
+		// a flat ImageConfig member is silently dropped by the SDK.
+		config["ImageConfigResponse"] = map[string]interface{}{
+			"ImageConfig": ic,
+		}
 	}
 
 	if len(f.FileSystemConfigs) > 0 {

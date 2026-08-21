@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	"connectrpc.com/connect"
@@ -81,6 +82,7 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		PackageType:  protoToPackageType(req.Msg.Packagetype),
 		MemorySize:   req.Msg.GetMemorysize(),
 		Timeout:      req.Msg.GetTimeout(),
+		Region:       svccommon.GetRegionFromHeader(req.Header()),
 	}
 
 	if len(req.Msg.Tags) > 0 {
@@ -90,7 +92,7 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		}
 	}
 
-	created, err := h.service.createFunctionCore(stores, in)
+	created, _, err := h.service.createFunctionCore(stores, in)
 	if err != nil {
 		if lambdaErr, ok := err.(*LambdaError); ok {
 			return nil, svcerrors.AWSErrorToGRPC(lambdaErr.AWSError)

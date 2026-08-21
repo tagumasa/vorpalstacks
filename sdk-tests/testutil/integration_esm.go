@@ -86,11 +86,14 @@ func (r *TestRunner) runESMKinesisToLambda(ic *integClients, ts string) TestResu
 	}
 
 	esmResp, err := ic.lambda.CreateEventSourceMapping(ic.ctx, &lambda.CreateEventSourceMappingInput{
-		FunctionName:     aws.String(fnName),
-		EventSourceArn:   aws.String(fmt.Sprintf("arn:aws:kinesis:%s:000000000000:stream/%s", ic.region, streamName)),
-		Enabled:          aws.Bool(true),
-		BatchSize:        aws.Int32(100),
-		StartingPosition: lambdatypes.EventSourcePositionLatest,
+		FunctionName:   aws.String(fnName),
+		EventSourceArn: aws.String(fmt.Sprintf("arn:aws:kinesis:%s:000000000000:stream/%s", ic.region, streamName)),
+		Enabled:        aws.Bool(true),
+		BatchSize:      aws.Int32(100),
+		// "when you set BatchSize to a value greater than 10, you must
+		// set MaximumBatchingWindowInSeconds to at least 1"
+		MaximumBatchingWindowInSeconds: aws.Int32(1),
+		StartingPosition:               lambdatypes.EventSourcePositionLatest,
 	})
 	if err != nil {
 		return r.RunTest(integSvc, "ESM_Kinesis_Lambda", func() error { return fmt.Errorf("create ESM: %w", err) })

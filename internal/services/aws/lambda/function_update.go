@@ -33,6 +33,7 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 	imageUri := ""
 	s3Bucket := ""
 	s3Key := ""
+	s3Version := ""
 
 	if codeMap != nil {
 		if z, ok := codeMap["ZipFile"].(string); ok {
@@ -47,6 +48,9 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		if k, ok := codeMap["S3Key"].(string); ok {
 			s3Key = k
 		}
+		if v, ok := codeMap["S3ObjectVersion"].(string); ok {
+			s3Version = v
+		}
 	}
 	if zipFileStr == "" {
 		if z, ok := req.Parameters["ZipFile"].(string); ok {
@@ -56,6 +60,24 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 	if imageUri == "" {
 		if i, ok := req.Parameters["ImageUri"].(string); ok {
 			imageUri = i
+		}
+	}
+	// UpdateFunctionCode carries the code members at the top level of the
+	// request (only CreateFunction nests them under Code), so the S3
+	// placement has a flat fallback like ZipFile and ImageUri.
+	if s3Bucket == "" {
+		if b, ok := req.Parameters["S3Bucket"].(string); ok {
+			s3Bucket = b
+		}
+	}
+	if s3Key == "" {
+		if k, ok := req.Parameters["S3Key"].(string); ok {
+			s3Key = k
+		}
+	}
+	if s3Version == "" {
+		if v, ok := req.Parameters["S3ObjectVersion"].(string); ok {
+			s3Version = v
 		}
 	}
 
@@ -80,7 +102,7 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		if s3Key == "" {
 			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
 		}
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, reqCtx.GetRegion())
+		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, reqCtx.GetRegion())
 		if err != nil {
 			return nil, NewInvalidParameter("Code", err.Error())
 		}
@@ -102,7 +124,16 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		}
 	}
 
-	function, err := s.updateFunctionCodeCore(store, &UpdateFunctionCodeInput{
+	// DryRun validates the request without modifying the code.
+	if request.GetBoolParam(req.Parameters, "DryRun") {
+		current, getErr := store.Functions.Get(functionName)
+		if getErr != nil {
+			return nil, mapStoreError(getErr)
+		}
+		return s.toFunctionConfiguration(current), nil
+	}
+
+	function, published, err := s.updateFunctionCodeCore(store, &UpdateFunctionCodeInput{
 		FunctionName:  functionName,
 		CodeLocation:  codeLocation,
 		CodeSize:      codeSize,
@@ -110,11 +141,18 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		ImageUri:      imageUri,
 		Architectures: architectures,
 		Publish:       request.GetBoolParam(req.Parameters, "Publish"),
+		Region:        reqCtx.GetRegion(),
+		RevisionId:    request.GetStringParam(req.Parameters, "RevisionId"),
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// When Publish was requested, the response describes the published
+	// version rather than $LATEST.
+	if published != nil {
+		return s.toVersionConfiguration(published), nil
+	}
 	return s.toFunctionConfiguration(function), nil
 }
 
@@ -189,6 +227,33 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		newImageConfig = parseImageConfig(imgMap)
 	}
 
+	var newEphemeralStorage *lambdastore.EphemeralStorage
+	if esMap := request.GetMapParam(req.Parameters, "EphemeralStorage"); esMap != nil {
+		newEphemeralStorage = &lambdastore.EphemeralStorage{
+			Size: int32(request.GetIntParam(esMap, "Size")),
+		}
+	}
+
+	var newSnapStart *lambdastore.SnapStart
+	if ssMap := request.GetMapParam(req.Parameters, "SnapStart"); ssMap != nil {
+		newSnapStart = &lambdastore.SnapStart{
+			ApplyOn: request.GetStringParam(ssMap, "ApplyOn"),
+		}
+	}
+
+	// A present member is validated as-is: negative or zero values are
+	// rejected instead of being silently ignored as "not provided".
+	if _, ok := req.Parameters["Timeout"]; ok {
+		if err := validateTimeout(int32(request.GetIntParam(req.Parameters, "Timeout"))); err != nil {
+			return nil, err
+		}
+	}
+	if _, ok := req.Parameters["MemorySize"]; ok {
+		if err := validateMemorySize(int32(request.GetIntParam(req.Parameters, "MemorySize"))); err != nil {
+			return nil, err
+		}
+	}
+
 	var newFileSystemConfigs []lambdastore.FileSystemConfig
 	if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
 		for _, fsc := range fscs {
@@ -227,6 +292,8 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		TracingConfig:        newTracingConfig,
 		LoggingConfig:        newLoggingConfig,
 		ImageConfig:          newImageConfig,
+		EphemeralStorage:     newEphemeralStorage,
+		SnapStart:            newSnapStart,
 		FileSystemConfigs:    newFileSystemConfigs,
 		Layers:               newLayers,
 	})

@@ -13,17 +13,11 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
-// defaultAsyncMaxRetries is the AWS default for MaximumRetryAttempts on
-// asynchronous invocations when no EventInvokeConfig is set.
-const defaultAsyncMaxRetries = 2
-
-// defaultAsyncMaxEventAge is the AWS default MaximumEventAgeInSeconds (6h).
-const defaultAsyncMaxEventAge = int32(21600)
-
 // invokeAsyncWithRetry executes an asynchronous Lambda invocation with
 // retry and destination delivery.  It reads the function's
 // EventInvokeConfig (if any) to determine MaximumRetryAttempts,
-// MaximumEventAgeInSeconds, and DestinationConfig.
+// MaximumEventAgeInSeconds, and DestinationConfig. The defaults come from
+// the store package constants shared with the event-invoke-config API.
 //
 // On success: if OnSuccess destination is configured, the invocation
 // record is delivered to it.
@@ -39,8 +33,8 @@ func (s *LambdaService) invokeAsyncWithRetry(
 	qualifier string,
 ) {
 	// Load EventInvokeConfig for this function+qualifier.
-	maxRetries := defaultAsyncMaxRetries
-	maxEventAge := defaultAsyncMaxEventAge
+	maxRetries := int(lambdastore.DefaultMaximumRetryAttempts)
+	maxEventAge := lambdastore.DefaultMaximumEventAgeInSeconds
 	var destConfig *lambdastore.DestinationConfig
 
 	if store != nil {

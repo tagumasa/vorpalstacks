@@ -3,6 +3,7 @@ package lambda
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -26,7 +27,9 @@ var functionNamePattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 var validRuntimes = []string{
 	"nodejs24.x", "nodejs22.x",
 	"python3.14", "python3.13", "python3.12", "python3.11", "python3.10",
-	"java25", "java21", "java17", "java11", "java8.al2",
+	"java25", "java21", "java17", "java11",
+	"java17.al2023", "java11.al2023", "java8.al2023",
+	"java8.al2",
 	"dotnet10", "dotnet9", "dotnet8",
 	"ruby4.0", "ruby3.4", "ruby3.3",
 	"provided.al2023", "provided.al2",
@@ -69,6 +72,37 @@ func ValidateHandler(runtime, handler string) error {
 		}
 	}
 
+	return nil
+}
+
+// validateEnvironmentVariables enforces the documented environment rules:
+// "Environment variables beginning with AWS_LAMBDA_ are reserved" for the
+// service's own use, "Keys start with a letter and are at least two
+// characters. Keys only contain letters, numbers, and the underscore
+// character (_)", and "The total size of all environment variables
+// doesn't exceed 4 KB" (keys plus values).
+func validateEnvironmentVariables(env *lambdastore.Environment) error {
+	if env == nil {
+		return nil
+	}
+	envKeyPattern := regexp.MustCompile(lambdastore.EnvironmentVariableKeyPattern)
+	total := 0
+	for k, v := range env.Variables {
+		if strings.HasPrefix(k, lambdastore.ReservedEnvironmentPrefix) {
+			return NewInvalidParameter("Environment.Variables",
+				fmt.Sprintf("Environment variable %q uses the reserved AWS_LAMBDA_ prefix", k))
+		}
+		if !envKeyPattern.MatchString(k) {
+			return NewInvalidParameter("Environment.Variables",
+				fmt.Sprintf("Environment variable keys must start with a letter and contain only letters, numbers, and underscores; got %q", k))
+		}
+		total += len(k) + len(v)
+	}
+	if total > lambdastore.MaxEnvironmentVariablesSizeBytes {
+		return NewInvalidParameter("Environment.Variables",
+			fmt.Sprintf("The total size of environment variables must not exceed %d bytes, got %d",
+				lambdastore.MaxEnvironmentVariablesSizeBytes, total))
+	}
 	return nil
 }
 
@@ -144,6 +178,14 @@ func validateStartingPositionForStream(startingPosition, eventSourceArn string) 
 	if (service == "kinesis" || service == "dynamodb") && startingPosition == "" {
 		return NewInvalidParameter("StartingPosition",
 			"StartingPosition is required for Kinesis and DynamoDB stream sources")
+	}
+	// "AT_TIMESTAMP is supported only for Amazon Kinesis streams, Amazon
+	// DocumentDB, Amazon MSK, and self-managed Apache Kafka." — the
+	// CreateEventSourceMapping model excludes DynamoDB streams from the
+	// timestamp start positions.
+	if service == "dynamodb" && startingPosition == "AT_TIMESTAMP" {
+		return NewInvalidParameter("StartingPosition",
+			"AT_TIMESTAMP is supported only for Amazon Kinesis streams, Amazon DocumentDB, Amazon MSK, and self-managed Apache Kafka")
 	}
 	return nil
 }
@@ -351,6 +393,40 @@ func validateSnapStartApplyOn(v string) error {
 	}
 }
 
+// snapStartSupportedRuntime reports whether the runtime family supports
+// SnapStart, per the AWS documentation: "SnapStart is available for the
+// following Lambda managed runtimes: Java 11 and later, Python 3.12 and
+// later, .NET 8 and later."
+func snapStartSupportedRuntime(runtime string) bool {
+	r := strings.ToLower(runtime)
+	switch {
+	case strings.HasPrefix(r, "java"):
+		// Java 8 runtimes predate the Java 11 baseline.
+		return r != "java8" && r != "java8.al2"
+	case strings.HasPrefix(r, "python3."):
+		minor, err := strconv.Atoi(strings.TrimPrefix(r, "python3."))
+		return err == nil && minor >= 12
+	case r == "dotnet8", r == "dotnet9", r == "dotnet10":
+		return true
+	default:
+		return false
+	}
+}
+
+// validateSnapStartForRuntime rejects enabling SnapStart on runtimes
+// outside the supported families. ApplyOn None disables SnapStart and is
+// accepted on every runtime.
+func validateSnapStartForRuntime(runtime string, snapStart *lambdastore.SnapStart) error {
+	if snapStart == nil || snapStart.ApplyOn != "PublishedVersions" {
+		return nil
+	}
+	if !snapStartSupportedRuntime(runtime) {
+		return NewInvalidParameter("SnapStart",
+			"SnapStart is supported on Java 11 and later, Python 3.12 and later, and .NET 8 and later runtimes")
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // KMS Key ARN validation
 // ---------------------------------------------------------------------------
@@ -378,17 +454,30 @@ func validateKMSKeyArn(arn string) error {
 }
 
 // ---------------------------------------------------------------------------
-// MaxItems pagination validation (Smithy range: min 1, max 50)
+// MaxItems pagination validation (Smithy ranges)
 // ---------------------------------------------------------------------------
 
-// maxItemsCap is the Smithy-specified maximum for Lambda MaxItems.
-const maxItemsCap = 50
+// maxListItemsCap is the Smithy-specified maximum for Lambda MaxItems
+// (ListFunctions: "returns a maximum of 50 items … even if you set the
+// number higher").
+const maxListItemsCap = 50
 
-// validateMaxItems validates and applies the Smithy range for MaxItems
-// (min 1, max 50). A value <= 0 returns the default (50).
+// maxEventSourceMappingListItemsCap is the documented ListEventSourceMappings
+// maximum: "ListEventSourceMappings returns a maximum of 100 items in each
+// response, even if you set the number higher."
+const maxEventSourceMappingListItemsCap = 100
+
+// validateMaxItems validates and applies the standard MaxItems range
+// (min 1, max 50). A value <= 0 returns the cap.
 func validateMaxItems(v int) int {
-	if v <= 0 || v > maxItemsCap {
-		return maxItemsCap
+	return validateMaxItemsCapped(v, maxListItemsCap)
+}
+
+// validateMaxItemsCapped validates a MaxItems value against a per-operation
+// cap. A value <= 0 or above the cap returns the cap.
+func validateMaxItemsCapped(v, cap int) int {
+	if v <= 0 || v > cap {
+		return cap
 	}
 	return v
 }
@@ -401,6 +490,41 @@ func validateMaxItems(v int) int {
 func validateESMBatchSize(v int32) error {
 	if v < 1 || v > 10000 {
 		return NewInvalidParameter("BatchSize", "BatchSize must be between 1 and 10000")
+	}
+	return nil
+}
+
+// ESM batch size defaults per event source, from the API model docs:
+// "Amazon Kinesis – Default 100. Max 10,000. … Amazon DynamoDB Streams –
+// Default 100. Max 10,000. … Amazon Simple Queue Service – Default 10. For
+// standard queues the max is 10,000. For FIFO queues the max is 10."
+const (
+	defaultStreamESMBatchSize = int32(100)
+	defaultQueueESMBatchSize  = int32(10)
+	maxFIFOQueueESMBatchSize  = int32(10)
+)
+
+// defaultESMBatchSize returns the batch size AWS applies when the request
+// omits BatchSize: 10 for SQS queues and 100 for stream sources.
+func defaultESMBatchSize(eventSourceArn string) int32 {
+	if arnutil.GetServiceFromARN(eventSourceArn) == "sqs" {
+		return defaultQueueESMBatchSize
+	}
+	return defaultStreamESMBatchSize
+}
+
+// validateESMBatchSizeForSource enforces the per-source batch size rules on
+// top of the generic range: FIFO queue names end in ".fifo" and accept at
+// most 10 records per batch.
+func validateESMBatchSizeForSource(v int32, eventSourceArn string) error {
+	if err := validateESMBatchSize(v); err != nil {
+		return err
+	}
+	if arnutil.GetServiceFromARN(eventSourceArn) == "sqs" {
+		queueName := arnutil.ExtractResourceFromARN(eventSourceArn)
+		if strings.HasSuffix(queueName, ".fifo") && v > maxFIFOQueueESMBatchSize {
+			return NewInvalidParameter("BatchSize", "BatchSize for FIFO queues must be at most 10")
+		}
 	}
 	return nil
 }
@@ -418,9 +542,25 @@ func validateESMBatchingWindow(v int32) error {
 // validateESMParallelFactor enforces the Smithy range for
 // ParallelizationFactor: min 1, max 10.
 func validateESMParallelFactor(v int32) error {
-	if v < 1 || v > 10 {
+	if v < lambdastore.MinParallelizationFactor || v > lambdastore.MaxParallelizationFactor {
 		return NewInvalidParameter("ParallelizationFactor",
-			"ParallelizationFactor must be between 1 and 10")
+			fmt.Sprintf("ParallelizationFactor must be between %d and %d",
+				lambdastore.MinParallelizationFactor, lambdastore.MaxParallelizationFactor))
+	}
+	return nil
+}
+
+// validateESMBatchWindowPair enforces the documented pairing between the
+// batch size and the batching window: "For Kinesis, DynamoDB, and Amazon
+// SQS event sources, when you set BatchSize to a value greater than 10,
+// you must set MaximumBatchingWindowInSeconds to at least 1."
+// (CreateEventSourceMapping model, MaximumBatchingWindowInSeconds member
+// documentation.) SQS, Kinesis, and DynamoDB streams are exactly the event
+// sources this platform polls, so the rule applies unconditionally.
+func validateESMBatchWindowPair(batchSize, batchingWindowSeconds int32) error {
+	if batchSize > 10 && batchingWindowSeconds < 1 {
+		return NewInvalidParameter("MaximumBatchingWindowInSeconds",
+			"MaximumBatchingWindowInSeconds must be at least 1 when BatchSize is greater than 10")
 	}
 	return nil
 }

@@ -2,9 +2,31 @@
 package lambda
 
 import (
+	"fmt"
+
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
+
+// parseFunctionResponseTypes validates the requested response-type list.
+// "A list of current response type enums applied to the event source
+// mapping" — the provided list is the mapping's complete list, so callers
+// replace any stored value with the parsed result.
+func parseFunctionResponseTypes(raw []interface{}) ([]string, error) {
+	parsed := make([]string, 0, len(raw))
+	for _, frt := range raw {
+		s, ok := frt.(string)
+		if !ok {
+			continue
+		}
+		if s != "ReportBatchItemFailures" {
+			return nil, NewInvalidParameter("FunctionResponseTypes",
+				fmt.Sprintf("FunctionResponseTypes must be ReportBatchItemFailures; got %q", s))
+		}
+		parsed = append(parsed, s)
+	}
+	return parsed, nil
+}
 
 func parseDestinationConfig(destMap map[string]interface{}) *lambdastore.DestinationConfig {
 	config := &lambdastore.DestinationConfig{}

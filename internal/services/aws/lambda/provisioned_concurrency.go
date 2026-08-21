@@ -11,16 +11,31 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+// resolveProvisionedConcurrencyTarget resolves the FunctionName reference
+// forms and merges the Qualifier parameter with an embedded qualifier.
+// Provisioned concurrency targets a published version or alias, so a
+// qualifier is mandatory.
+func resolveProvisionedConcurrencyTarget(params map[string]interface{}) (string, string, error) {
+	functionNameRaw := request.GetStringParam(params, "FunctionName")
+	if functionNameRaw == "" {
+		return "", "", NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return "", "", err
+	}
+	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
+	if qualifier == "" {
+		return "", "", NewInvalidParameter("Qualifier", "Qualifier is required")
+	}
+	return functionName, qualifier, nil
+}
+
 // PutProvisionedConcurrencyConfig configures provisioned concurrency for a Lambda function alias or version.
 func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		return nil, NewInvalidParameter("Qualifier", "Qualifier is required")
+	functionName, qualifier, err := resolveProvisionedConcurrencyTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	concurrentExecutions := int32(request.GetIntParam(req.Parameters, "ProvisionedConcurrentExecutions"))
@@ -28,9 +43,22 @@ func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, req
 		return nil, NewInvalidParameter("ProvisionedConcurrentExecutions", "Provisioned concurrent executions must be at least 1")
 	}
 
+	// Provisioned concurrency applies to a published version or alias, not
+	// to $LATEST.
+	if qualifier == "$LATEST" {
+		return nil, NewInvalidParameter("Qualifier", "Provisioned concurrency cannot be configured on the $LATEST version. Publish a version or use an alias.")
+	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	if _, err := store.Functions.Get(functionName); err != nil {
+		return nil, mapStoreError(err)
+	}
+	if _, version, alias, err := store.Functions.ResolveQualifier(functionName, qualifier); err != nil || (version == nil && alias == nil) {
+		return nil, NewResourceNotFound("Qualifier", qualifier)
 	}
 
 	if err := store.Functions.SetProvisionedConcurrency(functionName, qualifier, concurrentExecutions); err != nil {
@@ -78,14 +106,9 @@ func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, req
 
 // GetProvisionedConcurrencyConfig retrieves the provisioned concurrency configuration for a Lambda function alias or version.
 func (s *LambdaService) GetProvisionedConcurrencyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		return nil, NewInvalidParameter("Qualifier", "Qualifier is required")
+	functionName, qualifier, err := resolveProvisionedConcurrencyTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -106,14 +129,9 @@ func (s *LambdaService) GetProvisionedConcurrencyConfig(ctx context.Context, req
 
 // DeleteProvisionedConcurrencyConfig removes the provisioned concurrency configuration for a Lambda function alias or version.
 func (s *LambdaService) DeleteProvisionedConcurrencyConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if qualifier == "" {
-		return nil, NewInvalidParameter("Qualifier", "Qualifier is required")
+	functionName, qualifier, err := resolveProvisionedConcurrencyTarget(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -133,9 +151,13 @@ func (s *LambdaService) DeleteProvisionedConcurrencyConfig(ctx context.Context, 
 
 // ListProvisionedConcurrencyConfigs lists the provisioned concurrency configurations for a Lambda function.
 func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
+	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
+	if functionNameRaw == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	functionName := extractFunctionName(functionNameRaw)
+	if err := validateFunctionName(functionName); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

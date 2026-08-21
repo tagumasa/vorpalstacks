@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
 func TestValidateRuntime(t *testing.T) {
@@ -26,6 +28,9 @@ func TestValidateRuntime(t *testing.T) {
 		assert.True(t, ValidateRuntime("java21"))
 		assert.True(t, ValidateRuntime("java17"))
 		assert.True(t, ValidateRuntime("java11"))
+		assert.True(t, ValidateRuntime("java17.al2023"))
+		assert.True(t, ValidateRuntime("java11.al2023"))
+		assert.True(t, ValidateRuntime("java8.al2023"))
 		assert.True(t, ValidateRuntime("java8.al2"))
 	})
 
@@ -215,4 +220,38 @@ func TestPrincipalType(t *testing.T) {
 	assert.Equal(t, "", principalType("*"))
 	assert.Equal(t, "AWS", principalType("arn:aws:iam::123:root"))
 	assert.Equal(t, "Service", principalType("lambda.amazonaws.com"))
+}
+
+func TestValidateEnvironmentVariableKeys(t *testing.T) {
+	cases := []struct {
+		key  string
+		want bool
+	}{
+		{"OK", true},
+		{"Ab", true},
+		{"a9_b", true},
+		{"Z_9", true},
+		{"a", false},         // single character
+		{"1BAD", false},      // starts with a digit
+		{"_x", false},        // starts with an underscore
+		{"a-b", false},       // hyphen not allowed
+		{"a.b", false},       // dot not allowed
+		{"has space", false}, // space not allowed
+		{"", false},          // empty key
+	}
+	for _, tc := range cases {
+		env := &lambdastore.Environment{Variables: map[string]string{tc.key: "v"}}
+		err := validateEnvironmentVariables(env)
+		if tc.want && err != nil {
+			t.Fatalf("key %q should be valid, got %v", tc.key, err)
+		}
+		if !tc.want && err == nil {
+			t.Fatalf("key %q should be rejected", tc.key)
+		}
+	}
+
+	reserved := &lambdastore.Environment{Variables: map[string]string{"AWS_LAMBDA_x": "v"}}
+	if err := validateEnvironmentVariables(reserved); err == nil {
+		t.Fatal("reserved AWS_LAMBDA_ prefix must be rejected")
+	}
 }

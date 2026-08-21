@@ -34,7 +34,22 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// The URL qualifier names an alias of the function ("The alias name" —
+	// API model); numeric versions are not valid URL qualifiers. An
+	// embedded ":qualifier" suffix on the FunctionName reference is
+	// equivalent to the Qualifier parameter.
+	_, embeddedQualifier := resolveFunctionRef(request.GetStringParam(req.Parameters, "FunctionName"))
+	qualifier := mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier)
+	if qualifier != "" && qualifier != "$LATEST" {
+		if _, _, _, err := store.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
+			return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
+		}
+	}
 
 	config := &lambdastore.FunctionUrlConfig{
 		AuthType:   authType,
@@ -46,12 +61,8 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		config.Cors = parseCorsConfig(corsMap)
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	if err := store.Functions.SetFunctionUrlConfig(function.FunctionName, config); err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	result := map[string]interface{}{
@@ -64,9 +75,6 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 
 	if config.InvokeMode != "" {
 		result["InvokeMode"] = config.InvokeMode
-	}
-	if config.Qualifier != "" {
-		result["Qualifier"] = config.Qualifier
 	}
 	if config.Cors != nil {
 		result["Cors"] = toCorsConfig(config.Cors)
@@ -145,8 +153,20 @@ func (s *LambdaService) UpdateFunctionUrlConfig(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
+
+	// The URL qualifier names an alias of the function; numeric versions
+	// are rejected like on create.
+	if qualifier := request.GetStringParam(req.Parameters, "Qualifier"); qualifier != "" {
+		if qualifier != "$LATEST" {
+			if _, _, _, err := store.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
+				return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
+			}
+		}
+		function.UrlConfig.Qualifier = qualifier
+	}
+
 	if err := store.Functions.SetFunctionUrlConfig(function.FunctionName, function.UrlConfig); err != nil {
-		return nil, err
+		return nil, mapStoreError(err)
 	}
 
 	updatedFunction, err := store.Functions.Get(function.FunctionName)
@@ -193,9 +213,6 @@ func (s *LambdaService) toFunctionUrlConfig(c *lambdastore.FunctionUrlConfig) ma
 	}
 	if !c.LastModifiedTime.IsZero() {
 		result["LastModifiedTime"] = c.LastModifiedTime.Format(timeutils.ISO8601UTCFormat)
-	}
-	if c.Qualifier != "" {
-		result["Qualifier"] = c.Qualifier
 	}
 
 	if c.Cors != nil {

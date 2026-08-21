@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,166 test cases (3,099 SDK + 50 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,215 test cases (3,148 SDK + 50 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -37,7 +37,7 @@ which are separate services in the SDK classification used by
 | IoT | 361 | 100% | ✅ Perfect |
 | Kinesis | 51 | 100% | ✅ Perfect |
 | KMS | 102 | 100% | ✅ Perfect |
-| Lambda | 71 | 100% | ✅ Perfect |
+| Lambda | 120 | 100% | ✅ Perfect |
 | Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 47 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 71 | 100% | ✅ Perfect |
 
-**Overall: 3,166/3,166 tests passing (100%) — 3,099 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-20 on `main` after the contributor-insights read-coverage session)
+**Overall: 3,215/3,215 tests passing (100%) — 3,148 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-21 on `main` after the partial batch response cursor clamp session)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

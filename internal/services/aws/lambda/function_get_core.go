@@ -24,14 +24,20 @@ type GetFunctionInput struct {
 // the admin gRPC handler. The raw function name or ARN is resolved and
 // validated internally so that all callers share a single validation path.
 func (s *LambdaService) getFunctionCore(stores *lambdaStore, in *GetFunctionInput) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, map[string]string, error) {
-	functionName := extractFunctionName(in.FunctionName)
+	functionName, embeddedQualifier := resolveFunctionRef(in.FunctionName)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, in.Qualifier)
+	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, mergeQualifier(in.Qualifier, embeddedQualifier))
 	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	// An alias qualifier addresses the published version it points to;
+	// Get operations always report the alias's primary version (weighted
+	// routing affects invocation only).
+	if alias != nil {
+		version = findVersion(function, alias.FunctionVersion)
 	}
 
 	tags, err := stores.Functions.TagStore.List(function.FunctionName)
@@ -49,14 +55,20 @@ func (s *LambdaService) getFunctionCore(stores *lambdaStore, in *GetFunctionInpu
 // by qualifier). It is the single entry point shared by the HTTP API handler
 // and the admin gRPC handler.
 func (s *LambdaService) getFunctionConfigurationCore(stores *lambdaStore, in *GetFunctionInput) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
-	functionName := extractFunctionName(in.FunctionName)
+	functionName, embeddedQualifier := resolveFunctionRef(in.FunctionName)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, nil, nil, err
 	}
 
-	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, in.Qualifier)
+	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, mergeQualifier(in.Qualifier, embeddedQualifier))
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	// An alias qualifier addresses the published version it points to;
+	// Get operations always report the alias's primary version (weighted
+	// routing affects invocation only).
+	if alias != nil {
+		version = findVersion(function, alias.FunctionVersion)
 	}
 	return function, version, alias, nil
 }

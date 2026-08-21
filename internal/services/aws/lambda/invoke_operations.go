@@ -351,7 +351,7 @@ func (s *LambdaService) PublishVersion(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	version, err := store.Functions.PublishVersion(function, description)
+	version, err := s.publishVersionWithCode(store, function, description, reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +401,52 @@ func (s *LambdaService) ListVersionsByFunction(ctx context.Context, reqCtx *requ
 	return response, nil
 }
 
+// parseRoutingConfig parses the RoutingConfig member into the store shape.
+func parseRoutingConfig(routingMap map[string]interface{}) *lambdastore.RoutingConfig {
+	weights, ok := routingMap["AdditionalVersionWeights"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	routingConfig := &lambdastore.RoutingConfig{
+		AdditionalVersionWeights: make(map[string]float64),
+	}
+	for version, weight := range weights {
+		switch w := weight.(type) {
+		case float64:
+			routingConfig.AdditionalVersionWeights[version] = w
+		case int:
+			routingConfig.AdditionalVersionWeights[version] = float64(w)
+		}
+	}
+	return routingConfig
+}
+
+// validateRoutingConfig enforces the routing rules: each weight lies in
+// [0, 1] (the model range for Weight), the additional versions must be
+// published versions of the function, and the additional weights must not
+// exceed the primary version's share.
+func validateRoutingConfig(function *lambdastore.Function, routingConfig *lambdastore.RoutingConfig) error {
+	if routingConfig == nil {
+		return nil
+	}
+	total := 0.0
+	for version, weight := range routingConfig.AdditionalVersionWeights {
+		if weight < 0 || weight > 1 {
+			return NewInvalidParameter("RoutingConfig",
+				fmt.Sprintf("Routing weight for version %s must be between 0 and 1, got %v", version, weight))
+		}
+		if findVersion(function, version) == nil {
+			return NewResourceNotFound("FunctionVersion", version)
+		}
+		total += weight
+	}
+	if total > 1 {
+		return NewInvalidParameter("RoutingConfig",
+			fmt.Sprintf("The sum of additional version weights must not exceed 1, got %v", total))
+	}
+	return nil
+}
+
 // CreateAlias creates an alias for a Lambda function.
 // An alias points to a specific version and can be used for traffic shifting.
 func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -442,19 +488,10 @@ func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.Request
 	}
 
 	if routingMap := request.GetMapParam(req.Parameters, "RoutingConfig"); routingMap != nil {
-		if weights, ok := routingMap["AdditionalVersionWeights"].(map[string]interface{}); ok {
-			alias.RoutingConfig = &lambdastore.RoutingConfig{
-				AdditionalVersionWeights: make(map[string]float64),
-			}
-			for version, weight := range weights {
-				switch w := weight.(type) {
-				case float64:
-					alias.RoutingConfig.AdditionalVersionWeights[version] = w
-				case int:
-					alias.RoutingConfig.AdditionalVersionWeights[version] = float64(w)
-				}
-			}
-		}
+		alias.RoutingConfig = parseRoutingConfig(routingMap)
+	}
+	if err := validateRoutingConfig(function, alias.RoutingConfig); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -546,23 +583,12 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
+	_, hasDescription := req.Parameters["Description"]
 	functionVersion := request.GetStringParam(req.Parameters, "FunctionVersion")
 
 	var routingConfig *lambdastore.RoutingConfig
 	if routingMap := request.GetMapParam(req.Parameters, "RoutingConfig"); routingMap != nil {
-		if weights, ok := routingMap["AdditionalVersionWeights"].(map[string]interface{}); ok {
-			routingConfig = &lambdastore.RoutingConfig{
-				AdditionalVersionWeights: make(map[string]float64),
-			}
-			for version, weight := range weights {
-				switch w := weight.(type) {
-				case float64:
-					routingConfig.AdditionalVersionWeights[version] = w
-				case int:
-					routingConfig.AdditionalVersionWeights[version] = float64(w)
-				}
-			}
-		}
+		routingConfig = parseRoutingConfig(routingMap)
 	}
 
 	alias, err := store.Functions.UpdateAliasAtomically(functionName, aliasName, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
@@ -578,7 +604,11 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 				return NewResourceNotFound("FunctionVersion", functionVersion)
 			}
 		}
-		if description != "" {
+		if err := validateRoutingConfig(fn, routingConfig); err != nil {
+			return err
+		}
+		// An explicitly provided empty Description clears the value.
+		if hasDescription {
 			existing.Description = description
 		}
 		if functionVersion != "" {
@@ -652,7 +682,6 @@ func (s *LambdaService) toAliasResponse(a *lambdastore.Alias) map[string]interfa
 		"Name":            a.Name,
 		"FunctionVersion": a.FunctionVersion,
 		"Description":     a.Description,
-		"FunctionName":    a.FunctionName,
 		"RevisionId":      a.RevisionId,
 	}
 	if a.RoutingConfig != nil && len(a.RoutingConfig.AdditionalVersionWeights) > 0 {

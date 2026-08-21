@@ -12,13 +12,59 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
-func extractFunctionName(arnOrName string) string {
-	if strings.HasPrefix(arnOrName, "arn:") {
-		if name := arnutil.ExtractFunctionNameFromARN(arnOrName); name != "" {
-			return name
-		}
+// resolveFunctionRef parses every FunctionName form the API accepts into
+// the bare function name and a qualifier embedded in the reference:
+//   - "my-function"                                  (name only)
+//   - "my-function:v1"                               (name with alias or version)
+//   - "arn:aws:lambda:us-west-2:123456789012:function:my-function[:v1]" (full ARN)
+//   - "123456789012:function:my-function[:v1]"       (partial ARN)
+//
+// Function names cannot contain colons, so the first colon after the name
+// separates the embedded qualifier. An explicit Qualifier request parameter
+// takes precedence over the embedded one (see mergeQualifier).
+func resolveFunctionRef(nameOrArn string) (name, qualifier string) {
+	if nameOrArn == "" {
+		return "", ""
 	}
-	return arnOrName
+	if strings.HasPrefix(nameOrArn, "arn:") {
+		resource := arnutil.ExtractResourceFromARN(nameOrArn)
+		if strings.HasPrefix(resource, "function:") {
+			rest := strings.TrimPrefix(resource, "function:")
+			return splitNameQualifier(rest)
+		}
+		return nameOrArn, ""
+	}
+	// Partial ARN: account-id:function:name[:qualifier].
+	if idx := strings.Index(nameOrArn, ":function:"); idx >= 0 {
+		return splitNameQualifier(nameOrArn[idx+len(":function:"):])
+	}
+	return splitNameQualifier(nameOrArn)
+}
+
+// splitNameQualifier splits "name[:qualifier]" at the first colon.
+func splitNameQualifier(s string) (name, qualifier string) {
+	if idx := strings.Index(s, ":"); idx >= 0 {
+		return s[:idx], s[idx+1:]
+	}
+	return s, ""
+}
+
+// mergeQualifier returns the effective qualifier: an explicit Qualifier
+// request parameter is more specific to the request than one embedded in
+// the function reference, so it wins when both are present.
+func mergeQualifier(paramQualifier, embeddedQualifier string) string {
+	if paramQualifier != "" {
+		return paramQualifier
+	}
+	return embeddedQualifier
+}
+
+// extractFunctionName returns the bare function name from any accepted
+// FunctionName form, discarding an embedded qualifier. Callers that need
+// the qualifier must use resolveFunctionRef directly.
+func extractFunctionName(arnOrName string) string {
+	name, _ := resolveFunctionRef(arnOrName)
+	return name
 }
 
 // repositoryType returns the AWS repository type for a function's code
@@ -109,17 +155,17 @@ func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, para
 }
 
 func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
-	functionName := request.GetStringParam(params, "FunctionName")
-	if functionName == "" {
+	functionNameRaw := request.GetStringParam(params, "FunctionName")
+	if functionNameRaw == "" {
 		return nil, nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
 
-	functionName = extractFunctionName(functionName)
+	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, nil, nil, err
 	}
 
-	qualifier := request.GetStringParam(params, "Qualifier")
+	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
 	store, err := s.store(ctx)
 	if err != nil {
 		return nil, nil, nil, err
@@ -333,7 +379,8 @@ func deepCopyFunction(fn *lambdastore.Function) *lambdastore.Function {
 
 	if fn.VpcConfig != nil {
 		result.VpcConfig = &lambdastore.VpcConfig{
-			VpcId: fn.VpcConfig.VpcId,
+			VpcId:                   fn.VpcConfig.VpcId,
+			Ipv6AllowedForDualStack: fn.VpcConfig.Ipv6AllowedForDualStack,
 		}
 		if len(fn.VpcConfig.SubnetIds) > 0 {
 			result.VpcConfig.SubnetIds = make([]string, len(fn.VpcConfig.SubnetIds))
