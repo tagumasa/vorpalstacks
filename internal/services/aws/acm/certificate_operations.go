@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
-	"vorpalstacks/internal/utils/aws/types"
 
 	vcrypto "vorpalstacks/internal/utils/crypto"
 )
@@ -43,7 +42,7 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 			}
 			return nil
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagList []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagList []tagutil.Tag) error {
 			cert, err := stores.certificates.Get(resourceKey)
 			if err != nil {
 				return err
@@ -71,14 +70,14 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 			cert.Tags = tagutil.Remove(cert.Tags, tagKeySet)
 			return stores.certificates.Update(cert)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			cert, err := stores.certificates.Get(resourceKey)
 			if err != nil {
 				return nil, err
 			}
 			return cert.Tags, nil
 		},
-		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagList []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.ToResponse(tagList),
 			}, nil

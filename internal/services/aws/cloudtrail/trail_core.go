@@ -5,7 +5,6 @@ import (
 	tags "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -28,7 +27,7 @@ type CreateTrailInput struct {
 	CloudWatchLogsLogGroupARN  string
 	CloudWatchLogsRoleARN      string
 	KMSKeyID                   string
-	Tags                       []types.Tag
+	Tags                       []tags.Tag
 	Region                     string
 }
 
@@ -256,7 +255,7 @@ func trailToTrailResult(t *cloudtrailstore.Trail) *TrailResult {
 }
 
 // parseTagsFromParams converts a raw TagsList parameter (as produced by the
-// request parser) into a []types.Tag.
-func parseTagsFromParams(params map[string]interface{}) []types.Tag {
+// request parser) into a []tags.Tag.
+func parseTagsFromParams(params map[string]interface{}) []tags.Tag {
 	return tags.ParseTags(params, "TagsList")
 }

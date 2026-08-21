@@ -14,7 +14,6 @@ import (
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -30,14 +29,14 @@ func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterfa
 			RequireTagKeys:  false,
 			RequireResource: true,
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tags.Tag {
 			rawTags := getNeptuneTagList(params)
-			result := make([]types.Tag, 0, len(rawTags))
+			result := make([]tags.Tag, 0, len(rawTags))
 			for _, t := range rawTags {
 				key, _ := t["Key"].(string)
 				value, _ := t["Value"].(string)
 				if key != "" {
-					result = append(result, types.Tag{Key: key, Value: value})
+					result = append(result, tags.Tag{Key: key, Value: value})
 				}
 			}
 			return result
@@ -45,16 +44,16 @@ func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterfa
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return request.GetStringList(params, "TagKeys")
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagList []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagList []tags.Tag) error {
 			return store.AddTags(resourceKey, tagList)
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
 			return store.RemoveTags(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tags.Tag, error) {
 			return store.GetTags(resourceKey)
 		},
-		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagList []tags.Tag, _ string) (interface{}, error) {
 			items := make([]interface{}, 0, len(tagList))
 			for _, t := range tagList {
 				items = append(items, map[string]interface{}{"Key": t.Key, "Value": t.Value})

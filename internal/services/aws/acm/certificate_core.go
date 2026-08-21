@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

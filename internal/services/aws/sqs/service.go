@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/kmsutil"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	appconfig "vorpalstacks/internal/config"
@@ -20,7 +21,7 @@ type SQSService struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
 	stores         sync.Map
-	kmsChecker     common.KMSKeyChecker
+	kmsChecker     kmsutil.Checker
 }
 
 // NewSQSService creates a new SQS service instance.
@@ -37,13 +38,13 @@ func (s *SQSService) SetStorageManager(sm *storage.RegionStorageManager) {
 
 // SetKMSChecker injects the KMS key checker used to validate KmsMasterKeyId
 // attributes against the platform's KMS service.
-func (s *SQSService) SetKMSChecker(checker common.KMSKeyChecker) {
+func (s *SQSService) SetKMSChecker(checker kmsutil.Checker) {
 	s.kmsChecker = checker
 }
 
 // regionFromHeader extracts the region from gRPC-Web request headers.
 func (s *SQSService) regionFromHeader(headers http.Header) string {
-	return common.GetRegionFromHeader(headers)
+	return defaults.GetRegionFromHeader(headers)
 }
 
 // GetStoreForRegion returns the cached SQS store for the given region,

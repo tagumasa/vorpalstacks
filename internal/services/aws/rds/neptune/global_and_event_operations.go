@@ -29,11 +29,8 @@ func clusterIDFromARN(arn string) string {
 // isValidSnsTopicArn validates that the given string is a well-formed SNS
 // topic ARN (arn:aws:sns:<region>:<account>:<topic-name>).
 func isValidSnsTopicArn(arn string) bool {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
-		return false
-	}
-	return parts[0] == "arn" && (parts[1] == "aws" || parts[1] == "aws-cn" || parts[1] == "aws-us-gov") && parts[2] == "sns"
+	partition, service, _, _, _ := arnutil.SplitARN(arn)
+	return (partition == "aws" || partition == "aws-cn" || partition == "aws-us-gov") && service == "sns"
 }
 
 // isValidEventCategory checks whether the given category is one of the

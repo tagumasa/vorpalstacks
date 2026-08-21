@@ -72,7 +72,7 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		apiDest.Description = desc
 	}
@@ -158,7 +158,7 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		apiDest.Description = desc
 	}

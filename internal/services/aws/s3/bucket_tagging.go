@@ -2,7 +2,7 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // PutBucketTaggingInput contains the request parameters for the PutBucketTagging operation.

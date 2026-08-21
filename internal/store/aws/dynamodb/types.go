@@ -4,7 +4,7 @@ package dynamodb
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // TableStatus represents the status of a DynamoDB table.

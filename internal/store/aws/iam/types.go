@@ -4,7 +4,7 @@ package iam
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // AccessKeyStatus represents the status of an IAM access key.

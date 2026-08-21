@@ -41,6 +41,35 @@ func GetMaxItems(params map[string]interface{}, defaultVal int, paramName ...str
 	return maxItems
 }
 
+// ResolveMaxItems applies an operation's Smithy @range bounds to a
+// caller-supplied page size with default-on-zero semantics: an unset or
+// zero value maps to defaultVal, values within [min,max] pass through,
+// and anything else is rejected through errFactory so each service keeps
+// its own AWS error shape.
+func ResolveMaxItems(value, defaultVal, min, max int, errFactory func(got int) error) (int, error) {
+	if value == 0 {
+		return defaultVal, nil
+	}
+	if value < min || value > max {
+		return 0, errFactory(value)
+	}
+	return value, nil
+}
+
+// ClampMaxItems normalises a page size without erroring: non-positive
+// values map to defaultVal and values above max are clamped to max. Use
+// for operations whose AWS behaviour is clamping rather than rejection
+// (for example Lambda ListFunctions caps MaxItems instead of rejecting).
+func ClampMaxItems(value, defaultVal, max int) int {
+	if value <= 0 {
+		return defaultVal
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
+
 // GetMarker extracts a pagination marker/nextToken parameter from the given params map.
 // It checks paramName first, then falls back to "Marker" for backward compatibility.
 func GetMarker(params map[string]interface{}, paramName ...string) string {

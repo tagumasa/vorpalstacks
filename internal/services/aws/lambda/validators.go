@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"vorpalstacks/internal/common/pagination"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -476,10 +477,7 @@ func validateMaxItems(v int) int {
 // validateMaxItemsCapped validates a MaxItems value against a per-operation
 // cap. A value <= 0 or above the cap returns the cap.
 func validateMaxItemsCapped(v, cap int) int {
-	if v <= 0 || v > cap {
-		return cap
-	}
-	return v
+	return pagination.ClampMaxItems(v, cap, cap)
 }
 
 // ---------------------------------------------------------------------------

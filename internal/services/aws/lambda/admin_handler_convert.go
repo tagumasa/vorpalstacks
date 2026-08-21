@@ -2,9 +2,9 @@ package lambda
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 
 	pb "vorpalstacks/internal/pb/aws/lambda"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -15,7 +15,7 @@ import (
 // full lambdaStore for that region. This is the sole entry point for
 // store access in the admin handler layer.
 func (h *AdminHandler) getStore(header http.Header) (*lambdaStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.getOrCreateLambdaStore(region), nil
 }
 

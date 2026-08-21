@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -23,8 +24,8 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 	if certificateBody == "" {
 		return nil, NewValidationError("CertificateBody")
 	}
-	if len(certificateBody) > 16384 {
-		return nil, NewInvalidInputError("CertificateBody", "must be 1 to 16384 characters")
+	if len(certificateBody) > maxCertificateBodyLength {
+		return nil, NewInvalidInputError("CertificateBody", fmt.Sprintf("must be 1 to %d characters", maxCertificateBodyLength))
 	}
 
 	cert, err := parseCertificate(certificateBody)

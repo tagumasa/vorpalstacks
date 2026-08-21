@@ -2,8 +2,7 @@ package apigateway
 
 import (
 	"net/http"
-
-	svccommon "vorpalstacks/internal/common"
+	"vorpalstacks/internal/common/defaults"
 
 	apigatewayconnect "vorpalstacks/internal/pb/aws/apigateway/apigatewayconnect"
 )
@@ -22,7 +21,7 @@ func NewAdminHandler(svc *APIGatewayService) *AdminHandler {
 }
 
 func (h *AdminHandler) getStores(headers http.Header) (*apiGatewayStores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

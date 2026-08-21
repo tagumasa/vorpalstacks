@@ -8,10 +8,10 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 
 	"google.golang.org/protobuf/proto"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	rds "vorpalstacks/internal/store/aws/rds"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (

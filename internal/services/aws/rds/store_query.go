@@ -1,8 +1,8 @@
 package rds
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	storerds "vorpalstacks/internal/store/aws/rds"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // QueryClusters queries, filters, and paginates DBClusters from the given

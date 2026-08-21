@@ -2,8 +2,8 @@ package sqs
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sqs"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -17,7 +17,7 @@ import (
 // getQueueStore returns the SQS store for the region extracted from the
 // request header.
 func (h *AdminHandler) getQueueStore(headers http.Header) (sqsstore.SQSStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

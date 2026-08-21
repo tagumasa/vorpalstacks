@@ -22,8 +22,9 @@ var (
 	ErrInvalidBatchEntryId = awserrors.NewAWSError("InvalidBatchEntryId", "The batch entry ID is invalid.", 400)
 	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries have the same ID.
 	ErrBatchEntryIdsNotDistinct = awserrors.NewAWSError("BatchEntryIdsNotDistinct", "Two or more batch entries have the same ID.", 400)
-	// ErrTooManyEntriesInBatch is returned when the batch request contains more than 10 entries.
-	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10.", 400)
+	// ErrTooManyEntriesInBatch is returned when the batch request exceeds the
+	// entry limit.
+	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", fmt.Sprintf("Maximum number of entries per request are %d.", sqsstore.MaxBatchEntries), 400)
 	// ErrEmptyBatchRequest is returned when the batch request contains no entries.
 	ErrEmptyBatchRequest = awserrors.NewAWSError("EmptyBatchRequest", "The batch request doesn't contain any entries.", 400)
 	// ErrReceiptHandleIsInvalid is returned when the receipt handle provided is not valid.

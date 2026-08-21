@@ -7,24 +7,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"vorpalstacks/internal/common/bucketname"
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 // === Validation constants ===========================================
 
 const (
-	// Bucket name constraints (AWS: 3-63 chars, DNS-compatible).
-	minBucketNameLength = 3
-	maxBucketNameLength = 63
-
 	// Object key constraints (AWS: 1-1024 bytes).
 	maxObjectKeyLength  = 1024
 	maxObjectSize       = 5 * 1024 * 1024 * 1024 * 1024 // 5 TiB
 	maxSingleUploadSize = 5 * 1024 * 1024 * 1024        // 5 GiB
-
-	// Tag constraints (AWS: max 50 tags, key 128, value 256).
-	maxTags           = 50
-	maxTagKeyLength   = 128
-	maxTagValueLength = 256
 
 	// Multipart upload constraints (AWS: 1-10000 parts, min 5 MiB except last).
 	minPartNumber = 1
@@ -43,11 +37,6 @@ const (
 )
 
 // === Regex patterns ================================================
-
-var (
-	bucketNameRegex = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
-	ipAddressRegex  = regexp.MustCompile(`^(\d{1,3}\.){3}\d{1,3}$`)
-)
 
 var validCORSMethods = map[string]bool{
 	"GET":    true,
@@ -75,33 +64,12 @@ var validStorageClasses = map[string]bool{
 // === Existing validators (consolidated from bucket_operations.go,
 //      object_operations.go) ========================================
 
-// validateBucketName validates an S3 bucket name per AWS DNS naming rules.
+// validateBucketName validates an S3 bucket name per the AWS
+// general-purpose bucket naming rules (shared implementation in the
+// bucketname package: charset, adjacency, IP form, reserved prefixes
+// and suffixes).
 func validateBucketName(name string) error {
-	if len(name) < minBucketNameLength || len(name) > maxBucketNameLength {
-		return NewInvalidBucketNameError(name)
-	}
-	if !bucketNameRegex.MatchString(name) {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasPrefix(name, "xn--") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, "-s3alias") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, "--ol-s3") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.HasSuffix(name, ".mrap") {
-		return NewInvalidBucketNameError(name)
-	}
-	if ipAddressRegex.MatchString(name) {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.Contains(name, "..") {
-		return NewInvalidBucketNameError(name)
-	}
-	if strings.Contains(name, ".-") || strings.Contains(name, "-.") {
+	if !bucketname.Validate(name) {
 		return NewInvalidBucketNameError(name)
 	}
 	return nil
@@ -133,22 +101,17 @@ func validateObjectKey(key string) error {
 // validateTags validates a list of S3 tags (max 50, key ≤ 128, value ≤ 256,
 // no "aws:" prefix).
 func validateTags(tags []Tag) error {
-	if len(tags) > maxTags {
-		return NewInvalidArgumentError(fmt.Sprintf("too many tags (maximum %d)", maxTags))
-	}
-	for _, tag := range tags {
-		if len(tag.Key) == 0 {
-			return NewInvalidArgumentError("tag key cannot be empty")
-		}
-		if len(tag.Key) > maxTagKeyLength {
-			return NewInvalidArgumentError("tag key cannot exceed 128 characters")
-		}
-		if len(tag.Value) > maxTagValueLength {
-			return NewInvalidArgumentError("tag value cannot exceed 256 characters")
-		}
-		if strings.HasPrefix(strings.ToLower(tag.Key), "aws:") {
-			return NewInvalidArgumentError("tag key cannot start with 'aws:' (reserved prefix)")
-		}
+	switch v, _ := tagutil.CheckTags(TagsToCommon(tags), tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
+		return NewInvalidArgumentError(fmt.Sprintf("too many tags (maximum %d)", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort:
+		return NewInvalidArgumentError("tag key cannot be empty")
+	case tagutil.TagKeyTooLong:
+		return NewInvalidArgumentError(fmt.Sprintf("tag key cannot exceed %d characters", tagutil.MaxTagKeyLength))
+	case tagutil.TagValueTooLong:
+		return NewInvalidArgumentError(fmt.Sprintf("tag value cannot exceed %d characters", tagutil.MaxTagValueLength))
+	case tagutil.ReservedTagKey:
+		return NewInvalidArgumentError("tag key cannot start with 'aws:' (reserved prefix)")
 	}
 	return nil
 }

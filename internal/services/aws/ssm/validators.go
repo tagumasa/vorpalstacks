@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/logs"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
@@ -121,27 +123,17 @@ func validateHierarchyPath(path string) error {
 // validateMaxResultsForPath enforces the GetParametersByPath Smithy range
 // (1-10, default 10 when zero).
 func validateMaxResultsForPath(maxResults int32) (int32, error) {
-	switch {
-	case maxResults == 0:
-		return 10, nil
-	case maxResults < 1 || maxResults > 10:
-		return 0, ErrInvalidParameterValue
-	default:
-		return maxResults, nil
-	}
+	v, err := pagination.ResolveMaxItems(int(maxResults), 10, 1, 10,
+		func(int) error { return ErrInvalidParameterValue })
+	return int32(v), err
 }
 
 // validateMaxResultsForPage enforces the DescribeParameters/GetParameterHistory
 // Smithy range (1-50, default 50 when zero).
 func validateMaxResultsForPage(maxResults int32) (int32, error) {
-	switch {
-	case maxResults == 0:
-		return ssmstore.MaxPageResults, nil
-	case maxResults < 1 || maxResults > ssmstore.MaxPageResults:
-		return 0, ErrInvalidParameterValue
-	default:
-		return maxResults, nil
-	}
+	v, err := pagination.ResolveMaxItems(int(maxResults), ssmstore.MaxPageResults, 1, ssmstore.MaxPageResults,
+		func(int) error { return ErrInvalidParameterValue })
+	return int32(v), err
 }
 
 // validateLabels enforces the Smithy ParameterLabel / ParameterLabelList
@@ -239,7 +231,7 @@ func normalisePutParameter(in ParameterPutFields) (*ssmstore.Parameter, error) {
 	if in.Value == "" {
 		return nil, ErrInvalidParameterValue
 	}
-	if len(in.Description) > ssmstore.MaxParameterDescriptionLength {
+	if utf8.RuneCountInString(in.Description) > ssmstore.MaxParameterDescriptionLength {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -290,8 +282,11 @@ func normalisePutParameter(in ParameterPutFields) (*ssmstore.Parameter, error) {
 
 	// AWS auto-promotes Standard-tier parameters to Advanced when the value
 	// exceeds the 4KB Standard-tier limit or when any Policies are attached.
-	// An empty Tier means the caller omitted it — AWS treats that as
-	// Standard-equivalent, so the same promotion rule must apply.
+	// The value limit is documented in bytes ("Standard parameters have a
+	// value limit of 4 KB", PutParameter API reference), so byte length is
+	// the correct metric here — unlike @length traits, which count Unicode
+	// characters. An empty Tier means the caller omitted it — AWS treats
+	// that as Standard-equivalent, so the same promotion rule must apply.
 	if param.Tier == "" || param.Tier == ssmstore.ParameterTierStandard {
 		if len(param.Value) > 4096 || param.Policies != "" {
 			param.Tier = ssmstore.ParameterTierAdvanced

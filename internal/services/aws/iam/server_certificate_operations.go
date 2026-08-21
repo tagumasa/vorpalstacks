@@ -5,13 +5,13 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -36,8 +36,8 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if certificateBody == "" {
 		return nil, NewValidationError("CertificateBody")
 	}
-	if len(certificateBody) > 16384 {
-		return nil, NewInvalidInputError("CertificateBody", "must be 1 to 16384 characters")
+	if len(certificateBody) > maxCertificateBodyLength {
+		return nil, NewInvalidInputError("CertificateBody", fmt.Sprintf("must be 1 to %d characters", maxCertificateBodyLength))
 	}
 	certificateChain := request.GetStringParam(req.Parameters, "CertificateChain")
 	if certificateChain != "" && len(certificateChain) > 2097152 {
@@ -47,8 +47,8 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if privateKey == "" {
 		return nil, NewValidationError("PrivateKey")
 	}
-	if len(privateKey) > 16384 {
-		return nil, NewInvalidInputError("PrivateKey", "must be 1 to 16384 characters")
+	if len(privateKey) > maxPrivateKeyLength {
+		return nil, NewInvalidInputError("PrivateKey", fmt.Sprintf("must be 1 to %d characters", maxPrivateKeyLength))
 	}
 
 	parsedCert, err := parseCertificate(certificateBody)
@@ -231,7 +231,7 @@ var serverCertificateTagOps = tagOps[*iamstore.ServerCertificate]{
 		return s.ServerCertificates().Get(n)
 	},
 	putFn:  func(s *iamstore.IAMStore, r *iamstore.ServerCertificate) error { return s.ServerCertificates().Put(r) },
-	tagsFn: func(r *iamstore.ServerCertificate) *[]types.Tag { return &r.Tags },
+	tagsFn: func(r *iamstore.ServerCertificate) *[]tags.Tag { return &r.Tags },
 }
 
 // TagServerCertificate adds tags to a server certificate.

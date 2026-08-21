@@ -3,7 +3,7 @@ package scheduler
 import (
 	"context"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // SchedulerStoreInterface defines operations for managing EventBridge Scheduler schedules.

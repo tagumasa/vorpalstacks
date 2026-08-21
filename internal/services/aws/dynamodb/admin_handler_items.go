@@ -3,11 +3,11 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 )
@@ -21,7 +21,7 @@ func (h *AdminHandler) GetItem(ctx context.Context, req *connect.Request[pb.GetI
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key is required"))
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	attrs, err := h.service.adminGetItem(ctx, region, req.Msg.GetTablename(), req.Msg.GetKey())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -38,7 +38,7 @@ func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInp
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("TableName is required"))
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	result, err := h.service.adminScan(region, req.Msg.GetTablename(), req.Msg.GetLimit(), req.Msg.GetExclusivestartkey())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -65,7 +65,7 @@ func (h *AdminHandler) PutItem(ctx context.Context, req *connect.Request[pb.PutI
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("item is required"))
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	attrs, err := h.service.adminPutItem(ctx, region, req.Msg.GetTablename(), req.Msg.GetItem())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -85,7 +85,7 @@ func (h *AdminHandler) DeleteItem(ctx context.Context, req *connect.Request[pb.D
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("key is required"))
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	if err := h.service.adminDeleteItem(ctx, region, req.Msg.GetTablename(), req.Msg.GetKey()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

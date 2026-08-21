@@ -3,9 +3,9 @@ package iot
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -107,7 +107,7 @@ func (h *AdminHandler) DeleteThing(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteThingCore(stores, req.Msg.GetThingname(), h.service.accountID, region); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -182,7 +182,7 @@ func (h *AdminHandler) DeletePolicy(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deletePolicyCore(stores, req.Msg.GetPolicyname(), h.service.accountID, region); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -258,7 +258,7 @@ func (h *AdminHandler) DeleteCertificate(ctx context.Context, req *connect.Reque
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteCertificateCore(stores, req.Msg.GetCertificateid(), h.service.accountID, region); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

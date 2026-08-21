@@ -10,12 +10,11 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"vorpalstacks/internal/utils/timeutils"
-
-	svccommon "vorpalstacks/internal/common"
 
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
@@ -23,7 +22,7 @@ import (
 
 // getStore returns the per-region Neptune store for the given header.
 func (h *AdminHandler) getStore(header http.Header) (*neptunestore.NeptuneStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 
@@ -177,7 +176,7 @@ func (h *AdminHandler) loaderJobListPb(header http.Header) (*pb.ListLoaderJobsOu
 // (no store needed) but is placed here for architectural consistency.
 func (h *AdminHandler) propertygraphStatisticsPb(header http.Header) (*pb.GetPropertygraphStatisticsOutput, error) {
 	s := h.service
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 
 	s.mu.RLock()
 	statsDisabled := s.statsDisabled
@@ -224,7 +223,7 @@ func (h *AdminHandler) propertygraphStatisticsPb(header http.Header) (*pb.GetPro
 // for the admin console.
 func (h *AdminHandler) propertygraphSummaryPb(header http.Header) (*pb.GetPropertygraphSummaryOutput, error) {
 	s := h.service
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 
 	s.mu.RLock()
 	statsDisabled := s.statsDisabled

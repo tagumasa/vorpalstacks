@@ -6,9 +6,9 @@ import (
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2connect "vorpalstacks/internal/pb/aws/sesv2/sesv2connect"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // AdminHandler implements the SESv2 gRPC-Web admin console handler. It is

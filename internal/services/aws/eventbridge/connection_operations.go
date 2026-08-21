@@ -314,7 +314,7 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 
 	desc := request.GetStringParam(req.Parameters, "Description")
 	if desc != "" && !validateDescription(desc) {
-		return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+		return nil, errDescriptionTooLong()
 	}
 
 	authType := request.GetParamLowerFirst(req.Parameters, "AuthorizationType")
@@ -339,7 +339,7 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		connection.Description = desc
 	}
@@ -449,7 +449,7 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		connection.Description = desc
 	}

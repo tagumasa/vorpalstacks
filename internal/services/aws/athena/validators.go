@@ -5,7 +5,10 @@ import (
 	"regexp"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/paramvalidation"
 	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 // Smithy-conformant validators for Athena API parameters.
@@ -18,12 +21,11 @@ import (
 // validateStringLength checks that a string's length falls within [min, max].
 // If the value is empty and min == 0 the check passes (optional field).
 func validateStringLength(fieldName, value string, min, max int) error {
-	n := len(value)
-	if n < min || n > max {
-		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("%s length must be between %d and %d (got %d)", fieldName, min, max, n))
-	}
-	return nil
+	return paramvalidation.StringLength(fieldName, value, min, max,
+		func(field string, length, min, max int) error {
+			return awserrors.NewInvalidParameterException(
+				fmt.Sprintf("%s length must be between %d and %d (got %d)", field, min, max, length))
+		})
 }
 
 // ---------------------------------------------------------------------------
@@ -116,25 +118,22 @@ func validateNameString(value string) error {
 // Smithy tag shape validators
 // ---------------------------------------------------------------------------
 
-// validateTagKey validates Smithy TagKey (length [1, 128]).
-func validateTagKey(key string) error {
-	return validateStringLength("TagKey", key, 1, 128)
-}
-
-// validateTagValue validates Smithy TagValue (length [0, 256]).
-func validateTagValue(value string) error {
-	return validateStringLength("TagValue", value, 0, 256)
-}
-
-// validateTags validates all keys and values in a tag map.
+// validateTags validates a tag map against the Athena tag limits: at most
+// 50 tags per resource, keys of 1-128 characters, values of at most 256
+// characters and the aws: key prefix reserved for AWS use.
 func validateTags(tags map[string]string) error {
-	for k, v := range tags {
-		if err := validateTagKey(k); err != nil {
-			return err
-		}
-		if err := validateTagValue(v); err != nil {
-			return err
-		}
+	violation, key := tagutil.CheckStringTags(tags, tagutil.StandardLimits())
+	switch violation {
+	case tagutil.TooManyTags:
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return validateStringLength("TagKey", key, 1, tagutil.MaxTagKeyLength)
+	case tagutil.TagValueTooLong:
+		return validateStringLength("TagValue", tags[key], 0, tagutil.MaxTagValueLength)
+	case tagutil.ReservedTagKey:
+		return awserrors.NewInvalidParameterException(
+			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
 	}
 	return nil
 }
@@ -287,11 +286,5 @@ func validateMaxResults(params map[string]interface{}, defaultVal, minVal, maxVa
 // the admin gRPC-Web handler where protobuf fields arrive as int64 (not
 // map[string]interface{}), so validateMaxResults is not applicable.
 func clampMaxResults(value, defaultVal, maxVal int) int {
-	if value <= 0 {
-		return defaultVal
-	}
-	if value > maxVal {
-		return maxVal
-	}
-	return value
+	return pagination.ClampMaxItems(value, defaultVal, maxVal)
 }

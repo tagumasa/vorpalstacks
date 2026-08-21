@@ -8,9 +8,9 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

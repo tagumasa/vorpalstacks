@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const policyBucketName = "iam_policies"

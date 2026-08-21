@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
+	types "vorpalstacks/internal/common/tags"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

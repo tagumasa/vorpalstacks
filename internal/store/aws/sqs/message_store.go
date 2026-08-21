@@ -144,7 +144,7 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 		return nil, err
 	}
 
-	if maxNumberOfMessages < minMaxNumberOfMessages || maxNumberOfMessages > maxMaxNumberOfMessages {
+	if maxNumberOfMessages < minMaxNumberOfMessages || maxNumberOfMessages > MaxMaxNumberOfMessages {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -524,7 +524,7 @@ func (s *SQSStore) cacheReceiveAttempt(queueURL, attemptId string, messages []*M
 }
 
 func (s *SQSStore) cleanupReceiveAttemptCache() {
-	cutoff := time.Now().Add(-time.Duration(maxVisibilityTimeout) * time.Second)
+	cutoff := time.Now().Add(-time.Duration(MaxVisibilityTimeout) * time.Second)
 	for k, entry := range s.receiveAttemptCache {
 		if entry.createdAt.Before(cutoff) {
 			delete(s.receiveAttemptCache, k)

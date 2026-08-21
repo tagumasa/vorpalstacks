@@ -1,7 +1,7 @@
 package common
 
 import (
-	awserrors "vorpalstacks/internal/utils/aws/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // AWSError represents an AWS-compatible error.

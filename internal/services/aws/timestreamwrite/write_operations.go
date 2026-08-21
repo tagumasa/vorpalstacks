@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // WriteRecords writes time-series records to a Timestream table.
@@ -341,16 +340,16 @@ func (s *TimestreamWriteService) tagHandlerConfig(st *tsWriteStores) tagutil.Tag
 			RequireResource:    true,
 			CaseInsensitiveRes: true,
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			return st.store.TagFromSlice(resourceKey, tagSlice)
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return st.store.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return st.store.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagSlice []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.MapToResponse(tagutil.ToMap(tagSlice)),
 			}, nil

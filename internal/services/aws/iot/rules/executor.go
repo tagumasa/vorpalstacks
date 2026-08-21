@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"vorpalstacks/internal/common/iotutil"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
 
 const defaultDispatchTimeout = 30 * time.Second

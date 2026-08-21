@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	"vorpalstacks/internal/utils/aws/types"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore) tagutil.TagHandlerConfig {
@@ -26,13 +26,13 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 		ValidateResource: func(ctx context.Context, arn string) error {
 			return validateTaggableResource(ctx, store, arn)
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tagutil.Tag {
 			return tagutil.MapToTags(tagutil.ToMap(tagutil.ParseTags(params, "tags")))
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return tagutil.ParseTagKeysAsSlice(params, "tagKeys")
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			// Resource existence is verified by ValidateResource above;
 			// this closure applies quota enforcement and persistence via
 			// the shared tag Core path.
@@ -44,10 +44,10 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return store.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagSlice []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"tags": tagutil.ToResponseWithKeyNames(tagSlice, "key", "value"),
 			}, nil
@@ -62,25 +62,28 @@ func (s *StepFunctionService) tagHandlerConfig(store *sfnstore.StepFunctionStore
 // tag operation. SFN supports tagging on state machines, activities, state
 // machine aliases, state machine versions and map runs; each type is
 // resolved through its store getter and mapped to the documented
-// not-found error. Any other ARN shape — executions, or ARNs that are not
+// not-found error. The resource type is read from the ARN resource field
+// (stateMachine:<name>, stateMachineAlias:<name>, mapRun:<id>,
+// activity:<id>). Any other ARN shape — executions, or ARNs that are not
 // States resources at all — is rejected outright.
 func validateTaggableResource(ctx context.Context, store *sfnstore.StepFunctionStore, arn string) error {
+	_, _, _, _, resource := svcarn.SplitARN(arn)
 	switch {
-	case strings.Contains(arn, ":stateMachineAlias:"):
+	case strings.HasPrefix(resource, "stateMachineAlias:"):
 		if _, err := store.GetStateMachineAlias(ctx, arn); err != nil {
 			if errors.Is(err, sfnstore.ErrStateMachineAliasNotFound) {
 				return NewResourceNotFound("State Machine Alias Does not exist: " + arn)
 			}
 			return err
 		}
-	case strings.Contains(arn, ":mapRun:"):
+	case strings.HasPrefix(resource, "mapRun:"):
 		if _, err := store.GetMapRun(ctx, arn); err != nil {
 			if errors.Is(err, sfnstore.ErrMapRunNotFound) {
 				return NewResourceNotFound("Map Run does not exist: " + arn)
 			}
 			return err
 		}
-	case strings.Contains(arn, ":stateMachine:"):
+	case strings.HasPrefix(resource, "stateMachine:"):
 		// Version ARNs append ":<number>" to the state machine ARN and
 		// do not resolve through the plain state-machine getter; probe the
 		// version store when the state machine lookup misses.
@@ -95,7 +98,7 @@ func validateTaggableResource(ctx context.Context, store *sfnstore.StepFunctionS
 				return verr
 			}
 		}
-	case strings.Contains(arn, ":activity:"):
+	case strings.HasPrefix(resource, "activity:"):
 		if _, err := store.GetActivity(ctx, arn); err != nil {
 			if errors.Is(err, sfnstore.ErrActivityNotFound) {
 				return NewActivityDoesNotExist("Activity Does not exist: " + arn)

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	awserrors "vorpalstacks/internal/utils/aws/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // Tests for subqueries and the join / source command family.

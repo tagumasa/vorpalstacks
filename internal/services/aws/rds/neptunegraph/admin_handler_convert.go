@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/utils/ptrutil"
 	"vorpalstacks/internal/utils/timeutils"
 
@@ -22,7 +22,7 @@ import (
 
 // getStore returns the per-region NeptuneGraph store for the given header.
 func (h *AdminHandler) getStore(header http.Header) (*ngstore.NeptuneGraphStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 

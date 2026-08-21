@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	types "vorpalstacks/internal/common/tags"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // This file holds the tag-operation Core methods shared by the HTTP API and

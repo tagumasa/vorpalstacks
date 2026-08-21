@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
@@ -149,6 +150,45 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 			IdentityPoolId: aws.String(pid),
 		})
 		return nil
+	}))
+
+	// The RoleMappings key shape is IdentityProviderName: a pattern-less
+	// Smithy @length(1, 128) trait counted in Unicode characters, so a
+	// 100-character CJK key (300 bytes) must be accepted.
+	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles_MultibyteMappingKeyAccepted", func() error {
+		cjkKey := strings.Repeat("\u65e5", 100)
+		baseRoles := map[string]string{
+			"authenticated":   fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
+			"unauthenticated": fmt.Sprintf("arn:aws:iam::%s:role/unauth-role", acct),
+		}
+		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(poolID),
+			Roles:          baseRoles,
+			RoleMappings: map[string]types.RoleMapping{
+				cjkKey: {
+					Type:                    types.RoleMappingTypeToken,
+					AmbiguousRoleResolution: types.AmbiguousRoleResolutionTypeAuthenticatedRole,
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("set with multibyte mapping key: %v", err)
+		}
+		resp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(poolID),
+		})
+		if err != nil {
+			return err
+		}
+		if _, ok := resp.RoleMappings[cjkKey]; !ok {
+			return fmt.Errorf("multibyte role-mapping key not persisted")
+		}
+		// Restore the plain two-role state for later readers.
+		_, err = client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(poolID),
+			Roles:          baseRoles,
+		})
+		return err
 	}))
 
 	return results

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/iotutil"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
 
 type Evaluator struct {

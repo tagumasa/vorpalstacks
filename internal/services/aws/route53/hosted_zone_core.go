@@ -7,8 +7,8 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	route53store "vorpalstacks/internal/store/aws/route53"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

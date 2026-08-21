@@ -241,18 +241,21 @@ func (s *CloudTrailStore) GetTrailByARN(trailARN string) (*Trail, error) {
 	return nil, ErrTrailNotFound
 }
 
+// normalizeARN fills in the account-id slot of trail ARNs that were
+// recorded without one; resource parts containing colons (versioned or
+// qualified resources) are preserved by the shared splitter.
 func (s *CloudTrailStore) normalizeARN(arn string) string {
-	parts := strings.SplitN(arn, ":", 6)
-	if len(parts) >= 5 && parts[4] == "" {
-		parts[4] = s.accountID
-		return strings.Join(parts, ":")
+	partition, service, region, accountID, resource := svcarn.SplitARN(arn)
+	if service == "" || accountID != "" {
+		return arn
 	}
-	return arn
+	return "arn:" + partition + ":" + service + ":" + region + ":" + s.accountID + ":" + resource
 }
 
 // ResolveTrail resolves a trail by name or ARN.
 func (s *CloudTrailStore) ResolveTrail(nameOrARN string) (*Trail, error) {
-	if strings.Contains(nameOrARN, ":trail/") {
+	_, _, _, _, resource := svcarn.SplitARN(nameOrARN)
+	if strings.HasPrefix(resource, "trail/") {
 		return s.GetTrailByARN(nameOrARN)
 	}
 	return s.GetTrail(nameOrARN)

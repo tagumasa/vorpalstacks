@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 	"vorpalstacks/internal/utils/aws/generators"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (

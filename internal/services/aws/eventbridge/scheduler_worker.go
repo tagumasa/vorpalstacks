@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/scheduleexpr"
 	"vorpalstacks/internal/core/logs"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
@@ -186,36 +187,18 @@ func shouldFireRate(ruleARN, expr string, now time.Time) bool {
 	return false
 }
 
-// shouldFireCron evaluates a cron(...) expression against the current time.
-// AWS cron format: cron(minutes hours day-of-month month day-of-week year)
+// shouldFireCron evaluates a cron(...) expression through the shared
+// schedule expression engine instead of a service-local matcher. The
+// engine returns the first scheduled minute strictly after the previous
+// minute; the rule fires when that minute is the current one, capped at
+// once per minute. AWS cron format: cron(minutes hours day-of-month
+// month day-of-week year) — including the L, W and # day wildcards.
 func shouldFireCron(ruleARN, expr string, now time.Time) bool {
-	inner := strings.TrimPrefix(expr, "cron(")
-	inner = strings.TrimSuffix(inner, ")")
-	inner = strings.TrimSpace(inner)
-
-	fields := strings.Fields(inner)
-	if len(fields) < 5 || len(fields) > 6 {
+	next, err := scheduleexpr.NextExecutionTime(expr, now, time.Time{}, nil)
+	if err != nil {
 		return false
 	}
-
-	if !cronFieldMatches(fields[0], now.Minute(), 0, 59) {
-		return false
-	}
-	if !cronFieldMatches(fields[1], now.Hour(), 0, 23) {
-		return false
-	}
-	if !cronFieldMatches(fields[2], now.Day(), 1, 31) {
-		return false
-	}
-	if !cronMonthMatches(fields[3], now.Month()) {
-		return false
-	}
-	if !cronDOWMatches(fields[4], int(now.Weekday())) {
-		return false
-	}
-
-	// Year field (optional, defaults to *)
-	if len(fields) == 6 && !cronFieldMatches(fields[5], now.Year(), 1970, 2199) {
+	if !next.Equal(now.Truncate(time.Minute)) {
 		return false
 	}
 
@@ -226,143 +209,6 @@ func shouldFireCron(ruleARN, expr string, now time.Time) bool {
 	}
 	setLastFire(ruleARN, now)
 	return true
-}
-
-// cronFieldMatches checks whether a cron field matches the given value.
-// Supports: * (wildcard), exact values, ranges (a-b), lists (a,b,c),
-// and step values (*/n or a-b/n). The ? character is treated as *.
-func cronFieldMatches(field string, value, min, max int) bool {
-	field = strings.TrimSpace(field)
-	if field == "*" || field == "?" {
-		return true
-	}
-
-	for _, part := range strings.Split(field, ",") {
-		part = strings.TrimSpace(part)
-		if matchesCronPart(part, value, min, max) {
-			return true
-		}
-	}
-	return false
-}
-
-func matchesCronPart(part string, value, min, max int) bool {
-	// Step value: a/n (a-max/n), a-b/n, or * /n
-	if idx := strings.Index(part, "/"); idx != -1 {
-		rangePart := part[:idx]
-		stepStr := part[idx+1:]
-		step, err := strconv.Atoi(stepStr)
-		if err != nil || step <= 0 {
-			return false
-		}
-		start, end := min, max
-		if rangePart != "*" && rangePart != "?" {
-			// Plain numeric a/n: equivalent to a-max/n.
-			if !strings.Contains(rangePart, "-") {
-				n, err := strconv.Atoi(rangePart)
-				if err != nil || n < min || n > max {
-					return false
-				}
-				start = n
-			} else {
-				s, e, ok := parseRange(rangePart, min, max)
-				if !ok {
-					return false
-				}
-				start, end = s, e
-			}
-		}
-		for i := start; i <= end; i += step {
-			if i == value {
-				return true
-			}
-		}
-		return false
-	}
-
-	// Range: a-b
-	if strings.Contains(part, "-") {
-		s, e, ok := parseRange(part, min, max)
-		if !ok {
-			return false
-		}
-		return value >= s && value <= e
-	}
-
-	// Exact value
-	n, err := strconv.Atoi(part)
-	if err != nil {
-		return false
-	}
-	return n == value
-}
-
-func parseRange(s string, min, max int) (int, int, bool) {
-	parts := strings.SplitN(s, "-", 2)
-	if len(parts) != 2 {
-		return 0, 0, false
-	}
-	start, err1 := strconv.Atoi(parts[0])
-	end, err2 := strconv.Atoi(parts[1])
-	if err1 != nil || err2 != nil {
-		return 0, 0, false
-	}
-	if start < min {
-		start = min
-	}
-	if end > max {
-		end = max
-	}
-	return start, end, true
-}
-
-var monthMap = map[string]int{
-	"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
-	"JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
-}
-
-// expandCronNames returns a copy of field in which every occurrence of a
-// month name (JAN..DEC) is replaced with its numeric value. The replacement
-// is applied to every comma-separated, range, list, and step sub-expression
-// so that downstream range/list/step validators can treat the field purely
-// as integers.
-func expandCronNames(field string, names map[string]int) string {
-	upper := strings.ToUpper(field)
-	for name, num := range names {
-		upper = strings.ReplaceAll(upper, name, strconv.Itoa(num))
-	}
-	return upper
-}
-
-func cronMonthMatches(field string, month time.Month) bool {
-	expanded := expandCronNames(field, monthMap)
-	return cronFieldMatches(expanded, int(month), 1, 12)
-}
-
-var dowNameToAWS = map[string]int{
-	"SUN": 1, "MON": 2, "TUE": 3, "WED": 4, "THU": 5, "FRI": 6, "SAT": 7,
-}
-
-// cronDOWMatches checks the day-of-week field. AWS cron uses 1=SUN..7=SAT.
-// Go's time.Weekday uses 0=SUNDAY..6=SATURDAY. We convert Go's value to
-// AWS convention (goDOW+1) before matching.
-//
-// Both cronMonthMatches and cronDOWMatches expand the supplied field so that
-// names inside ranges (e.g. MON-FRI), lists (MON,WED,FRI), and steps
-// (MON/2) are translated to numeric form before cronFieldMatches parses
-// them. This closes the long-standing asymmetry where only the bare single
-// name was being recognised.
-func cronDOWMatches(field string, goDOW int) bool {
-	awsDOW := goDOW + 1
-	if awsDOW > 7 {
-		awsDOW = 7
-	}
-
-	expanded := expandCronNames(field, dowNameToAWS)
-	if expanded == "?" || expanded == "*" {
-		return true
-	}
-	return cronFieldMatches(expanded, awsDOW, 1, 7)
 }
 
 func getLastFire(ruleARN string) (time.Time, bool) {

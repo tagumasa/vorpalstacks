@@ -19,6 +19,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/iot/policy"
 	iotstore "vorpalstacks/internal/store/aws/iot"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // cryptoSHA256 returns the SHA-256 digest of the given data.
@@ -385,12 +386,13 @@ func lambdaFunctionNameFromARN(arn string) string {
 	if arn == "" {
 		return ""
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) < 7 {
+	_, _, _, _, resource := svcarn.SplitARN(arn)
+	segs := strings.SplitN(resource, ":", 3)
+	if len(segs) < 2 {
 		// Function name without ARN prefix.
 		return arn
 	}
-	return parts[6]
+	return segs[1]
 }
 
 // loadPolicyVersions reads the persisted version slice for a policy. Returns

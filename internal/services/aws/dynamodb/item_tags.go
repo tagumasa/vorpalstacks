@@ -9,7 +9,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	dynamodbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func dynamodbMapError(err error) error {
@@ -45,7 +44,7 @@ func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHa
 			}
 			return nil
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tagutil.Tag {
 			return tagutil.ParseTags(params, "Tags")
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
@@ -56,16 +55,16 @@ func dynamodbTagConfig(store dynamodbstore.DynamoDBStoreInterface) tagutil.TagHa
 			}
 			return keys
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tag []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tag []tagutil.Tag) error {
 			return store.Tables().Tags().Tag(resourceKey, tagutil.ToMap(tag))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.Tables().Tags().Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return store.Tables().Tags().ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.ConvertToMapSlice(tags),
 			}, nil

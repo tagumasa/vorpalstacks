@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	"connectrpc.com/connect"
@@ -31,7 +31,7 @@ func NewAdminHandler(svc *CloudWatchService) *AdminHandler {
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*cloudwatchStores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

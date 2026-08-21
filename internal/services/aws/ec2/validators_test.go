@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
-	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 func TestParseInt64Param(t *testing.T) {

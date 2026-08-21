@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"vorpalstacks/internal/common/protocol"
+	types "vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TestSecurityGroupWireNames pins the EC2 Query protocol wire names of the

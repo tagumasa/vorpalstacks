@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"vorpalstacks/internal/common/lambdautil"
 
 	"github.com/google/uuid"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/server/fqdnrouter"
@@ -27,7 +27,7 @@ type FunctionURLServer struct {
 	accountID     string
 	region        string
 	storeProvider FunctionStoreProvider
-	lambdaInvoker common.LambdaInvoker
+	lambdaInvoker lambdautil.Invoker
 	sigVerifier   *auth.SignatureV4Verifier
 }
 
@@ -35,7 +35,7 @@ type FunctionURLServer struct {
 // Lambda service store cache. When sigVerifier is non-nil, AWS_IAM auth
 // function URLs will verify the incoming SigV4 signature; when nil,
 // AWS_IAM requests are allowed without verification (test mode).
-func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker common.LambdaInvoker, sigVerifier *auth.SignatureV4Verifier) *FunctionURLServer {
+func NewFunctionURLServer(storeProvider FunctionStoreProvider, accountID, region string, invoker lambdautil.Invoker, sigVerifier *auth.SignatureV4Verifier) *FunctionURLServer {
 	return &FunctionURLServer{
 		storeProvider: storeProvider,
 		accountID:     accountID,

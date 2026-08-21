@@ -9,11 +9,11 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/rds"
@@ -40,7 +40,7 @@ func NewAdminHandler(service *RDSService) *AdminHandler {
 // wrapper defined in service.go; admin_handler.go does not import the
 // store package.
 func (h *AdminHandler) getStore(header http.Header) (*rdsStores, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 

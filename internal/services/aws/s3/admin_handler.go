@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/s3"
@@ -55,7 +55,7 @@ func (h *AdminHandler) CreateBucket(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.StoreErrorToGRPC(fmt.Errorf("storage unavailable"))
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	input := pbToCreateBucketInput(req.Msg, region)
 	result, err := h.service.createBucketCore(bucketStore, input)
 	if err != nil {

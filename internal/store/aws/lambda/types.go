@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // Runtime represents the Lambda function runtime environment.

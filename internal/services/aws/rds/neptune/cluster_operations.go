@@ -12,11 +12,11 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // hashMasterPassword bcrypts the given plaintext password and returns the
@@ -35,14 +35,11 @@ func hashMasterPassword(plaintext string) (string, error) {
 // isValidIAMRoleArn validates that the given string is a well-formed IAM
 // role ARN (arn:aws:iam::<account>:role/<name>).
 func isValidIAMRoleArn(arn string) bool {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
+	partition, service, _, _, resource := arnutil.SplitARN(arn)
+	if (partition != "aws" && partition != "aws-cn" && partition != "aws-us-gov") || service != "iam" {
 		return false
 	}
-	if parts[0] != "arn" || (parts[1] != "aws" && parts[1] != "aws-cn" && parts[1] != "aws-us-gov") || parts[2] != "iam" {
-		return false
-	}
-	return strings.HasPrefix(parts[len(parts)-1], "role/")
+	return strings.HasPrefix(resource, "role/")
 }
 
 func clusterToResponseMap(c *neptunestore.DBCluster) map[string]interface{} {

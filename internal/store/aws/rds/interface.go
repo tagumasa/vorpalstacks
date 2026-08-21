@@ -3,7 +3,7 @@ package rds
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 type StoreInterface interface {

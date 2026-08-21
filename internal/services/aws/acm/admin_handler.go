@@ -4,12 +4,12 @@ import (
 	"context"
 	"net/http"
 	"time"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/acm"
@@ -34,7 +34,7 @@ func NewAdminHandler(svc *ACMService) *AdminHandler {
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*acmStores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 
@@ -106,7 +106,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := RequestCertificateInput{
 		DomainName:       req.Msg.Domainname,

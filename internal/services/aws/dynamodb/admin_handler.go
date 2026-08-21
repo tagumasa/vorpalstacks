@@ -3,9 +3,9 @@ package dynamodb
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
@@ -33,7 +33,7 @@ func NewAdminHandler(svc *DynamoDBService) *AdminHandler {
 
 // ListTables returns all DynamoDB table names for the admin console.
 func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.ListTablesInput]) (*connect.Response[pb.ListTablesOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	limit := req.Msg.GetLimit()
 
 	names, nextMarker, err := h.service.adminListTables(region, req.Msg.GetExclusivestarttablename(), limit)
@@ -49,7 +49,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 // DescribeTable returns detailed metadata for a single DynamoDB table.
 func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[pb.DescribeTableInput]) (*connect.Response[pb.DescribeTableOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	desc, err := h.service.adminDescribeTable(region, req.Msg.GetTablename())
 	if err != nil {
@@ -63,7 +63,7 @@ func (h *AdminHandler) DescribeTable(ctx context.Context, req *connect.Request[p
 
 // CreateTable creates a new DynamoDB table from the admin console request.
 func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.CreateTableInput]) (*connect.Response[pb.CreateTableOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	desc, err := h.service.adminCreateTable(region, req.Msg)
 	if err != nil {
@@ -77,7 +77,7 @@ func (h *AdminHandler) CreateTable(ctx context.Context, req *connect.Request[pb.
 
 // DeleteTable removes a DynamoDB table via the admin console.
 func (h *AdminHandler) DeleteTable(ctx context.Context, req *connect.Request[pb.DeleteTableInput]) (*connect.Response[pb.DeleteTableOutput], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	desc, err := h.service.adminDeleteTable(ctx, region, req.Msg.GetTablename())
 	if err != nil {

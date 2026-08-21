@@ -59,7 +59,7 @@ func (s *TimestreamQueryService) ListScheduledQueriesCore(stores *tsQueryStores,
 
 	maxResults := input.MaxResults
 	if input.HasMaxResults {
-		if err := validateMaxResultsScheduledQueries(maxResults); err != nil {
+		if err := validateMaxResultsInRange(maxResults, "MaxResults", rangeMaxScheduledQueriesResults); err != nil {
 			return nil, err
 		}
 	} else {

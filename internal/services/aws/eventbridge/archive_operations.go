@@ -101,7 +101,7 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		archive.Description = desc
 	}
@@ -239,7 +239,7 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		archive.Description = desc
 	}

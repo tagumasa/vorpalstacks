@@ -11,7 +11,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 var errDomainStopIteration = errors.New("stop domain iteration")
@@ -228,7 +227,7 @@ func (s *DomainStore) TagDomainName(domainName string, inputTags map[string]stri
 		return err
 	}
 	if domain.Tags == nil {
-		domain.Tags = []types.Tag{}
+		domain.Tags = []tags.Tag{}
 	}
 	domain.Tags = tags.Apply(domain.Tags, tags.MapToTags(inputTags))
 	return s.Put("domain#"+domainName, domain)
@@ -248,7 +247,7 @@ func (s *DomainStore) UntagDomainName(domainName string, tagKeys []string) error
 }
 
 // GetDomainNameTags returns tags for a domain name.
-func (s *DomainStore) GetDomainNameTags(domainName string) ([]types.Tag, error) {
+func (s *DomainStore) GetDomainNameTags(domainName string) ([]tags.Tag, error) {
 	domain, err := s.GetDomainName(domainName)
 	if err != nil {
 		return nil, err

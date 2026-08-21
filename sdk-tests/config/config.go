@@ -3,10 +3,10 @@ package config
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
@@ -17,9 +17,8 @@ const (
 )
 
 type AWSConfig struct {
-	Endpoint   string
-	Region     string
-	HTTPClient *http.Client
+	Endpoint string
+	Region   string
 }
 
 func LoadDefaultAWSConfig(cfg AWSConfig) (aws.Config, error) {
@@ -33,11 +32,6 @@ func LoadDefaultAWSConfig(cfg AWSConfig) (aws.Config, error) {
 		return aws.Endpoint{}, fmt.Errorf("endpoint not configured")
 	})
 
-	client := cfg.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 30 * time.Second}
-	}
-
 	return config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(cfg.Region),
 		config.WithEndpointResolverWithOptions(customResolver),
@@ -48,6 +42,6 @@ func LoadDefaultAWSConfig(cfg AWSConfig) (aws.Config, error) {
 				SessionToken:    DefaultSessionToken,
 			}, nil
 		})),
-		config.WithHTTPClient(client),
+		config.WithHTTPClient(http.NewBuildableClient().WithTimeout(30*time.Second)),
 	)
 }

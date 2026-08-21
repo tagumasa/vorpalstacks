@@ -5,8 +5,8 @@ import (
 
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 
+	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/ec2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ec2Stores is a thin wrapper for the admin handler's store access.

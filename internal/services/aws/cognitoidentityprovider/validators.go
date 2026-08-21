@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 // validators.go — input validation functions derived from Smithy model traits.
@@ -158,32 +160,73 @@ func validateCognitoResourceArn(arn string) error {
 }
 
 // validateCognitoTagKey validates a single tag key against the Smithy
-// TagKeysType length constraint [1, 128].
+// TagKeysType length constraint [1, 128] (counted in Unicode characters).
 func validateCognitoTagKey(key string) error {
-	if len(key) < 1 || len(key) > 128 {
+	if n := utf8.RuneCountInString(key); n < 1 || n > 128 {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Tag key length must be 1-128: got %d", len(key)))
+			fmt.Sprintf("Tag key length must be 1-128: got %d", n))
 	}
 	return nil
 }
 
 // validateCognitoTagValue validates a single tag value against the Smithy
-// TagValueType length constraint [0, 256].
+// TagValueType length constraint [0, 256] (counted in Unicode characters).
 func validateCognitoTagValue(value string) error {
-	if len(value) > 256 {
+	if n := utf8.RuneCountInString(value); n > 256 {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Tag value length must not exceed 256: got %d", len(value)))
+			fmt.Sprintf("Tag value length must not exceed 256: got %d", n))
 	}
 	return nil
 }
 
-// validateCognitoTags validates all keys and values in a tag map.
+// validateCognitoTags validates a tag map against the Cognito tag limits:
+// at most 50 tags per user pool or identity pool, keys of 1-128 characters,
+// values of at most 256 characters and the aws: key prefix reserved for AWS
+// use.
 func validateCognitoTags(tags map[string]string) error {
-	for k, v := range tags {
+	switch v, _ := tagutil.CheckStringTags(tags, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return cognitoTagKeyError(tags)
+	case tagutil.TagValueTooLong:
+		return cognitoTagValueError(tags)
+	case tagutil.ReservedTagKey:
+		return awserrors.NewInvalidParameterException(
+			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
+	}
+	return nil
+}
+
+// cognitoTagKeyError reports the first key outside the 1-128 range in the
+// validateCognitoTagKey message shape. Keys are walked in sorted order so
+// the reported offender is deterministic.
+func cognitoTagKeyError(tags map[string]string) error {
+	keys := make([]string, 0, len(tags))
+	for k := range tags {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
 		if err := validateCognitoTagKey(k); err != nil {
 			return err
 		}
-		if err := validateCognitoTagValue(v); err != nil {
+	}
+	return nil
+}
+
+// cognitoTagValueError reports the first value above 256 characters in the
+// validateCognitoTagValue message shape. Keys are walked in sorted order so
+// the reported offender is deterministic.
+func cognitoTagValueError(tags map[string]string) error {
+	keys := make([]string, 0, len(tags))
+	for k := range tags {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if err := validateCognitoTagValue(tags[k]); err != nil {
 			return err
 		}
 	}
@@ -200,16 +243,32 @@ func validateCognitoTagKeys(keys []string) error {
 	return nil
 }
 
-// validateCognitoTagsFromTypes validates []types.Tag — the slice form used by
-// the HTTP tag handler framework via the ValidateTagsFunc callback.
-func validateCognitoTagsFromTypes(tags []types.Tag) error {
-	for _, t := range tags {
-		if err := validateCognitoTagKey(t.Key); err != nil {
-			return err
+// validateCognitoTagsFromTypes validates []tagutil.Tag — the slice form used by
+// the HTTP tag handler framework via the ValidateTagsFunc callback. It applies
+// the same limits as the map form (count, aws: reservation, key and value
+// lengths) so both entry points enforce one contract.
+func validateCognitoTagsFromTypes(tagList []tagutil.Tag) error {
+	switch v, _ := tagutil.CheckTags(tagList, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		for _, t := range tagList {
+			if err := validateCognitoTagKey(t.Key); err != nil {
+				return err
+			}
 		}
-		if err := validateCognitoTagValue(t.Value); err != nil {
-			return err
+		return nil
+	case tagutil.TagValueTooLong:
+		for _, t := range tagList {
+			if err := validateCognitoTagValue(t.Value); err != nil {
+				return err
+			}
 		}
+		return nil
+	case tagutil.ReservedTagKey:
+		return awserrors.NewInvalidParameterException(
+			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
 	}
 	return nil
 }

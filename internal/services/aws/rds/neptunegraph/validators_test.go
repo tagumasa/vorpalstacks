@@ -475,3 +475,31 @@ func TestPlanCachePurgeByGraph(t *testing.T) {
 		t.Error("graph-B key3 should still exist after purge of graph-A")
 	}
 }
+
+// TestValidateTagsDeterministicReporting pins that tag violation messages
+// name the offender found by the shared checker (sorted key order, rune
+// counting) instead of re-deriving it from map iteration order.
+func TestValidateTagsDeterministicReporting(t *testing.T) {
+	// Both keys violate the pattern-free length rule differently: the
+	// 129-character ASCII key is the only length offender.
+	tags := map[string]string{
+		"zzz":                    "v",
+		strings.Repeat("a", 129): "v",
+	}
+	for i := 0; i < 100; i++ {
+		err := validateTags(tags)
+		if err == nil || !strings.Contains(err.Error(), strings.Repeat("a", 129)) {
+			t.Fatalf("validateTags = %v, want the 129-character key named as the offender", err)
+		}
+	}
+
+	// The pattern pass must also report the first offending key in sorted
+	// order, deterministically.
+	pattern := map[string]string{"b.d": "v", "a!d": "v"}
+	for i := 0; i < 100; i++ {
+		err := validateTags(pattern)
+		if err == nil || !strings.Contains(err.Error(), "a!d") {
+			t.Fatalf("validateTags = %v, want %q named as the pattern offender", err, "a!d")
+		}
+	}
+}

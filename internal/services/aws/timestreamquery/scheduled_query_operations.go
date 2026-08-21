@@ -11,7 +11,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
-	"vorpalstacks/internal/utils/aws/types"
 
 	"github.com/google/uuid"
 )
@@ -125,7 +124,7 @@ func (s *TimestreamQueryService) tagHandlerConfig(st *tsQueryStores) tagutil.Tag
 		return fn(ctx, resourceARN)
 	}
 
-	listTags := func(ctx context.Context, resourceARN string) ([]types.Tag, error) {
+	listTags := func(ctx context.Context, resourceARN string) ([]tagutil.Tag, error) {
 		name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
 		if name != "" {
 			if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
@@ -152,7 +151,7 @@ func (s *TimestreamQueryService) tagHandlerConfig(st *tsQueryStores) tagutil.Tag
 			CaseInsensitiveRes: true,
 		},
 		ResourceKey: func(rawKey string) string { return rawKey },
-		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			return dispatch(ctx, resourceKey, func(ctx context.Context, resourceARN string) error {
 				name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)
 				if name != "" {
@@ -170,10 +169,10 @@ func (s *TimestreamQueryService) tagHandlerConfig(st *tsQueryStores) tagutil.Tag
 				return st.dbStore.Untag(resourceARN, tagKeys)
 			})
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return listTags(ctx, resourceKey)
 		},
-		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagSlice []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.MapToResponse(tagutil.ToMap(tagSlice)),
 			}, nil
@@ -774,7 +773,7 @@ func (s *TimestreamQueryService) ListTagsForResource(ctx context.Context, reqCtx
 		if atoiErr != nil {
 			return nil, ErrValidationException
 		}
-		if err := validateMaxResultsTags(val); err != nil {
+		if err := validateMaxResultsInRange(val, "MaxResults", rangeMaxTagsForResourceResult); err != nil {
 			return nil, err
 		}
 		maxResults = val

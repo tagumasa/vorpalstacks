@@ -4,11 +4,11 @@ package dynamodb
 import (
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func tableBucketName(region string) string {

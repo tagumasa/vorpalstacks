@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // RestApi represents an API Gateway REST API.

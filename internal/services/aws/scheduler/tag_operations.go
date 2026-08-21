@@ -9,7 +9,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func schedulerMapError(err error) error {
@@ -43,7 +42,7 @@ func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandler
 			}
 			return nil
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			if err := store.TagFromSlice(resourceKey, tags); err != nil {
 				logs.Debug("Failed to tag resource", logs.String("arn", resourceKey), logs.String("error", err.Error()))
 				return ErrInternalServer
@@ -57,7 +56,7 @@ func schedulerTagConfig(store *schedulerstore.SchedulerStore) tagutil.TagHandler
 			}
 			return nil
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			tags, err := store.ListAsSlice(resourceKey)
 			if err != nil {
 				logs.Debug("Failed to list tags", logs.String("arn", resourceKey), logs.String("error", err.Error()))

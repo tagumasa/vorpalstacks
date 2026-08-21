@@ -3,43 +3,42 @@ package cloudtrail
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/common/tags"
+	tagutil "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
-// CloudTrail tag limits per AWS spec (Smithy model).
-const (
-	maxCloudTrailTags = 50
-	maxCTTagKeyLen    = 128
-	maxCTTagValueLen  = 256
-)
+// cloudTrailTagLimits applies the standard AWS tag bounds with the aws:
+// reservation compared case-sensitively, preserving the established
+// CloudTrail behaviour.
+var cloudTrailTagLimits = tagutil.TagLimits{
+	MaxCount:              tagutil.MaxTagsPerResource,
+	MinKeyLength:          1,
+	MaxKeyLength:          tagutil.MaxTagKeyLength,
+	MaxValueLength:        tagutil.MaxTagValueLength,
+	ReservedPrefix:        "aws:",
+	ReservedCaseSensitive: true,
+}
 
 // validateCloudTrailTags validates tag count, key length, value length, and
 // reserved prefix against AWS CloudTrail limits.
-func validateCloudTrailTags(tagList []types.Tag) error {
-	if len(tagList) > maxCloudTrailTags {
+func validateCloudTrailTags(tagList []tagutil.Tag) error {
+	switch v, _ := tagutil.CheckTags(tagList, cloudTrailTagLimits); v {
+	case tagutil.TooManyTags:
 		return awserrors.NewAWSError("TagsLimitExceededException",
-			fmt.Sprintf("Number of tags exceeds the limit of %d", maxCloudTrailTags), 400)
-	}
-	for _, t := range tagList {
-		if strings.HasPrefix(t.Key, "aws:") {
-			return awserrors.NewAWSError("InvalidTagKeyException",
-				"Tag keys starting with 'aws:' are reserved", 400)
-		}
-		if len(t.Key) < 1 || len(t.Key) > maxCTTagKeyLen {
-			return awserrors.NewAWSError("InvalidTagKeyException",
-				fmt.Sprintf("Tag key length must be between 1 and %d", maxCTTagKeyLen), 400)
-		}
-		if len(t.Value) > maxCTTagValueLen {
-			return awserrors.NewAWSError("InvalidTagValueException",
-				fmt.Sprintf("Tag value length must not exceed %d", maxCTTagValueLen), 400)
-		}
+			fmt.Sprintf("Number of tags exceeds the limit of %d", tagutil.MaxTagsPerResource), 400)
+	case tagutil.ReservedTagKey:
+		return awserrors.NewAWSError("InvalidTagKeyException",
+			"Tag keys starting with 'aws:' are reserved", 400)
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return awserrors.NewAWSError("InvalidTagKeyException",
+			fmt.Sprintf("Tag key length must be between 1 and %d", tagutil.MaxTagKeyLength), 400)
+	case tagutil.TagValueTooLong:
+		return awserrors.NewAWSError("InvalidTagValueException",
+			fmt.Sprintf("Tag value length must not exceed %d", tagutil.MaxTagValueLength), 400)
 	}
 	return nil
 }
@@ -47,43 +46,39 @@ func validateCloudTrailTags(tagList []types.Tag) error {
 // validateCloudTrailTagMap validates a tag map for count, size, and reserved
 // prefix limits.
 func validateCloudTrailTagMap(tagMap map[string]string) error {
-	if len(tagMap) > maxCloudTrailTags {
+	switch v, _ := tagutil.CheckStringTags(tagMap, cloudTrailTagLimits); v {
+	case tagutil.TooManyTags:
 		return awserrors.NewAWSError("TagsLimitExceededException",
-			fmt.Sprintf("Number of tags exceeds the limit of %d", maxCloudTrailTags), 400)
-	}
-	for k, v := range tagMap {
-		if strings.HasPrefix(k, "aws:") {
-			return awserrors.NewAWSError("InvalidTagKeyException",
-				"Tag keys starting with 'aws:' are reserved", 400)
-		}
-		if len(k) < 1 || len(k) > maxCTTagKeyLen {
-			return awserrors.NewAWSError("InvalidTagKeyException",
-				fmt.Sprintf("Tag key length must be between 1 and %d", maxCTTagKeyLen), 400)
-		}
-		if len(v) > maxCTTagValueLen {
-			return awserrors.NewAWSError("InvalidTagValueException",
-				fmt.Sprintf("Tag value length must not exceed %d", maxCTTagValueLen), 400)
-		}
+			fmt.Sprintf("Number of tags exceeds the limit of %d", tagutil.MaxTagsPerResource), 400)
+	case tagutil.ReservedTagKey:
+		return awserrors.NewAWSError("InvalidTagKeyException",
+			"Tag keys starting with 'aws:' are reserved", 400)
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return awserrors.NewAWSError("InvalidTagKeyException",
+			fmt.Sprintf("Tag key length must be between 1 and %d", tagutil.MaxTagKeyLength), 400)
+	case tagutil.TagValueTooLong:
+		return awserrors.NewAWSError("InvalidTagValueException",
+			fmt.Sprintf("Tag value length must not exceed %d", tagutil.MaxTagValueLength), 400)
 	}
 	return nil
 }
 
 func cloudTrailMapError(err error) error {
 	switch err.(type) {
-	case *tags.MissingResourceError:
+	case *tagutil.MissingResourceError:
 		return ErrInvalidParameter
-	case *tags.MissingTagsError:
+	case *tagutil.MissingTagsError:
 		return ErrInvalidParameter
-	case *tags.MissingTagKeysError:
+	case *tagutil.MissingTagKeysError:
 		return ErrInvalidParameter
 	}
 	return err
 }
 
-func cloudTrailTagConfig(store cloudtrailstore.CloudTrailStoreInterface, mapErr func(error) error, requireTagKeys bool) tags.TagHandlerConfig {
-	return tags.TagHandlerConfig{
-		Param: func() tags.TagOperationConfig {
-			c := tags.CloudTrailConfig
+func cloudTrailTagConfig(store cloudtrailstore.CloudTrailStoreInterface, mapErr func(error) error, requireTagKeys bool) tagutil.TagHandlerConfig {
+	return tagutil.TagHandlerConfig{
+		Param: func() tagutil.TagOperationConfig {
+			c := tagutil.CloudTrailConfig
 			c.RequireTagKeys = requireTagKeys
 			return c
 		}(),
@@ -101,31 +96,31 @@ func cloudTrailTagConfig(store cloudtrailstore.CloudTrailStoreInterface, mapErr 
 			}
 			return nil
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tag []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tag []tagutil.Tag) error {
 			if err := validateCloudTrailTags(tag); err != nil {
 				return err
 			}
-			return store.Tag(resourceKey, tags.ToMap(tag))
+			return store.Tag(resourceKey, tagutil.ToMap(tag))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.Untag(resourceKey, tagKeys)
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
-			keys := tags.ParseTagKeysAsSlice(params, "TagKeyList")
+			keys := tagutil.ParseTagKeysAsSlice(params, "TagKeyList")
 			if len(keys) > 0 {
 				return keys
 			}
-			return tags.ParseTagKeysWithKeyName(params, "TagsList", "Key")
+			return tagutil.ParseTagKeysWithKeyName(params, "TagsList", "Key")
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return store.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tag []types.Tag, rawKey string) (interface{}, error) {
+		FormatResponse: func(tag []tagutil.Tag, rawKey string) (interface{}, error) {
 			return map[string]interface{}{
 				"ResourceTagList": []map[string]interface{}{
 					{
 						"ResourceId": rawKey,
-						"TagsList":   tags.ToResponse(tag),
+						"TagsList":   tagutil.ToResponse(tag),
 					},
 				},
 			}, nil
@@ -143,7 +138,7 @@ func (s *CloudTrailService) AddTags(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
-	return tags.HandleTag(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, true))
+	return tagutil.HandleTag(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, true))
 }
 
 // RemoveTags removes the specified tags from a CloudTrail trail.
@@ -152,7 +147,7 @@ func (s *CloudTrailService) RemoveTags(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
-	return tags.HandleUntag(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, false))
+	return tagutil.HandleUntag(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, false))
 }
 
 // ListTags lists all tags assigned to a CloudTrail trail.
@@ -161,5 +156,5 @@ func (s *CloudTrailService) ListTags(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
-	return tags.HandleList(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, false))
+	return tagutil.HandleList(ctx, req, cloudTrailTagConfig(store, s.mapStoreError, false))
 }

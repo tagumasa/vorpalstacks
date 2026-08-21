@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 const loggingConfigBucketName = "waf_logging_configs"
@@ -115,7 +116,8 @@ func (s *LoggingStore) List(scope string, marker string, maxItems int) (*Logging
 // WAF scope. WAF ARNs embed the scope in the resource path (e.g.,
 // webacl/REGIONAL/<id> or webacl/CLOUDFRONT/<id>).
 func matchesScope(resourceArn, scope string) bool {
-	return strings.Contains(resourceArn, "/"+scope+"/")
+	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
+	return strings.Contains(resource, "/"+scope+"/")
 }
 
 // GetByResourceArn retrieves a logging configuration by resource ARN.

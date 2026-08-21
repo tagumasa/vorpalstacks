@@ -9,12 +9,13 @@ package iam
 
 import (
 	"errors"
+	"fmt"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -27,7 +28,7 @@ type CreateUserInput struct {
 	UserName               string
 	Path                   string
 	PermissionsBoundaryArn string
-	Tags                   []types.Tag
+	Tags                   []tags.Tag
 }
 
 // CreateRoleInput holds the parameters for creating an IAM role.
@@ -38,7 +39,7 @@ type CreateRoleInput struct {
 	Description              string
 	MaxSessionDuration       int
 	PermissionsBoundaryArn   string
-	Tags                     []types.Tag
+	Tags                     []tags.Tag
 }
 
 // CreateGroupInput holds the parameters for creating an IAM group.
@@ -53,7 +54,7 @@ type CreatePolicyInput struct {
 	Path           string
 	PolicyDocument string
 	Description    string
-	Tags           []types.Tag
+	Tags           []tags.Tag
 }
 
 // ---------------------------------------------------------------------------
@@ -132,10 +133,10 @@ func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleI
 
 	maxSessionDuration := input.MaxSessionDuration
 	if maxSessionDuration == 0 {
-		maxSessionDuration = 3600
+		maxSessionDuration = defaultRoleSessionDuration
 	}
 	if !validateRoleMaxSessionDuration(maxSessionDuration) {
-		return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
+		return nil, NewInvalidInputError("MaxSessionDuration", fmt.Sprintf("must be between %d and %d seconds", minRoleSessionDuration, maxRoleSessionDuration))
 	}
 
 	if err := validateNewTags(input.Tags); err != nil {
@@ -277,7 +278,7 @@ func (s *IAMService) createPolicyCore(store *iamstore.IAMStore, input *CreatePol
 		return nil, ErrMalformedPolicyDocument
 	}
 
-	if len(input.Description) > 1000 {
+	if utf8.RuneCountInString(input.Description) > maxPolicyDescriptionLength {
 		return nil, NewInvalidInputError("Description", "must be 0 to 1000 characters")
 	}
 
@@ -457,7 +458,7 @@ func (s *IAMService) updateRoleCore(store *iamstore.IAMStore, input *UpdateRoleI
 	maxSessionDuration := input.MaxSessionDuration
 	if maxSessionDuration > 0 {
 		if !validateRoleMaxSessionDuration(maxSessionDuration) {
-			return nil, NewInvalidInputError("MaxSessionDuration", "must be between 3600 and 43200 seconds")
+			return nil, NewInvalidInputError("MaxSessionDuration", fmt.Sprintf("must be between %d and %d seconds", minRoleSessionDuration, maxRoleSessionDuration))
 		}
 	}
 

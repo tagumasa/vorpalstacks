@@ -9,10 +9,10 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	svcerrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/iam"
 	"vorpalstacks/internal/pb/aws/iam/iamconnect"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const defaultMaxItemsValue = 100

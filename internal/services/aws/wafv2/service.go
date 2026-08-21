@@ -8,11 +8,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
+	"vorpalstacks/internal/common/defaults"
 
 	"github.com/google/uuid"
-	svccommon "vorpalstacks/internal/common"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -20,7 +20,6 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	"vorpalstacks/internal/utils/aws/arn"
-	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 var wafv2GlobalAssocKey struct{}
@@ -219,7 +218,7 @@ func (s *WAFv2Service) CheckCapacity(ctx context.Context, reqCtx *request.Reques
 }
 
 func isCloudFrontResource(resourceArn string) bool {
-	return strings.Contains(resourceArn, ":cloudfront:")
+	return arn.GetServiceFromARN(resourceArn) == "cloudfront"
 }
 
 func (s *WAFv2Service) associationStoreFor(reqCtx *request.RequestContext, resourceArn string) (*wafstore.WebACLAssociationStore, error) {
@@ -280,7 +279,7 @@ func (s *WAFv2Service) allAssociationStores(reqCtx *request.RequestContext) ([]*
 // GetStoresForRegion and the global-scope store through the storage
 // manager directly, with the same sync.Map caching as the HTTP path.
 func (s *WAFv2Service) allAssociationStoresForConnect(header http.Header) ([]*wafstore.WebACLAssociationStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	stores, err := s.GetStoresForRegion(region)
 	if err != nil {
 		return nil, err

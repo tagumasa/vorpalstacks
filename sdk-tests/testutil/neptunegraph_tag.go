@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptunegraph"
@@ -25,6 +26,49 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 			},
 		})
 		return err
+	}))
+
+	results = append(results, r.RunTest("neptunegraph", "TagResource_ReservedPrefixRejected", func() error {
+		if tc.graphARN == "" {
+			return fmt.Errorf("no graph ARN")
+		}
+		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
+			ResourceArn: aws.String(tc.graphARN),
+			Tags: map[string]string{
+				"aws:reserved": "v",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for aws:-prefixed tag key")
+		}
+		return nil
+	}))
+
+	// Tag values are limited to 256 Unicode characters, not bytes.
+	results = append(results, r.RunTest("neptunegraph", "TagResource_MultibyteTagValueAccepted", func() error {
+		if tc.graphARN == "" {
+			return fmt.Errorf("no graph ARN")
+		}
+		value := strings.Repeat("\u65e5", 200)
+		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
+			ResourceArn: aws.String(tc.graphARN),
+			Tags: map[string]string{
+				"MultibyteValue": value,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("200-character multibyte tag value rejected: %w", err)
+		}
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{
+			ResourceArn: aws.String(tc.graphARN),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Tags["MultibyteValue"] != value {
+			return fmt.Errorf("multibyte tag value not stored faithfully: %q", resp.Tags["MultibyteValue"])
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListTagsForResource", func() error {

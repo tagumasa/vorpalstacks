@@ -7,7 +7,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // taggableResource holds the kind and identifiers extracted from a taggable
@@ -19,11 +19,14 @@ type taggableResource struct {
 }
 
 // parseTaggableArn resolves a resource ARN into its kind and identifiers.
-// This is the single source of truth for ARN-to-resource mapping in tag
-// operations.
+// The ARN resource field carries the API Gateway resource path
+// (/restapis/<id>/stages/<stage>, /usageplans/<id>, /apikeys/<id>,
+// /domainnames/<name>, /restapis/<id>). This is the single source of
+// truth for ARN-to-resource mapping in tag operations.
 func parseTaggableArn(arnStr string) (taggableResource, error) {
+	_, _, _, _, resource := svcarn.SplitARN(arnStr)
 	switch {
-	case strings.Contains(arnStr, "/stages/"):
+	case strings.Contains(resource, "/stages/"):
 		apiId := extractResourceFromArn(arnStr, "/restapis/")
 		stageName := extractResourceFromArn(arnStr, "/stages/")
 		if apiId == "" || stageName == "" {
@@ -31,28 +34,28 @@ func parseTaggableArn(arnStr string) (taggableResource, error) {
 		}
 		return taggableResource{kind: "stage", id1: apiId, id2: stageName}, nil
 
-	case strings.Contains(arnStr, "/usageplans/"):
+	case strings.Contains(resource, "/usageplans/"):
 		usagePlanId := extractResourceFromArn(arnStr, "/usageplans/")
 		if usagePlanId == "" {
 			return taggableResource{}, NewBadRequestException("invalid usage plan ARN")
 		}
 		return taggableResource{kind: "usageplan", id1: usagePlanId}, nil
 
-	case strings.Contains(arnStr, "/apikeys/"):
+	case strings.Contains(resource, "/apikeys/"):
 		apiKeyId := extractResourceFromArn(arnStr, "/apikeys/")
 		if apiKeyId == "" {
 			return taggableResource{}, NewBadRequestException("invalid API key ARN")
 		}
 		return taggableResource{kind: "apikey", id1: apiKeyId}, nil
 
-	case strings.Contains(arnStr, "/domainnames/"):
+	case strings.Contains(resource, "/domainnames/"):
 		domainName := extractResourceFromArn(arnStr, "/domainnames/")
 		if domainName == "" {
 			return taggableResource{}, NewBadRequestException("invalid domain name ARN")
 		}
 		return taggableResource{kind: "domainname", id1: domainName}, nil
 
-	case strings.Contains(arnStr, "/restapis/"):
+	case strings.Contains(resource, "/restapis/"):
 		apiId := extractResourceFromArn(arnStr, "/restapis/")
 		if apiId == "" {
 			return taggableResource{}, NewBadRequestException("invalid REST API ARN")
@@ -110,7 +113,7 @@ func (s *APIGatewayService) untagResource(stores *apiGatewayStores, arnStr strin
 
 // getResourceTags dispatches get-tags operations based on the resource ARN
 // pattern.
-func (s *APIGatewayService) getResourceTags(stores *apiGatewayStores, arnStr string) ([]types.Tag, error) {
+func (s *APIGatewayService) getResourceTags(stores *apiGatewayStores, arnStr string) ([]tagutil.Tag, error) {
 	r, err := parseTaggableArn(arnStr)
 	if err != nil {
 		return nil, err
@@ -172,22 +175,22 @@ func (s *APIGatewayService) apiGatewayTagConfig(stores *apiGatewayStores, req *r
 			RequireResource:  true,
 			UseQueryFallback: true,
 		},
-		ParseTags: func(_ map[string]interface{}) []types.Tag {
+		ParseTags: func(_ map[string]interface{}) []tagutil.Tag {
 			return tagutil.ParseTagsWithQueryFallback(req.Parameters, "tags")
 		},
 		ParseTagKeys: func(_ map[string]interface{}) []string {
 			return tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "tagKeys")
 		},
-		TagFunc: func(_ context.Context, resourceKey string, t []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, t []tagutil.Tag) error {
 			return s.tagResource(stores, resourceKey, tagutil.ToMap(t))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return s.untagResource(stores, resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return s.getResourceTags(stores, resourceKey)
 		},
-		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"tags": tagutil.ToMap(tags),
 			}, nil

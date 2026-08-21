@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func cognitoIdentityMapError(err error) error {
@@ -25,7 +24,7 @@ func cognitoIdentityMapError(err error) error {
 func cognitoIdentityTagConfig(store cognitoidentitystore.CognitoIdentityStoreInterface) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			if err := store.Tag(resourceKey, tagutil.ToMap(tags)); err != nil {
 				return ErrInternalError
 			}
@@ -37,14 +36,14 @@ func cognitoIdentityTagConfig(store cognitoidentitystore.CognitoIdentityStoreInt
 			}
 			return nil
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			m, err := store.List(resourceKey)
 			if err != nil {
 				return nil, ErrInternalError
 			}
 			return tagutil.MapToTags(m), nil
 		},
-		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{"Tags": tagutil.ToMap(tags)}, nil
 		},
 		EmptyResponse: func() (interface{}, error) {

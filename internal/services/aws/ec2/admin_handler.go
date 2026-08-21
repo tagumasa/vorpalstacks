@@ -3,10 +3,10 @@ package ec2
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -36,7 +36,7 @@ func NewConnectHandler(svc *EC2Service) (string, http.Handler) {
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*ec2Stores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (h *AdminHandler) CreateSubnet(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	result, err := h.service.createSubnetCore(stores.store, CreateSubnetInput{
 		VpcId:            req.Msg.GetVpcid(),
 		CidrBlock:        req.Msg.GetCidrblock(),
@@ -179,7 +179,7 @@ func (h *AdminHandler) DeleteSubnet(ctx context.Context, req *connect.Request[pb
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	if err := h.service.deleteSubnetCore(ctx, stores.store, region, req.Msg.GetSubnetid()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -193,7 +193,7 @@ func (h *AdminHandler) CreateSecurityGroup(ctx context.Context, req *connect.Req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	result, err := h.service.createSecurityGroupCore(stores.store, CreateSecurityGroupInput{
 		GroupName:   req.Msg.GetGroupname(),
 		Description: req.Msg.GetDescription(),
@@ -250,7 +250,7 @@ func (h *AdminHandler) DeleteSecurityGroup(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	if err := h.service.deleteSecurityGroupCore(ctx, stores.store, region, req.Msg.GetGroupid()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

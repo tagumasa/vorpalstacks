@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"vorpalstacks/internal/common/iotutil"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
 
 type Effect string

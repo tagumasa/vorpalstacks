@@ -1,8 +1,8 @@
 package apigateway
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // RestApiStoreInterface defines operations for managing REST APIs.

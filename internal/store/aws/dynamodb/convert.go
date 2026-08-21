@@ -2,8 +2,8 @@ package dynamodb
 
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
+	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // GlobalTable conversion

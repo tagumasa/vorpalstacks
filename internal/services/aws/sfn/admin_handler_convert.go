@@ -2,8 +2,8 @@ package sfn
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 
 	pb "vorpalstacks/internal/pb/aws/sfn"
@@ -15,7 +15,7 @@ import (
 
 // getStore resolves the per-region StepFunctionStore from request headers.
 func (h *AdminHandler) getStore(headers http.Header) (*sfnstore.StepFunctionStore, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.getStoreForRegion(region)
 }
 

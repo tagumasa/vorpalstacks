@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	wafstore "vorpalstacks/internal/store/aws/waf"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // AssociateWebACL associates a WebACL with the specified resource ARN.
@@ -186,26 +187,34 @@ func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request
 }
 
 // matchesResourceType checks whether a resource ARN matches the given
-// AWS ResourceType enum value. Returns false for unrecognised types
-// (fail-closed: unknown types do not match any resource).
+// AWS ResourceType enum value, by comparing the ARN's service namespace
+// field (arn:<partition>:<service>:<region>:<account>:<resource>) against
+// the namespace that owns each resource type. App Runner services live in
+// the apprunner namespace and AgentCore gateways in the bedrock-agentcore
+// namespace (AWS General Reference, ARN service namespaces). Verified
+// Access instances share the ec2 namespace with other EC2 resources, so
+// they additionally require a verified-access resource path. Returns false
+// for unrecognised types (fail-closed: unknown types do not match any
+// resource).
 func matchesResourceType(resourceArn, resourceType string) bool {
+	_, service, _, _, resource := svcarn.SplitARN(resourceArn)
 	switch resourceType {
 	case "APPLICATION_LOAD_BALANCER":
-		return strings.Contains(resourceArn, ":elasticloadbalancing:")
+		return service == "elasticloadbalancing"
 	case "API_GATEWAY":
-		return strings.Contains(resourceArn, ":apigateway:")
+		return service == "apigateway"
 	case "APPSYNC":
-		return strings.Contains(resourceArn, ":appsync:")
+		return service == "appsync"
 	case "COGNITO_USER_POOL":
-		return strings.Contains(resourceArn, ":cognito-idp:")
+		return service == "cognito-idp"
 	case "APP_RUNNER_SERVICE":
-		return strings.Contains(resourceArn, ":runner:")
+		return service == "apprunner"
 	case "VERIFIED_ACCESS_INSTANCE":
-		return strings.Contains(resourceArn, ":ec2:") && strings.Contains(resourceArn, "verified-access")
+		return service == "ec2" && strings.Contains(resource, "verified-access")
 	case "AMPLIFY":
-		return strings.Contains(resourceArn, ":amplify:")
+		return service == "amplify"
 	case "AGENTCORE_GATEWAY":
-		return strings.Contains(resourceArn, ":agentcore:")
+		return service == "bedrock-agentcore"
 	default:
 		return false
 	}

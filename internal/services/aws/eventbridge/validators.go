@@ -1,10 +1,13 @@
 package eventbridge
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // Pattern constants extracted from the Smithy model
@@ -138,25 +141,31 @@ func validateKmsKeyIdentifier(arn string) bool {
 	if arn == "" {
 		return true
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) < 4 {
-		return false
-	}
-	if !strings.HasPrefix(parts[1], "aws") {
-		return false
-	}
-	return parts[2] == "kms"
+	partition, service, _, _, _ := svcarn.SplitARN(arn)
+	return strings.HasPrefix(partition, "aws") && service == "kms"
 }
 
 // ---------------------------------------------------------------------------
 // Additional length validators (Smithy @length traits)
 // ---------------------------------------------------------------------------
 
+// maxDescriptionLength is the Smithy @length(0,512) bound shared by
+// RuleDescription, EventBusDescription, ArchiveDescription,
+// ConnectionDescription, ApiDestinationDescription and ReplayDescription.
+const maxDescriptionLength = 512
+
 // validateDescription enforces the Smithy @length(0,512) trait shared by
 // RuleDescription, EventBusDescription, ArchiveDescription,
 // ConnectionDescription, ApiDestinationDescription and ReplayDescription.
 func validateDescription(s string) bool {
-	return len(s) <= 512
+	return len(s) <= maxDescriptionLength
+}
+
+// errDescriptionTooLong is the validation error for a description member
+// exceeding the shared @length(0,512) bound.
+func errDescriptionTooLong() error {
+	return awserrors.NewValidationException(
+		fmt.Sprintf("Description must be at most %d characters", maxDescriptionLength))
 }
 
 // validateEventPatternLength enforces the Smithy EventPattern @length(0,4096).

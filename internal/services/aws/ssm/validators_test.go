@@ -63,6 +63,20 @@ func TestNormalisePutParameter_DescriptionLength(t *testing.T) {
 	}
 }
 
+// TestNormalisePutParameter_DescriptionUnicodeLength pins that the
+// ParameterDescription cap is counted in Unicode characters per the
+// Smithy @length trait: 1024 CJK characters (3072 bytes) are in range.
+func TestNormalisePutParameter_DescriptionUnicodeLength(t *testing.T) {
+	cjk := strings.Repeat("\u65e5", 1024)
+	if _, err := normalisePutParameter(ParameterPutFields{
+		Name:        "p",
+		Value:       "v",
+		Description: cjk,
+	}); err != nil {
+		t.Fatalf("1024-character CJK description rejected: %v", err)
+	}
+}
+
 // TestFiltersFromList_FailClosed verifies that malformed ParameterFilters
 // input is rejected instead of being silently dropped (a dropped filter
 // would return unfiltered results).

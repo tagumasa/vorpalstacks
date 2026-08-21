@@ -8,14 +8,15 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/proto"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/storage"
 )
 
 // DefaultMaxItems is the default maximum number of items for paginated list operations.
-const DefaultMaxItems = 100
+const DefaultMaxItems = pagination.DefaultMaxItems
 
 // AbsoluteMaxItems is the hard upper limit for paginated list operations.
-const AbsoluteMaxItems = 1000
+const AbsoluteMaxItems = pagination.AbsoluteMaxItems
 
 // errStopIteration is a sentinel error used by pageIterator to stop ForEach
 // when the page limit is reached without signalling a real error.

@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateCachePolicy creates a cache policy.
@@ -448,7 +447,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
 	}
 
-	var tags []types.Tag
+	var tags []tagutil.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
 	if tagsMap != nil {
 		tags = parseXMLTags(tagsMap)
@@ -456,7 +455,7 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 	if len(tags) == 0 {
 		parsedTags := tagutil.ParseTags(req.Parameters, "Tags")
 		for _, t := range parsedTags {
-			tags = append(tags, types.Tag(t))
+			tags = append(tags, tagutil.Tag(t))
 		}
 	}
 	if len(tags) == 0 {

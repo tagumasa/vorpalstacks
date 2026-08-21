@@ -2,9 +2,9 @@ package kinesis
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/kinesis"
@@ -20,7 +20,7 @@ import (
 // getStores returns the KinesisStore for the region specified in the
 // request headers.
 func (h *AdminHandler) getStores(headers http.Header) (*kinesisstore.KinesisStore, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.getStoreForRegion(region)
 }
 

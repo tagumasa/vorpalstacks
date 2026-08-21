@@ -3,9 +3,9 @@ package iam
 import (
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const samlProviderBucketName = "iam_saml_providers"

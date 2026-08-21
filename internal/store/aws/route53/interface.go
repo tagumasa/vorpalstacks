@@ -1,7 +1,7 @@
 package route53
 
 import (
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // HostedZoneStoreInterface defines operations for managing Route 53 hosted zones.

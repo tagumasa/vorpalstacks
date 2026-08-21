@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/tags"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	"vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func appsyncMapError(err error) error {
@@ -37,7 +36,7 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 			RequireResource:  true,
 			UseQueryFallback: false,
 		},
-		ParseTags: func(_ map[string]interface{}) []types.Tag {
+		ParseTags: func(_ map[string]interface{}) []tags.Tag {
 			m, err := parseTags(req.Parameters)
 			if err != nil {
 				return nil
@@ -47,20 +46,20 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 		ParseTagKeys: func(_ map[string]interface{}) []string {
 			return parseTagKeysFromQuery(req)
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tag []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tag []tags.Tag) error {
 			return store.TagStore.Tag(resourceKey, tags.ToMap(tag))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.TagStore.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tags.Tag, error) {
 			m, err := store.TagStore.List(resourceKey)
 			if err != nil {
 				return nil, err
 			}
 			return tags.MapToTags(m), nil
 		},
-		FormatResponse: func(tag []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tag []tags.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"tags": tags.ToMap(tag),
 			}, nil
@@ -69,7 +68,7 @@ func appsyncTagConfig(store *appsyncstore.AppSyncStore, req *request.ParsedReque
 			return map[string]interface{}{}, nil
 		},
 		MapError: appsyncMapError,
-		ValidateTagsFunc: func(t []types.Tag) error {
+		ValidateTagsFunc: func(t []tags.Tag) error {
 			if err := tags.ValidateTags(t); err != nil {
 				return NewBadRequestException(err.Error())
 			}

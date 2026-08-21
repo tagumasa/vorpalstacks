@@ -862,9 +862,9 @@ func (s *StepFunctionStore) buildVersionARN(smArn string, version int64) string 
 }
 
 func (s *StepFunctionStore) buildAliasARN(smArn, aliasName string) string {
-	parts := strings.Split(smArn, ":")
-	if len(parts) >= 5 {
-		return svcarn.NewARNBuilder(parts[4], parts[3]).StepFunctions().StateMachineAlias(aliasName)
+	_, _, region, account, _ := svcarn.SplitARN(smArn)
+	if region != "" && account != "" {
+		return svcarn.NewARNBuilder(account, region).StepFunctions().StateMachineAlias(aliasName)
 	}
 	return smArn + ":" + aliasName
 }

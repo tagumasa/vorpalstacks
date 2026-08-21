@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TagHandlerConfig configures the handler framework for a single service's
@@ -23,7 +22,7 @@ type TagHandlerConfig struct {
 
 	// ParseTags overrides tag parsing from request parameters.
 	// If nil, GetTags(req.Parameters, Param) is used.
-	ParseTags func(params map[string]interface{}) []types.Tag
+	ParseTags func(params map[string]interface{}) []Tag
 
 	// ParseTagKeys overrides tag-key parsing from request parameters.
 	// If nil, GetTagKeys(req.Parameters, Param) is used.
@@ -31,18 +30,18 @@ type TagHandlerConfig struct {
 
 	// TagFunc tags a resource. Receives the (possibly transformed) resource
 	// key and the parsed tags. Must call the underlying TagStore.
-	TagFunc func(ctx context.Context, resourceKey string, tags []types.Tag) error
+	TagFunc func(ctx context.Context, resourceKey string, tags []Tag) error
 
 	// UntagFunc untags a resource. Receives the resource key and tag keys.
 	UntagFunc func(ctx context.Context, resourceKey string, tagKeys []string) error
 
-	// ListFunc lists tags for a resource. Returns []types.Tag.
-	ListFunc func(ctx context.Context, resourceKey string) ([]types.Tag, error)
+	// ListFunc lists tags for a resource. Returns []Tag.
+	ListFunc func(ctx context.Context, resourceKey string) ([]Tag, error)
 
 	// FormatResponse builds the response envelope for ListTags.
-	// Receives []types.Tag and the raw resource key (before ResourceKey transform).
+	// Receives []Tag and the raw resource key (before ResourceKey transform).
 	// If nil, returns {"<TagsParam>": ToResponse(tags)}.
-	FormatResponse func(tags []types.Tag, rawResourceKey string) (interface{}, error)
+	FormatResponse func(tags []Tag, rawResourceKey string) (interface{}, error)
 
 	// ValidateResource is called before tag/untag/list operations.
 	// Receives the raw resource key. Return an error to reject the request.
@@ -62,7 +61,7 @@ type TagHandlerConfig struct {
 	// If nil, no tag-set validation is performed.
 	// Use tags.ValidateTags for the standard AWS constraints (50 limit,
 	// aws: prefix, key/value length).
-	ValidateTagsFunc func(tags []types.Tag) error
+	ValidateTagsFunc func(tags []Tag) error
 
 	// MapError maps handler errors to service-specific errors.
 	// Called on any non-nil error returned by the handler.
@@ -95,7 +94,7 @@ func HandleTag(ctx context.Context, req *request.ParsedRequest, cfg TagHandlerCo
 		}
 	}
 
-	var tags []types.Tag
+	var tags []Tag
 	if cfg.ParseTags != nil {
 		tags = cfg.ParseTags(req.Parameters)
 	} else {
@@ -247,8 +246,8 @@ func (e *MissingTagKeysError) Error() string {
 	return e.Param + " is required"
 }
 
-// SliceTagsToKeys extracts keys from a []types.Tag as []string.
-func SliceTagsToKeys(tags []types.Tag) []string {
+// SliceTagsToKeys extracts keys from a []Tag as []string.
+func SliceTagsToKeys(tags []Tag) []string {
 	keys := make([]string, len(tags))
 	for i, t := range tags {
 		keys[i] = t.Key

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const maxCopyObjectSize int64 = 5 * 1024 * 1024 * 1024

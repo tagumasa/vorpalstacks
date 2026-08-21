@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/crypto"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -458,7 +457,7 @@ var mfaDeviceTagOps = tagOps[*iamstore.VirtualMFADevice]{
 	notFoundFn: func(n string) error { return NewNoSuchMFADeviceError(n) },
 	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.VirtualMFADevice, error) { return s.MFADevices().Get(n) },
 	putFn:      func(s *iamstore.IAMStore, r *iamstore.VirtualMFADevice) error { return s.MFADevices().Put(r) },
-	tagsFn:     func(r *iamstore.VirtualMFADevice) *[]types.Tag { return &r.Tags },
+	tagsFn:     func(r *iamstore.VirtualMFADevice) *[]tags.Tag { return &r.Tags },
 }
 
 // TagMFADevice adds tags to a virtual MFA device.

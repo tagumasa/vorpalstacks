@@ -294,6 +294,32 @@ func (r *TestRunner) cognitoPoolCoreTests(ctx context.Context, client *cognitoid
 		return nil
 	}))
 
+	results = append(results, r.RunTest("cognito", "TagResource_ReservedPrefixRejected", func() error {
+		newPoolName := fmt.Sprintf("test-pool-tagres-%d", time.Now().UnixNano())
+		newPool, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(newPoolName),
+		})
+		if err != nil {
+			return err
+		}
+		if newPool.UserPool == nil || newPool.UserPool.Arn == nil {
+			return fmt.Errorf("new pool Arn is nil")
+		}
+		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: newPool.UserPool.Id,
+		})
+		_, err = client.TagResource(ctx, &cognitoidentityprovider.TagResourceInput{
+			ResourceArn: newPool.UserPool.Arn,
+			Tags: map[string]string{
+				"aws:reserved": "v",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for aws:-prefixed tag key")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("cognito", "ListTagsForResource", func() error {
 		newPoolName := fmt.Sprintf("test-pool-listtags-%d", time.Now().UnixNano())
 		newPool, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{

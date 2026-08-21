@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ApiKeyInput is the transport-agnostic input for creating an API key.

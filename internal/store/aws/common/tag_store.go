@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const indexSeparator = "\x00"

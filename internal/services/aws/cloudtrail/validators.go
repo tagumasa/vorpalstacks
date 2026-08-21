@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"vorpalstacks/internal/common/bucketname"
 	awserrors "vorpalstacks/internal/common/errors"
 )
 
@@ -15,11 +16,6 @@ import (
 // letters (a-z, A-Z), numbers (0-9), periods (.), underscores (_), or dashes
 // (-), must start with a letter or number, between 3 and 128 characters."
 var trailNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{2,127}$`)
-
-// s3BucketNamePattern validates S3 bucket names per AWS docs: 3-63 characters,
-// lowercase letters, numbers, hyphens, and periods; must start and end with a
-// letter or number.
-var s3BucketNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
 
 // edsNamePattern matches the Smithy model constraint for EventDataStoreName:
 // ^[a-zA-Z0-9._\-]+$, length 3-128.
@@ -118,15 +114,12 @@ func validateTrailName(name string) error {
 	return nil
 }
 
-// validateS3BucketName validates an S3 bucket name against AWS docs constraints.
+// validateS3BucketName validates an S3 bucket name against the AWS
+// general-purpose bucket naming rules.
 func validateS3BucketName(name string) error {
-	if len(name) < 3 || len(name) > 63 {
+	if !bucketname.Validate(name) {
 		return awserrors.NewAWSError("InvalidS3BucketNameException",
-			"S3 bucket name must be between 3 and 63 characters", http.StatusBadRequest)
-	}
-	if !s3BucketNamePattern.MatchString(name) {
-		return awserrors.NewAWSError("InvalidS3BucketNameException",
-			"S3 bucket name must contain only lowercase letters, numbers, hyphens, and periods, and must start and end with a letter or number",
+			"S3 bucket name must be 3-63 characters of lowercase letters, numbers, hyphens and periods, must start and end with a letter or number, must not contain adjacent dots or dot-hyphen pairs, must not look like an IP address, and must not use a reserved prefix or suffix",
 			http.StatusBadRequest)
 	}
 	return nil

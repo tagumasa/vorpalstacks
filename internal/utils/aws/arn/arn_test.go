@@ -151,6 +151,47 @@ func TestSplitARN(t *testing.T) {
 			wantAcct: "",
 			wantRes:  "",
 		},
+		{
+			// The splitter is deliberately permissive: fewer than six
+			// components yield all-empty fields rather than an error, so
+			// callers reject through their own validation.
+			name:     "five components",
+			arn:      "arn:aws:s3:us-east-1:",
+			wantPart: "",
+			wantServ: "",
+			wantReg:  "",
+			wantAcct: "",
+			wantRes:  "",
+		},
+		{
+			name:     "six components without arn prefix",
+			arn:      "arnx:aws:s3:us-east-1:123456789012:bucket",
+			wantPart: "",
+			wantServ: "",
+			wantReg:  "",
+			wantAcct: "",
+			wantRes:  "",
+		},
+		{
+			name:     "partition passthrough",
+			arn:      "arn:aws-cn:s3:cn-north-1:123456789012:bucket",
+			wantPart: "aws-cn",
+			wantServ: "s3",
+			wantReg:  "cn-north-1",
+			wantAcct: "123456789012",
+			wantRes:  "bucket",
+		},
+		{
+			// Step Functions version ARNs keep the numeric qualifier in
+			// the resource part.
+			name:     "qualified resource with colon",
+			arn:      "arn:aws:states:us-east-1:123456789012:stateMachine:MySM:3",
+			wantPart: "aws",
+			wantServ: "states",
+			wantReg:  "us-east-1",
+			wantAcct: "123456789012",
+			wantRes:  "stateMachine:MySM:3",
+		},
 	}
 
 	for _, tt := range tests {
@@ -970,6 +1011,44 @@ func TestRDSBuilderColonSeparator(t *testing.T) {
 	for _, c := range cases {
 		if c.got != c.want {
 			t.Errorf("RDSBuilder.%s = %q, want %q", c.kind, c.got, c.want)
+		}
+	}
+}
+
+// TestIsARNServiceFieldMatching pins the service-field semantics of the
+// Is*ARN predicates: they compare the ARN service namespace field, so a
+// bare namespace-like substring outside a well-formed ARN never matches.
+func TestIsARNServiceFieldMatching(t *testing.T) {
+	cases := []struct {
+		arn  string
+		want string // expected matching service namespace, "" for none
+	}{
+		{"arn:aws:lambda:us-east-1:123456789012:function:my-function", "lambda"},
+		{"arn:aws:kinesis:us-east-1:123456789012:stream/my-stream", "kinesis"},
+		{"arn:aws:sqs:us-east-1:123456789012:queue-name", "sqs"},
+		{"arn:aws:sns:us-east-1:123456789012:topic-name", "sns"},
+		{"arn:aws:events:us-east-1:123456789012:event-bus/default", "events"},
+		{"arn:aws:states:us-east-1:123456789012:stateMachine:MySM", "states"},
+		{"arn:aws:s3:::my-bucket", "s3"},
+		{"lambda:my-function", ""},
+		{"states:MySM", ""},
+		{"not:lambda:an:arn", ""},
+		{"", ""},
+	}
+	predicates := map[string]func(string) bool{
+		"lambda":  IsLambdaARN,
+		"kinesis": IsKinesisARN,
+		"sqs":     IsSQSARN,
+		"sns":     IsSNSARN,
+		"events":  IsEventBridgeARN,
+		"states":  IsStateMachineARN,
+	}
+	for _, c := range cases {
+		for service, is := range predicates {
+			want := c.want == service
+			if got := is(c.arn); got != want {
+				t.Errorf("service %q predicate(%q) = %v, want %v", service, c.arn, got, want)
+			}
 		}
 	}
 }

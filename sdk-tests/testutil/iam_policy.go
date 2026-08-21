@@ -913,5 +913,32 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	// The policyDescriptionType bound is a Smithy @length trait counted in
+	// Unicode characters; an 800-character CJK description is 2400 bytes
+	// but must be accepted.
+	results = append(results, r.RunTest("iam", "CreatePolicy_DescriptionMultibyteAccepted", func() error {
+		name := tc.policy + "-mb-desc"
+		desc := strings.Repeat("\u65e5", 800)
+		resp, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
+			PolicyName:     aws.String(name),
+			PolicyDocument: aws.String(s3FullAccessPolicy),
+			Description:    aws.String(desc),
+		})
+		if err != nil {
+			return fmt.Errorf("create with multibyte description: %v", err)
+		}
+		arn := aws.ToString(resp.Policy.Arn)
+		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
+
+		getResp, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(arn)})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(getResp.Policy.Description) != desc {
+			return fmt.Errorf("multibyte description not persisted faithfully")
+		}
+		return nil
+	}))
+
 	return results
 }

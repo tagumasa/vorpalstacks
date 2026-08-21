@@ -3,10 +3,10 @@ package cloudtrail
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/cloudtrail"
@@ -32,7 +32,7 @@ func NewAdminHandler(svc *CloudTrailService) *AdminHandler {
 }
 
 func (h *AdminHandler) getStoreFromHeader(header http.Header) (StoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 
@@ -81,7 +81,7 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 		CloudWatchLogsLogGroupARN: req.Msg.GetCloudwatchlogsloggrouparn(),
 		CloudWatchLogsRoleARN:     req.Msg.GetCloudwatchlogsrolearn(),
 		KMSKeyID:                  req.Msg.GetKmskeyid(),
-		Region:                    svccommon.GetRegionFromHeader(req.Header()),
+		Region:                    defaults.GetRegionFromHeader(req.Header()),
 	}
 	if v := req.Msg.Includeglobalserviceevents; v != nil {
 		in.IncludeGlobalServiceEvents = v

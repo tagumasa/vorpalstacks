@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/ptrutil"
 )
 

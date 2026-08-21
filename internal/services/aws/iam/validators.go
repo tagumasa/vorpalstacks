@@ -6,9 +6,11 @@ import (
 	"regexp"
 	"strconv"
 	"unicode"
+	"unicode/utf8"
+
+	tagutil "vorpalstacks/internal/common/tags"
 
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -40,7 +42,7 @@ var accountAliasPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
 // tagKeyPattern validates tag keys. Per Smithy tagKeyType: length 1-128,
 // pattern ^[\p{L}\p{Z}\p{N}_.:/=+\-@]+$.
-var tagKeyPattern = regexp.MustCompile(`^[\p{L}\p{Z}\p{N}_.:/=+\-@]{1,128}$`)
+var tagKeyPattern = regexp.MustCompile(`^[\p{L}\p{Z}\p{N}_.:/=+\-@]+$`)
 
 // iamPolicyArnPattern validates IAM policy ARNs for permissions boundary
 // operations.  Only customer-managed policies (numeric account ID) are
@@ -135,10 +137,36 @@ func validateCustomSuffix(suffix string) bool {
 // Role MaxSessionDuration validation (Smithy roleMaxSessionDurationType)
 // ---------------------------------------------------------------------------
 
+// Certificate, private key and SSH public key material bounds per Smithy
+// certificateBodyType, privateKeyType and publicKeyMaterialType
+// (@length 1-16384).
+const (
+	maxCertificateBodyLength = 16384
+	maxPrivateKeyLength      = 16384
+	maxSSHPublicKeyLength    = 16384
+)
+
+// Role MaxSessionDuration bounds per Smithy roleMaxSessionDurationType
+// (@range 3600-43200). The default applied when the field is unset is
+// DefaultRoleSessionDuration (one hour, the AWS default).
+const (
+	minRoleSessionDuration     = 3600
+	maxRoleSessionDuration     = 43200
+	defaultRoleSessionDuration = 3600
+	// maxRoleDescriptionLength is the roleDescriptionType @length maximum,
+	// counted in Unicode characters like every @length trait; the shape's
+	// pattern admits Latin-1 supplement characters (2 bytes in UTF-8).
+	maxRoleDescriptionLength = 1000
+	// maxPolicyDescriptionLength is the policyDescriptionType @length
+	// maximum, counted in Unicode characters; the shape carries no
+	// pattern, so multibyte descriptions are valid input.
+	maxPolicyDescriptionLength = 1000
+)
+
 // validateRoleMaxSessionDuration checks that a MaxSessionDuration value
 // conforms to Smithy roleMaxSessionDurationType: range 3600-43200.
 func validateRoleMaxSessionDuration(v int) bool {
-	return v >= 3600 && v <= 43200
+	return v >= minRoleSessionDuration && v <= maxRoleSessionDuration
 }
 
 // ---------------------------------------------------------------------------
@@ -153,9 +181,10 @@ func validateRoleMaxSessionDuration(v int) bool {
 var roleDescriptionPattern = regexp.MustCompile(`^[\t\n\r\x20-\x7E\xA1-\xFF]*$`)
 
 // validateRoleDescription checks that a role description conforms to
-// Smithy roleDescriptionType: length 0-1000 and the pattern above.
+// Smithy roleDescriptionType: length 0-1000 counted in Unicode characters
+// and the pattern above.
 func validateRoleDescription(s string) bool {
-	if len(s) > 1000 {
+	if utf8.RuneCountInString(s) > maxRoleDescriptionLength {
 		return false
 	}
 	return roleDescriptionPattern.MatchString(s)
@@ -453,16 +482,16 @@ func hasPolicyKey(stmt map[string]interface{}, key string) bool {
 // individual tag entry.  It does NOT check the total tag count — the caller
 // is responsible for that because the acceptable count depends on context
 // (new tags on Create vs. merged tags on TagResource).
-func validateTagEntries(newTags []types.Tag) error {
+func validateTagEntries(newTags []tagutil.Tag) error {
 	for _, t := range newTags {
-		if len(t.Key) == 0 || len(t.Key) > MaxTagKeyLength {
-			return NewInvalidInputError("TagKey", "must be 1 to "+strconv.Itoa(MaxTagKeyLength)+" characters")
+		if keyLen := utf8.RuneCountInString(t.Key); keyLen < 1 || keyLen > tagutil.MaxTagKeyLength {
+			return NewInvalidInputError("TagKey", "must be 1 to "+strconv.Itoa(tagutil.MaxTagKeyLength)+" characters")
 		}
 		if !tagKeyPattern.MatchString(t.Key) {
 			return NewInvalidInputError("TagKey", "contains invalid characters")
 		}
-		if len(t.Value) > MaxTagValueLength {
-			return NewInvalidInputError("TagValue", "must be 0 to "+strconv.Itoa(MaxTagValueLength)+" characters")
+		if utf8.RuneCountInString(t.Value) > tagutil.MaxTagValueLength {
+			return NewInvalidInputError("TagValue", "must be 0 to "+strconv.Itoa(tagutil.MaxTagValueLength)+" characters")
 		}
 	}
 	return nil
@@ -471,12 +500,12 @@ func validateTagEntries(newTags []types.Tag) error {
 // validateNewTags validates both per-tag entry limits and the total tag
 // count for resources being created.  On Create operations there are no
 // pre-existing tags, so the total count is simply len(newTags).
-func validateNewTags(newTags []types.Tag) error {
+func validateNewTags(newTags []tagutil.Tag) error {
 	if err := validateTagEntries(newTags); err != nil {
 		return err
 	}
-	if len(newTags) > MaxTagsPerResource {
-		return NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(MaxTagsPerResource)+" tags per resource")
+	if len(newTags) > tagutil.MaxTagsPerResource {
+		return NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(tagutil.MaxTagsPerResource)+" tags per resource")
 	}
 	return nil
 }

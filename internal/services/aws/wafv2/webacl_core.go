@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
-	"vorpalstacks/internal/utils/aws/types"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateWebACLInput is the transport-agnostic input for creating a
@@ -201,9 +202,9 @@ func (s *WAFv2Service) WebACLExistsForInvoker(ctx context.Context, webACLIdOrArn
 	}
 	region := s.region
 	if strings.HasPrefix(webACLIdOrArn, "arn:") {
-		parts := strings.Split(webACLIdOrArn, ":")
-		if len(parts) >= 6 && parts[3] != "" {
-			region = parts[3]
+		_, _, arnRegion, _, resource := svcarn.SplitARN(webACLIdOrArn)
+		if arnRegion != "" {
+			region = arnRegion
 		}
 		stores, err := s.GetStoresForRegion(region)
 		if err != nil {
@@ -215,7 +216,8 @@ func (s *WAFv2Service) WebACLExistsForInvoker(ctx context.Context, webACLIdOrArn
 		}
 		// Fall back to the ID tail for ARNs whose stored form differs from
 		// the caller's rendering (for example a region-less ARN).
-		id := parts[len(parts)-1]
+		idParts := strings.Split(resource, "/")
+		id := idParts[len(idParts)-1]
 		webACL, err = stores.webACLs.Get(id)
 		return err == nil && webACL != nil
 	}

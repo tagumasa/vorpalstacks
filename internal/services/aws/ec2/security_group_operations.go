@@ -9,8 +9,8 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateSecurityGroup creates a security group in the specified VPC.

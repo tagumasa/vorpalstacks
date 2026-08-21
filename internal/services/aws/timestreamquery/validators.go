@@ -1,8 +1,10 @@
 package timestreamquery
 
 import (
+	"fmt"
 	"regexp"
 
+	"vorpalstacks/internal/common/bucketname"
 	awserrors "vorpalstacks/internal/common/errors"
 )
 
@@ -39,8 +41,6 @@ const (
 	maxQueryStringLen     = 262144
 	maxScheduleExpression = 256
 	maxAmazonResourceName = 2048
-	minS3BucketName       = 3
-	maxS3BucketName       = 63
 	maxS3ObjectKeyPrefix  = 896
 	maxPaginationToken    = 2048
 	maxTagKeyLen          = 128
@@ -54,7 +54,6 @@ const (
 var (
 	scheduledQueryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$`)
 	queryIDPattern            = regexp.MustCompile(`^[a-zA-Z0-9]{1,64}$`)
-	s3BucketNamePattern       = regexp.MustCompile(`^[a-z0-9][.\-a-z0-9]{1,61}[a-z0-9]$`)
 )
 
 // ---------------------------------------------------------------------------
@@ -181,16 +180,14 @@ func validateAmazonResourceName(arn string) error {
 	return nil
 }
 
-// validateS3BucketName validates an S3 bucket name against the Smithy
-// S3BucketName shape: length {3,63} and pattern.
+// validateS3BucketName validates an S3 bucket name against the AWS
+// general-purpose bucket naming rules (the Smithy S3BucketName shape's
+// documented form): length 3-63, charset, adjacency, IP-form and
+// reserved prefix/suffix restrictions.
 func validateS3BucketName(name string) error {
-	if len(name) < minS3BucketName || len(name) > maxS3BucketName {
+	if !bucketname.Validate(name) {
 		return awserrors.NewAWSError("ValidationException",
-			"BucketName must be between 3 and 63 characters.", 400)
-	}
-	if !s3BucketNamePattern.MatchString(name) {
-		return awserrors.NewAWSError("ValidationException",
-			"BucketName does not match the required pattern.", 400)
+			"BucketName must be a valid S3 bucket name: 3-63 characters of lowercase letters, numbers, hyphens and periods, starting and ending with a letter or number, without adjacent dots, IP-address form or reserved prefixes and suffixes.", 400)
 	}
 	return nil
 }
@@ -233,33 +230,14 @@ func validateTagValue(val string) error {
 // Integer range validators
 // ---------------------------------------------------------------------------
 
-// validateMaxResultsQuery validates MaxRows for the Query operation against
-// the Smithy MaxQueryResults shape: range {1,1000}.
-func validateMaxResultsQuery(val int) error {
-	if val < 1 || val > rangeMaxQueryResults {
+// validateMaxResultsInRange validates a strict page-size parameter against
+// a Smithy @range upper bound: zero and out-of-range values are rejected
+// (no default-on-zero). paramName names the parameter in the error
+// message; the bound comes from the operation's Smithy limit constant.
+func validateMaxResultsInRange(val int, paramName string, max int) error {
+	if val < 1 || val > max {
 		return awserrors.NewAWSError("ValidationException",
-			"MaxRows must be between 1 and 1000.", 400)
-	}
-	return nil
-}
-
-// validateMaxResultsScheduledQueries validates MaxResults for the
-// ListScheduledQueries operation against the Smithy
-// MaxScheduledQueriesResults shape: range {1,1000}.
-func validateMaxResultsScheduledQueries(val int) error {
-	if val < 1 || val > rangeMaxScheduledQueriesResults {
-		return awserrors.NewAWSError("ValidationException",
-			"MaxResults must be between 1 and 1000.", 400)
-	}
-	return nil
-}
-
-// validateMaxResultsTags validates MaxResults for the ListTagsForResource
-// operation against the Smithy MaxTagsForResourceResult shape: range {1,200}.
-func validateMaxResultsTags(val int) error {
-	if val < 1 || val > rangeMaxTagsForResourceResult {
-		return awserrors.NewAWSError("ValidationException",
-			"MaxResults must be between 1 and 200.", 400)
+			fmt.Sprintf("%s must be between 1 and %d.", paramName, max), 400)
 	}
 	return nil
 }

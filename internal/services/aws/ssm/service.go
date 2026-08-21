@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"vorpalstacks/internal/common/kmsutil"
 
-	"vorpalstacks/internal/common"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -17,7 +17,7 @@ import (
 // SSMService provides AWS Systems Manager Parameter Store operations.
 type SSMService struct {
 	accountID      string
-	kmsEncryptor   common.KMSEncryptor
+	kmsEncryptor   kmsutil.Encryptor
 	stores         sync.Map // region → ssmstore.SSMStoreInterface
 	storageManager *storage.RegionStorageManager
 }
@@ -30,7 +30,7 @@ func NewSSMService(accountID string) *SSMService {
 }
 
 // NewSSMServiceWithKMS creates a new SSM service instance with KMS support.
-func NewSSMServiceWithKMS(accountID string, kmsEncryptor common.KMSEncryptor) *SSMService {
+func NewSSMServiceWithKMS(accountID string, kmsEncryptor kmsutil.Encryptor) *SSMService {
 	return &SSMService{
 		accountID:    accountID,
 		kmsEncryptor: kmsEncryptor,

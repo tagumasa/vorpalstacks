@@ -9,11 +9,11 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"vorpalstacks/internal/common/pagination"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/rds"
 	storerds "vorpalstacks/internal/store/aws/rds"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 

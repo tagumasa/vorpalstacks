@@ -3,10 +3,10 @@ package ssm
 import (
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/ssm"
@@ -15,7 +15,7 @@ import (
 
 // getStore returns the regional SSM store from the gRPC request headers.
 func (h *AdminHandler) getStore(headers http.Header) (*ssmstore.Store, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err

@@ -1,8 +1,8 @@
 package rds
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/storage/storage_rds"
-	"vorpalstacks/internal/utils/aws/types"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )

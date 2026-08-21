@@ -1,6 +1,11 @@
 package cognitoidentity
 
-import "regexp"
+import (
+	"regexp"
+	"unicode/utf8"
+
+	tagutil "vorpalstacks/internal/common/tags"
+)
 
 // ---------------------------------------------------------------------------
 // Smithy-derived patterns
@@ -58,6 +63,18 @@ var validMappingRuleMatchTypes = map[string]bool{
 	"NotEqual":   true,
 }
 
+// Smithy @length bounds for the no-pattern string shapes validated below.
+// Like every @length trait they are counted in Unicode characters; the raw
+// numbers live only in this constant block.
+const (
+	maxIdentityProviderNameLength  = 128
+	maxClaimNameLength             = 64
+	maxClaimValueLength            = 128
+	maxPrincipalTagValueLength     = 256
+	maxIdentityProviderTokenLength = 50000
+	maxDeveloperUserIdentifierLen  = 1024
+)
+
 // ---------------------------------------------------------------------------
 // Validators
 // ---------------------------------------------------------------------------
@@ -104,7 +121,7 @@ func validateRoleKeys(authRole, unauthRole string) bool {
 
 func validateRoleMappings(mappings map[string]RoleMappingInput) bool {
 	for key, rm := range mappings {
-		if len(key) < 1 || len(key) > 128 {
+		if keyLen := utf8.RuneCountInString(key); keyLen < 1 || keyLen > maxIdentityProviderNameLength {
 			return false
 		}
 		if !validRoleMappingTypes[rm.Type] {
@@ -139,7 +156,7 @@ func validateRoleMappings(mappings map[string]RoleMappingInput) bool {
 }
 
 func validateMappingRule(rule MappingRuleInput) bool {
-	if len(rule.Claim) < 1 || len(rule.Claim) > 64 {
+	if claimLen := utf8.RuneCountInString(rule.Claim); claimLen < 1 || claimLen > maxClaimNameLength {
 		return false
 	}
 	if !claimNamePattern.MatchString(rule.Claim) {
@@ -210,21 +227,25 @@ func validateTokenDuration(d int64) bool {
 	return d >= 1 && d <= 86400
 }
 
-// validateClaimValue enforces the Smithy ClaimValue constraints: length 1-128.
+// validateClaimValue enforces the Smithy ClaimValue constraints: length
+// 1-128 counted in Unicode characters.
 func validateClaimValue(v string) bool {
-	return len(v) >= 1 && len(v) <= 128
+	n := utf8.RuneCountInString(v)
+	return n >= 1 && n <= maxClaimValueLength
 }
 
 // validatePrincipalTagValue enforces the Smithy PrincipalTagValue constraints:
-// length 1-256.
+// length 1-256 counted in Unicode characters.
 func validatePrincipalTagValue(v string) bool {
-	return len(v) >= 1 && len(v) <= 256
+	n := utf8.RuneCountInString(v)
+	return n >= 1 && n <= maxPrincipalTagValueLength
 }
 
 // validateLoginTokenValue enforces the Smithy IdentityProviderToken
-// constraints: length 1-50000.
+// constraints: length 1-50000 counted in Unicode characters.
 func validateLoginTokenValue(v string) bool {
-	return len(v) >= 1 && len(v) <= 50000
+	n := utf8.RuneCountInString(v)
+	return n >= 1 && n <= maxIdentityProviderTokenLength
 }
 
 // validateMapSize returns true when the map size does not exceed the Smithy
@@ -244,11 +265,23 @@ func validateLoginsValues(logins map[string]string) bool {
 	return true
 }
 
-// validateTagValues checks that every value in a tag map satisfies the Smithy
-// TagValueType length constraint [0, 256].
+// validateTagValues checks that every value in a tag map satisfies the
+// Smithy TagValueType length constraint; lengths are counted in Unicode
+// characters like every @length trait.
 func validateTagValues(tags map[string]string) bool {
 	for _, v := range tags {
-		if len(v) > 256 {
+		if utf8.RuneCountInString(v) > tagutil.MaxTagValueLength {
+			return false
+		}
+	}
+	return true
+}
+
+// validateTagKeys checks that every key in a tag map satisfies the Smithy
+// TagKeysType length constraint [1, 128] counted in Unicode characters.
+func validateTagKeys(tags map[string]string) bool {
+	for k := range tags {
+		if k == "" || utf8.RuneCountInString(k) > tagutil.MaxTagKeyLength {
 			return false
 		}
 	}
@@ -258,21 +291,25 @@ func validateTagValues(tags map[string]string) bool {
 // validateDeveloperUserIdentifier enforces the Smithy DeveloperUserIdentifier
 // @length(min=1, max=1024) constraint.
 func validateDeveloperUserIdentifier(id string) bool {
-	return len(id) >= 1 && len(id) <= 1024
+	n := utf8.RuneCountInString(id)
+	return n >= 1 && n <= maxDeveloperUserIdentifierLen
 }
 
 // validateIdentityProviderNameLength enforces the Smithy
 // IdentityProviderName @length(min=1, max=128) constraint used by
-// GetPrincipalTagAttributeMap and SetPrincipalTagAttributeMap.
+// GetPrincipalTagAttributeMap and SetPrincipalTagAttributeMap, counted in
+// Unicode characters.
 func validateIdentityProviderNameLength(name string) bool {
-	return len(name) >= 1 && len(name) <= 128
+	n := utf8.RuneCountInString(name)
+	return n >= 1 && n <= maxIdentityProviderNameLength
 }
 
 // validateLoginsKeys checks that every key in a Logins map satisfies the
-// Smithy IdentityProviderName @length(min=1, max=128) constraint.
+// Smithy IdentityProviderName @length(min=1, max=128) constraint, counted
+// in Unicode characters.
 func validateLoginsKeys(logins map[string]string) bool {
 	for k := range logins {
-		if len(k) < 1 || len(k) > 128 {
+		if keyLen := utf8.RuneCountInString(k); keyLen < 1 || keyLen > maxIdentityProviderNameLength {
 			return false
 		}
 	}

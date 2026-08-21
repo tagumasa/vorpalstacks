@@ -1,9 +1,9 @@
 package kinesis
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateStreamInput is the transport-agnostic input for CreateStream.

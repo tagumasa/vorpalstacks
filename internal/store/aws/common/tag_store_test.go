@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func newTestTagStore(t *testing.T) (*TagStore, func()) {

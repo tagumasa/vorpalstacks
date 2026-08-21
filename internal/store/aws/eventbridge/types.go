@@ -4,7 +4,7 @@ package eventbridge
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // EventBusState represents the state of an EventBridge event bus.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 	pb "vorpalstacks/internal/pb/aws/wafv2"
 	wafv2connect "vorpalstacks/internal/pb/aws/wafv2/wafv2connect"
@@ -29,7 +29,7 @@ func NewAdminHandler(svc *WAFv2Service) *AdminHandler {
 // ListWebACLs returns a paginated list of WebACL summaries via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.ListWebACLsRequest]) (*connect.Response[pb.ListWebACLsResponse], error) {
-	stores, err := h.service.GetStoresForRegion(svccommon.GetRegionFromHeader(req.Header()))
+	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -62,7 +62,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 // CreateWebACL creates a new WebACL via the admin console gRPC-Web
 // interface.
 func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb.CreateWebACLRequest]) (*connect.Response[pb.CreateWebACLResponse], error) {
-	stores, err := h.service.GetStoresForRegion(svccommon.GetRegionFromHeader(req.Header()))
+	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -98,7 +98,7 @@ func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("lock token is required"))
 	}
 
-	stores, err := h.service.GetStoresForRegion(svccommon.GetRegionFromHeader(req.Header()))
+	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

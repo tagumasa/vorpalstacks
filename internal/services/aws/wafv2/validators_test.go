@@ -1,6 +1,7 @@
 package wafv2
 
 import (
+	"strings"
 	"testing"
 
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -114,5 +115,28 @@ func TestValidateDefaultAction(t *testing.T) {
 	}
 	if err := validateDefaultAction(&wafstore.Action{Count: &wafstore.CountAction{}}); err == nil {
 		t.Fatal("count action: expected error, got nil")
+	}
+}
+
+// TestValidateStatementRegexStringUnicodeLengths pins that the
+// RegexMatchStatement RegexString bound follows the Smithy
+// RegexPatternString @length(1, 512) trait counted in Unicode characters:
+// the shape's pattern is ".*", so multibyte regex patterns are valid input
+// and must not be rejected on byte length.
+func TestValidateStatementRegexStringUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	inRange := &wafstore.Statement{RegexMatchStatement: &wafstore.RegexMatchStatement{
+		RegexString: strings.Repeat(cjk, 200),
+	}}
+	if err := validateStatement(inRange); err != nil {
+		t.Errorf("200-character CJK RegexString rejected: %v", err)
+	}
+
+	overRange := &wafstore.Statement{RegexMatchStatement: &wafstore.RegexMatchStatement{
+		RegexString: strings.Repeat(cjk, 513),
+	}}
+	if err := validateStatement(overRange); err == nil {
+		t.Error("513-character CJK RegexString accepted")
 	}
 }

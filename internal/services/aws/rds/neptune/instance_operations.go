@@ -8,11 +8,11 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateDBInstance creates a new Neptune DB instance within a cluster.

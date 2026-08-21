@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -239,7 +238,7 @@ var oidcProviderTagOps = tagOps[*iamstore.OpenIDConnectProvider]{
 	putFn: func(s *iamstore.IAMStore, r *iamstore.OpenIDConnectProvider) error {
 		return s.OpenIDConnectProviders().Put(r)
 	},
-	tagsFn: func(r *iamstore.OpenIDConnectProvider) *[]types.Tag { return &r.Tags },
+	tagsFn: func(r *iamstore.OpenIDConnectProvider) *[]tags.Tag { return &r.Tags },
 }
 
 // TagOpenIDConnectProvider adds tags to an OpenID Connect (OIDC) provider.

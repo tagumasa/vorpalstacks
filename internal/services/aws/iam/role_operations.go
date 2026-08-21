@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -187,7 +186,7 @@ var roleTagOps = tagOps[*iamstore.Role]{
 	notFoundFn: func(n string) error { return NewNoSuchRoleError(n) },
 	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Role, error) { return s.Roles().Get(n) },
 	putFn:      func(s *iamstore.IAMStore, r *iamstore.Role) error { return s.Roles().Put(r) },
-	tagsFn:     func(r *iamstore.Role) *[]types.Tag { return &r.Tags },
+	tagsFn:     func(r *iamstore.Role) *[]tags.Tag { return &r.Tags },
 }
 
 // TagRole adds tags to an IAM role.

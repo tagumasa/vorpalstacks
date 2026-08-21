@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/route53"
@@ -31,7 +31,7 @@ func NewAdminHandler(svc *Route53Service) *AdminHandler {
 }
 
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (*route53Stores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

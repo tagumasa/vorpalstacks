@@ -6,8 +6,8 @@ import (
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateVpc creates a VPC with the specified CIDR block.

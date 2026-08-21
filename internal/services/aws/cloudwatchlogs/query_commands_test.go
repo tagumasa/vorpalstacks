@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	awserrors "vorpalstacks/internal/utils/aws/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // Tests for the pipeline command implementations.

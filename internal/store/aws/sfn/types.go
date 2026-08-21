@@ -3,6 +3,8 @@ package sfn
 import (
 	"encoding/json"
 	"time"
+
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 // AWS specification limits for Step Functions. These are the single source
@@ -29,7 +31,7 @@ const (
 
 	// MaxTagsPerResource is the hard tagging quota: a maximum of fifty tags
 	// per resource, not modifiable.
-	MaxTagsPerResource = 50
+	MaxTagsPerResource = tagutil.MaxTagsPerResource
 )
 
 // StateMachine represents an AWS Step Functions state machine definition and metadata.

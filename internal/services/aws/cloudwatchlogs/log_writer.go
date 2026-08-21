@@ -23,7 +23,10 @@ func (s *LogsService) ensureLogGroupAndStream(region, logGroup, logStream, accou
 
 	if _, err := logsStore.GetLogGroup(logGroup); err != nil {
 		lg := logsstore.NewLogGroup(logGroup, region, accountID)
-		if createErr := logsStore.CreateLogGroup(lg); createErr != nil {
+		// A concurrent creator winning the race is fine: the group
+		// exists, which is all this function has to guarantee. Dropping
+		// the shipment here would silently lose the caller's events.
+		if createErr := logsStore.CreateLogGroup(lg); createErr != nil && !errors.Is(createErr, logsstore.ErrLogGroupAlreadyExists) {
 			logs.Error("Failed to create log group",
 				logs.String("logGroup", logGroup),
 				logs.Err(createErr))

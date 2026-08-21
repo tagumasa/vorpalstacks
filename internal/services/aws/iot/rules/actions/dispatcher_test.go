@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"vorpalstacks/internal/common/iotutil"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
 
 func TestNewActionConfigFromMapLambda(t *testing.T) {

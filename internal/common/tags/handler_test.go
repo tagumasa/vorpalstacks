@@ -8,16 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func TestHandleTag(t *testing.T) {
 	t.Run("happy path with TagFunc", func(t *testing.T) {
 		var taggedKey string
-		var taggedTags []types.Tag
+		var taggedTags []Tag
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
+			TagFunc: func(_ context.Context, resourceKey string, tags []Tag) error {
 				taggedKey = resourceKey
 				taggedTags = tags
 				return nil
@@ -36,7 +35,7 @@ func TestHandleTag(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, resp)
 		assert.Equal(t, "arn:aws:sns:us-east-1:123:topic/test", taggedKey)
-		assert.Equal(t, []types.Tag{{Key: "env", Value: "prod"}}, taggedTags)
+		assert.Equal(t, []Tag{{Key: "env", Value: "prod"}}, taggedTags)
 	})
 
 	t.Run("missing resource returns error", func(t *testing.T) {
@@ -77,7 +76,7 @@ func TestHandleTag(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param:       StandardConfig,
 			ResourceKey: func(rawKey string) string { return rawKey + "-transformed" },
-			TagFunc: func(_ context.Context, resourceKey string, _ []types.Tag) error {
+			TagFunc: func(_ context.Context, resourceKey string, _ []Tag) error {
 				receivedKey = resourceKey
 				return nil
 			},
@@ -115,7 +114,7 @@ func TestHandleTag(t *testing.T) {
 		sentinelErr := errors.New("tag failed")
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			TagFunc: func(_ context.Context, _ string, _ []types.Tag) error {
+			TagFunc: func(_ context.Context, _ string, _ []Tag) error {
 				return sentinelErr
 			},
 			MapError: func(err error) error {
@@ -139,7 +138,7 @@ func TestHandleTag(t *testing.T) {
 	t.Run("TagResponse callback", func(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param:   StandardConfig,
-			TagFunc: func(_ context.Context, _ string, _ []types.Tag) error { return nil },
+			TagFunc: func(_ context.Context, _ string, _ []Tag) error { return nil },
 			TagResponse: func(_ context.Context, _ string) (interface{}, error) {
 				return "tag-response", nil
 			},
@@ -158,7 +157,7 @@ func TestHandleTag(t *testing.T) {
 	t.Run("EmptyResponse callback", func(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param:   StandardConfig,
-			TagFunc: func(_ context.Context, _ string, _ []types.Tag) error { return nil },
+			TagFunc: func(_ context.Context, _ string, _ []Tag) error { return nil },
 			EmptyResponse: func() (interface{}, error) {
 				return "empty", nil
 			},
@@ -271,8 +270,8 @@ func TestHandleList(t *testing.T) {
 	t.Run("happy path with default FormatResponse", func(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
-				return []types.Tag{{Key: "env", Value: "prod"}}, nil
+			ListFunc: func(_ context.Context, resourceKey string) ([]Tag, error) {
+				return []Tag{{Key: "env", Value: "prod"}}, nil
 			},
 		}
 		req := &request.ParsedRequest{
@@ -306,10 +305,10 @@ func TestHandleList(t *testing.T) {
 	t.Run("custom FormatResponse", func(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			ListFunc: func(_ context.Context, _ string) ([]types.Tag, error) {
+			ListFunc: func(_ context.Context, _ string) ([]Tag, error) {
 				return nil, nil
 			},
-			FormatResponse: func(tags []types.Tag, rawKey string) (interface{}, error) {
+			FormatResponse: func(tags []Tag, rawKey string) (interface{}, error) {
 				return map[string]interface{}{"CustomTags": tags, "Resource": rawKey}, nil
 			},
 		}
@@ -327,8 +326,8 @@ func TestHandleList(t *testing.T) {
 		kmsCfg := KMSConfig
 		cfg := TagHandlerConfig{
 			Param: kmsCfg,
-			ListFunc: func(_ context.Context, _ string) ([]types.Tag, error) {
-				return []types.Tag{{Key: "env", Value: "prod"}}, nil
+			ListFunc: func(_ context.Context, _ string) ([]Tag, error) {
+				return []Tag{{Key: "env", Value: "prod"}}, nil
 			},
 		}
 		req := &request.ParsedRequest{
@@ -347,7 +346,7 @@ func TestHandleList(t *testing.T) {
 	t.Run("empty tags returns empty array", func(t *testing.T) {
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			ListFunc: func(_ context.Context, _ string) ([]types.Tag, error) {
+			ListFunc: func(_ context.Context, _ string) ([]Tag, error) {
 				return nil, nil
 			},
 		}
@@ -378,7 +377,7 @@ func TestHandleList(t *testing.T) {
 		sentinelErr := errors.New("list failed")
 		cfg := TagHandlerConfig{
 			Param: StandardConfig,
-			ListFunc: func(_ context.Context, _ string) ([]types.Tag, error) {
+			ListFunc: func(_ context.Context, _ string) ([]Tag, error) {
 				return nil, sentinelErr
 			},
 			MapError: func(err error) error {
@@ -396,7 +395,7 @@ func TestHandleList(t *testing.T) {
 
 func TestSliceTagsToKeys(t *testing.T) {
 	t.Run("multiple tags", func(t *testing.T) {
-		tags := []types.Tag{{Key: "a", Value: "1"}, {Key: "b", Value: "2"}}
+		tags := []Tag{{Key: "a", Value: "1"}, {Key: "b", Value: "2"}}
 		keys := SliceTagsToKeys(tags)
 		assert.Equal(t, []string{"a", "b"}, keys)
 	})

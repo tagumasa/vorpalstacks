@@ -140,7 +140,7 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 	maxRows := maxQueryRows
 	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
 		if val, err := strconv.Atoi(maxStr); err == nil {
-			if err := validateMaxResultsQuery(val); err != nil {
+			if err := validateMaxResultsInRange(val, "MaxRows", rangeMaxQueryResults); err != nil {
 				return nil, err
 			}
 			maxRows = val

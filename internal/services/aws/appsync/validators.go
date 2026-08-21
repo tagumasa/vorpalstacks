@@ -5,8 +5,10 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ============================================================================
@@ -385,9 +387,15 @@ func validateEnvVarValue(val string) error {
 // Length validators (Smithy [length] trait only)
 // ============================================================================
 
-// validateDescription validates the Description shape: length 0-255.
+// maxDescriptionLength is the Description shape @length maximum, counted
+// in Unicode characters like every @length trait; the shape's "^.*$"
+// pattern admits multibyte descriptions.
+const maxDescriptionLength = 255
+
+// validateDescription validates the Description shape: length 0-255
+// counted in Unicode characters.
 func validateDescription(desc string) error {
-	if len(desc) > 255 {
+	if utf8.RuneCountInString(desc) > maxDescriptionLength {
 		return NewBadRequestException("description must not exceed 255 characters")
 	}
 	return nil
@@ -524,11 +532,11 @@ func validateLambdaArn(arn string) error {
 	if arn == "" {
 		return nil
 	}
-	if !strings.HasPrefix(arn, "arn:aws:lambda:") && !strings.HasPrefix(arn, "arn:aws-cn:lambda:") && !strings.HasPrefix(arn, "arn:aws-us-gov:lambda:") {
+	partition, service, _, _, resource := svcarn.SplitARN(arn)
+	if (partition != "aws" && partition != "aws-cn" && partition != "aws-us-gov") || service != "lambda" {
 		return NewBadRequestException(fmt.Sprintf("Invalid Lambda ARN: %s", arn))
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) < 7 {
+	if !strings.Contains(resource, ":") {
 		return NewBadRequestException(fmt.Sprintf("Invalid Lambda ARN format: %s", arn))
 	}
 	return nil

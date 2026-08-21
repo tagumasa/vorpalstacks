@@ -3,6 +3,7 @@ package route53
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	route53store "vorpalstacks/internal/store/aws/route53"
@@ -102,11 +103,16 @@ func validateInsufficientDataHealthStatus(v string) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Comment length (Smithy: com.amazonaws.route53#ResourceDescription, 0-256)
+// Comment length (Smithy: com.amazonaws.route53#ResourceDescription, 0-256
+// counted in Unicode characters; the shape carries no pattern)
 // ---------------------------------------------------------------------------
 
+// maxCommentLength is the ResourceDescription @length maximum, counted in
+// Unicode characters like every @length trait.
+const maxCommentLength = 256
+
 func validateComment(comment string) error {
-	if len(comment) > 256 {
+	if utf8.RuneCountInString(comment) > maxCommentLength {
 		return awserrors.NewAWSError("InvalidInput", "Comment must not exceed 256 characters", 400)
 	}
 	return nil

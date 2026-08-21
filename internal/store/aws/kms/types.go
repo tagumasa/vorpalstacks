@@ -6,7 +6,7 @@ package kms
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // KeyState represents the state of a KMS key.

@@ -3,8 +3,10 @@ package sts
 import (
 	"fmt"
 	"regexp"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 // externalIdPattern mirrors the Smithy externalIdType trait: [\w+=,.@:\/-]*.
@@ -20,8 +22,9 @@ var sessionTagValuePattern = regexp.MustCompile(`^[\p{L}\p{Z}\p{N}_.:/=+\-@]*$`)
 
 // extractSessionTags parses Tags.member.N.Key / Tags.member.N.Value pairs from
 // the flat query-parameter map and validates them against the Smithy
-// tagKeyType (1-128 chars) and tagValueType (0-256 chars) traits. At most 50
-// tags are accepted per the tagListType length constraint.
+// tagKeyType and tagValueType traits, whose lengths are counted in Unicode
+// characters. At most MaxTagsPerResource tags are accepted per the
+// tagListType length constraint.
 func extractSessionTags(params map[string]interface{}) (map[string]string, error) {
 	tags := make(map[string]string)
 	for i := 1; ; i++ {
@@ -29,14 +32,14 @@ func extractSessionTags(params map[string]interface{}) (map[string]string, error
 		if key == "" {
 			break
 		}
-		if i > 50 {
+		if i > tagutil.MaxTagsPerResource {
 			return nil, ErrTooManySessionTags
 		}
-		if len(key) < 1 || len(key) > 128 || !sessionTagKeyPattern.MatchString(key) {
+		if keyLen := utf8.RuneCountInString(key); keyLen < 1 || keyLen > tagutil.MaxTagKeyLength || !sessionTagKeyPattern.MatchString(key) {
 			return nil, ErrInvalidSessionTag
 		}
 		value := request.GetStringParam(params, fmt.Sprintf("Tags.member.%d.Value", i))
-		if len(value) > 256 || !sessionTagValuePattern.MatchString(value) {
+		if utf8.RuneCountInString(value) > tagutil.MaxTagValueLength || !sessionTagValuePattern.MatchString(value) {
 			return nil, ErrInvalidSessionTag
 		}
 		if _, exists := tags[key]; exists {
@@ -52,8 +55,8 @@ func extractSessionTags(params map[string]interface{}) (map[string]string, error
 
 // extractTransitiveTagKeys parses TransitiveTagKeys.member.N from the flat
 // query-parameter map. Each key is validated against the Smithy tagKeyType
-// trait (1-128 chars). At most 50 keys are accepted. Duplicate keys are
-// rejected.
+// trait, whose length is counted in Unicode characters. At most
+// MaxTagsPerResource keys are accepted. Duplicate keys are rejected.
 func extractTransitiveTagKeys(params map[string]interface{}) ([]string, error) {
 	var keys []string
 	seen := make(map[string]bool)
@@ -62,10 +65,10 @@ func extractTransitiveTagKeys(params map[string]interface{}) ([]string, error) {
 		if key == "" {
 			break
 		}
-		if i > 50 {
+		if i > tagutil.MaxTagsPerResource {
 			return nil, ErrTooManySessionTags
 		}
-		if len(key) < 1 || len(key) > 128 || !sessionTagKeyPattern.MatchString(key) {
+		if keyLen := utf8.RuneCountInString(key); keyLen < 1 || keyLen > tagutil.MaxTagKeyLength || !sessionTagKeyPattern.MatchString(key) {
 			return nil, ErrInvalidSessionTag
 		}
 		if seen[key] {

@@ -2,40 +2,20 @@ package kms
 
 import (
 	"context"
-	"strings"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
 
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
-// KMS tag limits per AWS spec.
-const (
-	maxKMSTags     = 50
-	maxTagKeyLen   = 128
-	maxTagValueLen = 256
-)
-
-// validateKMSTags checks tag count and individual key/value lengths.
-func validateKMSTags(tags []types.Tag) error {
-	if len(tags) > maxKMSTags {
+// validateKMSTags checks tag count, individual key/value lengths and the
+// aws: key reservation against the AWS-wide tag limits.
+func validateKMSTags(tags []tagutil.Tag) error {
+	if v, _ := tagutil.CheckTags(tags, tagutil.StandardLimits()); v != tagutil.OK {
 		return ErrTagException
-	}
-	for _, t := range tags {
-		if len(t.Key) == 0 || len(t.Key) > maxTagKeyLen {
-			return ErrTagException
-		}
-		if len(t.Value) > maxTagValueLen {
-			return ErrTagException
-		}
-		// AWS KMS tag keys cannot start with "aws:"
-		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
-			return ErrTagException
-		}
 	}
 	return nil
 }
@@ -84,7 +64,7 @@ func (s *KMSService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 			nonOverwritten++
 		}
 	}
-	if nonOverwritten+len(tagList) > maxKMSTags {
+	if nonOverwritten+len(tagList) > tagutil.MaxTagsPerResource {
 		return nil, ErrTagException
 	}
 
@@ -150,7 +130,7 @@ func (s *KMSService) ListResourceTags(ctx context.Context, reqCtx *request.Reque
 	}
 	maxItems := pagination.GetMaxItems(req.Parameters, 100)
 
-	result := pagination.PaginateSlice(tags, marker, maxItems, func(t types.Tag) string {
+	result := pagination.PaginateSlice(tags, marker, maxItems, func(t tagutil.Tag) string {
 		return t.Key
 	})
 

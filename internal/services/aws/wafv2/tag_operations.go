@@ -9,7 +9,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 func wafv2MapError(err error) error {
@@ -38,16 +38,16 @@ func wafv2TagConfig(stores *wafv2Stores) tagutil.TagHandlerConfig {
 			}
 			return tagKeys
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tag []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tag []tagutil.Tag) error {
 			return stores.tags.Tag(resourceKey, tagutil.ToMap(tag))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return stores.tags.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return stores.tags.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tag []types.Tag, rawResourceKey string) (interface{}, error) {
+		FormatResponse: func(tag []tagutil.Tag, rawResourceKey string) (interface{}, error) {
 			return map[string]interface{}{
 				"TagInfoForResource": map[string]interface{}{
 					"ResourceARN": rawResourceKey,
@@ -127,16 +127,13 @@ func validateWAFv2Resource(stores *wafv2Stores, resourceArn string) error {
 	return nil
 }
 
+// extractResourceTypeFromARN reads the WAFv2 resource type from the ARN
+// resource field. WAFv2 resource paths are either scope-prefixed
+// (regional|cloudfront/<type>/<name>/<id>) or type-direct
+// (<type>/<name>/<id>).
 func extractResourceTypeFromARN(arn string) string {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
-		return ""
-	}
-	resource := parts[5]
+	_, _, _, _, resource := svcarn.SplitARN(arn)
 	subParts := strings.Split(resource, "/")
-	if len(subParts) == 0 {
-		return ""
-	}
 	first := strings.ToLower(subParts[0])
 	switch first {
 	case "ipset", "webacl", "rulegroup", "regexpatternset":

@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func TestParseTagsFromMap(t *testing.T) {
@@ -149,7 +148,7 @@ func TestParseTagKeysAsSlice(t *testing.T) {
 }
 
 func TestToResponseWithKeyNames(t *testing.T) {
-	tags := []types.Tag{{Key: "k", Value: "v"}}
+	tags := []Tag{{Key: "k", Value: "v"}}
 	result := ToResponseWithKeyNames(tags, "TagKey", "TagValue")
 	require.Len(t, result, 1)
 	assert.Equal(t, "k", result[0]["TagKey"])
@@ -157,7 +156,7 @@ func TestToResponseWithKeyNames(t *testing.T) {
 }
 
 func TestToMap(t *testing.T) {
-	tags := []types.Tag{{Key: "a", Value: "1"}, {Key: "b", Value: "2"}}
+	tags := []Tag{{Key: "a", Value: "1"}, {Key: "b", Value: "2"}}
 	m := ToMap(tags)
 	assert.Equal(t, "1", m["a"])
 	assert.Equal(t, "2", m["b"])
@@ -226,13 +225,13 @@ func TestConvertTags(t *testing.T) {
 		Value string
 	}
 	items := []input{{Name: "n1", Value: "v1"}}
-	result := ConvertTags(items, func(i input) types.Tag {
-		return types.Tag{Key: i.Name, Value: i.Value}
+	result := ConvertTags(items, func(i input) Tag {
+		return Tag{Key: i.Name, Value: i.Value}
 	})
 	require.Len(t, result, 1)
 	assert.Equal(t, "n1", result[0].Key)
 
-	assert.Nil(t, ConvertTags(nil, func(i input) types.Tag { return types.Tag{} }))
+	assert.Nil(t, ConvertTags(nil, func(i input) Tag { return Tag{} }))
 }
 
 func TestParseTagsWithKeyNames(t *testing.T) {
@@ -290,7 +289,7 @@ func TestParseTagKeysWithKeyName(t *testing.T) {
 }
 
 func TestConvertToMapSlice(t *testing.T) {
-	tags := []types.Tag{{Key: "k", Value: "v"}}
+	tags := []Tag{{Key: "k", Value: "v"}}
 	result := ConvertToMapSlice(tags)
 	require.Len(t, result, 1)
 	assert.Equal(t, "k", result[0]["Key"])
@@ -299,64 +298,6 @@ func TestConvertToMapSlice(t *testing.T) {
 	empty := ConvertToMapSlice(nil)
 	assert.NotNil(t, empty)
 	assert.Empty(t, empty)
-}
-
-func TestParseMessageTags(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		params := map[string]interface{}{
-			"MessageTags": []interface{}{
-				map[string]interface{}{"Name": "n1", "Value": "v1"},
-			},
-		}
-		result := ParseMessageTags(params, "MessageTags")
-		require.Len(t, result, 1)
-		assert.Equal(t, "n1", result[0].Name)
-	})
-
-	t.Run("missing", func(t *testing.T) {
-		assert.Nil(t, ParseMessageTags(map[string]interface{}{}, "MessageTags"))
-	})
-
-	t.Run("wrong type", func(t *testing.T) {
-		params := map[string]interface{}{"MessageTags": "not a list"}
-		assert.Nil(t, ParseMessageTags(params, "MessageTags"))
-	})
-}
-
-func TestParseMessageTagsFromList(t *testing.T) {
-	t.Run("mixed types", func(t *testing.T) {
-		list := []interface{}{
-			map[string]interface{}{"Name": "n1", "Value": "v1"},
-			"invalid",
-		}
-		result := ParseMessageTagsFromList(list)
-		require.Len(t, result, 1)
-	})
-}
-
-func TestParseEcsTags(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		data := []interface{}{
-			map[string]interface{}{"key": "k", "value": "v"},
-		}
-		result := ParseEcsTags(data)
-		require.Len(t, result, 1)
-		assert.Equal(t, "v", result[0]["value"])
-	})
-
-	t.Run("nil input", func(t *testing.T) {
-		assert.Nil(t, ParseEcsTags(nil))
-	})
-}
-
-func TestConvertMessageTagsToSESv2(t *testing.T) {
-	tags := []MessageTag{{Name: "n1", Value: "v1"}}
-	result := ConvertMessageTagsToSESv2(tags)
-	require.Len(t, result, 1)
-	assert.Equal(t, "n1", result[0].Name)
-	assert.Equal(t, "v1", result[0].Value)
-
-	assert.Nil(t, ConvertMessageTagsToSESv2(nil))
 }
 
 func TestGetResourceKey(t *testing.T) {
@@ -383,8 +324,8 @@ func TestGetResourceKey(t *testing.T) {
 }
 
 func TestHandleListSimple(t *testing.T) {
-	f := func(key string) ([]types.Tag, error) {
-		return []types.Tag{{Key: "k", Value: "v"}}, nil
+	f := func(key string) ([]Tag, error) {
+		return []Tag{{Key: "k", Value: "v"}}, nil
 	}
 	result, err := HandleListSimple(context.Background(), StandardConfig, "res", f)
 	require.NoError(t, err)

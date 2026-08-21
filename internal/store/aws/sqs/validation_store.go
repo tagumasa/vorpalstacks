@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	tagutil "vorpalstacks/internal/common/tags"
 )
 
 var (
@@ -73,7 +75,7 @@ func IsValidAttributeName(name string) bool {
 }
 
 func validateVisibilityTimeout(value int32) error {
-	if value < minVisibilityTimeout || value > maxVisibilityTimeout {
+	if value < minVisibilityTimeout || value > MaxVisibilityTimeout {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -107,17 +109,19 @@ func validateReceiveMessageWaitTimeSeconds(value int32) error {
 	return nil
 }
 
+// validateTags validates queue tags against the SQS tag limits: at most 50
+// tags per queue, keys of 1-128 characters, values of at most 256 characters
+// and the aws: key prefix reserved for AWS use.
 func validateTags(tags map[string]string) error {
-	if len(tags) > maxTagsPerQueue {
+	switch v, _ := tagutil.CheckStringTags(tags, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
 		return ErrTooManyTags
-	}
-	for key, value := range tags {
-		if len(key) > maxTagKeyLength {
-			return ErrInvalidTagKey
-		}
-		if len(value) > maxTagValueLength {
-			return ErrInvalidTagValue
-		}
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return ErrInvalidTagKey
+	case tagutil.TagValueTooLong:
+		return ErrInvalidTagValue
+	case tagutil.ReservedTagKey:
+		return ErrInvalidTagKey
 	}
 	return nil
 }

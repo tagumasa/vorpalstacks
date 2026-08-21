@@ -3,6 +3,8 @@ package sqs
 import (
 	"regexp"
 	"strings"
+
+	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
 
 // ---------------------------------------------------------------------------
@@ -14,7 +16,6 @@ const (
 	maxActionsPerStatement = 7
 	maxReceiveAttemptIdLen = 128
 	maxMessageMoveRate     = 500
-	maxMessagesPerReceive  = 10
 
 	// maxListDeadLetterSourceQueuesResults is the maximum and default value
 	// of the ListDeadLetterSourceQueues MaxResults parameter (AWS SQS API
@@ -66,7 +67,7 @@ func isAlphanumeric(c rune) bool {
 // validateMaxNumberOfMessages rejects out-of-range values at the service layer.
 // AWS SQS requires 1–10 messages per ReceiveMessage call.
 func validateMaxNumberOfMessages(n int32) error {
-	if n < 1 || n > maxMessagesPerReceive {
+	if n < 1 || n > sqsstore.MaxMaxNumberOfMessages {
 		return ErrInvalidParameterValue
 	}
 	return nil

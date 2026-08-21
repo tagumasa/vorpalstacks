@@ -1,9 +1,9 @@
 package route53
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TagStore manages Route 53 resource tags.

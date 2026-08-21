@@ -7,7 +7,7 @@ import (
 	"connectrpc.com/connect"
 
 	svcerrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 
 	pbcommon "vorpalstacks/internal/pb/aws/common"
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"

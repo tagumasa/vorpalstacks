@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func bucketBucketName(region string) string {

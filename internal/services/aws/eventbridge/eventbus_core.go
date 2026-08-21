@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	awstypes "vorpalstacks/internal/common/tags"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
-	awstypes "vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

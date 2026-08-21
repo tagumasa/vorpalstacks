@@ -4,7 +4,7 @@ package cognitoidentityprovider
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 
 	"github.com/google/uuid"
 )

@@ -15,6 +15,7 @@ import (
 	"github.com/dolthub/go-mysql-server/sql/types"
 
 	"vorpalstacks/internal/core/logs"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // AWS Data API operational constants. The binary response size cap (1 MiB)
@@ -587,19 +588,20 @@ func nullableToInt(nullable bool) int32 {
 
 // parseArn extracts the resource identifier and type from an RDS ARN.
 // The ARN must use the canonical colon-separated form
-// "arn:aws:rds:<region>:<account>:<resource-type>:<identifier>". Any other
-// prefix (or fewer than seven colon-separated parts) yields ("", "") so
-// resolveEngine surfaces InvalidParameterException to the caller.
+// "arn:aws:rds:<region>:<account>:<resource-type>:<identifier>"; the
+// resource field must therefore carry a "<type>:<identifier>" tail. Any
+// other prefix or resource shape yields ("", "") so resolveEngine
+// surfaces InvalidParameterException to the caller.
 func parseArn(arn string) (string, string) {
-	if !strings.HasPrefix(arn, "arn:aws:rds:") && !strings.HasPrefix(arn, "arn:aws-cn:rds:") && !strings.HasPrefix(arn, "arn:aws-us-gov:rds:") {
+	partition, service, _, _, resource := arnutil.SplitARN(arn)
+	if (partition != "aws" && partition != "aws-cn" && partition != "aws-us-gov") || service != "rds" {
 		return "", ""
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) < 7 {
+	segs := strings.SplitN(resource, ":", 3)
+	if len(segs) < 2 {
 		return "", ""
 	}
-	resourceType := parts[5]
-	identifier := parts[6]
+	resourceType, identifier := segs[0], segs[1]
 
 	switch resourceType {
 	case "db":

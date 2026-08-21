@@ -49,13 +49,11 @@ func checkActionsSuppressor(alarm *cwstore.Alarm, alarmStore *cwstore.AlarmStore
 }
 
 // extractAlarmNameFromARN extracts the alarm name from a CloudWatch alarm
-// ARN. Returns empty string if the ARN format is not recognised.
+// ARN, whose resource field is alarm:<alarm-name>
+// (arn:<partition>:cloudwatch:<region>:<account>:alarm:<name>). Returns
+// empty string if the ARN format is not recognised.
 func extractAlarmNameFromARN(arn string) string {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
-		return ""
-	}
-	resource := parts[5]
+	_, _, _, _, resource := svcarn.SplitARN(arn)
 	if strings.HasPrefix(resource, "alarm:") {
 		return strings.TrimPrefix(resource, "alarm:")
 	}

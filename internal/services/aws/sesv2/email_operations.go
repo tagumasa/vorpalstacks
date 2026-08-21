@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	tagutil "vorpalstacks/internal/common/tags"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
 
@@ -123,7 +122,7 @@ func (s *SESv2Service) SendEmail(ctx context.Context, reqCtx *request.RequestCon
 	}
 
 	// Validate EmailTag Name/Value charset and length.
-	emailTagsRaw := tagutil.ParseMessageTags(req.Parameters, "EmailTags")
+	emailTagsRaw := ParseMessageTags(req.Parameters, "EmailTags")
 	if len(emailTagsRaw) > 0 {
 		tags := make([]sesv2store.MessageTag, len(emailTagsRaw))
 		for i, t := range emailTagsRaw {
@@ -169,7 +168,7 @@ func (s *SESv2Service) SendBulkEmail(ctx context.Context, reqCtx *request.Reques
 	// DefaultEmailTags are applied to every entry in the bulk send,
 	// merged with per-entry ReplacementTags.
 	var defaultEmailTags []sesv2store.MessageTag
-	defaultTagsRaw := tagutil.ParseMessageTags(req.Parameters, "DefaultEmailTags")
+	defaultTagsRaw := ParseMessageTags(req.Parameters, "DefaultEmailTags")
 	if len(defaultTagsRaw) > 0 {
 		defaultEmailTags = make([]sesv2store.MessageTag, len(defaultTagsRaw))
 		for i, t := range defaultTagsRaw {
@@ -471,7 +470,7 @@ func parseBulkEmailEntries(params map[string]interface{}) ([]sesv2store.BulkEmai
 		entry.Destination = parsed
 
 		if tags, ok := entryMap["ReplacementTags"].([]interface{}); ok {
-			tagsRaw := tagutil.ParseMessageTagsFromList(tags)
+			tagsRaw := ParseMessageTagsFromList(tags)
 			entry.ReplacementTags = make([]sesv2store.MessageTag, len(tagsRaw))
 			for i, t := range tagsRaw {
 				entry.ReplacementTags[i] = sesv2store.MessageTag{Name: t.Name, Value: t.Value}

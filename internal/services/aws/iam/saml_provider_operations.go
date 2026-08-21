@@ -6,13 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -70,8 +70,8 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 
 	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
 	if addPrivateKey != "" {
-		if len(addPrivateKey) > 16384 {
-			return nil, NewInvalidInputError("AddPrivateKey", "must be 1 to 16384 characters")
+		if len(addPrivateKey) > maxPrivateKeyLength {
+			return nil, NewInvalidInputError("AddPrivateKey", fmt.Sprintf("must be 1 to %d characters", maxPrivateKeyLength))
 		}
 	}
 
@@ -189,8 +189,8 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	}
 
 	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
-	if addPrivateKey != "" && len(addPrivateKey) > 16384 {
-		return nil, NewInvalidInputError("AddPrivateKey", "must be 1 to 16384 characters")
+	if addPrivateKey != "" && len(addPrivateKey) > maxPrivateKeyLength {
+		return nil, NewInvalidInputError("AddPrivateKey", fmt.Sprintf("must be 1 to %d characters", maxPrivateKeyLength))
 	}
 
 	// RemovePrivateKey is a privateKeyIdType (Smithy: length [22,64],
@@ -253,7 +253,7 @@ var samlProviderTagOps = tagOps[*iamstore.SAMLProvider]{
 	notFoundFn: func(n string) error { return NewNoSuchEntityError("SAML provider", n) },
 	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.SAMLProvider, error) { return s.SAMLProviders().Get(n) },
 	putFn:      func(s *iamstore.IAMStore, r *iamstore.SAMLProvider) error { return s.SAMLProviders().Put(r) },
-	tagsFn:     func(r *iamstore.SAMLProvider) *[]types.Tag { return &r.Tags },
+	tagsFn:     func(r *iamstore.SAMLProvider) *[]tags.Tag { return &r.Tags },
 }
 
 // TagSAMLProvider adds tags to a SAML provider.

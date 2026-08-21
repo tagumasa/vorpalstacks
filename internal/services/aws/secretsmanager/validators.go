@@ -5,34 +5,36 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	tagutil "vorpalstacks/internal/common/tags"
+
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // Smithy-derived constraints (single source of truth).
 // Source: secrets-manager-2017-10-17.json Smithy model.
 const (
-	maxSecretNameLength        = 512   // NameType @length(min=1, max=512)
-	maxDescriptionLength       = 2048  // DescriptionType @length(min=0, max=2048)
-	minClientRequestTokenLen   = 32    // ClientRequestTokenType @length(min=32, max=64)
-	maxClientRequestTokenLen   = 64    // ClientRequestTokenType @length(max=64)
-	maxSecretValueBytes        = 65536 // SecretStringType / SecretBinaryType @length(min=1, max=65536)
-	minRotationTokenLen        = 36    // RotationTokenType @length(min=36, max=256)
-	maxRotationTokenLen        = 256   // RotationTokenType @length(max=256)
-	minAutomaticallyAfterDays  = 1     // AutomaticallyRotateAfterDaysType @range(min=1, max=1000)
-	maxAutomaticallyAfterDays  = 1000  // AutomaticallyRotateAfterDaysType @range(max=1000)
-	maxResourcePolicyBytes     = 20480 // NonEmptyResourcePolicyType @length(min=1, max=20480)
-	maxFilters                 = 10    // FiltersListType @length(min=0, max=10)
-	maxSecretIdLength          = 2048  // SecretIdType @length(min=1, max=2048)
-	maxSecretIdListItems       = 20    // SecretIdListType @length(min=1, max=20)
-	maxTagsPerSecret           = 50    // AWS tag quota
-	maxTagKeyLength            = 128   // TagKeyType @length(min=1, max=128)
-	maxTagValueLength          = 256   // TagValueType @length(min=0, max=256)
-	maxKmsKeyIdLength          = 2048  // KmsKeyIdType @length(min=0, max=2048)
-	maxRotationLambdaARNLength = 2048  // RotationLambdaARNType @length(min=0, max=2048)
-	maxExcludeCharactersLength = 4096  // ExcludeCharactersType @length(min=0, max=4096)
+	maxSecretNameLength        = 512                        // NameType @length(min=1, max=512)
+	maxDescriptionLength       = 2048                       // DescriptionType @length(min=0, max=2048)
+	minClientRequestTokenLen   = 32                         // ClientRequestTokenType @length(min=32, max=64)
+	maxClientRequestTokenLen   = 64                         // ClientRequestTokenType @length(max=64)
+	maxSecretValueBytes        = 65536                      // SecretStringType / SecretBinaryType @length(min=1, max=65536)
+	minRotationTokenLen        = 36                         // RotationTokenType @length(min=36, max=256)
+	maxRotationTokenLen        = 256                        // RotationTokenType @length(max=256)
+	minAutomaticallyAfterDays  = 1                          // AutomaticallyRotateAfterDaysType @range(min=1, max=1000)
+	maxAutomaticallyAfterDays  = 1000                       // AutomaticallyRotateAfterDaysType @range(max=1000)
+	maxResourcePolicyBytes     = 20480                      // NonEmptyResourcePolicyType @length(min=1, max=20480)
+	maxFilters                 = 10                         // FiltersListType @length(min=0, max=10)
+	maxSecretIdLength          = 2048                       // SecretIdType @length(min=1, max=2048)
+	maxSecretIdListItems       = 20                         // SecretIdListType @length(min=1, max=20)
+	maxTagsPerSecret           = tagutil.MaxTagsPerResource // AWS tag quota
+	maxTagKeyLength            = tagutil.MaxTagKeyLength    // TagKeyType @length(min=1, max=128)
+	maxTagValueLength          = tagutil.MaxTagValueLength  // TagValueType @length(min=0, max=256)
+	maxKmsKeyIdLength          = 2048                       // KmsKeyIdType @length(min=0, max=2048)
+	maxRotationLambdaARNLength = 2048                       // RotationLambdaARNType @length(min=0, max=2048)
+	maxExcludeCharactersLength = 4096                       // ExcludeCharactersType @length(min=0, max=4096)
 )
 
 var rotationTokenPattern = regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)
@@ -196,20 +198,20 @@ func validateSecretIdList(ids []string) error {
 // InvalidParameterException — it is documented for both CreateSecret and
 // TagResource, whereas LimitExceededException is only documented for
 // CreateSecret.
-func validateSecretTags(tags []types.Tag) error {
-	if len(tags) > maxTagsPerSecret {
+func validateSecretTags(tags []tagutil.Tag) error {
+	switch v, _ := tagutil.CheckTags(tags, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
 		return awserrors.NewAWSError("InvalidParameterException",
-			fmt.Sprintf("You can't have more than %d tags on a secret.", maxTagsPerSecret), http.StatusBadRequest)
-	}
-	for _, t := range tags {
-		if t.Key == "" || len(t.Key) > maxTagKeyLength {
-			return awserrors.NewAWSError("InvalidParameterException",
-				fmt.Sprintf("Tag key length must be between 1 and %d characters.", maxTagKeyLength), http.StatusBadRequest)
-		}
-		if len(t.Value) > maxTagValueLength {
-			return awserrors.NewAWSError("InvalidParameterException",
-				fmt.Sprintf("Tag value length must be between 0 and %d characters.", maxTagValueLength), http.StatusBadRequest)
-		}
+			fmt.Sprintf("You can't have more than %d tags on a secret.", tagutil.MaxTagsPerResource), http.StatusBadRequest)
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("Tag key length must be between 1 and %d characters.", tagutil.MaxTagKeyLength), http.StatusBadRequest)
+	case tagutil.TagValueTooLong:
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("Tag value length must be between 0 and %d characters.", tagutil.MaxTagValueLength), http.StatusBadRequest)
+	case tagutil.ReservedTagKey:
+		return awserrors.NewAWSError("InvalidParameterException",
+			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use.", http.StatusBadRequest)
 	}
 	return nil
 }
@@ -320,7 +322,7 @@ func validateSortBy(by string) error {
 // TagKeyType @length(min=1, max=128) constraint.
 func validateUntagKeys(keys []string) error {
 	for _, k := range keys {
-		if k == "" || len(k) > maxTagKeyLength {
+		if k == "" || utf8.RuneCountInString(k) > maxTagKeyLength {
 			return awserrors.NewAWSError("InvalidParameterException",
 				fmt.Sprintf("Tag key length must be between 1 and %d characters.", maxTagKeyLength), http.StatusBadRequest)
 		}

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/cloudfront"
@@ -73,7 +73,7 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 		Enabled:         cfg.GetEnabled(),
 		OriginID:        originID,
 		OriginDomain:    originDomain,
-		ACMRegion:       svccommon.GetRegionFromHeader(req.Header()),
+		ACMRegion:       defaults.GetRegionFromHeader(req.Header()),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -140,7 +140,7 @@ func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Requ
 	if err := h.service.deleteDistributionCore(ctx, stores, DeleteDistributionInput{
 		Id:        req.Msg.Id,
 		IfMatch:   "*",
-		ACMRegion: svccommon.GetRegionFromHeader(req.Header()),
+		ACMRegion: defaults.GetRegionFromHeader(req.Header()),
 	}); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

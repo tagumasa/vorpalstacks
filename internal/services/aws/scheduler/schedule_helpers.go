@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
@@ -151,7 +150,7 @@ func parseEcsParameters(data map[string]interface{}) *schedulerstore.EcsParamete
 		params.PlacementStrategy = parsePlacementStrategy(ps)
 	}
 	if tags, ok := getSliceField(data, "tags", "Tags"); ok {
-		params.Tags = tagutil.ParseEcsTags(tags)
+		params.Tags = parseEcsTags(tags)
 	}
 	return params
 }

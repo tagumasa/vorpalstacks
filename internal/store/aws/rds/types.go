@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 type Endpoint struct {

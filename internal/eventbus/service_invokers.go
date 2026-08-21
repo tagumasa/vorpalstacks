@@ -6,7 +6,7 @@ import (
 )
 
 // LambdaInvoker invokes a Lambda function and returns the status code and
-// response payload. This is the same contract as common.LambdaInvoker but
+// response payload. This is the same contract as lambdautil.Invoker but
 // defined here so that the Bus interface does not depend on the common
 // package.
 type LambdaInvoker interface {

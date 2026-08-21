@@ -3,35 +3,32 @@ package acm
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/paramvalidation"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
 // validateEnumList validates that every value in the list is a member of the
 // given enum set. Returns nil if the list is empty.
 func validateEnumList(values []string, paramName string, validSet map[string]bool) error {
-	for _, v := range values {
-		if !validSet[v] {
-			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", paramName, v))
-		}
-	}
-	return nil
+	return paramvalidation.EnumList(paramName, values, validSet,
+		func(field, value string) error {
+			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", field, value))
+		})
 }
 
 // validateSingleEnum validates a single-value enum parameter. Returns nil if
 // the value is empty (parameter not provided).
 func validateSingleEnum(value, paramName string, validSet map[string]bool) error {
-	if value == "" {
-		return nil
-	}
-	if !validSet[value] {
-		return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", paramName, value))
-	}
-	return nil
+	return paramvalidation.EnumValue(paramName, value, validSet,
+		func(field, value string) error {
+			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", field, value))
+		})
 }
 
 func parseCertificateArn(params map[string]interface{}, paramName string) (string, error) {
@@ -142,11 +139,11 @@ func validateIdempotencyToken(token string) error {
 // + pattern. Returns InvalidTagException on violation.
 func validateACMTags(tags []types.Tag) error {
 	for _, t := range tags {
-		if len(t.Key) < 1 || len(t.Key) > 128 {
-			return NewInvalidTagException(fmt.Sprintf("Tag key length must be 1-128: got %d", len(t.Key)))
+		if keyLen := utf8.RuneCountInString(t.Key); keyLen < 1 || keyLen > types.MaxTagKeyLength {
+			return NewInvalidTagException(fmt.Sprintf("Tag key length must be 1-%d: got %d", types.MaxTagKeyLength, keyLen))
 		}
-		if len(t.Value) > 256 {
-			return NewInvalidTagException(fmt.Sprintf("Tag value length must not exceed 256: got %d", len(t.Value)))
+		if valueLen := utf8.RuneCountInString(t.Value); valueLen > types.MaxTagValueLength {
+			return NewInvalidTagException(fmt.Sprintf("Tag value length must not exceed %d: got %d", types.MaxTagValueLength, valueLen))
 		}
 		if !tagKeyPattern.MatchString(t.Key) {
 			return NewInvalidTagException(fmt.Sprintf("Tag key contains invalid characters: %s", t.Key))

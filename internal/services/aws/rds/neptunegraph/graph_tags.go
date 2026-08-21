@@ -2,7 +2,6 @@ package neptunegraph
 
 import (
 	"context"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
@@ -43,16 +42,8 @@ func (s *NeptuneGraphService) TagResource(ctx context.Context, reqCtx *request.R
 	}
 
 	tags := parseTagsFromParams(req.Parameters)
-	if len(tags) > maxTags {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "too many tags")
-	}
-	for k, v := range tags {
-		if len(k) < 1 || len(k) > 128 || strings.HasPrefix(k, "aws:") || !tagKeyRegex.MatchString(k) {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", "invalid tag key")
-		}
-		if len(v) > 256 {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", "tag value too long")
-		}
+	if err := validateTags(tags); err != nil {
+		return nil, err
 	}
 
 	if err := store.AddTags(resourceArn, tags); err != nil {

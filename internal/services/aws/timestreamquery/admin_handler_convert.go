@@ -2,10 +2,10 @@ package timestreamquery
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"vorpalstacks/internal/utils/timeutils"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/timestreamquery"
 )
 
@@ -21,7 +21,7 @@ func (h *AdminHandler) getStores(region string) (*tsQueryStores, error) {
 
 // resolveRegion extracts the region from the request header.
 func resolveRegion(header http.Header) string {
-	return svccommon.GetRegionFromHeader(header)
+	return defaults.GetRegionFromHeader(header)
 }
 
 // toPbScheduledQuery converts a service-layer ScheduledQuerySummary DTO into

@@ -123,7 +123,7 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 		return nil, ErrInvalidParameter
 	}
 	if in.TagsProvided && len(in.Tags) > 0 {
-		if !validateTagValues(in.Tags) {
+		if !validateTagKeys(in.Tags) || !validateTagValues(in.Tags) {
 			return nil, ErrInvalidParameter
 		}
 	}

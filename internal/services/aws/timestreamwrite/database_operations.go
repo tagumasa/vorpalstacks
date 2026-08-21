@@ -7,7 +7,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // DescribeEndpoints returns information about the Timestream Write endpoints.
@@ -27,7 +26,7 @@ func (s *TimestreamWriteService) CreateDatabase(ctx context.Context, reqCtx *req
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
 
-	var tags []types.Tag
+	var tags []tagutil.Tag
 	tagsProvided := false
 	if parsedTags := tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"); len(parsedTags) > 0 {
 		tags = parsedTags

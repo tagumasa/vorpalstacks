@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
@@ -447,6 +448,33 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		}
 		if pubFound {
 			return fmt.Errorf("public zone %s must not appear in PrivateHostedZone-filtered list", pubZoneID)
+		}
+		return nil
+	}))
+
+	// The ResourceDescription comment bound is a Smithy @length trait
+	// counted in Unicode characters; a 128-character CJK comment is 384
+	// bytes but must be accepted.
+	results = append(results, r.RunTest("route53", "CreateHostedZone_CommentMultibyteAccepted", func() error {
+		mbDomain := tc.domain("mb-comment")
+		mbComment := strings.Repeat("\u65e5", 128)
+		resp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:             aws.String(mbDomain),
+			CallerReference:  aws.String(tc.callerRef("mb-comment")),
+			HostedZoneConfig: &types.HostedZoneConfig{Comment: aws.String(mbComment)},
+		})
+		if err != nil {
+			return fmt.Errorf("create with multibyte comment: %v", err)
+		}
+		hzID := aws.ToString(resp.HostedZone.Id)
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(hzID)})
+
+		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(hzID)})
+		if err != nil {
+			return fmt.Errorf("get: %v", err)
+		}
+		if getResp.HostedZone.Config == nil || aws.ToString(getResp.HostedZone.Config.Comment) != mbComment {
+			return fmt.Errorf("multibyte comment not persisted faithfully")
 		}
 		return nil
 	}))

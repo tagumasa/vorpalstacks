@@ -3,10 +3,10 @@ package cognitoidentityprovider
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/cognitoidentityprovider"
@@ -33,7 +33,7 @@ func NewAdminHandler(svc *CognitoService) *AdminHandler {
 
 // getRegionFromHeaders extracts the AWS region from the gRPC-Web metadata.
 func (h *AdminHandler) getRegionFromHeaders(headers http.Header) string {
-	return svccommon.GetRegionFromHeader(headers)
+	return defaults.GetRegionFromHeader(headers)
 }
 
 // ListUserPools lists user pools in Cognito Identity Provider with pagination.

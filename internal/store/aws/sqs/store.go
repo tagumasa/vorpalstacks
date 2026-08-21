@@ -24,9 +24,6 @@ import (
 const (
 	maxQueueNameLength    = 80
 	maxBatchEntryIdLength = 80
-	maxTagsPerQueue       = 50
-	maxTagKeyLength       = 128
-	maxTagValueLength     = 256
 )
 
 func messageKey(queueURL, messageID string) string {
@@ -38,9 +35,11 @@ func messagePrefix(queueURL string) string {
 }
 
 const (
-	purgeTimeout              = 60 * time.Second
-	minVisibilityTimeout      = 0
-	maxVisibilityTimeout      = 43200
+	purgeTimeout         = 60 * time.Second
+	minVisibilityTimeout = 0
+	// MaxVisibilityTimeout is the SQS VisibilityTimeout maximum in seconds
+	// (12 hours per the AWS SQS specification).
+	MaxVisibilityTimeout      = 43200
 	minDelaySeconds           = 0
 	maxDelaySeconds           = 900
 	minMessageRetentionPeriod = 60
@@ -50,8 +49,13 @@ const (
 	minReceiveMessageWaitTime = 0
 	maxReceiveMessageWaitTime = 20
 	minMaxNumberOfMessages    = 1
-	maxMaxNumberOfMessages    = 10
-	deduplicationWindow       = 5 * time.Minute
+	// MaxMaxNumberOfMessages is the ReceiveMessage MaxNumberOfMessages
+	// upper bound (10 per the AWS SQS specification).
+	MaxMaxNumberOfMessages = 10
+	// MaxBatchEntries is the maximum number of entries in SendMessageBatch,
+	// DeleteMessageBatch and ChangeMessageVisibilityBatch requests.
+	MaxBatchEntries     = 10
+	deduplicationWindow = 5 * time.Minute
 )
 
 // SQSStore provides SQS queue storage functionality.
@@ -230,11 +234,11 @@ func (s *SQSStore) buildQueueARN(queueName string) string {
 }
 
 func (s *SQSStore) arnToQueueURL(arn string) string {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
+	_, _, _, _, queueName := svcarn.SplitARN(arn)
+	if queueName == "" {
 		return ""
 	}
-	return s.buildQueueURL(parts[5])
+	return s.buildQueueURL(queueName)
 }
 
 func (s *SQSStore) buildDeduplicationKey(queueURL string, message *Message) string {

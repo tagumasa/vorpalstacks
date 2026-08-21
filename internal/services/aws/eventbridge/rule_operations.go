@@ -3,15 +3,14 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
-	"regexp"
 	"strconv"
-	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/common/scheduleexpr"
 	tagutil "vorpalstacks/internal/common/tags"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
@@ -48,11 +47,6 @@ func ruleToMap(r *eventsstore.Rule, includeTimestamps bool) map[string]interface
 	return result
 }
 
-var (
-	scheduleCronRegex = regexp.MustCompile(`^cron\(.+\)$`)
-	scheduleRateRegex = regexp.MustCompile(`^rate\((\d+)\s+(minute|minutes|hour|hours|day|days|week|weeks)\)$`)
-)
-
 func isValidEventPattern(pattern string) bool {
 	if pattern == "" {
 		return true
@@ -62,159 +56,7 @@ func isValidEventPattern(pattern string) bool {
 }
 
 func isValidScheduleExpression(expr string) bool {
-	if expr == "" {
-		return true
-	}
-	if scheduleCronRegex.MatchString(expr) {
-		return validateCronFields(expr)
-	}
-	if scheduleRateRegex.MatchString(expr) {
-		return true
-	}
-	return false
-}
-
-// validateCronFields checks the inner contents of cron(...) against the AWS
-// six-field layout: minutes hours day-of-month month day-of-week year.
-// Per-field ranges follow the AWS EventBridge cron reference. Invalid fields
-// (e.g. minute=99) are rejected here instead of failing silently at runtime.
-func validateCronFields(expr string) bool {
-	inner := strings.TrimPrefix(expr, "cron(")
-	inner = strings.TrimSuffix(inner, ")")
-	inner = strings.TrimSpace(inner)
-
-	fields := strings.Fields(inner)
-	if len(fields) < 5 || len(fields) > 6 {
-		return false
-	}
-
-	normalised := make([]string, len(fields))
-	for i, f := range fields {
-		normalised[i] = normaliseCronField(i, f)
-	}
-
-	if !validateCronField(normalised[0], 0, 59) {
-		return false
-	}
-	if !validateCronField(normalised[1], 0, 23) {
-		return false
-	}
-	if !validateCronField(normalised[2], 1, 31) {
-		return false
-	}
-	if !validateCronField(normalised[3], 1, 12) {
-		return false
-	}
-	if !validateCronField(normalised[4], 1, 7) {
-		return false
-	}
-	if len(normalised) == 6 && !validateCronField(normalised[5], 1970, 2199) {
-		return false
-	}
-	return true
-}
-
-// normaliseCronField replaces month/DOW names with numeric literals so the
-// numeric validators can be expressed uniformly. fieldIndex 3 is month
-// (JAN..DEC), fieldIndex 4 is day-of-week (SUN..SAT).
-func normaliseCronField(fieldIndex int, field string) string {
-	upper := strings.ToUpper(field)
-	var table map[string]string
-	if fieldIndex == 3 {
-		table = map[string]string{
-			"JAN": "1", "FEB": "2", "MAR": "3", "APR": "4", "MAY": "5", "JUN": "6",
-			"JUL": "7", "AUG": "8", "SEP": "9", "OCT": "10", "NOV": "11", "DEC": "12",
-		}
-	} else if fieldIndex == 4 {
-		table = map[string]string{
-			"SUN": "1", "MON": "2", "TUE": "3", "WED": "4",
-			"THU": "5", "FRI": "6", "SAT": "7",
-		}
-	} else {
-		return field
-	}
-	for name, num := range table {
-		upper = strings.ReplaceAll(upper, name, num)
-	}
-	return upper
-}
-
-// validateCronField verifies that an already name-normalised cron field
-// contains only legal values and operators within [min, max]. Supports the
-// same operators as the scheduler runtime: *, ?, exact, list (a,b,c),
-// range (a-b), and step (a/n, a-b/n, * /n, ?/n). a/n is equivalent to a-max/n.
-func validateCronField(field string, min, max int) bool {
-	field = strings.TrimSpace(field)
-	if field == "" || field == "*" || field == "?" {
-		return true
-	}
-	for _, part := range strings.Split(field, ",") {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			return false
-		}
-		if idx := strings.Index(part, "/"); idx != -1 {
-			rangePart := part[:idx]
-			stepStr := part[idx+1:]
-			step, err := strconv.Atoi(stepStr)
-			if err != nil || step <= 0 {
-				return false
-			}
-			if rangePart == "*" || rangePart == "?" {
-				continue
-			}
-			// Plain numeric a/n: equivalent to a-max/n.
-			if !strings.Contains(rangePart, "-") {
-				n, err := strconv.Atoi(rangePart)
-				if err != nil || n < min || n > max {
-					return false
-				}
-				continue
-			}
-			if !validateCronRange(rangePart, min, max) {
-				return false
-			}
-			continue
-		}
-		if strings.Contains(part, "-") {
-			if !validateCronRange(part, min, max) {
-				return false
-			}
-			continue
-		}
-		n, err := strconv.Atoi(part)
-		if err != nil {
-			return false
-		}
-		if n < min || n > max {
-			return false
-		}
-	}
-	return true
-}
-
-// validateCronRange validates a-b segments within [min, max]. Both endpoints
-// must be integers and start <= end.
-func validateCronRange(s string, min, max int) bool {
-	parts := strings.SplitN(s, "-", 2)
-	if len(parts) != 2 {
-		return false
-	}
-	start, err1 := strconv.Atoi(parts[0])
-	end, err2 := strconv.Atoi(parts[1])
-	if err1 != nil || err2 != nil {
-		return false
-	}
-	if start < min || start > max {
-		return false
-	}
-	if end < min || end > max {
-		return false
-	}
-	if start > end {
-		return false
-	}
-	return true
+	return scheduleexpr.ValidateRuleExpression(expr)
 }
 
 // PutRule creates or updates a rule on the specified event bus.
@@ -261,7 +103,7 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		rule.Description = desc
 	}
@@ -326,7 +168,7 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 			if existingRule != nil {
 				if desc, ok := req.Parameters["Description"].(string); ok {
 					if !validateDescription(desc) {
-						return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+						return nil, errDescriptionTooLong()
 					}
 					existingRule.Description = desc
 				}

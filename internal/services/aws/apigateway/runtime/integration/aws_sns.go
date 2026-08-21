@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/endpoint"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/services/aws/apigateway/endpoint"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TagOperationConfig defines the configuration for tag operations.
@@ -142,7 +141,7 @@ func GetResourceKey(params map[string]interface{}, config TagOperationConfig) st
 }
 
 // GetTags extracts tags from parameters using the given configuration.
-func GetTags(params map[string]interface{}, config TagOperationConfig) []types.Tag {
+func GetTags(params map[string]interface{}, config TagOperationConfig) []Tag {
 	if config.UseQueryFallback {
 		tags := ParseTagsWithQueryFallback(params, config.TagsParam)
 		if len(tags) == 0 {
@@ -162,13 +161,13 @@ func GetTagKeys(params map[string]interface{}, config TagOperationConfig) []stri
 }
 
 // TagResourceHandler is a function that tags a resource.
-type TagResourceHandler func(resourceKey string, tags []types.Tag) error
+type TagResourceHandler func(resourceKey string, tags []Tag) error
 
 // UntagResourceHandler is a function that untags a resource.
 type UntagResourceHandler func(resourceKey string, tagKeys []string) error
 
 // ListTagsHandler is a function that lists tags for a resource.
-type ListTagsHandler func(resourceKey string) ([]types.Tag, error)
+type ListTagsHandler func(resourceKey string) ([]Tag, error)
 
 // HandleListSimple processes a simple ListTags request without full error handling.
 func HandleListSimple(

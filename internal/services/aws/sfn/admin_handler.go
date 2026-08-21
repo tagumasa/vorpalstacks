@@ -6,7 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
-	awstypes "vorpalstacks/internal/utils/aws/types"
+	awstypes "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/sfn"

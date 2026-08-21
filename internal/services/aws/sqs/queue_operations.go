@@ -75,7 +75,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 		switch attrName {
 		case "VisibilityTimeout":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 43200 {
+				if val < 0 || val > int64(sqsstore.MaxVisibilityTimeout) {
 					return ErrInvalidParameterValue
 				}
 				queue.VisibilityTimeout = int32(val)

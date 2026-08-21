@@ -6,7 +6,7 @@ package waf
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // MaxWebACLCapacity is the maximum capacity, in web ACL capacity units

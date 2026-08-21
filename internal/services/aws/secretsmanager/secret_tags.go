@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func secretsManagerTagConfig(store secretsmanagerstore.SecretStoreInterface, secretName string) tagutil.TagHandlerConfig {
@@ -23,26 +22,26 @@ func secretsManagerTagConfig(store secretsmanagerstore.SecretStoreInterface, sec
 			TagValueName:  "Value",
 		},
 		ResourceKey: func(_ string) string { return secretName },
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tagutil.Tag {
 			return tagutil.ParseTagsWithQueryFallback(params, "Tags")
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return request.GetStringList(params, "TagKeys")
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
 			return store.TagSecret(resourceKey, tagutil.ToMap(tags))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.UntagSecret(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			m, err := store.ListSecretTags(resourceKey)
 			if err != nil {
 				return nil, err
 			}
 			return tagutil.MapToTags(m), nil
 		},
-		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.ToResponse(tags),
 			}, nil

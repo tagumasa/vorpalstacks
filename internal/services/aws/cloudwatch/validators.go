@@ -5,18 +5,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	tagutil "vorpalstacks/internal/common/tags"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CloudWatch alarm limits per AWS spec.
 const (
-	maxAlarmTags        = 50
-	maxAlarmTagKeyLen   = 128
-	maxAlarmTagValueLen = 256
 	maxAlarmNameLen     = 255
 	maxActionsPerType   = 5
 	maxDimensions       = 30
@@ -159,24 +156,20 @@ var (
 
 // validateAlarmTagList validates tags against AWS CloudWatch tag limits
 // (max 50 tags, key 1-128 chars, value 0-256 chars, no "aws:" prefix).
-func validateAlarmTagList(tags []types.Tag) error {
-	if len(tags) > maxAlarmTags {
+func validateAlarmTagList(tags []tagutil.Tag) error {
+	switch v, _ := tagutil.CheckTags(tags, tagutil.StandardLimits()); v {
+	case tagutil.TooManyTags:
 		return awserrors.NewInvalidParameterValueException(
-			fmt.Sprintf("Number of tags must not exceed %d", maxAlarmTags))
-	}
-	for _, t := range tags {
-		if len(t.Key) == 0 || len(t.Key) > maxAlarmTagKeyLen {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag key length must be between 1 and 128 characters")
-		}
-		if len(t.Value) > maxAlarmTagValueLen {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag value length must not exceed 256 characters")
-		}
-		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
-			return awserrors.NewInvalidParameterValueException(
-				"Tag keys cannot start with 'aws:'")
-		}
+			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Tag key length must be between 1 and %d characters", tagutil.MaxTagKeyLength))
+	case tagutil.TagValueTooLong:
+		return awserrors.NewInvalidParameterValueException(
+			fmt.Sprintf("Tag value length must not exceed %d characters", tagutil.MaxTagValueLength))
+	case tagutil.ReservedTagKey:
+		return awserrors.NewInvalidParameterValueException(
+			"Tag keys cannot start with 'aws:'")
 	}
 	return nil
 }
@@ -334,9 +327,9 @@ func validateInsightRuleDefinition(def string) error {
 }
 
 // validateAlarmDescription validates an AlarmDescription
-// (Smithy: length 0-1024).
+// (Smithy: length 0-1024 counted in Unicode characters).
 func validateAlarmDescription(desc string) error {
-	if len(desc) > maxAlarmDescLen {
+	if utf8.RuneCountInString(desc) > maxAlarmDescLen {
 		return awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("AlarmDescription must not exceed %d characters", maxAlarmDescLen))
 	}
@@ -344,9 +337,9 @@ func validateAlarmDescription(desc string) error {
 }
 
 // validateStateReason validates a StateReason
-// (Smithy: length 0-1023).
+// (Smithy: length 0-1023 counted in Unicode characters).
 func validateStateReason(reason string) error {
-	if len(reason) > maxStateReasonLen {
+	if utf8.RuneCountInString(reason) > maxStateReasonLen {
 		return awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("StateReason must not exceed %d characters", maxStateReasonLen))
 	}

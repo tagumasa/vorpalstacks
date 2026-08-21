@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	"vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -32,7 +31,7 @@ type CreateKeyInput struct {
 	XksKeyID           string
 	Policy             string
 	BypassLockoutCheck bool
-	Tags               []types.Tag
+	Tags               []tagutil.Tag
 	AccountID          string
 }
 

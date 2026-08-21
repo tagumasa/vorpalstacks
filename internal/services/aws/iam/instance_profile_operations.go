@@ -10,7 +10,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -219,7 +218,7 @@ var instanceProfileTagOps = tagOps[*iamstore.InstanceProfile]{
 		return s.InstanceProfiles().Get(n)
 	},
 	putFn:  func(s *iamstore.IAMStore, r *iamstore.InstanceProfile) error { return s.InstanceProfiles().Put(r) },
-	tagsFn: func(r *iamstore.InstanceProfile) *[]types.Tag { return &r.Tags },
+	tagsFn: func(r *iamstore.InstanceProfile) *[]tags.Tag { return &r.Tags },
 }
 
 // ListInstanceProfileTags lists the tags attached to an instance profile.

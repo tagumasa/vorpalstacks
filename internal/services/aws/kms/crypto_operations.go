@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net/http"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
-	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 // Encrypt encrypts plaintext using the specified KMS key.

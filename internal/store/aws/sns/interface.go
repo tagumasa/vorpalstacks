@@ -1,8 +1,8 @@
 package sns
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // SNSStoreInterface defines operations for managing SNS topics and subscriptions.

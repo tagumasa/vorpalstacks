@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"vorpalstacks/internal/common/kmsutil"
 
-	"vorpalstacks/internal/common"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
 )
@@ -178,13 +178,13 @@ func (s *SQSService) getQueueUrlCore(store sqsstore.SQSStoreInterface, in GetQue
 // error that matches the AWS SQS API error codes.
 func mapKMSError(err error) error {
 	switch {
-	case errors.Is(err, common.ErrKMSKeyNotFound):
+	case errors.Is(err, kmsutil.ErrKeyNotFound):
 		return ErrKmsNotFound
-	case errors.Is(err, common.ErrKMSKeyDisabled):
+	case errors.Is(err, kmsutil.ErrKeyDisabled):
 		return ErrKmsDisabled
-	case errors.Is(err, common.ErrKMSKeyInvalidState):
+	case errors.Is(err, kmsutil.ErrKeyInvalidState):
 		return ErrKmsInvalidState
-	case errors.Is(err, common.ErrKMSKeyInvalidUsage):
+	case errors.Is(err, kmsutil.ErrKeyInvalidUsage):
 		return ErrKmsInvalidKeyUsage
 	default:
 		return ErrInvalidParameterValue

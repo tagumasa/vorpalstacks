@@ -7,7 +7,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	sqsstore "vorpalstacks/internal/store/aws/sqs"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func sqsMapError(err error) error {
@@ -32,20 +31,20 @@ func sqsTagConfig(store sqsstore.SQSStoreInterface) tagutil.TagHandlerConfig {
 			}
 			return nil
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			return store.TagQueue(resourceKey, tagutil.ToMap(tags))
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
 			return store.UntagQueue(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			m, err := store.ListQueueTags(resourceKey)
 			if err != nil {
 				return nil, err
 			}
 			return tagutil.MapToTags(m), nil
 		},
-		FormatResponse: func(tags []types.Tag, rawResourceKey string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, rawResourceKey string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.ToMap(tags),
 			}, nil

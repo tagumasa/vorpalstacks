@@ -3,13 +3,12 @@ package apigateway
 import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/apigateway"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
-// tagsFromMap converts a flat tag map into the []types.Tag slice used by
+// tagsFromMap converts a flat tag map into the []tags.Tag slice used by
 // the store layer. Returns nil when the map is empty so that the JSON
 // serialiser skips the field entirely.
-func tagsFromMap(m map[string]string) []types.Tag {
+func tagsFromMap(m map[string]string) []tags.Tag {
 	if len(m) == 0 {
 		return nil
 	}

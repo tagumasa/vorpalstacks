@@ -3,10 +3,10 @@ package dynamodb
 import (
 	"context"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // TableStoreInterface defines operations for managing DynamoDB tables.

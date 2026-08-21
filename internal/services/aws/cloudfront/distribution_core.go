@@ -9,9 +9,9 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/resilience"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

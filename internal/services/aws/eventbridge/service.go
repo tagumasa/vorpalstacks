@@ -16,6 +16,7 @@ import (
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // EventsService provides AWS EventBridge operations.
@@ -100,7 +101,7 @@ func (s *EventsService) GetStoreForRegion(region string) (*eventsstore.EventsSto
 }
 
 func (s *EventsService) handleBusDelivery(ctx context.Context, evt *eventbus.EventBridgeDeliveryEvent) eventbus.HandlerResult {
-	if strings.Contains(evt.TargetARN, ":event-bus/") {
+	if _, _, _, _, resource := svcarn.SplitARN(evt.TargetARN); strings.HasPrefix(resource, "event-bus/") {
 		return s.handleEventBusDelivery(ctx, evt)
 	}
 

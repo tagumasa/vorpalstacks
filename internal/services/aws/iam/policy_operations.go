@@ -14,7 +14,6 @@ import (
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	awsarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -293,7 +292,7 @@ var policyTagOps = tagOps[*iamstore.Policy]{
 	notFoundFn: func(n string) error { return NewNoSuchPolicyError(n) },
 	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Policy, error) { return s.Policies().Get(n) },
 	putFn:      func(s *iamstore.IAMStore, r *iamstore.Policy) error { return s.Policies().Put(r) },
-	tagsFn:     func(r *iamstore.Policy) *[]types.Tag { return &r.Tags },
+	tagsFn:     func(r *iamstore.Policy) *[]tags.Tag { return &r.Tags },
 }
 
 // TagPolicy adds tags to a managed policy.

@@ -86,6 +86,37 @@ func (r *TestRunner) runRoute53TagTests(tc *route53TestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("route53", "ChangeTagsForResource_TooManyTags", func() error {
+		tagDomain := tc.domain("taglimit")
+		tagRef := fmt.Sprintf("taglimit-%d", tc.uniq)
+		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(tagDomain),
+			CallerReference: aws.String(tagRef),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		tagZoneID := aws.ToString(createResp.HostedZone.Id)
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(tagZoneID)})
+
+		addTags := make([]types.Tag, 11)
+		for i := range addTags {
+			addTags[i] = types.Tag{
+				Key:   aws.String(fmt.Sprintf("Key%d", i)),
+				Value: aws.String("v"),
+			}
+		}
+		_, err = tc.client.ChangeTagsForResource(tc.ctx, &route53.ChangeTagsForResourceInput{
+			ResourceType: types.TagResourceTypeHostedzone,
+			ResourceId:   aws.String(tagZoneID),
+			AddTags:      addTags,
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for 11 tags (quota is 10)")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("route53", "ListTagsForResource_HealthCheck", func() error {
 		hcRef := fmt.Sprintf("hctagref-%d", tc.uniq)
 		hcResp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{

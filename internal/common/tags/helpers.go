@@ -7,17 +7,27 @@ import (
 	"strings"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ParseTags parses tags from request parameters.
-func ParseTags(params map[string]interface{}, key string) []types.Tag {
-	var result []types.Tag
+// Standard AWS tag constraints enforced by ValidateTags: at most
+// MaxTagsPerResource tags on one resource, tag keys of 1 to MaxTagKeyLength
+// characters, and tag values of at most MaxTagValueLength characters.
+// Services whose AWS documentation specifies different limits must not use
+// these constants.
+const (
+	MaxTagsPerResource = 50
+	MaxTagKeyLength    = 128
+	MaxTagValueLength  = 256
+)
+
+func ParseTags(params map[string]interface{}, key string) []Tag {
+	var result []Tag
 	if tagsParam, ok := params[key]; ok {
 		if tagList, ok := tagsParam.([]interface{}); ok {
 			for _, t := range tagList {
 				if tagMap, ok := t.(map[string]interface{}); ok {
-					result = append(result, types.Tag{
+					result = append(result, Tag{
 						Key:   request.GetStringParam(tagMap, "Key"),
 						Value: request.GetStringParam(tagMap, "Value"),
 					})
@@ -25,7 +35,7 @@ func ParseTags(params map[string]interface{}, key string) []types.Tag {
 			}
 		} else if tagMap, ok := tagsParam.(map[string]interface{}); ok {
 			if key, hasKey := tagMap["Key"].(string); hasKey {
-				result = append(result, types.Tag{
+				result = append(result, Tag{
 					Key:   key,
 					Value: request.GetStringParam(tagMap, "Value"),
 				})
@@ -44,18 +54,18 @@ func ParseTags(params map[string]interface{}, key string) []types.Tag {
 	return result
 }
 
-func parseTagsFromMap(tagMap map[string]interface{}) []types.Tag {
-	var result []types.Tag
+func parseTagsFromMap(tagMap map[string]interface{}) []Tag {
+	var result []Tag
 	if items, ok := tagMap["Items"].([]interface{}); ok {
 		for _, item := range items {
 			if itemMap, ok := item.(map[string]interface{}); ok {
 				if tagInner, ok := itemMap["Tag"].(map[string]interface{}); ok {
-					result = append(result, types.Tag{
+					result = append(result, Tag{
 						Key:   request.GetStringParam(tagInner, "Key"),
 						Value: request.GetStringParam(tagInner, "Value"),
 					})
 				} else {
-					result = append(result, types.Tag{
+					result = append(result, Tag{
 						Key:   request.GetStringParam(itemMap, "Key"),
 						Value: request.GetStringParam(itemMap, "Value"),
 					})
@@ -63,14 +73,14 @@ func parseTagsFromMap(tagMap map[string]interface{}) []types.Tag {
 			}
 		}
 	} else if tagInner, ok := tagMap["Tag"].(map[string]interface{}); ok {
-		result = append(result, types.Tag{
+		result = append(result, Tag{
 			Key:   request.GetStringParam(tagInner, "Key"),
 			Value: request.GetStringParam(tagInner, "Value"),
 		})
 	} else {
 		for k, v := range tagMap {
 			if val, ok := v.(string); ok {
-				result = append(result, types.Tag{Key: k, Value: val})
+				result = append(result, Tag{Key: k, Value: val})
 			}
 		}
 	}
@@ -78,7 +88,7 @@ func parseTagsFromMap(tagMap map[string]interface{}) []types.Tag {
 }
 
 // ParseTagsWithQueryFallback parses tags from request parameters with fallback to query-style format.
-func ParseTagsWithQueryFallback(params map[string]interface{}, jsonKey string) []types.Tag {
+func ParseTagsWithQueryFallback(params map[string]interface{}, jsonKey string) []Tag {
 	tags := ParseTags(params, jsonKey)
 	if len(tags) == 0 {
 		tags = ParseTags(params, request.LowerFirst(jsonKey))
@@ -90,7 +100,7 @@ func ParseTagsWithQueryFallback(params map[string]interface{}, jsonKey string) [
 		return tags
 	}
 
-	var result []types.Tag
+	var result []Tag
 	for i := 1; ; i++ {
 		keyKey := jsonKey + ".member." + strconv.Itoa(i) + ".Key"
 		valueKey := jsonKey + ".member." + strconv.Itoa(i) + ".Value"
@@ -110,7 +120,7 @@ func ParseTagsWithQueryFallback(params map[string]interface{}, jsonKey string) [
 			value = request.GetStringParam(params, valueKeyLower)
 		}
 
-		result = append(result, types.Tag{Key: key, Value: value})
+		result = append(result, Tag{Key: key, Value: value})
 	}
 	return result
 }
@@ -183,7 +193,7 @@ func ParseTagKeysAsSlice(params map[string]interface{}, key string) []string {
 }
 
 // ToResponse converts tags to response format.
-func ToResponse(tags []types.Tag) []map[string]interface{} {
+func ToResponse(tags []Tag) []map[string]interface{} {
 	if len(tags) == 0 {
 		return []map[string]interface{}{}
 	}
@@ -198,7 +208,7 @@ func ToResponse(tags []types.Tag) []map[string]interface{} {
 }
 
 // ToResponseWithKeyNames converts tags to response format with custom key names.
-func ToResponseWithKeyNames(tags []types.Tag, keyName, valueName string) []map[string]interface{} {
+func ToResponseWithKeyNames(tags []Tag, keyName, valueName string) []map[string]interface{} {
 	if len(tags) == 0 {
 		return []map[string]interface{}{}
 	}
@@ -213,7 +223,7 @@ func ToResponseWithKeyNames(tags []types.Tag, keyName, valueName string) []map[s
 }
 
 // Apply merges new tags into existing tags.
-func Apply(existing []types.Tag, newTags []types.Tag) []types.Tag {
+func Apply(existing []Tag, newTags []Tag) []Tag {
 	tagMap := make(map[string]string)
 	for _, tag := range existing {
 		tagMap[tag.Key] = tag.Value
@@ -221,16 +231,16 @@ func Apply(existing []types.Tag, newTags []types.Tag) []types.Tag {
 	for _, tag := range newTags {
 		tagMap[tag.Key] = tag.Value
 	}
-	result := make([]types.Tag, 0, len(tagMap))
+	result := make([]Tag, 0, len(tagMap))
 	for key, value := range tagMap {
-		result = append(result, types.Tag{Key: key, Value: value})
+		result = append(result, Tag{Key: key, Value: value})
 	}
 	return result
 }
 
 // Remove removes tags with specified keys from a tag slice.
-func Remove(tags []types.Tag, keysToRemove map[string]bool) []types.Tag {
-	result := make([]types.Tag, 0)
+func Remove(tags []Tag, keysToRemove map[string]bool) []Tag {
+	result := make([]Tag, 0)
 	for _, tag := range tags {
 		if !keysToRemove[tag.Key] {
 			result = append(result, tag)
@@ -240,7 +250,7 @@ func Remove(tags []types.Tag, keysToRemove map[string]bool) []types.Tag {
 }
 
 // RemoveByTagKeys removes tags whose keys appear in the provided slice.
-func RemoveByTagKeys(t []types.Tag, keys []string) []types.Tag {
+func RemoveByTagKeys(t []Tag, keys []string) []Tag {
 	m := make(map[string]bool, len(keys))
 	for _, k := range keys {
 		m[k] = true
@@ -249,7 +259,7 @@ func RemoveByTagKeys(t []types.Tag, keys []string) []types.Tag {
 }
 
 // ToMap converts a slice of tags to a map.
-func ToMap(tags []types.Tag) map[string]string {
+func ToMap(tags []Tag) map[string]string {
 	result := make(map[string]string)
 	for _, tag := range tags {
 		result[tag.Key] = tag.Value
@@ -258,26 +268,26 @@ func ToMap(tags []types.Tag) map[string]string {
 }
 
 // MapToTags converts a map to a slice of tags.
-func MapToTags(m map[string]string) []types.Tag {
+func MapToTags(m map[string]string) []Tag {
 	if m == nil {
 		return nil
 	}
-	result := make([]types.Tag, 0, len(m))
+	result := make([]Tag, 0, len(m))
 	for k, v := range m {
-		result = append(result, types.Tag{Key: k, Value: v})
+		result = append(result, Tag{Key: k, Value: v})
 	}
 	return result
 }
 
 // MapInterfaceToTags converts a map with interface values to a slice of tags.
-func MapInterfaceToTags(m map[string]interface{}) []types.Tag {
+func MapInterfaceToTags(m map[string]interface{}) []Tag {
 	if m == nil {
 		return nil
 	}
-	result := make([]types.Tag, 0, len(m))
+	result := make([]Tag, 0, len(m))
 	for k, v := range m {
 		if vs, ok := v.(string); ok {
-			result = append(result, types.Tag{Key: k, Value: vs})
+			result = append(result, Tag{Key: k, Value: vs})
 		}
 	}
 	return result
@@ -320,15 +330,15 @@ func ParseTagsAsMap(params map[string]interface{}, key string) map[string]string
 	return ToMap(ParseTags(params, key))
 }
 
-// TagConverter converts a type T to a types.Tag.
-type TagConverter[T any] func(T) types.Tag
+// TagConverter converts a type T to a Tag.
+type TagConverter[T any] func(T) Tag
 
-// ConvertTags converts a slice of type T to a slice of types.Tag using a converter function.
-func ConvertTags[T any](tags []T, converter TagConverter[T]) []types.Tag {
+// ConvertTags converts a slice of type T to a slice of Tag using a converter function.
+func ConvertTags[T any](tags []T, converter TagConverter[T]) []Tag {
 	if tags == nil {
 		return nil
 	}
-	result := make([]types.Tag, len(tags))
+	result := make([]Tag, len(tags))
 	for i, tag := range tags {
 		result[i] = converter(tag)
 	}
@@ -336,13 +346,13 @@ func ConvertTags[T any](tags []T, converter TagConverter[T]) []types.Tag {
 }
 
 // ParseTagsWithKeyNames parses tags from params with custom key and value names.
-func ParseTagsWithKeyNames(params map[string]interface{}, listKey, keyName, valueName string) []types.Tag {
-	var result []types.Tag
+func ParseTagsWithKeyNames(params map[string]interface{}, listKey, keyName, valueName string) []Tag {
+	var result []Tag
 	if tagsParam, ok := params[listKey]; ok {
 		if tagList, ok := tagsParam.([]interface{}); ok {
 			for _, t := range tagList {
 				if tagMap, ok := t.(map[string]interface{}); ok {
-					result = append(result, types.Tag{
+					result = append(result, Tag{
 						Key:   request.GetStringParam(tagMap, keyName),
 						Value: request.GetStringParam(tagMap, valueName),
 					})
@@ -354,13 +364,13 @@ func ParseTagsWithKeyNames(params map[string]interface{}, listKey, keyName, valu
 }
 
 // ParseTagsWithQueryFallbackAndKeyNames parses tags from request parameters with query fallback and custom key names.
-func ParseTagsWithQueryFallbackAndKeyNames(params map[string]interface{}, jsonKey, keyName, valueName string) []types.Tag {
+func ParseTagsWithQueryFallbackAndKeyNames(params map[string]interface{}, jsonKey, keyName, valueName string) []Tag {
 	tags := ParseTagsWithKeyNames(params, jsonKey, keyName, valueName)
 	if len(tags) > 0 {
 		return tags
 	}
 
-	var result []types.Tag
+	var result []Tag
 	for i := 1; ; i++ {
 		keyKey := jsonKey + ".member." + strconv.Itoa(i) + "." + keyName
 		valueKey := jsonKey + ".member." + strconv.Itoa(i) + "." + valueName
@@ -380,14 +390,14 @@ func ParseTagsWithQueryFallbackAndKeyNames(params map[string]interface{}, jsonKe
 			value = request.GetStringParam(params, valueKeyLower)
 		}
 
-		result = append(result, types.Tag{Key: key, Value: value})
+		result = append(result, Tag{Key: key, Value: value})
 	}
 	return result
 }
 
 // ParseTagsWithPrefix parses tags from request parameters using a prefix pattern.
-func ParseTagsWithPrefix(params map[string]interface{}, prefix string) []types.Tag {
-	var result []types.Tag
+func ParseTagsWithPrefix(params map[string]interface{}, prefix string) []Tag {
+	var result []Tag
 	for i := 1; ; i++ {
 		keyKey := prefix + "." + strconv.Itoa(i) + ".Key"
 		valueKey := prefix + "." + strconv.Itoa(i) + ".Value"
@@ -405,7 +415,7 @@ func ParseTagsWithPrefix(params map[string]interface{}, prefix string) []types.T
 			value = request.GetStringParam(params, strings.ToLower(valueKey))
 		}
 
-		result = append(result, types.Tag{Key: key, Value: value})
+		result = append(result, Tag{Key: key, Value: value})
 	}
 	return result
 }
@@ -430,7 +440,7 @@ func ParseTagKeysWithKeyName(params map[string]interface{}, listKey, keyName str
 }
 
 // ConvertToMapSlice converts a slice of tags to a slice of string maps.
-func ConvertToMapSlice(tags []types.Tag) []map[string]string {
+func ConvertToMapSlice(tags []Tag) []map[string]string {
 	result := make([]map[string]string, 0, len(tags))
 	for _, tag := range tags {
 		result = append(result, map[string]string{
@@ -441,88 +451,12 @@ func ConvertToMapSlice(tags []types.Tag) []map[string]string {
 	return result
 }
 
-// MessageTag represents a tag with a name and value for message routing.
-type MessageTag struct {
-	Name  string
-	Value string
-}
-
-// ParseMessageTags parses message tags from request parameters.
-func ParseMessageTags(params map[string]interface{}, listKey string) []MessageTag {
-	tagsIf, ok := params[listKey]
-	if !ok {
-		return nil
-	}
-	tagList, ok := tagsIf.([]interface{})
-	if !ok {
-		return nil
-	}
-	return ParseMessageTagsFromList(tagList)
-}
-
-// ParseMessageTagsFromList parses message tags from a list of interface values.
-func ParseMessageTagsFromList(tagList []interface{}) []MessageTag {
-	var result []MessageTag
-	for _, t := range tagList {
-		tagMap, ok := t.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		result = append(result, MessageTag{
-			Name:  request.GetStringParam(tagMap, "Name"),
-			Value: request.GetStringParam(tagMap, "Value"),
-		})
-	}
-	return result
-}
-
-// ParseEcsTags parses ECS-style tags from a list of interface values.
-func ParseEcsTags(data []interface{}) []map[string]string {
-	if len(data) == 0 {
-		return nil
-	}
-	var result []map[string]string
-	for _, item := range data {
-		if m, ok := item.(map[string]interface{}); ok {
-			tag := make(map[string]string)
-			for k, v := range m {
-				if str, ok := v.(string); ok {
-					tag[k] = str
-				}
-			}
-			result = append(result, tag)
-		}
-	}
-	return result
-}
-
-// ConvertMessageTagsToSESv2 converts message tags to SESv2 format.
-func ConvertMessageTagsToSESv2(tags []MessageTag) []struct {
-	Name  string
-	Value string
-} {
-	if len(tags) == 0 {
-		return nil
-	}
-	result := make([]struct {
-		Name  string
-		Value string
-	}, len(tags))
-	for i, t := range tags {
-		result[i].Name = t.Name
-		result[i].Value = t.Value
-	}
-	return result
-}
-
 // HasDuplicateKeys returns true if the tag slice contains any duplicate
-// tag keys. AWS requires unique tag keys within a single TagResource call.
-func HasDuplicateKeys(tags []types.Tag) bool {
+// tag keys, including duplicates of the empty key. AWS requires unique
+// tag keys within a single TagResource call.
+func HasDuplicateKeys(tags []Tag) bool {
 	seen := make(map[string]bool, len(tags))
 	for _, t := range tags {
-		if t.Key == "" {
-			continue
-		}
 		if seen[t.Key] {
 			return true
 		}
@@ -538,20 +472,16 @@ func HasDuplicateKeys(tags []types.Tag) bool {
 //   - Tag value: 0–256 characters.
 //
 // Returns nil when the tag set is valid.
-func ValidateTags(tags []types.Tag) error {
-	if len(tags) > 50 {
+func ValidateTags(tags []Tag) error {
+	switch v, _ := CheckTags(tags, StandardLimits()); v {
+	case TooManyTags:
 		return ErrTooManyTags
-	}
-	for _, t := range tags {
-		if len(t.Key) < 1 || len(t.Key) > 128 {
-			return ErrInvalidTagKey
-		}
-		if len(t.Value) > 256 {
-			return ErrInvalidTagValue
-		}
-		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
-			return ErrReservedTagKey
-		}
+	case TagKeyTooShort, TagKeyTooLong:
+		return ErrInvalidTagKey
+	case TagValueTooLong:
+		return ErrInvalidTagValue
+	case ReservedTagKey:
+		return ErrReservedTagKey
 	}
 	return nil
 }

@@ -2,8 +2,8 @@ package sns
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sns"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
@@ -17,7 +17,7 @@ import (
 // getSNSStore returns the SNS store for the region extracted from the
 // request header.
 func (h *AdminHandler) getSNSStore(headers http.Header) (snsstore.SNSStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.getSNSStoreByRegion(region)
 }
 

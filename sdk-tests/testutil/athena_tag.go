@@ -33,6 +33,19 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 		return err
 	}))
 
+	results = append(results, tc.runner.RunTest("athena", "TagResource_ReservedPrefixRejected", func() error {
+		_, err := client.TagResource(ctx, &athena.TagResourceInput{
+			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+			Tags: []types.Tag{
+				{Key: aws.String("aws:reserved"), Value: aws.String("v")},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for aws:-prefixed tag key")
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource", func() error {
 		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
 			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),

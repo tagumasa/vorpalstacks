@@ -2,9 +2,9 @@ package apigateway
 
 import (
 	"google.golang.org/protobuf/proto"
+	aws_types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
-	aws_types "vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 

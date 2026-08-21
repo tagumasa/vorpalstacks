@@ -270,9 +270,8 @@ func (s *Route53Service) UpdateHostedZoneComment(ctx context.Context, reqCtx *re
 	}
 
 	comment := request.GetStringParam(req.Parameters, "Comment")
-	// Validate comment length (AWS max 256 characters).
-	if len(comment) > 256 {
-		return nil, awserrors.NewAWSError("InvalidInput", "Comment must not exceed 256 characters", 400)
+	if err := validateComment(comment); err != nil {
+		return nil, err
 	}
 	if zone.Config == nil {
 		zone.Config = &route53store.HostedZoneConfig{}

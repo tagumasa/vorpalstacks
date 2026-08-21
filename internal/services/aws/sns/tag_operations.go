@@ -7,7 +7,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	snsstore "vorpalstacks/internal/store/aws/sns"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func snsMapError(err error) error {
@@ -25,18 +24,18 @@ func snsMapError(err error) error {
 func snsTagConfig(store snsstore.SNSStoreInterface) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			return store.Tag(resourceKey, tags)
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
 			return store.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return store.ListTagsForResource(resourceKey)
 		},
 		TagResponse: func(ctx context.Context, resourceKey string) (interface{}, error) {
 			return tagutil.HandleListSimple(ctx, tagutil.StandardConfig, resourceKey,
-				func(key string) ([]types.Tag, error) { return store.ListTagsForResource(key) },
+				func(key string) ([]tagutil.Tag, error) { return store.ListTagsForResource(key) },
 			)
 		},
 		MapError: snsMapError,

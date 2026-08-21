@@ -1,8 +1,8 @@
 package cognitoidentityprovider
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CognitoStoreInterface defines operations for managing Cognito User Pools.

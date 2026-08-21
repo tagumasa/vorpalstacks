@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/s3"
@@ -22,20 +22,20 @@ import (
 // getBucketStoreFromHeaders returns the bucket store for the region in the
 // request headers.
 func (h *AdminHandler) getBucketStoreFromHeaders(headers http.Header) s3store.BucketStoreInterface {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.s3Store.Buckets(region)
 }
 
 // getObjectStoreFromHeaders returns the object store for the region in the
 // request headers.
 func (h *AdminHandler) getObjectStoreFromHeaders(headers http.Header) s3store.ObjectStoreInterface {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.s3Store.Objects(region)
 }
 
 // getStoresFromHeaders returns both bucket and object stores for the region.
 func (h *AdminHandler) getStoresFromHeaders(headers http.Header) (s3store.BucketStoreInterface, s3store.ObjectStoreInterface) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.s3Store.Buckets(region), h.service.s3Store.Objects(region)
 }
 

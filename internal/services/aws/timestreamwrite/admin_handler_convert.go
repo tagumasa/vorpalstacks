@@ -2,10 +2,10 @@ package timestreamwrite
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/timestreamwrite"
@@ -20,7 +20,7 @@ import (
 // getStoreFromHeader resolves the per-region tsWriteStores for the given
 // gRPC-Web request headers.
 func (h *AdminHandler) getStoreFromHeader(header http.Header) (*tsWriteStores, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	stores, err := h.service.GetStoresForRegion(region)
 	if err != nil {
 		return nil, err

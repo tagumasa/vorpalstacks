@@ -9,7 +9,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	awserrors "vorpalstacks/internal/utils/aws/errors"
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 func testEvents(msgs ...string) []logEventWithContext {

@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // esmTagResourceKey namespaces an event source mapping's tags inside the
@@ -63,7 +62,7 @@ func lambdaTagConfig(s *LambdaService, reqCtx *request.RequestContext) tagutil.T
 			}
 			return svcarn.ExtractFunctionNameFromARN(rawKey)
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tagutil.Tag {
 			return tagutil.ParseTags(params, "Tags")
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
@@ -117,7 +116,7 @@ func lambdaTagConfig(s *LambdaService, reqCtx *request.RequestContext) tagutil.T
 			}
 			return nil
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return err
@@ -131,14 +130,14 @@ func lambdaTagConfig(s *LambdaService, reqCtx *request.RequestContext) tagutil.T
 			}
 			return store.Functions.TagStore.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return nil, err
 			}
 			return store.Functions.TagStore.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tags []types.Tag, rawResourceKey string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, rawResourceKey string) (interface{}, error) {
 			return map[string]interface{}{
 				"Tags": tagutil.ToMap(tags),
 			}, nil

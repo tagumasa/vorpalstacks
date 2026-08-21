@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // CreateLogGroup creates a new CloudWatch Logs log group.
@@ -213,22 +212,22 @@ func (s *LogsService) tagHandlerConfig(store *logsstore.Store) tagutil.TagHandle
 			RequireResource:    true,
 			CaseInsensitiveRes: true,
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tagutil.Tag {
 			return tagutil.MapToTags(tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(params, "Tags")))
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return request.GetStringList(params, "TagKeys")
 		},
-		TagFunc: func(_ context.Context, resourceKey string, tagSlice []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			return store.Tags().TagFromSlice(resourceKey, tagSlice)
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.Tags().Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			return store.Tags().ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tagSlice []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagSlice []tagutil.Tag, _ string) (interface{}, error) {
 			m := tagutil.ToMap(tagSlice)
 			if m == nil {
 				m = make(map[string]string)

@@ -3,11 +3,11 @@ package cloudwatchlogs
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	svcerrors "vorpalstacks/internal/common/errors"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchlogs"
 	cloudwatchlogsconnect "vorpalstacks/internal/pb/aws/cloudwatchlogs/cloudwatchlogsconnect"
 	pbcommon "vorpalstacks/internal/pb/aws/common"
@@ -31,7 +31,7 @@ func NewAdminHandler(svc *LogsService) *AdminHandler {
 
 // ListLogGroups lists log groups in CloudWatch Logs via the admin console.
 func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[pb.ListLogGroupsRequest]) (*connect.Response[pb.ListLogGroupsResponse], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	limit, err := validateListLimit(int32(req.Msg.GetLimit()), 50, 1000)
 	if err != nil {
@@ -63,7 +63,7 @@ func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[p
 
 // DescribeLogStreams describes log streams in CloudWatch Logs via the admin console.
 func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Request[pb.DescribeLogStreamsRequest]) (*connect.Response[pb.DescribeLogStreamsResponse], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := DescribeLogStreamsInput{
 		LogGroupName:        req.Msg.Loggroupname,
@@ -91,7 +91,7 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 
 // CreateLogGroup creates a new CloudWatch Logs log group via the admin console.
 func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[pb.CreateLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := CreateLogGroupInput{
 		LogGroupName:              req.Msg.Loggroupname,
@@ -110,7 +110,7 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 
 // DeleteLogGroup deletes a CloudWatch Logs log group by name via the admin console.
 func (h *AdminHandler) DeleteLogGroup(ctx context.Context, req *connect.Request[pb.DeleteLogGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := DeleteLogGroupInput{
 		LogGroupName: req.Msg.Loggroupname,

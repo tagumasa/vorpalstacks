@@ -9,8 +9,8 @@ import (
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	types "vorpalstacks/internal/common/tags"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func getIfMatch(req *request.ParsedRequest) string {

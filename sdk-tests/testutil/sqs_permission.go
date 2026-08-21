@@ -14,6 +14,46 @@ import (
 func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Client, queueName string) []TestResult {
 	var results []TestResult
 
+	results = append(results, r.RunTest("sqs", "TagQueue_ReservedPrefixRejected", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		_, err = client.TagQueue(ctx, &sqs.TagQueueInput{
+			QueueUrl: resp.QueueUrl,
+			Tags: map[string]string{
+				"aws:reserved": "v",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for aws:-prefixed tag key")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "TagQueue_TooManyTags", func() error {
+		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(queueName),
+		})
+		if err != nil {
+			return err
+		}
+		tags := make(map[string]string, 51)
+		for i := 0; i < 51; i++ {
+			tags[fmt.Sprintf("Key%d", i)] = "v"
+		}
+		_, err = client.TagQueue(ctx, &sqs.TagQueueInput{
+			QueueUrl: resp.QueueUrl,
+			Tags:     tags,
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for 51 tags (quota is 50)")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "TagQueue", func() error {
 		resp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 			QueueName: aws.String(queueName),

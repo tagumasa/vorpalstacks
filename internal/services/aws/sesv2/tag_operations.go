@@ -6,13 +6,12 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func sesv2TagConfig(s *SESv2Service, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
-		TagFunc: func(ctx context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return err
@@ -26,7 +25,7 @@ func sesv2TagConfig(s *SESv2Service, reqCtx *request.RequestContext) tagutil.Tag
 			}
 			return store.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return nil, err

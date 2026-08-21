@@ -2,8 +2,8 @@ package athena
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/athena"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -11,7 +11,7 @@ import (
 // getStores extracts the region from request headers and returns the full
 // athenaStores for that region.
 func (h *AdminHandler) getStores(headers http.Header) (*athenaStores, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.getStoresForRegion(region)
 }
 

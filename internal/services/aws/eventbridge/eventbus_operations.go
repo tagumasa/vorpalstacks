@@ -104,7 +104,7 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		input.Description = desc
 	}
@@ -294,7 +294,7 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		eventBus.Description = desc
 	}

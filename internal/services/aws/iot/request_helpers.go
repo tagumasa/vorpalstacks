@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"vorpalstacks/internal/common/iotutil"
 	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 

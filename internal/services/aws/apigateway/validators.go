@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // stageNamePattern matches AWS API Gateway stage name rules: alphanumeric,
@@ -398,16 +400,16 @@ func validateMethodSettingThrottleRateLimit(v float64) bool {
 // AWS requires Firehose stream names used for access logs to begin with
 // "amazon-apigateway-".
 func validateAccessLogDestinationArn(arn string) bool {
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 || parts[0] != "arn" || parts[2] == "" || parts[3] == "" {
+	_, service, region, _, resource := svcarn.SplitARN(arn)
+	if service == "" || region == "" {
 		return false
 	}
-	resource := parts[5]
-	switch parts[2] {
+	switch service {
 	case "logs":
 		// CloudWatch Logs log group ARNs place the group name after a
 		// colon: arn:<partition>:logs:<region>:<account>:log-group:<name>[:*]
-		return len(parts) >= 7 && parts[5] == "log-group" && parts[6] != ""
+		segs := strings.SplitN(resource, ":", 3)
+		return len(segs) >= 2 && segs[0] == "log-group" && segs[1] != ""
 	case "firehose":
 		// Firehose ARNs use a slash before the stream name:
 		// arn:<partition>:firehose:<region>:<account>:deliverystream/<name>

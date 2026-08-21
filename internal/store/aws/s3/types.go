@@ -6,7 +6,7 @@ package s3
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // BucketCannedACL represents a canned ACL for an S3 bucket.

@@ -1,7 +1,7 @@
 package iam
 
 import (
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // RoleStoreInterface defines operations for managing IAM roles.

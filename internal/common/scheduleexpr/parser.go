@@ -21,13 +21,26 @@ var (
 	cronExprPattern = regexp.MustCompile(`^cron\((.+)\)$`)
 )
 
+// Rate expression value bounds enforced by validateRateFormat: the value
+// may not exceed one year expressed in the chosen unit.
+const (
+	// MaxRateMinutes is the largest accepted rate() value in minutes.
+	MaxRateMinutes = 525600
+	// MaxRateHours is the largest accepted rate() value in hours.
+	MaxRateHours = 8760
+	// MaxRateDays is the largest accepted rate() value in days.
+	MaxRateDays = 365
+)
+
 // ValidateExpression checks whether an AWS schedule expression is
 // syntactically valid. It accepts cron(), rate(), and at() expressions
 // following the AWS EventBridge / Scheduler format rules:
 //   - Overall length must not exceed 256 characters.
 //   - at(): ISO-8601 timestamp with a valid calendar date.
 //   - rate(): positive value with a unit that agrees with the value
-//     (singular for 1, plural for values greater than 1).
+//     (singular for 1, plural for values greater than 1) and at most one
+//     year expressed in the chosen unit (MaxRateMinutes, MaxRateHours or
+//     MaxRateDays).
 //   - cron(): exactly 6 whitespace-delimited fields inside the parentheses.
 //
 // This is a format check only; it does not guarantee that the resulting
@@ -60,33 +73,28 @@ func ValidateExpression(expr string) bool {
 	return false
 }
 
-// validateRateFormat checks a rate() expression against the AWS rules:
-// the value must be a positive number (>= 1) and the unit must agree
-// with the value — singular for 1, plural for values greater than 1.
+// validateRateFormat checks a rate() expression: the value must be a
+// positive number (>= 1), the unit must agree with the value — singular
+// for 1, plural for values greater than 1 — and the value must not
+// exceed one year expressed in the chosen unit.
 func validateRateFormat(expr string) bool {
 	matches := rateExprPattern.FindStringSubmatch(expr)
 	if len(matches) != 3 {
 		return false
 	}
-	value, err := strconv.Atoi(matches[1])
-	if err != nil || value < 1 {
+	if !rateValueAgrees(matches[1], matches[2]) {
 		return false
 	}
-	unit := matches[2]
-	if value == 1 {
-		switch unit {
-		case "minute", "hour", "day":
-			return true
-		}
-		return false
-	}
-	switch unit {
-	case "minutes":
-		return value <= 525600
-	case "hours":
-		return value <= 8760
-	case "days":
-		return value <= 365
+	value, _ := strconv.Atoi(matches[1])
+	// Agreement has already been checked, so a singular unit implies
+	// value == 1, which is within every bound.
+	switch matches[2] {
+	case "minute", "minutes":
+		return value <= MaxRateMinutes
+	case "hour", "hours":
+		return value <= MaxRateHours
+	case "day", "days":
+		return value <= MaxRateDays
 	}
 	return false
 }
@@ -169,7 +177,7 @@ func parseCronNextTime(expr string, now time.Time) (time.Time, error) {
 		convertAWSCronField(fields[1]),
 		convertAWSCronField(fields[2]),
 		convertAWSCronField(fields[3]),
-		convertAWSCronField(fields[4]),
+		convertAWSDowField(fields[4]),
 	)
 
 	parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
@@ -339,7 +347,7 @@ func buildCronFieldMatcher(field string, min, max int) (func(int) bool, error) {
 
 func buildDayOfMonthMatcher(field string) (func(time.Time) bool, error) {
 	converted := convertAWSCronField(field)
-	if converted == "*" || converted == "?" {
+	if converted == "*" {
 		return func(t time.Time) bool { return true }, nil
 	}
 
@@ -461,6 +469,16 @@ func buildDayOfWeekMatcher(field string) (func(time.Time) bool, error) {
 			}
 			if strings.HasSuffix(part, "L") {
 				dayStr := strings.TrimSuffix(part, "L")
+				// A bare L in the day-of-week field is the last day of
+				// the week — Saturday, day 7 in AWS numbering — and
+				// fires every week, unlike nL which is the last given
+				// weekday of the month.
+				if dayStr == "" {
+					if int(t.Weekday()) == awsDowToGo(7) {
+						return true
+					}
+					continue
+				}
 				dayNum, err := parseAWSDoWValue(dayStr)
 				if err != nil {
 					continue
@@ -600,6 +618,47 @@ func convertAWSCronField(field string) string {
 		field = strings.ReplaceAll(field, r.old, r.new)
 	}
 	return field
+}
+
+// convertAWSDowField translates the AWS day-of-week field into the
+// numbering the standard cron parser expects: AWS numbers the days 1-7
+// (1=Sunday) while the parser uses 0-6 (0=Sunday). Numeric tokens —
+// plain values, range endpoints and step bases — are offset by one;
+// SUN-SAT names are handled by convertAWSCronField afterwards and need
+// no offset. Expressions containing L, W or # never reach this
+// converter: they are evaluated by awsCronNextTime instead.
+func convertAWSDowField(field string) string {
+	offset := make([]string, 0, 4)
+	for _, part := range strings.Split(field, ",") {
+		offset = append(offset, offsetDowPart(part))
+	}
+	return convertAWSCronField(strings.Join(offset, ","))
+}
+
+// offsetDowPart offsets every numeric token of a single comma element
+// (value, range endpoints, step base) from AWS to standard numbering.
+// Non-numeric tokens (wildcards, day names) are returned unchanged.
+func offsetDowPart(part string) string {
+	if idx := strings.Index(part, "/"); idx != -1 {
+		return offsetDowPart(part[:idx]) + part[idx:]
+	}
+	if idx := strings.Index(part, "-"); idx != -1 {
+		return offsetDowNum(part[:idx]) + "-" + offsetDowNum(part[idx+1:])
+	}
+	return offsetDowNum(part)
+}
+
+// offsetDowNum maps a single numeric day-of-week token from the AWS
+// 1=Sunday..7=Saturday numbering to the standard 0=Sunday..6=Saturday
+// numbering. Tokens outside 1-7 are left as they are so malformed input
+// fails in the parser rather than being silently rewritten.
+func offsetDowNum(token string) string {
+	token = strings.TrimSpace(token)
+	n, err := strconv.Atoi(token)
+	if err != nil || n < 1 || n > 7 {
+		return token
+	}
+	return strconv.Itoa(n - 1)
 }
 
 func isYearAllowed(field string, year int) bool {

@@ -3,7 +3,7 @@ package cloudtrail
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 
 	common "vorpalstacks/internal/store/aws/common"
 )

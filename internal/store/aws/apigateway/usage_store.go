@@ -11,7 +11,6 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // UsageStore provides storage operations for API keys and usage plans.
@@ -394,7 +393,7 @@ func (s *UsageStore) TagApiKey(apiKeyId string, inputTags map[string]string) err
 		return err
 	}
 	if apiKey.Tags == nil {
-		apiKey.Tags = []types.Tag{}
+		apiKey.Tags = []tags.Tag{}
 	}
 	apiKey.Tags = tags.Apply(apiKey.Tags, tags.MapToTags(inputTags))
 	return s.Put("apikey#"+apiKeyId, apiKey)
@@ -414,7 +413,7 @@ func (s *UsageStore) UntagApiKey(apiKeyId string, tagKeys []string) error {
 }
 
 // GetApiKeyTags returns tags for an API key.
-func (s *UsageStore) GetApiKeyTags(apiKeyId string) ([]types.Tag, error) {
+func (s *UsageStore) GetApiKeyTags(apiKeyId string) ([]tags.Tag, error) {
 	apiKey, err := s.GetApiKey(apiKeyId)
 	if err != nil {
 		return nil, err
@@ -432,7 +431,7 @@ func (s *UsageStore) TagUsagePlan(usagePlanId string, inputTags map[string]strin
 		return err
 	}
 	if usagePlan.Tags == nil {
-		usagePlan.Tags = []types.Tag{}
+		usagePlan.Tags = []tags.Tag{}
 	}
 	usagePlan.Tags = tags.Apply(usagePlan.Tags, tags.MapToTags(inputTags))
 	return s.Put("usageplan#"+usagePlanId, usagePlan)
@@ -452,7 +451,7 @@ func (s *UsageStore) UntagUsagePlan(usagePlanId string, tagKeys []string) error 
 }
 
 // GetUsagePlanTags returns tags for a usage plan.
-func (s *UsageStore) GetUsagePlanTags(usagePlanId string) ([]types.Tag, error) {
+func (s *UsageStore) GetUsagePlanTags(usagePlanId string) ([]tags.Tag, error) {
 	usagePlan, err := s.GetUsagePlan(usagePlanId)
 	if err != nil {
 		return nil, err

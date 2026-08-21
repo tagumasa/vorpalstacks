@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -145,7 +144,7 @@ var userTagOps = tagOps[*iamstore.User]{
 	notFoundFn: func(n string) error { return NewNoSuchUserError(n) },
 	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.User, error) { return s.Users().Get(n) },
 	putFn:      func(s *iamstore.IAMStore, r *iamstore.User) error { return s.Users().Put(r) },
-	tagsFn:     func(r *iamstore.User) *[]types.Tag { return &r.Tags },
+	tagsFn:     func(r *iamstore.User) *[]tags.Tag { return &r.Tags },
 }
 
 // TagUser adds tags to an IAM user.

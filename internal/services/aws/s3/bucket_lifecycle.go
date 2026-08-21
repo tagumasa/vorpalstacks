@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	s3store "vorpalstacks/internal/store/aws/s3"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // PutBucketLifecycleConfigurationInput is the input for PutBucketLifecycleConfiguration.

@@ -582,12 +582,10 @@ func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution,
 		return
 	}
 
-	execParts := strings.Split(execution.ExecutionArn, ":")
+	_, _, _, _, execResource := arn.SplitARN(execution.ExecutionArn)
 	execName := execution.Name
-	if len(execParts) > 0 {
-		if last := execParts[len(execParts)-1]; last != "" {
-			execName = last
-		}
+	if segs := strings.Split(execResource, ":"); len(segs) > 0 && segs[len(segs)-1] != "" {
+		execName = segs[len(segs)-1]
 	}
 	logStream := fmt.Sprintf("%s-%s", e.currentStateMachine.Name, execName)
 

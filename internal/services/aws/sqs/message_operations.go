@@ -348,7 +348,7 @@ func parseBatchSendEntries(params map[string]interface{}) ([]*batchSendEntry, er
 }
 
 func parseBatchEntriesJSON(jsonEntries []interface{}) ([]*batchSendEntry, error) {
-	if len(jsonEntries) > 10 {
+	if len(jsonEntries) > sqsstore.MaxBatchEntries {
 		return nil, ErrTooManyEntriesInBatch
 	}
 
@@ -473,7 +473,7 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 		seenIDs[id] = true
 		entryCount++
 
-		if entryCount > 10 {
+		if entryCount > sqsstore.MaxBatchEntries {
 			return nil, ErrTooManyEntriesInBatch
 		}
 
@@ -868,7 +868,7 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 		}
 		seenIDs[e.id] = true
 	}
-	if len(entries) > 10 {
+	if len(entries) > sqsstore.MaxBatchEntries {
 		return nil, ErrTooManyEntriesInBatch
 	}
 
@@ -1023,7 +1023,7 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 		}
 		seenIDs[e.id] = true
 	}
-	if len(entries) > 10 {
+	if len(entries) > sqsstore.MaxBatchEntries {
 		return nil, ErrTooManyEntriesInBatch
 	}
 

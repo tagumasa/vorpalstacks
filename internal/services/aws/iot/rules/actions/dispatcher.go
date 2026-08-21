@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/iotutil"
 	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
 
 // ActionConfig holds the configuration for a single rule action extracted

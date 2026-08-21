@@ -3,8 +3,8 @@ package iam
 import (
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const serverCertificateBucketName = "iam_server_certificates"

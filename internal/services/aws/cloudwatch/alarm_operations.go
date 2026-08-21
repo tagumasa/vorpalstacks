@@ -13,7 +13,6 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func getAlarmStringParam(params map[string]interface{}, keys ...string) string {
@@ -728,7 +727,7 @@ func addAlarmActionHistory(store *cwstore.AlarmStore, alarmName, summary string)
 func cwAlarmTagConfig(s *CloudWatchService, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardARNConfig,
-		TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return err
@@ -742,7 +741,7 @@ func cwAlarmTagConfig(s *CloudWatchService, reqCtx *request.RequestContext) tagu
 			}
 			return store.alarms.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			store, err := s.store(reqCtx)
 			if err != nil {
 				return nil, err

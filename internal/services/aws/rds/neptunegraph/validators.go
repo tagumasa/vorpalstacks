@@ -3,7 +3,11 @@ package neptunegraph
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
+
+	"vorpalstacks/internal/common/pagination"
+	tagutil "vorpalstacks/internal/common/tags"
 
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
@@ -18,9 +22,8 @@ const (
 	maxReplicaCount      = 2
 	minVectorSearchDim   = 1
 	maxVectorSearchDim   = 65536
-	maxTags              = 50
-	maxTagKeyLen         = 128
-	maxTagValueLen       = 256
+	maxTags              = tagutil.MaxTagsPerResource
+	maxTagValueLen       = tagutil.MaxTagValueLength
 	maxKmsKeyArnLen      = 1024
 	maxDestinationLen    = 1024
 	planCacheTTLSeconds  = 300
@@ -317,17 +320,28 @@ func validateImportOptions(opts *ngstore.ImportOptions) error {
 }
 
 // validateTags validates a tag map per Smithy TagMap constraints:
-// max 50 entries, TagKey @length(1,128) @pattern, TagValue @length(0,256).
+// max 50 entries, TagKey @length(1,128) @pattern, TagValue @length(0,256),
+// with the aws: key prefix reserved for AWS use.
 func validateTags(tags map[string]string) error {
-	if len(tags) > maxTags {
+	violation, key := tagutil.CheckStringTags(tags, tagutil.StandardLimits())
+	switch violation {
+	case tagutil.TooManyTags:
 		return newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("too many tags: %d (max %d)", len(tags), maxTags))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("invalid tag key: %q", key))
+	case tagutil.TagValueTooLong:
+		return newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("tag value too long for key %q (max %d)", key, maxTagValueLen))
+	case tagutil.ReservedTagKey:
+		return newValidationException("ILLEGAL_ARGUMENT", "tag keys cannot start with the reserved prefix 'aws:'")
 	}
-	for k, v := range tags {
-		if len(k) > maxTagKeyLen || !tagKeyRegex.MatchString(k) {
+	keys := make([]string, 0, len(tags))
+	for k := range tags {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if !tagKeyRegex.MatchString(k) {
 			return newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("invalid tag key: %q", k))
-		}
-		if len(v) > maxTagValueLen {
-			return newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("tag value too long for key %q (max %d)", k, maxTagValueLen))
 		}
 	}
 	return nil
@@ -336,11 +350,5 @@ func validateTags(tags map[string]string) error {
 // clampMaxResults clamps a maxResults value to the Smithy MaxResults range
 // @range(min:1, max:100). Unset (0) defaults to 100.
 func clampMaxResults(v int) int {
-	if v < 1 {
-		return 100
-	}
-	if v > 100 {
-		return 100
-	}
-	return v
+	return pagination.ClampMaxItems(v, 100, 100)
 }

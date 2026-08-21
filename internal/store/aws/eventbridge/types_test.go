@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 func TestEventBus(t *testing.T) {

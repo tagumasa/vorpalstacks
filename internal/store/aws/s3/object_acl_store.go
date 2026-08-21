@@ -1,8 +1,8 @@
 package s3
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // updateObjectMetadata is a shared helper for SetTags and SetACL. It acquires

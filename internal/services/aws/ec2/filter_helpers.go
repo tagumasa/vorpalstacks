@@ -8,7 +8,7 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // ec2Filter represents a parsed EC2 Filter.N.Name + Filter.N.Value.M pair.

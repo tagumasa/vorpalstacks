@@ -33,6 +33,91 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		return nil
 	}))
 
+	results = append(results, r.RunTest("events", "PutRule_InvalidScheduleExpression", func() error {
+		invalid := []string{
+			// week is not a unit accepted by scheduled rules
+			"rate(1 week)",
+			"rate(2 weeks)",
+			// a value of 1 requires a singular unit, values above 1 a plural one
+			"rate(1 minutes)",
+			"rate(5 minute)",
+			// the value must be a positive number
+			"rate(0 minutes)",
+			// at() is EventBridge Scheduler syntax, not scheduled-rule syntax
+			"at(2026-01-01T12:00:00)",
+		}
+		for _, expr := range invalid {
+			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+				Name:               aws.String(fmt.Sprintf("BadRule-%d", time.Now().UnixNano())),
+				EventBusName:       aws.String(busName),
+				ScheduleExpression: aws.String(expr),
+			})
+			if err == nil {
+				return fmt.Errorf("expected error for ScheduleExpression %q", expr)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("events", "PutRule_CronLastFriday", func() error {
+		// Documented AWS cron examples using the L, W and # day
+		// wildcards (EventBridge cron reference / PutRule examples).
+		valid := []string{
+			"cron(15 10 ? * 6L 2019-2022)", // last Friday of the month
+			"cron(0 9 1W * ? *)",           // weekday nearest the 1st
+			"cron(0 9 ? * FRI#3 2027)",     // third Friday of the month
+			"cron(0 0 L * ? *)",            // last day of the month
+		}
+		for _, expr := range valid {
+			name := fmt.Sprintf("CronRule-%d", time.Now().UnixNano())
+			_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+				Name:               aws.String(name),
+				EventBusName:       aws.String(busName),
+				ScheduleExpression: aws.String(expr),
+			})
+			if err != nil {
+				return fmt.Errorf("PutRule(%q): %v", expr, err)
+			}
+			defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(name), EventBusName: aws.String(busName)})
+
+			resp, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
+				Name:         aws.String(name),
+				EventBusName: aws.String(busName),
+			})
+			if err != nil {
+				return fmt.Errorf("DescribeRule(%q): %v", expr, err)
+			}
+			if resp.ScheduleExpression == nil || *resp.ScheduleExpression != expr {
+				return fmt.Errorf("ScheduleExpression mismatch for %q, got %v", expr, resp.ScheduleExpression)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("events", "PutRule_CronFiveFieldsRejected", func() error {
+		_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:               aws.String(fmt.Sprintf("BadRule5-%d", time.Now().UnixNano())),
+			EventBusName:       aws.String(busName),
+			ScheduleExpression: aws.String("cron(0 12 * * ?)"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for five-field cron expression")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("events", "PutRule_CronDomDowBothSpecified", func() error {
+		_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:               aws.String(fmt.Sprintf("BadRuleDD-%d", time.Now().UnixNano())),
+			EventBusName:       aws.String(busName),
+			ScheduleExpression: aws.String("cron(0 12 15 * FRI 2027)"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error when day-of-month and day-of-week are both specified")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("events", "DescribeRule", func() error {
 		resp, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
 			Name:         aws.String(ruleName),

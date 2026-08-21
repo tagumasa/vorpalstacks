@@ -394,6 +394,36 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	// Tag keys and values are limited to 128/256 Unicode characters, not
+	// bytes, per the Smithy tagKeyType/tagValueType @length traits.
+	results = append(results, r.RunTest("iam", "TagUser_MultibyteTagAccepted", func() error {
+		key := strings.Repeat("\u65e5", 100)
+		value := strings.Repeat("\u672c", 200)
+		_, err := tc.client.TagUser(tc.ctx, &iam.TagUserInput{
+			UserName: aws.String(tc.user),
+			Tags:     []types.Tag{{Key: aws.String(key), Value: aws.String(value)}},
+		})
+		if err != nil {
+			return fmt.Errorf("multibyte tag within the Unicode length limits rejected: %w", err)
+		}
+		resp, err := tc.client.ListUserTags(tc.ctx, &iam.ListUserTagsInput{
+			UserName: aws.String(tc.user),
+		})
+		if err != nil {
+			return err
+		}
+		if !iamTagPresent(resp.Tags, key, value) {
+			return fmt.Errorf("multibyte tag not found after TagUser")
+		}
+		if _, err := tc.client.UntagUser(tc.ctx, &iam.UntagUserInput{
+			UserName: aws.String(tc.user),
+			TagKeys:  []string{key},
+		}); err != nil {
+			return fmt.Errorf("cleanup UntagUser: %w", err)
+		}
+		return nil
+	}))
+
 	// Permissions boundary: deferred to iamPermissionsBoundaryTests (needs policyArn)
 
 	// User inline policies

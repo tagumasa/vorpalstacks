@@ -5,9 +5,15 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/store/aws/waf"
 )
+
+// maxRegexPatternStringLength is the Smithy RegexPatternString @length
+// maximum, counted in Unicode characters like every @length trait; the
+// shape's ".*" pattern admits multibyte regex patterns.
+const maxRegexPatternStringLength = 512
 
 // validateScope checks that the Scope parameter is a valid Smithy enum
 // value (CLOUDFRONT or REGIONAL).
@@ -463,8 +469,8 @@ func validateStatement(stmt *waf.Statement) error {
 		if stmt.RegexMatchStatement.RegexString == "" {
 			return invalidParamError("RegexMatchStatement RegexString is required")
 		}
-		if len(stmt.RegexMatchStatement.RegexString) > 512 {
-			return invalidParamError(fmt.Sprintf("RegexMatchStatement RegexString must not exceed 512 characters (got %d)", len(stmt.RegexMatchStatement.RegexString)))
+		if n := utf8.RuneCountInString(stmt.RegexMatchStatement.RegexString); n > maxRegexPatternStringLength {
+			return invalidParamError(fmt.Sprintf("RegexMatchStatement RegexString must not exceed %d characters (got %d)", maxRegexPatternStringLength, n))
 		}
 		if err := validateFieldToMatch(stmt.RegexMatchStatement.FieldToMatch); err != nil {
 			return err

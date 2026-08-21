@@ -2,8 +2,8 @@ package ec2
 
 import (
 	"vorpalstacks/internal/common/protocol"
+	types "vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // This file converts store structs into response maps keyed with the exact

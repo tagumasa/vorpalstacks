@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -21,8 +22,8 @@ func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	if sshPublicKeyBody == "" {
 		return nil, NewValidationError("SSHPublicKeyBody")
 	}
-	if len(sshPublicKeyBody) > 16384 {
-		return nil, NewInvalidInputError("SSHPublicKeyBody", "must be 1 to 16384 characters")
+	if len(sshPublicKeyBody) > maxSSHPublicKeyLength {
+		return nil, NewInvalidInputError("SSHPublicKeyBody", fmt.Sprintf("must be 1 to %d characters", maxSSHPublicKeyLength))
 	}
 
 	parsedKey, err := parseSSHPublicKey(sshPublicKeyBody)

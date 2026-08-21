@@ -9,9 +9,9 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_rds"
 
 	"google.golang.org/protobuf/proto"
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (

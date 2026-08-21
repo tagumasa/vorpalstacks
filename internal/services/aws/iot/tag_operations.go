@@ -7,27 +7,26 @@ import (
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	iotstore "vorpalstacks/internal/store/aws/iot"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // iotTagConfig builds a TagHandlerConfig backed by the IoT store.
 func iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
-		TagFunc: func(_ context.Context, resourceKey string, tags []types.Tag) error {
+		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
 			return store.TagResource(resourceKey, tagutil.ToMap(tags))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
 			return store.UntagResource(resourceKey, tagKeys)
 		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
 			tagsMap, err := store.ListTags(resourceKey)
 			if err != nil {
 				return nil, err
 			}
 			return tagutil.MapToTags(tagsMap), nil
 		},
-		FormatResponse: func(tags []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
 			tagList := make([]map[string]interface{}, 0, len(tags))
 			for _, t := range tags {
 				tagList = append(tagList, map[string]interface{}{

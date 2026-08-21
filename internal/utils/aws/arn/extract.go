@@ -157,22 +157,22 @@ func ExtractStateMachineNameFromARN(arn string) string {
 }
 
 // IsLambdaARN returns true if the ARN is for a Lambda function.
-func IsLambdaARN(arn string) bool { return strings.Contains(arn, ":lambda:") }
+func IsLambdaARN(arn string) bool { return GetServiceFromARN(arn) == "lambda" }
 
 // IsKinesisARN returns true if the ARN is for a Kinesis stream.
-func IsKinesisARN(arn string) bool { return strings.Contains(arn, ":kinesis:") }
+func IsKinesisARN(arn string) bool { return GetServiceFromARN(arn) == "kinesis" }
 
 // IsSQSARN returns true if the ARN is for an SQS queue.
-func IsSQSARN(arn string) bool { return strings.Contains(arn, ":sqs:") }
+func IsSQSARN(arn string) bool { return GetServiceFromARN(arn) == "sqs" }
 
 // IsSNSARN returns true if the ARN is for an SNS topic.
-func IsSNSARN(arn string) bool { return strings.Contains(arn, ":sns:") }
+func IsSNSARN(arn string) bool { return GetServiceFromARN(arn) == "sns" }
 
 // IsEventBridgeARN returns true if the ARN is for an EventBridge resource.
-func IsEventBridgeARN(arn string) bool { return strings.Contains(arn, ":events:") }
+func IsEventBridgeARN(arn string) bool { return GetServiceFromARN(arn) == "events" }
 
 // IsStateMachineARN returns true if the ARN is for a Step Functions state machine.
-func IsStateMachineARN(arn string) bool { return strings.Contains(arn, ":states:") }
+func IsStateMachineARN(arn string) bool { return GetServiceFromARN(arn) == "states" }
 
 // ParseTableARN extracts the table name from a DynamoDB table ARN.
 // Also accepts stream ARNs (table/<name>/stream/<label>) and returns the

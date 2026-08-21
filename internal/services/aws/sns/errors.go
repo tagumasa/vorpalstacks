@@ -1,6 +1,8 @@
 package sns
 
 import (
+	"fmt"
+
 	awserrors "vorpalstacks/internal/common/errors"
 )
 
@@ -35,8 +37,9 @@ var (
 	ErrTagPolicy = awserrors.NewAWSError("TagPolicy", "Tag policy violation", 400)
 	// ErrBatchEntryIdsNotDistinct is returned when two or more batch entries have the same ID.
 	ErrBatchEntryIdsNotDistinct = awserrors.NewAWSError("BatchEntryIdsNotDistinct", "Two or more batch entries have the same ID", 400)
-	// ErrTooManyEntriesInBatch is returned when the batch request contains more than 10 entries.
-	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", "Maximum number of entries per request are 10", 400)
+	// ErrTooManyEntriesInBatch is returned when the batch request exceeds the
+	// entry limit.
+	ErrTooManyEntriesInBatch = awserrors.NewAWSError("TooManyEntriesInBatchRequest", fmt.Sprintf("Maximum number of entries per request are %d", maxBatchEntries), 400)
 )
 
 // NewNotFoundException creates a new AWSError for not found errors.

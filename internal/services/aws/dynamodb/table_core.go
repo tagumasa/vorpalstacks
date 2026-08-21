@@ -5,7 +5,6 @@ import (
 	"time"
 
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/utils/aws/types"
 
 	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -28,7 +27,7 @@ type CreateTableInput struct {
 	GlobalSecondaryIndexes    []*dbstore.GlobalSecondaryIndex
 	LocalSecondaryIndexes     []*dbstore.LocalSecondaryIndex
 	StreamSpecification       *dbstore.StreamSpecification
-	Tags                      []types.Tag
+	Tags                      []tagutil.Tag
 	DeletionProtectionEnabled bool
 	WarmThroughput            *dbstore.WarmThroughput
 	OnDemandThroughput        *dbstore.OnDemandThroughput

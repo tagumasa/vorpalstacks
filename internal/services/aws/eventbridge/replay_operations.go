@@ -107,7 +107,7 @@ func (s *EventsService) StartReplay(ctx context.Context, reqCtx *request.Request
 
 	if desc, ok := req.Parameters["Description"].(string); ok {
 		if !validateDescription(desc) {
-			return nil, awserrors.NewValidationException("Description must be at most 512 characters")
+			return nil, errDescriptionTooLong()
 		}
 		replay.Description = desc
 	}

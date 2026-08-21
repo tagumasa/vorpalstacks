@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -461,11 +462,11 @@ func validatePlatformApplicationArn(arn string) error {
 	if !strings.HasPrefix(arn, "arn:") {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid PlatformApplicationArn: %s", arn))
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) < 6 {
+	_, service, _, _, _ := svcarn.SplitARN(arn)
+	if service == "" {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid PlatformApplicationArn format: %s", arn))
 	}
-	if parts[2] != "sns" {
+	if service != "sns" {
 		return awserrors.NewInvalidParameterException(fmt.Sprintf("PlatformApplicationArn must be an SNS ARN: %s", arn))
 	}
 	return nil

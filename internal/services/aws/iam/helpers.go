@@ -10,16 +10,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/aws/types"
-)
-
-const (
-	// MaxTagsPerResource is the maximum number of tags allowed on a single IAM resource.
-	MaxTagsPerResource = 50
-	// MaxTagKeyLength is the maximum length of a tag key.
-	MaxTagKeyLength = 128
-	// MaxTagValueLength is the maximum length of a tag value.
-	MaxTagValueLength = 256
 )
 
 // resolveUserName returns userName if non-empty, otherwise defaults to the
@@ -43,7 +33,7 @@ type tagOps[T any] struct {
 	notFoundFn func(string) error
 	getFn      func(*iamstore.IAMStore, string) (T, error)
 	putFn      func(*iamstore.IAMStore, T) error
-	tagsFn     func(T) *[]types.Tag
+	tagsFn     func(T) *[]tags.Tag
 }
 
 func tagResource[T any](ctx context.Context, s *IAMService, reqCtx *request.RequestContext, req *request.ParsedRequest, ops tagOps[T]) (interface{}, error) {
@@ -65,8 +55,8 @@ func tagResource[T any](ctx context.Context, s *IAMService, reqCtx *request.Requ
 		return nil, err
 	}
 	merged := tags.Apply(*currentTags, newTags)
-	if len(merged) > MaxTagsPerResource {
-		return nil, NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(MaxTagsPerResource)+" tags per resource")
+	if len(merged) > tags.MaxTagsPerResource {
+		return nil, NewInvalidInputError("Tags", "exceeds maximum of "+strconv.Itoa(tags.MaxTagsPerResource)+" tags per resource")
 	}
 	*currentTags = merged
 	if err := ops.putFn(store, res); err != nil {

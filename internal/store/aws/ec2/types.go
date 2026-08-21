@@ -1,7 +1,7 @@
 package ec2
 
 import (
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // VpcCidrBlockAssociationState describes the state of a VPC CIDR association.

@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req *request.ParsedRequest) tags.TagHandlerConfig {
@@ -36,19 +35,19 @@ func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req 
 			_, err := store.GetStream(resourceKey)
 			return err
 		},
-		ParseTags: func(params map[string]interface{}) []types.Tag {
+		ParseTags: func(params map[string]interface{}) []tags.Tag {
 			return tags.ParseTags(params, "Tags")
 		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagList []types.Tag) error {
+		TagFunc: func(ctx context.Context, resourceKey string, tagList []tags.Tag) error {
 			return store.Tag(resourceKey, tags.ToMap(tagList))
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
 			return store.Untag(resourceKey, tagKeys)
 		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]types.Tag, error) {
+		ListFunc: func(ctx context.Context, resourceKey string) ([]tags.Tag, error) {
 			return store.ListAsSlice(resourceKey)
 		},
-		FormatResponse: func(tagList []types.Tag, _ string) (interface{}, error) {
+		FormatResponse: func(tagList []tags.Tag, _ string) (interface{}, error) {
 			// Implement pagination with ExclusiveStartTagKey and Limit
 			startKey := request.GetStringParam(req.Parameters, "ExclusiveStartTagKey")
 			limit := request.GetIntParam(req.Parameters, "Limit")

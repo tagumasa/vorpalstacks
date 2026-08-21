@@ -2,15 +2,15 @@ package eventbridge
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/cloudwatchevents"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
 )
 
 // getStore resolves the per-region EventsStore for the admin handler.
 func (h *AdminHandler) getStore(header http.Header) (*eventsstore.EventsStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 

@@ -3,10 +3,10 @@ package secretsmanager
 import (
 	"net/http"
 	"time"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/secretsmanager"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 	"vorpalstacks/internal/utils/timeutils"
@@ -16,7 +16,7 @@ import (
 // the per-region SecretStoreInterface. This is the sole function in the
 // admin handler layer that touches the store package directly.
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (secretsmanagerstore.SecretStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

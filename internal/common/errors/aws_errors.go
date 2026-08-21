@@ -1,34 +1,361 @@
 package errors
 
 import (
-	awserrors "vorpalstacks/internal/utils/aws/errors"
+	"bytes"
+	"encoding/json"
+	"encoding/xml"
+	"fmt"
+	"net/http"
+
+	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
+	"vorpalstacks/internal/core/logs"
 )
 
-// AWSError is an alias for the core AWS error type, re-exported for
-// convenient access by service and server code.
-type AWSError = awserrors.AWSError
+// AWSError represents an AWS service error.
+type AWSError struct {
+	Code           string
+	Message        string
+	HTTPStatus     int
+	RequestID      string
+	Fault          string
+	QueryErrorCode string
+	// ExtraFields holds additional JSON fields that some AWS error types
+	// require beyond the standard __type/message/requestId triad (e.g.
+	// StatementTimeoutException carries a "dbConnectionId" field).
+	ExtraFields map[string]string
+	// RawFields holds additional JSON fields with complex values (arrays,
+	// objects) that cannot be expressed as strings (e.g.
+	// RejectedRecordsException carries a "RejectedRecords" array).
+	RawFields map[string]interface{}
+}
 
-// CustomJSONMarshaler is an alias for the custom JSON error response
-// interface, used by the dispatcher for type-assertion-based error handling.
-type CustomJSONMarshaler = awserrors.CustomJSONMarshaler
+// NewAWSError creates a new AWS error with the given code, message, and HTTP status.
+// Fault is automatically set to "Client" for 4xx status codes and "Server" for
+// 5xx codes so that XML serialisation produces the correct <Type> element
+// (Sender for client errors, Receiver for server errors).
+func NewAWSError(code, message string, httpStatus int) *AWSError {
+	fault := "Server"
+	if httpStatus < 500 {
+		fault = "Client"
+	}
+	return &AWSError{
+		Code:       code,
+		Message:    message,
+		HTTPStatus: httpStatus,
+		RequestID:  uuid.New().String(),
+		Fault:      fault,
+	}
+}
 
-// Re-exported error construction helpers and sentinel values from the
-// core error package. All service-layer code should import this
-// package rather than reaching into internal/utils.
+// SetQueryErrorCode sets the x-amzn-query-error header value and returns the error for chaining.
+func (e *AWSError) SetQueryErrorCode(code string) *AWSError {
+	e.QueryErrorCode = code
+	return e
+}
+
+// WithField adds an extra JSON field to the error response and returns
+// the error for chaining. Used for AWS error types that carry fields
+// beyond the standard __type/message/requestId set.
+func (e *AWSError) WithField(key, value string) *AWSError {
+	if e.ExtraFields == nil {
+		e.ExtraFields = make(map[string]string)
+	}
+	e.ExtraFields[key] = value
+	return e
+}
+
+// WithRawField adds a complex JSON field to the error response and returns
+// the error for chaining. Used for error types that carry arrays or nested
+// objects (e.g. RejectedRecordsException carries a RejectedRecords array).
+func (e *AWSError) WithRawField(key string, value interface{}) *AWSError {
+	if e.RawFields == nil {
+		e.RawFields = make(map[string]interface{})
+	}
+	e.RawFields[key] = value
+	return e
+}
+
+// ToXML converts the error to XML format.
+func (e *AWSError) ToXML() string {
+	var faultType string
+	if e.Fault == "Client" {
+		faultType = "Sender"
+	} else {
+		faultType = "Receiver"
+	}
+
+	resp := XMLErrorResponse{}
+	resp.Error.Type = faultType
+	resp.Error.Code = e.Code
+	resp.Error.Message = e.Message
+	resp.RequestID = e.RequestID
+	for k, v := range e.ExtraFields {
+		resp.ExtraFields = append(resp.ExtraFields, xmlExtraElem{
+			XMLName: xml.Name{Local: k},
+			Value:   v,
+		})
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
+	if err := enc.Encode(resp); err != nil {
+		logs.Error("Failed to encode XML error response", logs.String("code", e.Code), logs.Err(err))
+	}
+	return buf.String()
+}
+
+// EC2XMLErrorResponse is the EC2 Query protocol error envelope. Unlike the
+// standard AWS Query ErrorResponse, EC2 nests the error inside a Response
+// root with an Errors wrapper and capitalises RequestID; the AWS SDKs'
+// EC2 deserialisers only read this shape.
+type EC2XMLErrorResponse struct {
+	XMLName xml.Name `xml:"Response"`
+	Errors  struct {
+		Error struct {
+			Type    string `xml:"Type"`
+			Code    string `xml:"Code"`
+			Message string `xml:"Message"`
+		} `xml:"Error"`
+	} `xml:"Errors"`
+	RequestID string `xml:"RequestID"`
+}
+
+// ToEC2QueryXML converts the error to the EC2 Query protocol XML format.
+func (e *AWSError) ToEC2QueryXML() string {
+	var faultType string
+	if e.Fault == "Client" {
+		faultType = "Sender"
+	} else {
+		faultType = "Receiver"
+	}
+
+	resp := EC2XMLErrorResponse{}
+	resp.Errors.Error.Type = faultType
+	resp.Errors.Error.Code = e.Code
+	resp.Errors.Error.Message = e.Message
+	resp.RequestID = e.RequestID
+
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	if err := enc.Encode(resp); err != nil {
+		logs.Error("Failed to encode EC2 XML error response", logs.String("code", e.Code), logs.Err(err))
+	}
+	return buf.String()
+}
+
+// WriteEC2QueryAWSError writes the error using the EC2 Query protocol XML
+// envelope. The AWS SDK EC2 deserialiser cannot extract the error code from
+// the standard ErrorResponse shape and reports UnknownError instead.
+func WriteEC2QueryAWSError(w http.ResponseWriter, err *AWSError) {
+	// The EC2 Query protocol responds with text/xml;charset=UTF-8, matching
+	// real AWS EC2 responses.
+	w.Header().Set("Content-Type", "text/xml;charset=UTF-8")
+	w.WriteHeader(err.HTTPStatus)
+	if _, writeErr := w.Write([]byte(err.ToEC2QueryXML())); writeErr != nil {
+		logs.Error("Failed to write EC2 XML error response", logs.Err(writeErr))
+	}
+}
+
+// ToJSON converts the error to JSON format.
+func (e *AWSError) ToJSON() string {
+	data := map[string]interface{}{
+		"__type":    e.Code,
+		"message":   e.Message,
+		"requestId": e.RequestID,
+	}
+	for k, v := range e.ExtraFields {
+		data[k] = v
+	}
+	for k, v := range e.RawFields {
+		data[k] = v
+	}
+	result, _ := json.Marshal(data)
+	return string(result)
+}
+
+// ToCBOR converts the error to CBOR format.
+func (e *AWSError) ToCBOR() []byte {
+	data := map[string]interface{}{
+		"__type":    e.Code,
+		"message":   e.Message,
+		"requestId": e.RequestID,
+	}
+	for k, v := range e.ExtraFields {
+		data[k] = v
+	}
+	for k, v := range e.RawFields {
+		data[k] = v
+	}
+	result, _ := cbor.Marshal(data)
+	return result
+}
+
+// Error returns the error message.
+func (e *AWSError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
+// GetCode returns the error code.
+func (e *AWSError) GetCode() string {
+	return e.Code
+}
+
+// GetMessage returns the error message.
+func (e *AWSError) GetMessage() string {
+	return e.Message
+}
+
+// GetHTTPStatusCode returns the HTTP status code.
+func (e *AWSError) GetHTTPStatusCode() int {
+	return e.HTTPStatus
+}
+
+// ToJSONWithFormat converts the error to JSON format with the specified format.
+func (e *AWSError) ToJSONWithFormat(format string) string {
+	switch format {
+	case "lambda":
+		faultType := "User"
+		if e.Fault == "Server" {
+			faultType = "Server"
+		}
+		data := map[string]string{
+			"Type":    faultType,
+			"Code":    e.Code,
+			"Message": e.Message,
+		}
+		result, _ := json.Marshal(data)
+		return string(result)
+	case "rest-json":
+		data := map[string]string{
+			"type":    e.Code,
+			"message": e.Message,
+		}
+		result, _ := json.Marshal(data)
+		return string(result)
+	default:
+		return e.ToJSON()
+	}
+}
+
+// XMLErrorResponse represents an XML error response.
+type XMLErrorResponse struct {
+	XMLName xml.Name `xml:"ErrorResponse"`
+	Error   struct {
+		Type    string `xml:"Type"`
+		Code    string `xml:"Code"`
+		Message string `xml:"Message"`
+	} `xml:"Error"`
+	RequestID   string         `xml:"RequestId"`
+	ExtraFields []xmlExtraElem `xml:",any"`
+}
+
+// xmlExtraElem renders a single dynamic XML element for ExtraFields.
+type xmlExtraElem struct {
+	XMLName xml.Name
+	Value   string `xml:",chardata"`
+}
+
 var (
-	NewAWSError             = awserrors.NewAWSError
-	WriteAWSError           = awserrors.WriteAWSError
-	WriteEC2QueryAWSError   = awserrors.WriteEC2QueryAWSError
-	WriteCustomJSONError    = awserrors.WriteCustomJSONError
-	WriteAWSErrorWithFormat = awserrors.WriteAWSErrorWithFormat
-	ErrAccessDenied         = awserrors.ErrAccessDenied
-	ErrInvalidAction        = awserrors.ErrInvalidAction
-	ErrInvalidParameter     = awserrors.ErrInvalidParameter
-	ErrMissingParameter     = awserrors.ErrMissingParameter
-	ErrResourceNotFound     = awserrors.ErrResourceNotFound
-	ErrServiceUnavailable   = awserrors.ErrServiceUnavailable
-	ErrThrottling           = awserrors.ErrThrottling
-	ErrValidation           = awserrors.ErrValidation
-	ErrInternal             = awserrors.ErrInternal
-	ErrNotImplemented       = awserrors.ErrNotImplemented
+	// ErrAccessDenied is returned when access is denied.
+	ErrAccessDenied = NewAWSError("AccessDenied", "Access denied", http.StatusForbidden)
+	// ErrInvalidAction is returned when an invalid action is requested.
+	ErrInvalidAction = NewAWSError("InvalidAction", "Invalid action", http.StatusBadRequest)
+	// ErrInvalidParameter is returned when a parameter is invalid.
+	ErrInvalidParameter = NewAWSError("InvalidParameter", "Invalid parameter", http.StatusBadRequest)
+	// ErrMissingParameter is returned when a required parameter is missing.
+	ErrMissingParameter = NewAWSError("MissingParameter", "Missing required parameter", http.StatusBadRequest)
+	// ErrResourceNotFound is returned when a resource is not found.
+	ErrResourceNotFound = NewAWSError("ResourceNotFoundException", "Resource not found", http.StatusNotFound)
+	// ErrServiceUnavailable is returned when the service is unavailable.
+	ErrServiceUnavailable = NewAWSError("ServiceUnavailable", "Service unavailable", http.StatusServiceUnavailable)
+	// ErrThrottling is returned when the request is throttled.
+	ErrThrottling = NewAWSError("ThrottlingException", "Request was throttled", http.StatusTooManyRequests)
+	// ErrValidation is returned when validation fails.
+	ErrValidation = NewAWSError("ValidationException", "Validation error", http.StatusBadRequest)
+	// ErrInternal is returned when an internal server error occurs.
+	ErrInternal = NewAWSError("InternalFailure", "Internal server error", http.StatusInternalServerError)
+	// ErrNotImplemented is returned when an operation is not implemented.
+	ErrNotImplemented = NewAWSError("NotImplementedException", "Operation not implemented", http.StatusNotImplemented)
 )
+
+// CustomJSONMarshaler is an interface for types that can marshal themselves to JSON.
+type CustomJSONMarshaler interface {
+	ToJSON() string
+	GetHTTPStatusCode() int
+	GetCode() string
+}
+
+// WriteAWSError writes an AWS error to the response writer.
+func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
+	if contentType == "application/xml" || contentType == "text/xml" || contentType == "application/x-www-form-urlencoded" {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(err.HTTPStatus)
+		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
+			logs.Error("Failed to write XML error response", logs.Err(writeErr))
+		}
+	} else if contentType == "application/cbor" {
+		w.Header().Set("Content-Type", "application/cbor")
+		w.Header().Set("smithy-protocol", "rpc-v2-cbor")
+		w.WriteHeader(err.HTTPStatus)
+		if _, writeErr := w.Write(err.ToCBOR()); writeErr != nil {
+			logs.Error("Failed to write CBOR error response", logs.Err(writeErr))
+		}
+	} else {
+		ct := contentType
+		if ct == "" || ct == "text/plain" {
+			ct = "application/json"
+		}
+		w.Header().Set("Content-Type", ct)
+		w.Header().Set("X-Amzn-ErrorType", err.Code)
+		if err.QueryErrorCode != "" {
+			w.Header().Set("x-amzn-query-error", err.QueryErrorCode)
+		}
+		w.WriteHeader(err.HTTPStatus)
+		if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
+			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
+		}
+	}
+}
+
+// WriteCustomJSONError writes a custom JSON error to the response writer.
+func WriteCustomJSONError(w http.ResponseWriter, err CustomJSONMarshaler, contentType string) {
+	if contentType == "application/xml" || contentType == "text/xml" || contentType == "application/x-www-form-urlencoded" {
+		if awsErr, ok := err.(*AWSError); ok {
+			WriteAWSError(w, awsErr, contentType)
+			return
+		}
+	}
+	if contentType == "application/cbor" {
+		if awsErr, ok := err.(*AWSError); ok {
+			WriteAWSError(w, awsErr, contentType)
+			return
+		}
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Amzn-ErrorType", err.GetCode())
+	w.WriteHeader(err.GetHTTPStatusCode())
+	if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {
+		logs.Error("Failed to write JSON error response", logs.Err(writeErr))
+	}
+}
+
+// WriteAWSErrorWithFormat writes an AWS error with a specific JSON format.
+func WriteAWSErrorWithFormat(w http.ResponseWriter, err *AWSError, contentType, jsonFormat string) {
+	if contentType == "application/xml" || contentType == "text/xml" || contentType == "application/x-www-form-urlencoded" {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(err.HTTPStatus)
+		if _, writeErr := w.Write([]byte(err.ToXML())); writeErr != nil {
+			logs.Error("Failed to write XML error response", logs.Err(writeErr))
+		}
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(err.HTTPStatus)
+		if _, writeErr := w.Write([]byte(err.ToJSONWithFormat(jsonFormat))); writeErr != nil {
+			logs.Error("Failed to write JSON error response", logs.Err(writeErr))
+		}
+	}
+}

@@ -1,8 +1,8 @@
 package sesv2
 
 import (
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // SESv2StoreInterface defines operations for managing SESv2 resources.

@@ -3,9 +3,9 @@ package waf
 import (
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const ruleGroupBucketName = "waf_rule_groups"

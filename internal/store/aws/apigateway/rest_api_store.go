@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 
 	"github.com/google/uuid"
 )
@@ -216,7 +215,7 @@ func (s *RestApiStore) List(opts common.ListOptions) (*common.ListResult[RestApi
 }
 
 // GetTags retrieves tags for a REST API.
-func (s *RestApiStore) GetTags(apiId string) ([]types.Tag, error) {
+func (s *RestApiStore) GetTags(apiId string) ([]tags.Tag, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
 		return nil, err
@@ -235,7 +234,7 @@ func (s *RestApiStore) Tag(apiId string, inputTags map[string]string) error {
 	}
 
 	if api.Tags == nil {
-		api.Tags = []types.Tag{}
+		api.Tags = []tags.Tag{}
 	}
 
 	api.Tags = tags.Apply(api.Tags, tags.MapToTags(inputTags))
@@ -274,7 +273,7 @@ func (s *RestApiStore) TagStage(apiId, stageName string, inputTags map[string]st
 	}
 
 	if stage.Tags == nil {
-		stage.Tags = []types.Tag{}
+		stage.Tags = []tags.Tag{}
 	}
 
 	stage.Tags = tags.Apply(stage.Tags, tags.MapToTags(inputTags))
@@ -303,7 +302,7 @@ func (s *RestApiStore) UntagStage(apiId, stageName string, tagKeys []string) err
 }
 
 // GetStageTags returns the tags associated with a specific stage of a REST API.
-func (s *RestApiStore) GetStageTags(apiId, stageName string) ([]types.Tag, error) {
+func (s *RestApiStore) GetStageTags(apiId, stageName string) ([]tags.Tag, error) {
 	stage, err := s.GetStage(apiId, stageName)
 	if err != nil {
 		return nil, err
@@ -312,7 +311,7 @@ func (s *RestApiStore) GetStageTags(apiId, stageName string) ([]types.Tag, error
 }
 
 // GetResourceTags returns the tags associated with a REST API resource.
-func (s *RestApiStore) GetResourceTags(apiId string) ([]types.Tag, error) {
+func (s *RestApiStore) GetResourceTags(apiId string) ([]tags.Tag, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
 		return nil, err

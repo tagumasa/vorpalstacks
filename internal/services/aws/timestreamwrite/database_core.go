@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	types "vorpalstacks/internal/common/tags"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // ---------------------------------------------------------------------------

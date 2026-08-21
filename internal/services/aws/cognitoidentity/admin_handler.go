@@ -3,10 +3,10 @@ package cognitoidentity
 import (
 	"context"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	pb "vorpalstacks/internal/pb/aws/cognitoidentity"
@@ -30,7 +30,7 @@ func NewAdminHandler(svc *CognitoIdentityService) *AdminHandler {
 
 // ListIdentityPools lists identity pools in Cognito Identity with pagination.
 func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Request[pb.ListIdentityPoolsInput]) (*connect.Response[pb.ListIdentityPoolsResponse], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
@@ -64,7 +64,7 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 
 // CreateIdentityPool creates a new Cognito Identity Pool via the admin console.
 func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Request[pb.CreateIdentityPoolInput]) (*connect.Response[pb.IdentityPool], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)
@@ -114,7 +114,7 @@ func (h *AdminHandler) CreateIdentityPool(ctx context.Context, req *connect.Requ
 
 // DeleteIdentityPool deletes a Cognito Identity Pool via the admin console.
 func (h *AdminHandler) DeleteIdentityPool(ctx context.Context, req *connect.Request[pb.DeleteIdentityPoolInput]) (*connect.Response[common.Empty], error) {
-	region := svccommon.GetRegionFromHeader(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 	store, err := h.service.GetStoreForRegion(region)
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)

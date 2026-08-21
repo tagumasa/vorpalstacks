@@ -2,10 +2,10 @@ package iot
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
 
-	svccommon "vorpalstacks/internal/common"
 	"vorpalstacks/internal/pb/aws/iot"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 	"vorpalstacks/internal/utils/timeutils"
@@ -18,7 +18,7 @@ import (
 // getStoreFromHeaders resolves the region from gRPC-Web request headers and
 // returns the IoT store for that region.
 func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (iotstore.IotStoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

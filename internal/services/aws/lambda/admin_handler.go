@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	svcerrors "vorpalstacks/internal/common/errors"
 
 	"connectrpc.com/connect"
@@ -82,7 +82,7 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		PackageType:  protoToPackageType(req.Msg.Packagetype),
 		MemorySize:   req.Msg.GetMemorysize(),
 		Timeout:      req.Msg.GetTimeout(),
-		Region:       svccommon.GetRegionFromHeader(req.Header()),
+		Region:       defaults.GetRegionFromHeader(req.Header()),
 	}
 
 	if len(req.Msg.Tags) > 0 {

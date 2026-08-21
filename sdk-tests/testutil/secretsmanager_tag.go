@@ -45,6 +45,29 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 		return nil
 	}))
 
+	results = append(results, r.RunTest("secretsmanager", "TagResource_ReservedPrefixRejected", func() error {
+		name := tc.uniqueName("TagReserved")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(name),
+			SecretString: aws.String("tag-reserved-test"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(name)
+
+		_, err = tc.client.TagResource(tc.ctx, &secretsmanager.TagResourceInput{
+			SecretId: aws.String(name),
+			Tags: []types.Tag{
+				{Key: aws.String("aws:reserved"), Value: aws.String("v")},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for aws:-prefixed tag key")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("secretsmanager", "TagResource_Basic", func() error {
 		name := tc.uniqueName("TagTest")
 		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"vorpalstacks/internal/common/kmsutil"
 
-	"vorpalstacks/internal/common"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
@@ -822,13 +822,13 @@ func (s *KMSService) KMSBusInvoker() eventbus.KMSInvoker {
 // directly.
 // ---------------------------------------------------------------------------
 
-// kmsKeyCheckerAdapter adapts KMSService to satisfy common.KMSKeyChecker.
+// kmsKeyCheckerAdapter adapts KMSService to satisfy kmsutil.Checker.
 type kmsKeyCheckerAdapter struct {
 	s *KMSService
 }
 
-// NewKeyChecker returns a common.KMSKeyChecker backed by this service.
-func (s *KMSService) NewKeyChecker() common.KMSKeyChecker {
+// NewKeyChecker returns a kmsutil.Checker backed by this service.
+func (s *KMSService) NewKeyChecker() kmsutil.Checker {
 	return &kmsKeyCheckerAdapter{s}
 }
 
@@ -839,23 +839,23 @@ func (s *KMSService) NewKeyChecker() common.KMSKeyChecker {
 func (a *kmsKeyCheckerAdapter) CheckKey(ctx context.Context, region, keyID string) error {
 	stores, err := a.s.GetStoreForRegion(region)
 	if err != nil {
-		return common.ErrKMSKeyNotFound
+		return kmsutil.ErrKeyNotFound
 	}
 
 	key, err := a.s.resolveKey(stores, map[string]interface{}{"KeyId": keyID})
 	if err != nil {
-		return common.ErrKMSKeyNotFound
+		return kmsutil.ErrKeyNotFound
 	}
 
 	switch key.KeyState {
 	case kmsstore.KeyStateDisabled:
-		return common.ErrKMSKeyDisabled
+		return kmsutil.ErrKeyDisabled
 	case kmsstore.KeyStatePendingDeletion, kmsstore.KeyStatePendingImport:
-		return common.ErrKMSKeyInvalidState
+		return kmsutil.ErrKeyInvalidState
 	}
 
 	if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
-		return common.ErrKMSKeyInvalidUsage
+		return kmsutil.ErrKeyInvalidUsage
 	}
 
 	return nil

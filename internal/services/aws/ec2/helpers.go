@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/common/tags"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 	"vorpalstacks/internal/utils/aws/generators"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 const (
@@ -59,7 +58,7 @@ func calculateAvailableIPs(cidrBlock string) int64 {
 // parseEC2Tags extracts EC2 tags from request parameters.
 // AWS SDK Go v2 sends tags as TagSpecification.N.Tag.N.Key/Value;
 // older clients (AWS CLI v1) use Tag.N.Key/Value. Both are handled.
-func parseEC2Tags(params map[string]interface{}) []types.Tag {
+func parseEC2Tags(params map[string]interface{}) []tags.Tag {
 	if tsTags := parseTagSpecification(params); len(tsTags) > 0 {
 		return tsTags
 	}
@@ -147,8 +146,8 @@ func paginateEC2[T any](items []T, nextToken string, maxResults int, keyExtracto
 
 // parseTagSpecification parses the TagSpecification.N.Tag.N.Key/Value format
 // used by AWS SDK Go v2 for EC2 Query protocol requests.
-func parseTagSpecification(params map[string]interface{}) []types.Tag {
-	var result []types.Tag
+func parseTagSpecification(params map[string]interface{}) []tags.Tag {
+	var result []tags.Tag
 	for i := 1; ; i++ {
 		tagPrefix := "TagSpecification." + strconv.Itoa(i) + ".Tag"
 		found := false
@@ -162,7 +161,7 @@ func parseTagSpecification(params map[string]interface{}) []types.Tag {
 			}
 
 			value := request.GetStringParam(params, valueKey)
-			result = append(result, types.Tag{Key: key, Value: value})
+			result = append(result, tags.Tag{Key: key, Value: value})
 			found = true
 		}
 		if !found {

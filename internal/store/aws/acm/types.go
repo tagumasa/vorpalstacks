@@ -4,7 +4,7 @@ package acm
 import (
 	"time"
 
-	"vorpalstacks/internal/utils/aws/types"
+	types "vorpalstacks/internal/common/tags"
 )
 
 // Certificate represents an ACM certificate.

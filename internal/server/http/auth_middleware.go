@@ -5,11 +5,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"vorpalstacks/internal/common/auth"
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/server/http/classifier"
-	awserrors "vorpalstacks/internal/utils/aws/errors"
 )
 
 // SignatureMiddleware returns an HTTP middleware that verifies AWS Signature
@@ -160,6 +161,13 @@ var unauthenticatedOps = map[string]bool{
 }
 
 func isUnauthenticatedOperation(r *http.Request) bool {
+	// The unauthenticated STS operations are query-protocol POSTs: the
+	// Action travels in the form body or, less commonly, the query string.
+	// Both are read so the check fails closed for any other request shape.
+	if action := r.URL.Query().Get("Action"); action != "" {
+		return unauthenticatedOps[action]
+	}
+
 	ct := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
 		return false
@@ -176,12 +184,11 @@ func isUnauthenticatedOperation(r *http.Request) bool {
 
 	r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 
-	for _, pair := range strings.Split(string(bodyBytes), "&") {
-		kv := strings.SplitN(pair, "=", 2)
-		if len(kv) == 2 && kv[0] == "Action" {
-			decoded := strings.ReplaceAll(kv[1], "+", " ")
-			return unauthenticatedOps[decoded]
-		}
+	// url.ParseQuery performs full percent-decoding, so an encoded Action
+	// value is recognised the same way an SDK client would send it.
+	values, err := url.ParseQuery(string(bodyBytes))
+	if err != nil {
+		return false
 	}
-	return false
+	return unauthenticatedOps[values.Get("Action")]
 }

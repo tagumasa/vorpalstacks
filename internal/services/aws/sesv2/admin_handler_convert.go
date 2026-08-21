@@ -2,8 +2,8 @@ package sesv2
 
 import (
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
-	svccommon "vorpalstacks/internal/common"
 	pb "vorpalstacks/internal/pb/aws/sesv2"
 	sesv2store "vorpalstacks/internal/store/aws/sesv2"
 )
@@ -18,7 +18,7 @@ import (
 // getSESv2Store returns the SESv2 store for the region extracted from the
 // request header.
 func (h *AdminHandler) getSESv2Store(headers http.Header) (sesv2store.SESv2StoreInterface, error) {
-	region := svccommon.GetRegionFromHeader(headers)
+	region := defaults.GetRegionFromHeader(headers)
 	return h.service.GetStoreForRegion(region)
 }
 

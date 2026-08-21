@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/store/aws/apigateway"
 	storecommon "vorpalstacks/internal/store/aws/common"
-	"vorpalstacks/internal/utils/aws/types"
 )
 
 // createRestApiCore is the shared business logic for creating a REST API.

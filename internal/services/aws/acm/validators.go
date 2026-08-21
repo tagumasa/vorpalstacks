@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -152,11 +153,11 @@ func isValidCertificateArn(arn string) bool {
 	if len(arn) < 20 || len(arn) > 2048 {
 		return false
 	}
-	parts := strings.Split(arn, ":")
-	if len(parts) != 6 || parts[0] != "arn" || parts[2] != "acm" {
+	_, service, _, _, resource := svcarn.SplitARN(arn)
+	if service != "acm" {
 		return false
 	}
-	return strings.HasPrefix(parts[5], "certificate/") && len(parts[5]) > len("certificate/")
+	return strings.HasPrefix(resource, "certificate/") && len(resource) > len("certificate/")
 }
 
 // isValidDomainName returns true when the domain conforms to the ACM

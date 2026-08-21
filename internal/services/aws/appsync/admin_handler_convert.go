@@ -3,10 +3,9 @@ package appsync
 import (
 	"fmt"
 	"net/http"
+	"vorpalstacks/internal/common/defaults"
 
 	"google.golang.org/protobuf/proto"
-
-	svccommon "vorpalstacks/internal/common"
 
 	pb "vorpalstacks/internal/pb/aws/appsync"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
@@ -14,7 +13,7 @@ import (
 
 // getStore returns the regional AppSync store from gRPC request headers.
 func (h *AdminHandler) getStore(header http.Header) (*appsyncstore.AppSyncStore, error) {
-	region := svccommon.GetRegionFromHeader(header)
+	region := defaults.GetRegionFromHeader(header)
 	return h.service.GetStoreForRegion(region)
 }
 
