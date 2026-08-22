@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
@@ -77,12 +78,12 @@ func validateLogGroupName(name string) error {
 }
 
 // validateLogStreamName validates a log stream name against the Smithy pattern
-// ^[^:*]*$ and length constraint 1-512.
+// ^[^:*]*$ and length constraint 1-512 counted in Unicode characters.
 func validateLogStreamName(name string) error {
 	if name == "" {
 		return ErrMissingParameter
 	}
-	if len(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
+	if utf8.RuneCountInString(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid log stream name: %s. Must not contain ':' or '*' and be 1-512 characters", name), 400)
 	}
@@ -90,12 +91,12 @@ func validateLogStreamName(name string) error {
 }
 
 // validateFilterName validates a metric or subscription filter name.
-// Smithy: ^[^:*]*$  length 1-512.
+// Smithy: ^[^:*]*$  length 1-512 counted in Unicode characters.
 func validateFilterName(name string) error {
 	if name == "" {
 		return ErrMissingParameter
 	}
-	if len(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
+	if utf8.RuneCountInString(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid filter name: %s. Must not contain ':' or '*' and be 1-512 characters", name), 400)
 	}
@@ -103,12 +104,12 @@ func validateFilterName(name string) error {
 }
 
 // validateDestinationName validates a destination name.
-// Smithy: ^[^:*]*$  length 1-512.
+// Smithy: ^[^:*]*$  length 1-512 counted in Unicode characters.
 func validateDestinationName(name string) error {
 	if name == "" {
 		return ErrMissingParameter
 	}
-	if len(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
+	if utf8.RuneCountInString(name) > 512 || !noColonAsteriskPattern.MatchString(name) {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid destination name: %s. Must not contain ':' or '*' and be 1-512 characters", name), 400)
 	}
@@ -116,9 +117,9 @@ func validateDestinationName(name string) error {
 }
 
 // validateFilterPattern validates a filter pattern string.
-// Smithy: length 0-1024.
+// Smithy: length 0-1024 counted in Unicode characters.
 func validateFilterPattern(pattern string) error {
-	if len(pattern) > 1024 {
+	if utf8.RuneCountInString(pattern) > 1024 {
 		return NewLogsError("InvalidParameterException",
 			"Filter pattern must be between 0 and 1024 characters", 400)
 	}
@@ -126,13 +127,13 @@ func validateFilterPattern(pattern string) error {
 }
 
 // validatePolicyDocument validates a policy document string.
-// Smithy: length 1-51200.
+// Smithy: length 1-51200 counted in Unicode characters.
 func validatePolicyDocument(doc string) error {
 	if doc == "" {
 		return NewLogsError("InvalidParameterException",
 			"Policy document is required", 400)
 	}
-	if len(doc) > 51200 {
+	if utf8.RuneCountInString(doc) > 51200 {
 		return NewLogsError("InvalidParameterException",
 			"Policy document must not exceed 51200 characters", 400)
 	}
@@ -150,12 +151,12 @@ func validateAccessPolicy(policy string) error {
 }
 
 // validateQueryDefinitionName validates a query definition name.
-// Smithy: length 1-255.
+// Smithy: length 1-255 counted in Unicode characters.
 func validateQueryDefinitionName(name string) error {
 	if name == "" {
 		return ErrMissingParameter
 	}
-	if len(name) > 255 {
+	if utf8.RuneCountInString(name) > 255 {
 		return NewLogsError("InvalidParameterException",
 			"Query definition name must be between 1 and 255 characters", 400)
 	}
@@ -163,9 +164,9 @@ func validateQueryDefinitionName(name string) error {
 }
 
 // validateQueryString validates a query string.
-// Smithy: length 0-10000.
+// Smithy: length 0-10000 counted in Unicode characters.
 func validateQueryString(qs string) error {
-	if len(qs) > 10000 {
+	if utf8.RuneCountInString(qs) > 10000 {
 		return NewLogsError("InvalidParameterException",
 			"Query string must not exceed 10000 characters", 400)
 	}
@@ -173,12 +174,12 @@ func validateQueryString(qs string) error {
 }
 
 // validateScheduledQueryName validates a scheduled query name.
-// Smithy: length 1-300.
+// Smithy: length 1-300 counted in Unicode characters.
 func validateScheduledQueryName(name string) error {
 	if name == "" {
 		return ErrMissingParameter
 	}
-	if len(name) > 300 {
+	if utf8.RuneCountInString(name) > 300 {
 		return NewLogsError("InvalidParameterException",
 			"Scheduled query name must be between 1 and 300 characters", 400)
 	}
@@ -186,12 +187,12 @@ func validateScheduledQueryName(name string) error {
 }
 
 // validateExportDestinationBucket validates an S3 bucket name for export tasks.
-// Smithy: length 1-512.
+// Smithy: length 1-512 counted in Unicode characters.
 func validateExportDestinationBucket(bucket string) error {
 	if bucket == "" {
 		return ErrMissingParameter
 	}
-	if len(bucket) > 512 {
+	if utf8.RuneCountInString(bucket) > 512 {
 		return NewLogsError("InvalidParameterException",
 			"Export destination bucket must be between 1 and 512 characters", 400)
 	}
@@ -199,9 +200,9 @@ func validateExportDestinationBucket(bucket string) error {
 }
 
 // validateMetricName validates a metric transformation metric name.
-// Smithy: ^[^:*$]*$  length 0-255.
+// Smithy: ^[^:*$]*$  length 0-255 counted in Unicode characters.
 func validateMetricName(name string) error {
-	if len(name) > 255 || !metricNamePattern.MatchString(name) {
+	if utf8.RuneCountInString(name) > 255 || !metricNamePattern.MatchString(name) {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid metric name: %s. Must not contain ':', '*', or '$' and be 0-255 characters", name), 400)
 	}
@@ -209,9 +210,9 @@ func validateMetricName(name string) error {
 }
 
 // validateMetricNamespace validates a metric transformation namespace.
-// Smithy: ^[^:*$]*$  length 0-255.
+// Smithy: ^[^:*$]*$  length 0-255 counted in Unicode characters.
 func validateMetricNamespace(ns string) error {
-	if len(ns) > 255 || !metricNamePattern.MatchString(ns) {
+	if utf8.RuneCountInString(ns) > 255 || !metricNamePattern.MatchString(ns) {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("Invalid metric namespace: %s. Must not contain ':', '*', or '$' and be 0-255 characters", ns), 400)
 	}
@@ -219,9 +220,9 @@ func validateMetricNamespace(ns string) error {
 }
 
 // validateMetricValue validates a metric transformation value expression.
-// Smithy: length 0-100.
+// Smithy: length 0-100 counted in Unicode characters.
 func validateMetricValue(val string) error {
-	if len(val) > 100 {
+	if utf8.RuneCountInString(val) > 100 {
 		return NewLogsError("InvalidParameterException",
 			"Metric value must not exceed 100 characters", 400)
 	}
@@ -404,9 +405,9 @@ func validateKinesisOrFirehoseArn(targetArn string) error {
 const maxFieldSelectionCriteriaLen = 2000
 
 // validateFieldSelectionCriteria enforces the Smithy @length constraint of
-// 0-2000 characters on FieldSelectionCriteria.
+// 0-2000 characters (counted in Unicode characters) on FieldSelectionCriteria.
 func validateFieldSelectionCriteria(s string) error {
-	if len(s) > maxFieldSelectionCriteriaLen {
+	if utf8.RuneCountInString(s) > maxFieldSelectionCriteriaLen {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("FieldSelectionCriteria must not exceed %d characters", maxFieldSelectionCriteriaLen), 400)
 	}

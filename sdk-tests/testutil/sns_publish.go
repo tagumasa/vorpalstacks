@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -28,6 +29,53 @@ func (r *TestRunner) runSNSPublishTests(tc *snsTestContext) []TestResult {
 		}
 		if resp.MessageId == nil || *resp.MessageId == "" {
 			return fmt.Errorf("MessageId should be non-empty")
+		}
+		return nil
+	}))
+
+	// Subjects are documented as "UTF-8 text … less than 100 characters
+	// long", so a 99-character CJK subject (297 bytes) is legal input.
+	results = append(results, r.RunTest("sns", "Publish_SubjectMultibyteAccepted", func() error {
+		topicName := tc.uniqueName("PubMbSubjectTopic")
+		topicArn, err := tc.createTopic(topicName)
+		if err != nil {
+			return err
+		}
+		defer tc.deleteTopic(topicArn)
+
+		subject := strings.Repeat("\u65e5", 99)
+		resp, err := tc.client.Publish(tc.ctx, &sns.PublishInput{
+			TopicArn: aws.String(topicArn),
+			Message:  aws.String("body"),
+			Subject:  aws.String(subject),
+		})
+		if err != nil {
+			return fmt.Errorf("Publish with 99-character CJK subject: %v", err)
+		}
+		if resp.MessageId == nil || *resp.MessageId == "" {
+			return fmt.Errorf("MessageId should be non-empty")
+		}
+		return nil
+	}))
+
+	// The same documentation bounds subjects to strictly less than 100
+	// characters, so a 100-character subject must be rejected even though
+	// its byte length is far below any byte-based ceiling.
+	results = append(results, r.RunTest("sns", "Publish_SubjectExactLimitRejected", func() error {
+		topicName := tc.uniqueName("PubMbSubjLimTopic")
+		topicArn, err := tc.createTopic(topicName)
+		if err != nil {
+			return err
+		}
+		defer tc.deleteTopic(topicArn)
+
+		_, err = tc.client.Publish(tc.ctx, &sns.PublishInput{
+			TopicArn: aws.String(topicArn),
+			Message:  aws.String("body"),
+			Subject:  aws.String(strings.Repeat("\u65e5", 100)),
+		})
+		if err == nil {
+			return fmt.Errorf("expected rejection for 100-character CJK subject")
 		}
 		return nil
 	}))

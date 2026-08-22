@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -94,22 +95,28 @@ func validateLaunchType(lt string) bool {
 // ---------------------------------------------------------------------------
 
 // validateDetailType enforces the AWS PutEventsRequestEntry.DetailType maximum
-// length of 128 characters (documented in the AWS API Reference).
+// length of 128 characters, counted in Unicode characters (member
+// documentation: "maximum of 128 characters").
 func validateDetailType(s string) bool {
-	return len(s) > 0 && len(s) <= 128
+	n := utf8.RuneCountInString(s)
+	return n > 0 && n <= 128
 }
 
-// validateSource enforces the AWS PutEventsRequestEntry.Source maximum length
-// of 256 characters (documented in the AWS API Reference).
+// validateSource enforces the AWS PutEventsRequestEntry.Source constraint
+// "Length constraints: minimum length of 1, maximum length of 256" (API
+// reference; the model member itself carries no length documentation),
+// counted in Unicode characters like the sibling DetailType bound.
 func validateSource(s string) bool {
-	return len(s) > 0 && len(s) <= 256
+	n := utf8.RuneCountInString(s)
+	return n > 0 && n <= 256
 }
 
-// validateTraceHeader enforces the Smithy TraceHeader @length(min=1,max=500).
-// An empty string is accepted because the parameter is optional; a non-empty
-// value must satisfy max=500.
+// validateTraceHeader enforces the Smithy TraceHeader @length(min=1,max=500),
+// counted in Unicode characters (the shape carries no pattern). An empty
+// string is accepted because the parameter is optional; a non-empty value
+// must satisfy max=500.
 func validateTraceHeader(s string) bool {
-	return len(s) <= 500
+	return utf8.RuneCountInString(s) <= 500
 }
 
 // ---------------------------------------------------------------------------
@@ -154,11 +161,32 @@ func validateKmsKeyIdentifier(arn string) bool {
 // ConnectionDescription, ApiDestinationDescription and ReplayDescription.
 const maxDescriptionLength = 512
 
+// maxEventBusPolicyBytes is the documented event bus resource policy size
+// ceiling: "The permission policy on the event bus cannot exceed 10 KB in
+// size" (PutPermission API Reference and the operation documentation in the
+// Smithy model). The bound is applied to the byte size: AWS reports
+// violations as "Maximum policy size of 10240 bytes exceeded", even though
+// the quotas page phrases the same limit as 10,240 characters. JSON policy
+// documents are ASCII-dominated, so the two readings only diverge for
+// multibyte policy text.
+const maxEventBusPolicyBytes = 10240
+
+// validateEventBusPolicySize enforces the documented 10 KB ceiling on the
+// event bus resource policy supplied via PutPermission's Policy parameter.
+func validateEventBusPolicySize(policy string) error {
+	if len(policy) > maxEventBusPolicyBytes {
+		return awserrors.NewPolicyLengthExceededException(
+			fmt.Sprintf("Event bus policy length %d exceeds the maximum allowed length of %d bytes", len(policy), maxEventBusPolicyBytes))
+	}
+	return nil
+}
+
 // validateDescription enforces the Smithy @length(0,512) trait shared by
 // RuleDescription, EventBusDescription, ArchiveDescription,
-// ConnectionDescription, ApiDestinationDescription and ReplayDescription.
+// ConnectionDescription, ApiDestinationDescription and ReplayDescription,
+// counted in Unicode characters (none of the shapes carries a pattern).
 func validateDescription(s string) bool {
-	return len(s) <= maxDescriptionLength
+	return utf8.RuneCountInString(s) <= maxDescriptionLength
 }
 
 // errDescriptionTooLong is the validation error for a description member
@@ -168,10 +196,12 @@ func errDescriptionTooLong() error {
 		fmt.Sprintf("Description must be at most %d characters", maxDescriptionLength))
 }
 
-// validateEventPatternLength enforces the Smithy EventPattern @length(0,4096).
-// The caller should additionally check JSON validity via isValidEventPattern.
+// validateEventPatternLength enforces the Smithy EventPattern @length(0,4096),
+// counted in Unicode characters (the shape carries no pattern, so JSON
+// patterns with multibyte values are rune-legal). The caller should
+// additionally check JSON validity via isValidEventPattern.
 func validateEventPatternLength(pattern string) bool {
-	return len(pattern) <= 4096
+	return utf8.RuneCountInString(pattern) <= 4096
 }
 
 // validateInvocationRateLimit enforces the AWS-documented maximum of 300

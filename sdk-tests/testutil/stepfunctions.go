@@ -121,6 +121,7 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	results = append(results, r.runSFNTagTests(tc)...)
 	results = append(results, r.runSFNAdvancedTests(tc)...)
 	results = append(results, r.runSFNEdgeTests(tc)...)
+	results = append(results, r.runSFNWaitTests(tc)...)
 
 	return results
 }

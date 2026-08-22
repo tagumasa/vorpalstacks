@@ -12,6 +12,12 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
+// maxFunctionRefLength is the FunctionName @length(1,140) maximum from the
+// Smithy model. The bound applies to the raw input regardless of form: a
+// full or partial ARN reference must fit in 140 characters, while the bare
+// name inside any form is separately capped at 64 by validateFunctionName.
+const maxFunctionRefLength = 140
+
 // resolveFunctionRef parses every FunctionName form the API accepts into
 // the bare function name and a qualifier embedded in the reference:
 //   - "my-function"                                  (name only)
@@ -19,11 +25,17 @@ import (
 //   - "arn:aws:lambda:us-west-2:123456789012:function:my-function[:v1]" (full ARN)
 //   - "123456789012:function:my-function[:v1]"       (partial ARN)
 //
+// Inputs longer than maxFunctionRefLength resolve to an empty name so the
+// downstream validation rejects them, matching the model's raw-input bound.
+//
 // Function names cannot contain colons, so the first colon after the name
 // separates the embedded qualifier. An explicit Qualifier request parameter
 // takes precedence over the embedded one (see mergeQualifier).
 func resolveFunctionRef(nameOrArn string) (name, qualifier string) {
 	if nameOrArn == "" {
+		return "", ""
+	}
+	if len(nameOrArn) > maxFunctionRefLength {
 		return "", ""
 	}
 	if strings.HasPrefix(nameOrArn, "arn:") {

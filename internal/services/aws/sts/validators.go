@@ -8,6 +8,7 @@ package sts
 import (
 	"encoding/json"
 	"regexp"
+	"unicode/utf8"
 )
 
 // sessionPolicyPattern is the Smithy pattern trait shared by
@@ -37,12 +38,13 @@ const (
 var arnTypePattern = regexp.MustCompile(`^[\t\n\r\x20-\x7e\x85\xa0-\x{d7ff}\x{e000}-\x{fffd}\x{10000}-\x{10ffff}]+$`)
 
 // validateARN enforces the Smithy arnType constraint: length 20-2048
-// and the arnType pattern. Returns ErrInvalidPolicyArn on failure.
-// Callers validating ProviderArn should translate the error to
+// (counted in Unicode characters — the arnType pattern admits code points
+// beyond ASCII) and the arnType pattern. Returns ErrInvalidPolicyArn on
+// failure. Callers validating ProviderArn should translate the error to
 // ErrInvalidProviderArn so the field name in the error message is
 // accurate.
 func validateARN(arn string) error {
-	if len(arn) < minARNLen || len(arn) > maxARNLen {
+	if n := utf8.RuneCountInString(arn); n < minARNLen || n > maxARNLen {
 		return ErrInvalidPolicyArn
 	}
 	if !arnTypePattern.MatchString(arn) {
@@ -52,14 +54,15 @@ func validateARN(arn string) error {
 }
 
 // validateSessionPolicy enforces the Smithy sessionPolicyDocumentType
-// constraint: length 1-2048, pattern ^[\t\n\r\x20-\xff]+$, and valid
-// JSON structure. Used by AssumeRoleWithSAML, AssumeRoleWithWebIdentity,
-// and GetFederationToken.
+// constraint: length 1-2048 counted in Unicode characters (the Latin-1
+// pattern permits two-byte characters), pattern ^[\t\n\r\x20-\xff]+$, and
+// valid JSON structure. Used by AssumeRoleWithSAML,
+// AssumeRoleWithWebIdentity, and GetFederationToken.
 func validateSessionPolicy(policy string) error {
 	if policy == "" {
 		return nil // optional parameter
 	}
-	if len(policy) > maxSessionPolicyLen {
+	if utf8.RuneCountInString(policy) > maxSessionPolicyLen {
 		return ErrMalformedPolicyDocument
 	}
 	if !sessionPolicyPattern.MatchString(policy) {
@@ -93,9 +96,9 @@ func validateUnrestrictedSessionPolicy(policy string) error {
 }
 
 // validateSAMLAssertion enforces the Smithy SAMLAssertionType constraint:
-// length 4-100000.
+// length 4-100000 counted in Unicode characters (no pattern).
 func validateSAMLAssertion(s string) error {
-	if len(s) < minSAMLAssertionLen || len(s) > maxSAMLAssertionLen {
+	if n := utf8.RuneCountInString(s); n < minSAMLAssertionLen || n > maxSAMLAssertionLen {
 		return ErrInvalidSAMLAssertion
 	}
 	return nil
@@ -103,11 +106,11 @@ func validateSAMLAssertion(s string) error {
 
 // validateRoleArn enforces the Smithy arnType constraint for the RoleArn
 // parameter of AssumeRole, AssumeRoleWithSAML, and AssumeRoleWithWebIdentity:
-// length 20-2048 and the arnType pattern.  An empty value is rejected
-// separately by the caller (ErrInvalidRoleArn) before reaching this
-// function.
+// length 20-2048 (counted in Unicode characters) and the arnType pattern.
+// An empty value is rejected separately by the caller (ErrInvalidRoleArn)
+// before reaching this function.
 func validateRoleArn(arn string) error {
-	if len(arn) < minARNLen || len(arn) > maxARNLen {
+	if n := utf8.RuneCountInString(arn); n < minARNLen || n > maxARNLen {
 		return ErrInvalidRoleArnFormat
 	}
 	if !arnTypePattern.MatchString(arn) {
@@ -117,10 +120,10 @@ func validateRoleArn(arn string) error {
 }
 
 // validatePrincipalArn enforces the Smithy arnType constraint for the
-// PrincipalArn parameter of AssumeRoleWithSAML: length 20-2048 and the
-// arnType pattern.
+// PrincipalArn parameter of AssumeRoleWithSAML: length 20-2048 (counted in
+// Unicode characters) and the arnType pattern.
 func validatePrincipalArn(arn string) error {
-	if len(arn) < minARNLen || len(arn) > maxARNLen {
+	if n := utf8.RuneCountInString(arn); n < minARNLen || n > maxARNLen {
 		return ErrInvalidPrincipalArnFormat
 	}
 	if !arnTypePattern.MatchString(arn) {
@@ -130,12 +133,13 @@ func validatePrincipalArn(arn string) error {
 }
 
 // validateProviderID enforces the Smithy urlType constraint for the
-// ProviderId parameter of AssumeRoleWithWebIdentity: length 4-2048.
+// ProviderId parameter of AssumeRoleWithWebIdentity: length 4-2048 counted
+// in Unicode characters (no pattern).
 func validateProviderID(s string) error {
 	if s == "" {
 		return nil // optional parameter
 	}
-	if len(s) < minProviderIDLen || len(s) > maxProviderIDLen {
+	if n := utf8.RuneCountInString(s); n < minProviderIDLen || n > maxProviderIDLen {
 		return ErrInvalidProviderID
 	}
 	return nil

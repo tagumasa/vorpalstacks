@@ -187,19 +187,23 @@ func validateHealthCheckConfig(config *route53store.HealthCheckConfig) error {
 		return awserrors.NewAWSError("InvalidInput", "HealthThreshold must be between 0 and 256", 400)
 	}
 
-	if len(config.ResourcePath) > 255 {
+	// ResourcePath / SearchString / FullyQualifiedDomainName /
+	// RoutingControlArn carry @length(0,255) or (1,255) with no pattern, so
+	// lengths count Unicode characters (SearchString in particular searches
+	// response bodies, where multibyte text is realistic).
+	if utf8.RuneCountInString(config.ResourcePath) > 255 {
 		return awserrors.NewAWSError("InvalidInput", "ResourcePath must not exceed 255 characters", 400)
 	}
-	if len(config.SearchString) > 255 {
+	if utf8.RuneCountInString(config.SearchString) > 255 {
 		return awserrors.NewAWSError("InvalidInput", "SearchString must not exceed 255 characters", 400)
 	}
-	if len(config.FullyQualifiedDomainName) > 255 {
+	if utf8.RuneCountInString(config.FullyQualifiedDomainName) > 255 {
 		return awserrors.NewAWSError("InvalidInput", "FullyQualifiedDomainName must not exceed 255 characters", 400)
 	}
 	if len(config.IPAddress) > 45 {
 		return awserrors.NewAWSError("InvalidInput", "IPAddress must not exceed 45 characters", 400)
 	}
-	if len(config.RoutingControlArn) > 255 {
+	if utf8.RuneCountInString(config.RoutingControlArn) > 255 {
 		return awserrors.NewAWSError("InvalidInput", "RoutingControlArn must not exceed 255 characters", 400)
 	}
 

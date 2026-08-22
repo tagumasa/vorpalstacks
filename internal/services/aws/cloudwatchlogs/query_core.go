@@ -207,47 +207,51 @@ func (s *LogsService) updateScheduledQueryCore(store *logsstore.Store, input *Up
 
 	id := extractIdFromArnOrId(input.Identifier)
 
-	sq, err := store.GetScheduledQuery(id)
+	// The whole read-modify-write runs under the store's record lock so
+	// a concurrent delivery touch or delete cannot interleave.
+	err := store.MutateScheduledQuery(id, func(sq *logsstore.ScheduledQuery) error {
+		sq.QueryString = input.QueryString
+		sq.QueryLanguage = input.QueryLanguage
+		sq.ScheduleExpression = input.ScheduleExpression
+		sq.ExecutionRoleArn = input.ExecutionRoleArn
+		if input.Description != "" {
+			sq.Description = input.Description
+		}
+		if input.State != "" {
+			sq.State = input.State
+		}
+		if input.LogGroupIdentifiers != nil {
+			sq.LogGroupIdentifiers = input.LogGroupIdentifiers
+		}
+		if input.Timezone != "" {
+			sq.Timezone = input.Timezone
+		}
+		if input.StartTimeOffset != nil {
+			sq.StartTimeOffset = *input.StartTimeOffset
+		}
+		if input.EndTimeOffset != nil {
+			sq.EndTimeOffset = *input.EndTimeOffset
+		}
+		if input.ScheduleStartTime != nil {
+			sq.ScheduleStartTime = *input.ScheduleStartTime
+		}
+		if input.ScheduleEndTime != nil {
+			sq.ScheduleEndTime = *input.ScheduleEndTime
+		}
+		if input.DestinationConfiguration != nil {
+			sq.DestinationConfiguration = input.DestinationConfiguration
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
 
-	sq.QueryString = input.QueryString
-	sq.QueryLanguage = input.QueryLanguage
-	sq.ScheduleExpression = input.ScheduleExpression
-	sq.ExecutionRoleArn = input.ExecutionRoleArn
-	if input.Description != "" {
-		sq.Description = input.Description
-	}
-	if input.State != "" {
-		sq.State = input.State
-	}
-	if input.LogGroupIdentifiers != nil {
-		sq.LogGroupIdentifiers = input.LogGroupIdentifiers
-	}
-	if input.Timezone != "" {
-		sq.Timezone = input.Timezone
-	}
-	if input.StartTimeOffset != nil {
-		sq.StartTimeOffset = *input.StartTimeOffset
-	}
-	if input.EndTimeOffset != nil {
-		sq.EndTimeOffset = *input.EndTimeOffset
-	}
-	if input.ScheduleStartTime != nil {
-		sq.ScheduleStartTime = *input.ScheduleStartTime
-	}
-	if input.ScheduleEndTime != nil {
-		sq.ScheduleEndTime = *input.ScheduleEndTime
-	}
-	if input.DestinationConfiguration != nil {
-		sq.DestinationConfiguration = input.DestinationConfiguration
-	}
-
-	if err := store.PutScheduledQuery(sq); err != nil {
+	updated, err := store.GetScheduledQuery(id)
+	if err != nil {
 		return nil, mapStoreError(err)
 	}
-	return sq, nil
+	return updated, nil
 }
 
 // ScheduledQueryHistoryResult carries one page of scheduled query executions

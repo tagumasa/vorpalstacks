@@ -34,8 +34,8 @@ func (s *AthenaService) CreatePreparedStatement(ctx context.Context, reqCtx *req
 	}
 	queryStatement := request.GetParamCaseInsensitive(req.Parameters, "QueryStatement")
 
-	if len(queryStatement) > maxQueryStringSize {
-		return nil, ErrInvalidRequestException
+	if err := validateQueryStringSize(queryStatement); err != nil {
+		return nil, err
 	}
 
 	if queryStatement == "" {
@@ -175,8 +175,8 @@ func (s *AthenaService) UpdatePreparedStatement(ctx context.Context, reqCtx *req
 		return nil, awserrors.NewInvalidParameterException("QueryStatement is required for UpdatePreparedStatement")
 	}
 
-	if len(queryStatement) > maxQueryStringSize {
-		return nil, ErrInvalidRequestException
+	if err := validateQueryStringSize(queryStatement); err != nil {
+		return nil, err
 	}
 
 	stores, err := s.store(reqCtx)

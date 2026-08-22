@@ -2,8 +2,6 @@ package eventbridge
 
 import (
 	"context"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +16,10 @@ const schedulerTickInterval = 1 * time.Minute
 
 // lastFireTimes tracks the last time each scheduled rule was fired.
 // Keyed by rule ARN. Accessed only by the single scheduler goroutine.
+// The map is the primary dedup state; after a restart it is re-seeded
+// from each rule's persisted LastFiredAt marker (see seedLastFire), and
+// every successful fire is persisted back so the boundary survives the
+// next restart.
 var lastFireTimes sync.Map
 
 // startScheduler launches a background goroutine that ticks every minute and
@@ -94,7 +96,11 @@ func (s *EventsService) fireScheduledRulesForRegion(ctx context.Context, region 
 			if rule.ScheduleExpression == "" {
 				continue
 			}
-			if !shouldFireSchedule(rule.ARN, rule.ScheduleExpression, now) {
+			// A restart empties the in-memory dedup cache; re-seed it from
+			// the persisted marker so the boundary fired just before the
+			// restart is not fired again.
+			seedLastFire(rule)
+			if !shouldFireSchedule(rule.ARN, rule.ScheduleExpression, now, rule.CreatedAt) {
 				continue
 			}
 			s.fireScheduledRule(ctx, region, store, rule, now)
@@ -129,85 +135,42 @@ func (s *EventsService) fireScheduledRule(ctx context.Context, region string, st
 			logs.String("rule", rule.Name),
 			logs.String("region", region),
 			logs.Err(err))
+		return
+	}
+
+	// Persist the fired boundary after the successful delivery so a
+	// restart does not fire it again. A failed delivery keeps the
+	// in-memory reservation for this process only: the boundary is
+	// retried after a restart rather than lost.
+	if boundary, ok := getLastFire(rule.ARN); ok {
+		if err := store.TouchRuleLastFired(ctx, rule.EventBusName, rule.Name, boundary); err != nil {
+			logs.Debug("eventbridge scheduler: failed to persist the fired boundary",
+				logs.String("rule", rule.Name),
+				logs.String("region", region),
+				logs.Err(err))
+		}
 	}
 }
 
 // shouldFireSchedule determines whether a schedule expression should fire at
 // the given time. It uses lastFireTimes to ensure each rule fires at most once
-// per evaluation.
-func shouldFireSchedule(ruleARN, expr string, now time.Time) bool {
-	if strings.HasPrefix(expr, "rate(") {
-		return shouldFireRate(ruleARN, expr, now)
-	}
-	if strings.HasPrefix(expr, "cron(") {
-		return shouldFireCron(ruleARN, expr, now)
-	}
-	return false
-}
-
-// shouldFireRate parses rate(value unit) expressions and fires when the
-// elapsed time since the last fire is >= the rate duration.
-func shouldFireRate(ruleARN, expr string, now time.Time) bool {
-	inner := strings.TrimPrefix(expr, "rate(")
-	inner = strings.TrimSuffix(inner, ")")
-	inner = strings.TrimSpace(inner)
-
-	parts := strings.Fields(inner)
-	if len(parts) != 2 {
-		return false
-	}
-	value, err := strconv.Atoi(parts[0])
-	if err != nil || value <= 0 {
-		return false
-	}
-
-	var duration time.Duration
-	switch unit := strings.ToLower(parts[1]); unit {
-	case "minute", "minutes":
-		duration = time.Duration(value) * time.Minute
-	case "hour", "hours":
-		duration = time.Duration(value) * time.Hour
-	case "day", "days":
-		duration = time.Duration(value) * 24 * time.Hour
-	case "week", "weeks":
-		duration = time.Duration(value) * 7 * 24 * time.Hour
-	default:
-		return false
-	}
-
-	last, ok := getLastFire(ruleARN)
+// per evaluation. creationTime anchors rate() period boundaries.
+func shouldFireSchedule(ruleARN, expr string, now, creationTime time.Time) bool {
+	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creationTime, nil)
 	if !ok {
-		setLastFire(ruleARN, now)
-		return true
-	}
-	if now.Sub(last) >= duration {
-		setLastFire(ruleARN, now)
-		return true
-	}
-	return false
-}
-
-// shouldFireCron evaluates a cron(...) expression through the shared
-// schedule expression engine instead of a service-local matcher. The
-// engine returns the first scheduled minute strictly after the previous
-// minute; the rule fires when that minute is the current one, capped at
-// once per minute. AWS cron format: cron(minutes hours day-of-month
-// month day-of-week year) — including the L, W and # day wildcards.
-func shouldFireCron(ruleARN, expr string, now time.Time) bool {
-	next, err := scheduleexpr.NextExecutionTime(expr, now, time.Time{}, nil)
-	if err != nil {
 		return false
 	}
-	if !next.Equal(now.Truncate(time.Minute)) {
+	// Fire the latest elapsed boundary exactly once: an evaluation that
+	// arrives late (a ticker gap longer than the boundary interval)
+	// still fires the pending boundary instead of skipping it silently.
+	// EventBridge rate rules do not fire immediately on creation — the
+	// first fire happens one full interval after the rule was created —
+	// and the boundaries stay pinned to the creation time instead of
+	// drifting forward with each fire.
+	if last, ok := getLastFire(ruleARN); ok && !boundary.After(last) {
 		return false
 	}
-
-	// Ensure we only fire once per minute.
-	last, ok := getLastFire(ruleARN)
-	if ok && last.Truncate(time.Minute).Equal(now.Truncate(time.Minute)) {
-		return false
-	}
-	setLastFire(ruleARN, now)
+	setLastFire(ruleARN, boundary)
 	return true
 }
 
@@ -222,6 +185,18 @@ func getLastFire(ruleARN string) (time.Time, bool) {
 
 func setLastFire(ruleARN string, t time.Time) {
 	lastFireTimes.Store(ruleARN, t)
+}
+
+// seedLastFire re-seeds the in-memory dedup cache from a rule's
+// persisted fire marker. The persisted marker only ever advances the
+// cached value, never regresses it.
+func seedLastFire(rule *eventsstore.Rule) {
+	if rule.LastFiredAt.IsZero() {
+		return
+	}
+	if last, ok := getLastFire(rule.ARN); !ok || rule.LastFiredAt.After(last) {
+		setLastFire(rule.ARN, rule.LastFiredAt)
+	}
 }
 
 // retentionTickInterval controls how often the retention worker runs.

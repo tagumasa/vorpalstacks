@@ -25,9 +25,15 @@ const (
 
 	// MaxValidateDefinitionResults is the Smithy @range(0, 100) maximum for
 	// maxResults on ValidateStateMachineDefinition. The diagnostics paging
-	// shape is distinct from the List-operation PageSize shape and does not
-	// share its bound.
+	// shape is distinct from the List-operation PageSize shape and does
+	// not share its bound.
 	MaxValidateDefinitionResults = 100
+
+	// MaxWaitSeconds is the Wait-state ceiling for Seconds (and for the
+	// value a JSONata Seconds expression evaluates to): "You must specify
+	// time as an integer value from 0 to 99,999,999" (AWS Wait state
+	// documentation).
+	MaxWaitSeconds = 99999999
 
 	// MaxTagsPerResource is the hard tagging quota: a maximum of fifty tags
 	// per resource, not modifiable.

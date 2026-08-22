@@ -3,6 +3,7 @@ package kinesis
 import (
 	"encoding/base64"
 	"regexp"
+	"unicode/utf8"
 
 	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
@@ -90,9 +91,11 @@ func validateShardId(shardID string) bool {
 }
 
 // validatePartitionKey checks that a partition key is within the allowed
-// length. Smithy: length 1-256.
+// length. Smithy: length 1-256 counted in Unicode characters (the shape
+// carries no pattern, so multibyte partition keys are valid input).
 func validatePartitionKey(key string) bool {
-	return len(key) >= 1 && len(key) <= 256
+	n := utf8.RuneCountInString(key)
+	return n >= 1 && n <= 256
 }
 
 // validateShardCount checks that a shard count is positive.
@@ -185,9 +188,11 @@ func validateShardOrder(order string) bool {
 
 // validateKeyId checks that a KMS key identifier is within the allowed length.
 // Smithy: KeyId has length trait 1-2048 but no pattern trait. AWS accepts
-// UUID, key ARN, alias name (alias/my-key), and alias ARN.
+// UUID, key ARN, alias name (alias/my-key), and alias ARN. Lengths count
+// Unicode characters.
 func validateKeyId(keyID string) bool {
-	return len(keyID) >= 1 && len(keyID) <= 2048
+	n := utf8.RuneCountInString(keyID)
+	return n >= 1 && n <= 2048
 }
 
 // validateRecordDataSize decodes the base64-encoded Data and checks the

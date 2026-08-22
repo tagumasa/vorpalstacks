@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -216,4 +217,23 @@ func isJWTExpired(token string) bool {
 		return time.Now().UTC().Unix() >= int64(v)
 	}
 	return false
+}
+
+// fitWebIdentitySubject enforces the webIdentitySubjectType @length(6,255)
+// on the AssumeRoleWithWebIdentity Subject response member. When the JWT
+// sub claim is absent and roleSessionName is used as a fallback, the
+// minimum length is reached by left-padding with underscores, counted in
+// characters: a two-character multibyte session name is six bytes long but
+// still below the minimum (roleSessionName is validated at 2-64
+// characters, so only the 2-5 range needs padding). Over-long subjects are
+// truncated on rune boundaries: a byte slice could split a multi-byte
+// UTF-8 sequence and emit an invalid Subject value.
+func fitWebIdentitySubject(subject string) string {
+	for utf8.RuneCountInString(subject) < 6 {
+		subject = "_" + subject
+	}
+	if utf8.RuneCountInString(subject) > 255 {
+		return string([]rune(subject)[:255])
+	}
+	return subject
 }

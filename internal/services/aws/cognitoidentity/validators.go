@@ -197,20 +197,23 @@ func validateIdentityPoolId(id string) bool {
 }
 
 // validatePaginationKey enforces the Smithy PaginationKey constraints:
-// length 1-65535 and pattern ^[\S]+$. An empty token is valid (first page).
+// length 1-65535, counted in Unicode characters, and the ^[\S]+$ pattern
+// (which admits multibyte). An empty token is valid (first page).
 func validatePaginationKey(token string) bool {
 	if token == "" {
 		return true
 	}
-	if len(token) > 65535 {
+	if utf8.RuneCountInString(token) > 65535 {
 		return false
 	}
 	return paginationKeyPattern.MatchString(token)
 }
 
-// validateRoleARN enforces the Smithy ARNString constraints: length 20-2048.
+// validateRoleARN enforces the Smithy ARNString constraints: length 20-2048
+// counted in Unicode characters (the shape carries no pattern).
 func validateRoleARN(arn string) bool {
-	return len(arn) >= 20 && len(arn) <= 2048
+	n := utf8.RuneCountInString(arn)
+	return n >= 20 && n <= 2048
 }
 
 // validateAccountId enforces the Smithy AccountId constraints: length 1-15

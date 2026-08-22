@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -322,14 +323,26 @@ func parseJSONTag(tag, fieldName string) (key string, skip bool, omitempty bool)
 	return name, false, omitempty
 }
 
+// sortedMapKeys returns the map's keys in sorted order so that XML output
+// never depends on Go's randomised map iteration order.
+func sortedMapKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // encodeMapToXML recursively encodes a map[string]interface{} to XML. The
 // indent parameter is kept for future formatted output but is not currently
-// used.
+// used. Map keys are emitted in sorted order for deterministic output.
 func encodeMapToXML(builder *strings.Builder, data map[string]interface{}) {
-	for key, value := range data {
+	for _, key := range sortedMapKeys(data) {
 		if !isValidXMLName(key) {
 			continue
 		}
+		value := data[key]
 		xmlKey := toTitleCase(key)
 		builder.WriteString("<" + xmlKey + ">")
 
@@ -339,7 +352,8 @@ func encodeMapToXML(builder *strings.Builder, data map[string]interface{}) {
 				encodeMapToXML(builder, v)
 			}
 		case map[string]string:
-			for k, val := range v {
+			for _, k := range sortedMapKeys(v) {
+				val := v[k]
 				builder.WriteString("<entry>")
 				builder.WriteString("<key>" + escapeXML(k) + "</key>")
 				builder.WriteString("<value>" + escapeXML(val) + "</value>")
@@ -464,12 +478,14 @@ func lowerFirst(s string) string {
 }
 
 // encodeMapToXMLEC2 is the EC2-specific variant of encodeMapToXML. It uses
-// lowerFirst for element names instead of toTitleCase.
+// lowerFirst for element names instead of toTitleCase. Map keys are
+// emitted in sorted order for deterministic output.
 func encodeMapToXMLEC2(builder *strings.Builder, data map[string]interface{}) {
-	for key, value := range data {
+	for _, key := range sortedMapKeys(data) {
 		if !isValidXMLName(key) {
 			continue
 		}
+		value := data[key]
 		xmlKey := lowerFirst(key)
 		builder.WriteString("<" + xmlKey + ">")
 
@@ -479,7 +495,8 @@ func encodeMapToXMLEC2(builder *strings.Builder, data map[string]interface{}) {
 				encodeMapToXMLEC2(builder, v)
 			}
 		case map[string]string:
-			for k, val := range v {
+			for _, k := range sortedMapKeys(v) {
+				val := v[k]
 				builder.WriteString("<entry>")
 				builder.WriteString("<key>" + escapeXML(k) + "</key>")
 				builder.WriteString("<value>" + escapeXML(val) + "</value>")

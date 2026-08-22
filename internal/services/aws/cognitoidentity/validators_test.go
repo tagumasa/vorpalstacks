@@ -125,3 +125,30 @@ func TestValidateScalarUnicodeLengths(t *testing.T) {
 		t.Error("129-character CJK identity provider name accepted")
 	}
 }
+
+// TestValidatePaginationKeyAndRoleARNUnicodeLengths pins the remaining
+// no-pattern gates: PaginationKey @length(1, 65535) whose ^[\S]+$ pattern
+// admits multibyte, and ARNString @length(20, 2048) with no pattern — both
+// counted in Unicode characters.
+func TestValidatePaginationKeyAndRoleARNUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5"
+
+	if !validatePaginationKey(strings.Repeat(cjk, 65535)) {
+		t.Error("65535-character CJK pagination key rejected")
+	}
+	if validatePaginationKey(strings.Repeat(cjk, 65536)) {
+		t.Error("65536-character CJK pagination key accepted")
+	}
+	if !validatePaginationKey("") {
+		t.Error("empty pagination key rejected")
+	}
+
+	// 700 CJK runes are 2100 bytes: rune-legal for ARNString (<= 2048
+	// characters) despite exceeding 2048 bytes.
+	if !validateRoleARN(strings.Repeat(cjk, 700)) {
+		t.Error("700-character CJK role ARN rejected")
+	}
+	if validateRoleARN(strings.Repeat(cjk, 2049)) {
+		t.Error("2049-character CJK role ARN accepted")
+	}
+}

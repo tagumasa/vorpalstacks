@@ -34,6 +34,15 @@ func TestResolveFunctionRef(t *testing.T) {
 			assert.Equal(t, tc.wantQual, qualifier)
 		})
 	}
+
+	// The FunctionName @length(1,140) bound applies to the raw input: a
+	// reference longer than 140 characters must resolve to an empty name
+	// so validation rejects it, whatever form it takes.
+	t.Run("reference exceeding the raw length bound", func(t *testing.T) {
+		long := "arn:aws:lambda:us-west-2:123456789012:function:" + strings.Repeat("a", 141)
+		name, _ := resolveFunctionRef(long)
+		assert.Equal(t, "", name)
+	})
 }
 
 func TestMergeQualifier(t *testing.T) {

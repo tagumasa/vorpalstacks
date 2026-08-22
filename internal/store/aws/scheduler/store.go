@@ -26,6 +26,13 @@ type SchedulerStore struct {
 	createMu     sync.Mutex
 }
 
+// scheduleRecordWriteMu serialises read-modify-write cycles on schedule
+// records across SchedulerStore instances. The engine and the service
+// each construct their own store over the same Pebble keyspace, so an
+// instance-level lock cannot prevent CompleteSchedule's read-modify-write
+// from losing a concurrent UpdateSchedule write (or vice versa).
+var scheduleRecordWriteMu sync.Mutex
+
 // NewSchedulerStore creates a new Scheduler store instance.
 //
 // Parameters:
@@ -151,6 +158,11 @@ func (s *SchedulerStore) GetScheduleGroup(ctx context.Context, name string) (*Sc
 //   - error: An error if deletion fails
 func (s *SchedulerStore) DeleteScheduleGroup(ctx context.Context, name string) error {
 	arn := s.buildScheduleGroupARN(name)
+	// The record lock closes the resurrection window against an
+	// UpdateScheduleGroup cycle that read before the delete, and keeps the
+	// emptiness check and the delete in one critical section.
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
 	if !s.Exists(arn) {
 		return ErrScheduleGroupNotFound
 	}
@@ -232,6 +244,10 @@ func (s *SchedulerStore) ListScheduleGroups(ctx context.Context, namePrefix stri
 // Returns:
 //   - error: An error if update fails
 func (s *SchedulerStore) UpdateScheduleGroup(ctx context.Context, group *ScheduleGroup) error {
+	// The record lock makes this read-modify-write atomic against
+	// DeleteScheduleGroup on the same group record.
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
 	if !s.Exists(group.ARN) {
 		return ErrScheduleGroupNotFound
 	}
@@ -304,25 +320,72 @@ func (s *SchedulerStore) GetSchedule(ctx context.Context, groupName, name string
 	return &schedule, nil
 }
 
-// UpdateSchedule updates an existing schedule.
+// MutateSchedule applies fn to the schedule record inside the write mutex
+// so the whole read-modify-write cycle is atomic with respect to every
+// other record writer (the engine and the service each construct their own
+// store over the same Pebble keyspace, hence the package-scope lock). fn
+// mutates the record in place; callers decide whether to stamp
+// LastModificationDate — user-initiated updates do, internal markers must
+// not.
 //
 // Parameters:
 //   - ctx: The context
-//   - schedule: The schedule to update
+//   - groupName: The schedule group (empty means "default")
+//   - name: The schedule name
+//   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: An error if update fails
-func (s *SchedulerStore) UpdateSchedule(ctx context.Context, schedule *Schedule) error {
-	groupName := schedule.GroupName
+//   - error: ErrScheduleNotFound if the schedule does not exist
+func (s *SchedulerStore) MutateSchedule(ctx context.Context, groupName, name string, fn func(*Schedule) error) error {
 	if groupName == "" {
 		groupName = "default"
 	}
-	key := s.buildScheduleKey(groupName, schedule.Name)
-	if !s.schedulesStore.Exists(key) {
-		return ErrScheduleNotFound
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
+
+	schedule, err := s.GetSchedule(ctx, groupName, name)
+	if err != nil {
+		return err
 	}
-	schedule.LastModificationDate = time.Now().UTC()
+	if err := fn(schedule); err != nil {
+		return err
+	}
+	key := s.buildScheduleKey(groupName, name)
 	return s.schedulesStore.Put(key, schedule)
+}
+
+// CompleteSchedule marks a one-time schedule's execution lifecycle as
+// ended. The schedule keeps its wire state — the AWS ScheduleState enum
+// has no COMPLETED value — but the engine stops firing it, including
+// after restarts. The operation is idempotent.
+func (s *SchedulerStore) CompleteSchedule(ctx context.Context, groupName, name string) error {
+	return s.MutateSchedule(ctx, groupName, name, func(schedule *Schedule) error {
+		if schedule.CompletionDate != nil {
+			return nil
+		}
+		now := time.Now().UTC()
+		schedule.CompletionDate = &now
+		// The completion marker is an internal field, so this write must
+		// not stamp LastModificationDate the way a user-initiated update
+		// does.
+		return nil
+	})
+}
+
+// TouchScheduleLastFired records the boundary of the most recently
+// delivered occurrence so a restart cannot deliver it again. The marker
+// only advances — an older boundary never overwrites a newer one — and,
+// like the completion marker, the write does not stamp
+// LastModificationDate.
+func (s *SchedulerStore) TouchScheduleLastFired(ctx context.Context, groupName, name string, boundary time.Time) error {
+	return s.MutateSchedule(ctx, groupName, name, func(schedule *Schedule) error {
+		if schedule.LastFiredAt != nil && !schedule.LastFiredAt.Before(boundary) {
+			return nil
+		}
+		fired := boundary
+		schedule.LastFiredAt = &fired
+		return nil
+	})
 }
 
 // DeleteSchedule deletes a schedule by group name and schedule name.
@@ -339,13 +402,20 @@ func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name str
 		groupName = "default"
 	}
 	key := s.buildScheduleKey(groupName, name)
+	// The record lock closes the resurrection window: without it a
+	// MutateSchedule cycle that read before the delete could write the
+	// record back after it.
+	scheduleRecordWriteMu.Lock()
 	if !s.schedulesStore.Exists(key) {
+		scheduleRecordWriteMu.Unlock()
 		return ErrScheduleNotFound
 	}
 	// Delete the primary resource first so tag metadata I/O errors never
 	// block resource lifecycle (Minor 4). Tag cleanup is best-effort:
 	// orphaned tag entries are harmless and can be reaped later.
-	if err := s.schedulesStore.Delete(key); err != nil {
+	err := s.schedulesStore.Delete(key)
+	scheduleRecordWriteMu.Unlock()
+	if err != nil {
 		return err
 	}
 	arn := s.buildScheduleARN(groupName, name)
@@ -434,6 +504,12 @@ func (s *SchedulerStore) GetAllEnabledSchedules(ctx context.Context) ([]*Schedul
 
 	result, err := common.List[Schedule](s.schedulesStore, opts, func(sch *Schedule) bool {
 		if sch.State != ScheduleStateEnabled {
+			return false
+		}
+		// A one-time schedule whose execution lifecycle has ended never
+		// fires again — the persisted completion marker survives
+		// restarts, unlike the engine's in-memory dedup map.
+		if sch.CompletionDate != nil {
 			return false
 		}
 		// at() expressions ignore StartDate/EndDate (AWS spec).

@@ -242,12 +242,28 @@ type ScheduledQuery struct {
 	ScheduleStartTime        int64                  `json:"scheduleStartTime,omitempty"`
 	ScheduleEndTime          int64                  `json:"scheduleEndTime,omitempty"`
 	DestinationConfiguration map[string]interface{} `json:"destinationConfiguration,omitempty"`
-	LastExecutionStatus      map[string]interface{} `json:"lastExecutionStatus,omitempty"`
-	CreationTime             int64                  `json:"creationTime"`
-	LastUpdatedTime          int64                  `json:"lastUpdatedTime"`
-	LastTriggeredTime        int64                  `json:"lastTriggeredTime,omitempty"`
-	Tags                     map[string]string      `json:"tags,omitempty"`
+	// LastExecutionStatus carries the outcome of the most recent
+	// execution on the wire (Running, InvalidQuery, Complete, Failed,
+	// Timeout per the service model).
+	LastExecutionStatus string `json:"lastExecutionStatus,omitempty"`
+	CreationTime        int64  `json:"creationTime"`
+	LastUpdatedTime     int64  `json:"lastUpdatedTime"`
+	LastTriggeredTime   int64  `json:"lastTriggeredTime,omitempty"`
+	// LastExecutedBoundary is an internal marker holding the schedule
+	// boundary of the most recent executed occurrence. It is the
+	// deduplication truth across restarts and never surfaces on the
+	// wire; lastTriggeredTime remains the execution clock.
+	LastExecutedBoundary int64             `json:"lastExecutedBoundary,omitempty"`
+	Tags                 map[string]string `json:"tags,omitempty"`
 }
+
+// Wire values of the ExecutionStatus enum (Running, InvalidQuery,
+// Complete, Failed, Timeout) carried by the lastExecutionStatus member
+// of the scheduled query shapes.
+const (
+	ScheduledQueryStatusComplete = "Complete"
+	ScheduledQueryStatusFailed   = "Failed"
+)
 
 // ScheduledQueryDestination records the delivery outcome of one destination
 // of a scheduled query execution, reported through GetScheduledQueryHistory.

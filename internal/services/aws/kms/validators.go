@@ -1,15 +1,25 @@
 package kms
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
+	"unicode/utf8"
 
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
-// maxImportBlobSize is the AWS-documented maximum length (base64-encoded)
-// for EncryptedKeyMaterial and ImportToken parameters.
+// maxImportBlobSize is the Smithy CiphertextType @length(1,6144) bound on
+// the decoded byte length of the EncryptedKeyMaterial and ImportToken
+// parameters of ImportKeyMaterial.
 const maxImportBlobSize = 6144
+
+// maxImportBlobBase64Len is the base64-encoded text bound derived from
+// maxImportBlobSize: base64 maps every 3 bytes to 4 characters, so encoded
+// input longer than this cannot decode within the blob bound. decodeImportBlob
+// rejects such input before decoding, keeping the guard allocation-free for
+// oversized payloads.
+const maxImportBlobBase64Len = (maxImportBlobSize + 2) / 3 * 4
 
 // validateOriginParams rejects CustomKeyStoreId and XksKeyId values when
 // the platform does not support Custom Key Stores (CloudHSM / External
@@ -40,25 +50,43 @@ func validatePrimaryRegion(region string) error {
 	return nil
 }
 
-// validateEncryptedKeyMaterialSize enforces the AWS-documented length
-// constraint (max 6144 base64-encoded characters) on the
-// EncryptedKeyMaterial parameter of ImportKeyMaterial. Without this
-// guard an attacker could send an arbitrarily large blob to exhaust
-// server memory during base64 decode.
-func validateEncryptedKeyMaterialSize(b64 string) error {
-	if len(b64) > maxImportBlobSize {
-		return NewValidationError(fmt.Sprintf("EncryptedKeyMaterial exceeds maximum length of %d", maxImportBlobSize))
-	}
-	return nil
+// decodeEncryptedKeyMaterial validates and decodes the EncryptedKeyMaterial
+// parameter of ImportKeyMaterial, returning the raw key material bytes.
+func decodeEncryptedKeyMaterial(b64 string) ([]byte, error) {
+	return decodeImportBlob(b64, "EncryptedKeyMaterial")
 }
 
-// validateImportTokenSize enforces the same AWS-documented length
-// constraint on the ImportToken parameter.
+// validateImportTokenSize enforces the same Smithy CiphertextType
+// constraints on the ImportToken parameter; the decoded bytes are not
+// needed because the store compares the raw encoded token string.
 func validateImportTokenSize(b64 string) error {
-	if len(b64) > maxImportBlobSize {
-		return NewValidationError(fmt.Sprintf("ImportToken exceeds maximum length of %d", maxImportBlobSize))
+	_, err := decodeImportBlob(b64, "ImportToken")
+	return err
+}
+
+// decodeImportBlob enforces the Smithy CiphertextType @length(1,6144)
+// constraints on the base64-encoded blob parameters of ImportKeyMaterial:
+// the decoded blob must be 1 to 6144 bytes. The encoded length is checked
+// first so an oversized payload is rejected before the base64 decoder
+// allocates memory. The decoded maximum is the semantic @length bound;
+// maxImportBlobSize is a multiple of three, so the encoded bound alone
+// already guarantees it, but the check keeps the validator correct if the
+// constant ever changes to a non-multiple of three.
+func decodeImportBlob(b64, field string) ([]byte, error) {
+	if len(b64) > maxImportBlobBase64Len {
+		return nil, NewValidationError(fmt.Sprintf("%s exceeds maximum length of %d", field, maxImportBlobSize))
 	}
-	return nil
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, NewValidationError(fmt.Sprintf("%s must be valid base64", field))
+	}
+	if len(data) < 1 {
+		return nil, NewValidationError(fmt.Sprintf("%s must decode to at least 1 byte", field))
+	}
+	if len(data) > maxImportBlobSize {
+		return nil, NewValidationError(fmt.Sprintf("%s exceeds maximum length of %d", field, maxImportBlobSize))
+	}
+	return data, nil
 }
 
 // validateRotationKeyEligibility enforces the AWS constraint that
@@ -99,22 +127,24 @@ func validateKeyUsageSpecCombo(usage kmsstore.KeyUsage, spec kmsstore.KeySpec) e
 }
 
 // validateDescriptionLength enforces the Smithy DescriptionType length
-// constraint (0-8192). Both CreateKey and UpdateKeyDescription must
-// apply this check.
+// constraint (0-8192) counted in Unicode characters (the shape carries no
+// pattern). Both CreateKey and UpdateKeyDescription must apply this check.
 func validateDescriptionLength(desc string) error {
-	if len(desc) > maxDescriptionLen {
-		return NewValidationError(fmt.Sprintf("Description length %d exceeds maximum of %d", len(desc), maxDescriptionLen))
+	if n := utf8.RuneCountInString(desc); n > maxDescriptionLen {
+		return NewValidationError(fmt.Sprintf("Description length %d exceeds maximum of %d", n, maxDescriptionLen))
 	}
 	return nil
 }
 
 // validatePolicySize enforces the Smithy PolicyType length constraint
-// (1-131072). An empty policy string is accepted here because callers
-// fall back to the platform default policy when the parameter is unset;
-// the length ceiling protects server memory during JSON parsing.
+// (1-131072) counted in Unicode characters (the shape's pattern is
+// Latin-1, permitting two-byte characters). An empty policy string is
+// accepted here because callers fall back to the platform default policy
+// when the parameter is unset; the length ceiling protects server memory
+// during JSON parsing.
 func validatePolicySize(policy string) error {
-	if len(policy) > maxPolicyLen {
-		return NewValidationError(fmt.Sprintf("Policy length %d exceeds maximum of %d", len(policy), maxPolicyLen))
+	if n := utf8.RuneCountInString(policy); n > maxPolicyLen {
+		return NewValidationError(fmt.Sprintf("Policy length %d exceeds maximum of %d", n, maxPolicyLen))
 	}
 	return nil
 }
@@ -157,43 +187,46 @@ var (
 )
 
 // validateKeyIdLength enforces the Smithy KeyIdType length constraint
-// (1-2048). Applied centrally in resolveKey so that every operation
-// accepting a KeyId parameter is covered.
+// (1-2048) counted in Unicode characters (the shape carries no pattern).
+// Applied centrally in resolveKey so that every operation accepting a KeyId
+// parameter is covered.
 func validateKeyIdLength(keyID string) error {
-	if len(keyID) == 0 || len(keyID) > maxKeyIdLen {
-		return NewValidationError(fmt.Sprintf("KeyId length %d does not fit range 1-%d", len(keyID), maxKeyIdLen))
+	if n := utf8.RuneCountInString(keyID); n == 0 || n > maxKeyIdLen {
+		return NewValidationError(fmt.Sprintf("KeyId length %d does not fit range 1-%d", n, maxKeyIdLen))
 	}
 	return nil
 }
 
 // validateMarkerLength enforces the Smithy MarkerType length constraint
-// (1-1024) and pattern (Latin-1 characters only). Applied to all
-// paginated list operations.
+// (1-1024, counted in Unicode characters because the Latin-1 pattern
+// permits two-byte characters) and pattern. Applied to all paginated list
+// operations.
 func validateMarkerLength(marker string) error {
 	if marker == "" {
 		return nil
 	}
-	if len(marker) > maxMarkerLen || !markerPattern.MatchString(marker) {
+	if utf8.RuneCountInString(marker) > maxMarkerLen || !markerPattern.MatchString(marker) {
 		return NewValidationError(fmt.Sprintf("Marker exceeds maximum length of %d or contains invalid characters", maxMarkerLen))
 	}
 	return nil
 }
 
 // validateGrantIdLength enforces the Smithy GrantIdType length
-// constraint (1-128). Applied to RevokeGrant, RetireGrant, and
-// ListGrants.
+// constraint (1-128) counted in Unicode characters (the shape carries no
+// pattern). Applied to RevokeGrant, RetireGrant, and ListGrants.
 func validateGrantIdLength(grantID string) error {
-	if len(grantID) == 0 || len(grantID) > maxGrantIdLen {
-		return NewValidationError(fmt.Sprintf("GrantId length %d does not fit range 1-%d", len(grantID), maxGrantIdLen))
+	if n := utf8.RuneCountInString(grantID); n == 0 || n > maxGrantIdLen {
+		return NewValidationError(fmt.Sprintf("GrantId length %d does not fit range 1-%d", n, maxGrantIdLen))
 	}
 	return nil
 }
 
 // validateGrantTokenLength enforces the Smithy GrantTokenType length
-// constraint (1-8192). Applied to RetireGrant.
+// constraint (1-8192) counted in Unicode characters (the shape carries no
+// pattern). Applied to RetireGrant.
 func validateGrantTokenLength(token string) error {
-	if len(token) == 0 || len(token) > maxGrantTokenLen {
-		return NewValidationError(fmt.Sprintf("GrantToken length %d does not fit range 1-%d", len(token), maxGrantTokenLen))
+	if n := utf8.RuneCountInString(token); n == 0 || n > maxGrantTokenLen {
+		return NewValidationError(fmt.Sprintf("GrantToken length %d does not fit range 1-%d", n, maxGrantTokenLen))
 	}
 	return nil
 }

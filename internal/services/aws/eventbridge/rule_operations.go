@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
@@ -161,23 +162,22 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 
 	if err := store.CreateRule(ctx, rule); err != nil {
 		if err == eventsstore.ErrRuleAlreadyExists {
-			existingRule, err := store.GetRule(ctx, eventBusName, name)
-			if err != nil {
-				return nil, err
-			}
-			if existingRule != nil {
+			// The user's fields are applied through the store-level atomic
+			// mutation so a concurrent delivery-marker write can never be
+			// lost to this update's read-modify-write cycle.
+			if err := store.MutateRule(ctx, eventBusName, name, func(existingRule *eventsstore.Rule) error {
 				if desc, ok := req.Parameters["Description"].(string); ok {
 					if !validateDescription(desc) {
-						return nil, errDescriptionTooLong()
+						return errDescriptionTooLong()
 					}
 					existingRule.Description = desc
 				}
 				if pattern, ok := req.Parameters["EventPattern"].(string); ok {
 					if !validateEventPatternLength(pattern) {
-						return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
+						return awserrors.NewValidationException("EventPattern must be at most 4096 characters")
 					}
 					if !isValidEventPattern(pattern) {
-						return nil, awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
+						return awserrors.NewInvalidEventPatternException("EventPattern must be valid JSON")
 					}
 					existingRule.EventPattern = pattern
 				}
@@ -190,19 +190,23 @@ func (s *EventsService) PutRule(ctx context.Context, reqCtx *request.RequestCont
 				if state, ok := req.Parameters["State"].(string); ok {
 					existingRule.State = eventsstore.RuleState(state)
 				}
-				if err := store.UpdateRule(ctx, existingRule); err != nil {
+				existingRule.LastModifiedAt = time.Now().UTC()
+				return nil
+			}); err != nil {
+				return nil, err
+			}
+			existingRule, err := store.GetRule(ctx, eventBusName, name)
+			if err != nil {
+				return nil, err
+			}
+			if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
+				if err := store.TagStore.TagFromSlice(existingRule.ARN, tags); err != nil {
 					return nil, err
 				}
-				if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-					if err := store.TagStore.TagFromSlice(existingRule.ARN, tags); err != nil {
-						return nil, err
-					}
-				}
-				return map[string]interface{}{
-					"RuleArn": existingRule.ARN,
-				}, nil
 			}
-			return nil, awserrors.NewResourceAlreadyExistsException("Rule '" + name + "'")
+			return map[string]interface{}{
+				"RuleArn": existingRule.ARN,
+			}, nil
 		}
 		return nil, err
 	}
@@ -376,14 +380,13 @@ func (s *EventsService) EnableRule(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	rule, err := store.GetRule(ctx, eventBusName, name)
-	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
 
-	rule.State = eventsstore.RuleStateEnabled
-	if err := store.UpdateRule(ctx, rule); err != nil {
-		return nil, err
+	if err := store.MutateRule(ctx, eventBusName, name, func(rule *eventsstore.Rule) error {
+		rule.State = eventsstore.RuleStateEnabled
+		rule.LastModifiedAt = time.Now().UTC()
+		return nil
+	}); err != nil {
+		return nil, mapStoreError(err, name)
 	}
 
 	return response.EmptyResponse(), nil
@@ -405,14 +408,13 @@ func (s *EventsService) DisableRule(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	rule, err := store.GetRule(ctx, eventBusName, name)
-	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
 
-	rule.State = eventsstore.RuleStateDisabled
-	if err := store.UpdateRule(ctx, rule); err != nil {
-		return nil, err
+	if err := store.MutateRule(ctx, eventBusName, name, func(rule *eventsstore.Rule) error {
+		rule.State = eventsstore.RuleStateDisabled
+		rule.LastModifiedAt = time.Now().UTC()
+		return nil
+	}); err != nil {
+		return nil, mapStoreError(err, name)
 	}
 
 	return response.EmptyResponse(), nil

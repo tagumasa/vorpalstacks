@@ -44,3 +44,20 @@ func TestValidateRoleDescriptionLatin1(t *testing.T) {
 		t.Error("character outside the Latin-1 pattern accepted")
 	}
 }
+
+// TestValidateClientIDUnicodeLengths pins that clientIDType @length(1,255)
+// is counted in Unicode characters; the shape carries no pattern, so
+// rune-legal multibyte client IDs must not be rejected on byte length.
+func TestValidateClientIDUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	if !validateClientID(strings.Repeat(cjk, 255)) {
+		t.Error("255-character CJK client ID rejected")
+	}
+	if validateClientID(strings.Repeat(cjk, 256)) {
+		t.Error("256-character CJK client ID accepted")
+	}
+	if validateClientID("") {
+		t.Error("empty client ID accepted")
+	}
+}

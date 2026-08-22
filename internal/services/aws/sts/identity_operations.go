@@ -3,6 +3,7 @@ package sts
 import (
 	"context"
 	"encoding/base64"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -78,8 +79,9 @@ func (s *STSService) DecodeAuthorizationMessage(ctx context.Context, reqCtx *req
 	if encodedMessage == "" {
 		return nil, ErrInvalidEncodedMessage
 	}
-	// encodedMessageType Smithy trait: length 1-10240.
-	if len(encodedMessage) > 10240 {
+	// encodedMessageType Smithy trait: length 1-10240 counted in Unicode
+	// characters (no pattern).
+	if utf8.RuneCountInString(encodedMessage) > 10240 {
 		return nil, ErrInvalidEncodedMessage
 	}
 

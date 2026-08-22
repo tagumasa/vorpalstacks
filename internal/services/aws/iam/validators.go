@@ -98,9 +98,10 @@ func validateThumbprint(tp string) bool {
 // ---------------------------------------------------------------------------
 
 // validateClientID checks that a client ID conforms to Smithy clientIDType:
-// length 1-255.
+// length 1-255 counted in Unicode characters (the shape carries no pattern).
 func validateClientID(id string) bool {
-	return len(id) >= 1 && len(id) <= 255
+	n := utf8.RuneCountInString(id)
+	return n >= 1 && n <= 255
 }
 
 // ---------------------------------------------------------------------------
@@ -139,11 +140,12 @@ func validateCustomSuffix(suffix string) bool {
 
 // Certificate, private key and SSH public key material bounds per Smithy
 // certificateBodyType, privateKeyType and publicKeyMaterialType
-// (@length 1-16384).
+// (@length 1-16384), and certificateChainType (@length 1-2097152).
 const (
-	maxCertificateBodyLength = 16384
-	maxPrivateKeyLength      = 16384
-	maxSSHPublicKeyLength    = 16384
+	maxCertificateBodyLength  = 16384
+	maxPrivateKeyLength       = 16384
+	maxSSHPublicKeyLength     = 16384
+	maxCertificateChainLength = 2097152
 )
 
 // Role MaxSessionDuration bounds per Smithy roleMaxSessionDurationType
@@ -233,13 +235,15 @@ var numberPattern = regexp.MustCompile(`[0-9]`)
 // applicable requirement of the account password policy.  Each boolean
 // flag on the policy is checked independently, matching AWS behaviour.
 func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPasswordPolicy) bool {
-	// The absolute password length range (passwordType) applies regardless
-	// of any custom policy.
-	if len(password) < 1 || len(password) > 128 {
+	// The absolute password length range (passwordType, carrying a Latin-1
+	// pattern so lengths count Unicode characters) applies regardless of any
+	// custom policy.
+	n := utf8.RuneCountInString(password)
+	if n < 1 || n > 128 {
 		return false
 	}
 
-	if len(password) < policy.MinimumPasswordLength {
+	if n < policy.MinimumPasswordLength {
 		return false
 	}
 

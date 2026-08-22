@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,231 test cases (3,164 SDK + 50 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,244 test cases (3,177 SDK + 50 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -25,19 +25,19 @@ which are separate services in the SDK classification used by
 | AppSync | 175 | 100% | ✅ Perfect |
 | Athena | 84 | 100% | ✅ Perfect |
 | CloudFront | 92 | 100% | ✅ Perfect |
-| CloudTrail | 112 | 100% | ✅ Perfect |
-| CloudWatch | 24 | 100% | ✅ Perfect |
+| CloudTrail | 113 | 100% | ✅ Perfect |
+| CloudWatch | 25 | 100% | ✅ Perfect |
 | CloudWatch Logs | 60 | 100% | ✅ Perfect |
 | Cognito | 72 | 100% | ✅ Perfect |
 | Cognito Identity | 44 | 100% | ✅ Perfect |
 | DynamoDB | 197 | 100% | ✅ Perfect |
 | EC2 | 37 | 100% | ✅ Perfect |
-| EventBridge | 63 | 100% | ✅ Perfect |
+| EventBridge | 64 | 100% | ✅ Perfect |
 | IAM | 222 | 100% | ✅ Perfect |
 | IoT | 361 | 100% | ✅ Perfect |
-| Kinesis | 51 | 100% | ✅ Perfect |
+| Kinesis | 52 | 100% | ✅ Perfect |
 | KMS | 102 | 100% | ✅ Perfect |
-| Lambda | 120 | 100% | ✅ Perfect |
+| Lambda | 121 | 100% | ✅ Perfect |
 | Neptune | 97 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
 | NeptuneGraph | 49 | 100% | ✅ Perfect |
@@ -47,15 +47,15 @@ which are separate services in the SDK classification used by
 | Scheduler | 44 | 100% | ✅ Perfect |
 | SecretsManager | 44 | 100% | ✅ Perfect |
 | SESv2 | 94 | 100% | ✅ Perfect |
-| SNS | 81 | 100% | ✅ Perfect |
+| SNS | 83 | 100% | ✅ Perfect |
 | SQS | 62 | 100% | ✅ Perfect |
 | SSM | 49 | 100% | ✅ Perfect |
 | STS | 60 | 100% | ✅ Perfect |
-| StepFunctions | 65 | 100% | ✅ Perfect |
+| StepFunctions | 70 | 100% | ✅ Perfect |
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
-| WAFv2 | 71 | 100% | ✅ Perfect |
+| WAFv2 | 72 | 100% | ✅ Perfect |
 
-**Overall: 3,231/3,231 tests passing (100%) — 3,164 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-22 on main)
+**Overall: 3,244/3,244 tests passing (100%) — 3,177 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-22 on main)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

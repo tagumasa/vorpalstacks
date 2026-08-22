@@ -1,12 +1,22 @@
 package acm
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
+
+// maxFilterStringLength is the Smithy FilterString @length max, counted in
+// Unicode characters.
+const maxFilterStringLength = 256
+
+// maxNextTokenLength is the Smithy NextToken @length max, counted in Unicode
+// characters.
+const maxNextTokenLength = 10000
 
 // ---------------------------------------------------------------------------
 // Smithy-derived patterns
@@ -213,21 +223,22 @@ func isValidManagedBy(mb string) bool {
 }
 
 // isValidFilterString returns true when the string conforms to the Smithy
-// FilterString constraints: @length(1-256). Used by search filter values
-// (CommonNameFilter.Value, DnsNameFilter.Value).
+// FilterString constraints: @length(1-256), counted in Unicode characters.
+// Used by search filter values (CommonNameFilter.Value, DnsNameFilter.Value).
 func isValidFilterString(s string) bool {
-	return len(s) >= 1 && len(s) <= 256
+	n := utf8.RuneCountInString(s)
+	return n >= 1 && n <= maxFilterStringLength
 }
 
 // validateNextToken validates an opaque NextToken against the Smithy
-// constraints: @length(1-10000). Empty token is allowed (means "first page").
-// Non-empty token must be within length range.
+// constraints: @length(1-10000), counted in Unicode characters. Empty token is
+// allowed (means "first page"). Non-empty token must be within length range.
 func validateNextToken(token string) error {
 	if token == "" {
 		return nil
 	}
-	if len(token) > 10000 {
-		return awserrors.NewValidationException("NextToken exceeds maximum length of 10000")
+	if utf8.RuneCountInString(token) > maxNextTokenLength {
+		return awserrors.NewValidationException(fmt.Sprintf("NextToken exceeds maximum length of %d", maxNextTokenLength))
 	}
 	return nil
 }

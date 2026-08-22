@@ -261,7 +261,10 @@ func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map
 	return results
 }
 
-const perTestTimeout = 60 * time.Second
+// perTestTimeout bounds a single test. Rate-based delivery tests
+// legitimately need just over a minute: the AWS rate() contract fires
+// the first invocation one full interval after creation.
+const perTestTimeout = 150 * time.Second
 
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
 	if r.verbose {

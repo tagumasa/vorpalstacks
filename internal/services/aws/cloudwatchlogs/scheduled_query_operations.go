@@ -2,7 +2,9 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -349,7 +351,7 @@ func formatScheduledQuery(sq *logsstore.ScheduledQuery, region, accountID string
 	if sq.LastTriggeredTime > 0 {
 		result["lastTriggeredTime"] = sq.LastTriggeredTime
 	}
-	if sq.LastExecutionStatus != nil {
+	if sq.LastExecutionStatus != "" {
 		result["lastExecutionStatus"] = sq.LastExecutionStatus
 	}
 	return result
@@ -371,7 +373,7 @@ func formatScheduledQuerySummary(sq *logsstore.ScheduledQuery, region, accountID
 	if sq.LastTriggeredTime > 0 {
 		result["lastTriggeredTime"] = sq.LastTriggeredTime
 	}
-	if sq.LastExecutionStatus != nil {
+	if sq.LastExecutionStatus != "" {
 		result["lastExecutionStatus"] = sq.LastExecutionStatus
 	}
 	return result
@@ -383,6 +385,30 @@ func extractIdFromArnOrId(identifier string) string {
 		return parts[len(parts)-1]
 	}
 	return identifier
+}
+
+// scheduledQueryTickerInterval is the interval between scheduled-query
+// evaluations. TEST_MODE shortens it so integration tests observe the
+// AWS first-interval contract (the first run happens one full interval
+// after creation) without also waiting out the evaluation phase — the
+// same convention as the scheduler and timestream-query engines.
+var scheduledQueryTickerInterval = 1 * time.Minute
+
+// recordDelivery stamps the execution outcome on the stored record: the
+// consumed boundary and the execution clock. A query deleted while its
+// execution was in flight has no record left to stamp, which is benign.
+func recordDelivery(store *logsstore.Store, id string, boundary, executedAt int64, status string) {
+	if err := store.TouchScheduledQueryDelivery(id, boundary, executedAt, status); err != nil && !errors.Is(err, logsstore.ErrResourceNotFound) {
+		logs.Error("Failed to record the scheduled query execution outcome",
+			logs.String("scheduledQueryId", id),
+			logs.Err(err))
+	}
+}
+
+func init() {
+	if os.Getenv("TEST_MODE") == "true" {
+		scheduledQueryTickerInterval = 1 * time.Second
+	}
 }
 
 // startScheduledQueryWorker runs a background goroutine that evaluates
@@ -399,7 +425,7 @@ func (s *LogsService) startScheduledQueryWorker() {
 			}
 		}()
 
-		ticker := time.NewTicker(1 * time.Minute)
+		ticker := time.NewTicker(scheduledQueryTickerInterval)
 		defer ticker.Stop()
 
 		for {
@@ -411,6 +437,54 @@ func (s *LogsService) startScheduledQueryWorker() {
 			}
 		}
 	}()
+}
+
+// scheduledQueryDue reports whether an ENABLED scheduled query should run
+// at the evaluation time now. The schedule expression is evaluated in the
+// query's configured timezone (UTC when unset or invalid), inside the
+// optional scheduleStartTime/scheduleEndTime execution window. Each
+// boundary runs exactly once: the boundary is the latest elapsed
+// execution instant of the expression — rate() never runs on the creation
+// boundary (the first run is one full interval after creation), cron()
+// recovers a matching minute missed between evaluations, at() runs once
+// its timestamp is reached — and the query runs when that boundary is
+// later than the last consumed boundary (LastExecutedBoundary, zero
+// meaning never run). The marker holds the boundary value, never the
+// execution clock: an execution that runs late must not suppress the
+// next unexecuted boundary, and it survives restarts. The evaluated
+// boundary is returned so the caller stamps exactly what it consumed.
+func scheduledQueryDue(sq *logsstore.ScheduledQuery, now time.Time) (time.Time, bool) {
+	nowMillis := now.UnixMilli()
+	if sq.ScheduleStartTime != 0 && nowMillis < sq.ScheduleStartTime {
+		return time.Time{}, false
+	}
+	if sq.ScheduleEndTime != 0 && nowMillis > sq.ScheduleEndTime {
+		return time.Time{}, false
+	}
+	creationTime := time.UnixMilli(sq.CreationTime).UTC()
+	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(sq.ScheduleExpression, now.In(scheduledQueryLocation(sq)), creationTime, nil)
+	if !elapsed {
+		return time.Time{}, false
+	}
+	if !boundary.After(time.UnixMilli(sq.LastExecutedBoundary).UTC()) {
+		return time.Time{}, false
+	}
+	return boundary, true
+}
+
+// scheduledQueryLocation resolves the timezone the schedule expression is
+// evaluated in: the query's configured timezone, or UTC when unset or
+// invalid.
+func scheduledQueryLocation(sq *logsstore.ScheduledQuery) *time.Location {
+	if sq.Timezone != "" {
+		if loc, err := time.LoadLocation(sq.Timezone); err == nil {
+			return loc
+		}
+		logs.Debug("Invalid scheduled query timezone, falling back to UTC",
+			logs.String("scheduledQuery", sq.Name),
+			logs.String("timezone", sq.Timezone))
+	}
+	return time.UTC
 }
 
 func (s *LogsService) tickScheduledQueries() {
@@ -426,26 +500,19 @@ func (s *LogsService) tickScheduledQueries() {
 		}
 
 		for _, sq := range queries {
-			if sq.LastTriggeredTime == 0 {
-				s.triggerScheduledQuery(region, store, sq)
-				continue
-			}
-
-			lastTriggered := time.UnixMilli(sq.LastTriggeredTime).UTC()
-			creationTime := time.UnixMilli(sq.CreationTime).UTC()
-			nextTime, err := scheduleexpr.NextExecutionTime(sq.ScheduleExpression, lastTriggered, creationTime, nil)
-			if err != nil {
-				continue
-			}
-			if !nextTime.After(now) {
-				s.triggerScheduledQuery(region, store, sq)
+			// The boundary the evaluation consumes is the exact value
+			// the execution stamps; recomputing it later against the
+			// execution clock could advance past an unexecuted
+			// boundary and suppress it.
+			if boundary, due := scheduledQueryDue(sq, now); due {
+				s.triggerScheduledQuery(region, store, sq, boundary)
 			}
 		}
 		return true
 	})
 }
 
-func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Store, sq *logsstore.ScheduledQuery) {
+func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Store, sq *logsstore.ScheduledQuery, boundary time.Time) {
 	now := time.Now().UTC().UnixMilli()
 
 	exec := &logsstore.ScheduledQueryExecution{
@@ -543,12 +610,7 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 		}
 		// Record the trigger so a persistently failing destination retries
 		// on schedule instead of on every worker tick.
-		sq.LastTriggeredTime = now
-		if err := store.PutScheduledQuery(sq); err != nil {
-			logs.Error("Failed to update scheduled query LastTriggeredTime",
-				logs.String("scheduledQueryId", sq.Id),
-				logs.Err(err))
-		}
+		recordDelivery(store, sq.Id, boundary.UnixMilli(), now, logsstore.ScheduledQueryStatusFailed)
 		return
 	}
 
@@ -569,10 +631,5 @@ func (s *LogsService) triggerScheduledQuery(region string, store *logsstore.Stor
 			logs.Err(err))
 	}
 
-	sq.LastTriggeredTime = now
-	if err := store.PutScheduledQuery(sq); err != nil {
-		logs.Error("Failed to update scheduled query LastTriggeredTime",
-			logs.String("scheduledQueryId", sq.Id),
-			logs.Err(err))
-	}
+	recordDelivery(store, sq.Id, boundary.UnixMilli(), now, logsstore.ScheduledQueryStatusComplete)
 }

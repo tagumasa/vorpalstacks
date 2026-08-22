@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -129,13 +130,14 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 	return nil
 }
 
-// ExecuteStateMachineFromState resumes a previously-failed execution starting
-// from the given state. It does not emit an ExecutionStarted event (that
-// already exists from the original attempt); instead it emits an
-// ExecutionRedrived event and continues the event history from lastEventId.
-// The IsRedrive flag on the ExecutionContext signals to Map and Parallel
-// states that they should consult stored checkpoints for already-completed
-// iterations or branches.
+// ExecuteStateMachineFromState resumes a previously-interrupted execution
+// starting from the given state. It does not emit an ExecutionStarted
+// event (that already exists from the original attempt); the caller
+// records the ExecutionRedriven event when the resume is a user-initiated
+// redrive, and the event history continues from lastEventId. The
+// IsRedrive flag on the ExecutionContext signals to Map and Parallel
+// states that they should consult stored checkpoints for
+// already-completed iterations or branches.
 func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *sfnstore.Execution, startState string, startInput string, lastEventId int64) error {
 	e.currentExecution = execution
 	sm, err := e.store.GetStateMachine(ctx, execution.StateMachineArn)
@@ -163,21 +165,6 @@ func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *
 	}
 
 	eventId := lastEventId + 1
-
-	redriveDate := time.Now().UTC()
-	if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
-		ExecutionArn: execution.ExecutionArn,
-		EventId:      eventId,
-		Type:         "ExecutionRedriven",
-		Timestamp:    redriveDate,
-		ExecutionRedrivedEventDetails: &sfnstore.ExecutionRedrivedEventDetails{
-			RedriveDate:     redriveDate,
-			StateMachineArn: execution.StateMachineArn,
-			ExecutionArn:    execution.ExecutionArn,
-		},
-	}); err != nil {
-		logs.Error("Failed to add ExecutionRedriven event", logs.Err(err))
-	}
 
 	resumeInput := startInput
 	if resumeInput == "" {
@@ -277,9 +264,19 @@ func (e *Executor) finalizeExecution(ctx context.Context, execution *sfnstore.Ex
 		}
 	} else {
 		execution.Status = "FAILED"
-		execution.Error = "ExecutionFailed"
+		// Surface the state's error name — States.Runtime, task error
+		// codes, and so on — rather than a generic marker: the
+		// DescribeExecution error field carries the error string of the
+		// failure.
+		var stateErr *ExecutionError
+		if errors.As(execErr, &stateErr) {
+			execution.Error = stateErr.ErrorCode
+			execution.Cause = stateErr.Cause
+		} else {
+			execution.Error = "ExecutionFailed"
+			execution.Cause = "An internal error occurred during execution"
+		}
 		logs.Error("State machine execution failed", logs.String("arn", execution.ExecutionArn), logs.Err(execErr))
-		execution.Cause = "An internal error occurred during execution"
 		execution.StopDate = time.Now().UTC()
 
 		if err := e.addExecutionHistoryEvent(ctx, execution, &sfnstore.ExecutionHistoryEvent{
@@ -391,7 +388,7 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 		case *sfnstore.TaskState:
 			output, nextState, execErr = e.executeTask(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
+				return execErr
 			}
 		case *sfnstore.ChoiceState:
 			nextState, err = e.executeChoice(ctx, execCtx, s)
@@ -403,12 +400,12 @@ func (e *Executor) executeStates(ctx context.Context, execCtx *ExecutionContext)
 		case *sfnstore.ParallelState:
 			output, nextState, execErr = e.executeParallel(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
+				return execErr
 			}
 		case *sfnstore.MapState:
 			output, nextState, execErr = e.executeMap(ctx, execCtx, s)
 			if execErr != nil {
-				return fmt.Errorf("%s: %s", execErr.ErrorCode, execErr.Cause)
+				return execErr
 			}
 		case *sfnstore.FailState:
 			return e.executeFail(ctx, execCtx, s)
@@ -554,6 +551,16 @@ func (e *Executor) newQueryEvalError(ctx context.Context, execCtx *ExecutionCont
 // this classifier so the error code cannot diverge per state type.
 func newJSONPathEvalError(field string, err error) *ExecutionError {
 	return &ExecutionError{ErrorCode: "States.Runtime", Cause: fmt.Sprintf("%s: %s", field, err.Error())}
+}
+
+// newRuntimeValueError reports a run-time value that violates a state's
+// value contract — for example a JSONata wait expression evaluating to a
+// non-timestamp. Like JSONPath evaluation failures this is an
+// unprocessable runtime exception surfaced as States.Runtime; it is not
+// a JSONata evaluation failure, so States.QueryEvaluationError does not
+// apply.
+func newRuntimeValueError(field, cause string) *ExecutionError {
+	return &ExecutionError{ErrorCode: "States.Runtime", Cause: fmt.Sprintf("%s: %s", field, cause)}
 }
 
 func (e *Executor) publishHistoryToCloudWatchLogs(execution *sfnstore.Execution, event *sfnstore.ExecutionHistoryEvent) {

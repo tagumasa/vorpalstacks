@@ -357,11 +357,8 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 
 	// Mode 1: Full policy document provided via the Policy parameter.
 	if policyStr, ok := req.Parameters["Policy"].(string); ok && policyStr != "" {
-		// AWS enforces an 8192-byte ceiling on the resource policy.
-		if len(policyStr) > 8192 {
-			return nil, awserrors.NewPolicyLengthExceededException(
-				fmt.Sprintf("Event bus policy length %d exceeds the maximum allowed length of 8192 bytes", len(policyStr)),
-			)
+		if err := validateEventBusPolicySize(policyStr); err != nil {
+			return nil, err
 		}
 		var policyDoc map[string]interface{}
 		if err := json.Unmarshal([]byte(policyStr), &policyDoc); err != nil {

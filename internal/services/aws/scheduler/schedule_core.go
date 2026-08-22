@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"time"
 
 	"vorpalstacks/internal/common/iam"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
@@ -146,8 +147,9 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 // by the HTTP API and the admin gRPC handler. UpdateSchedule is a PUT
 // operation: all fields from the request replace the existing values.
 func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *UpdateScheduleInput) (*UpdateScheduleResult, error) {
-	existing, err := store.GetSchedule(ctx, in.Spec.GroupName, in.Spec.Name)
-	if err != nil {
+	// Existence first so a missing schedule reports not-found ahead of any
+	// input validation, matching the historical error precedence.
+	if _, err := store.GetSchedule(ctx, in.Spec.GroupName, in.Spec.Name); err != nil {
 		if err == schedulerstore.ErrScheduleNotFound {
 			return nil, ErrScheduleNotFound
 		}
@@ -171,22 +173,50 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 		return nil, err
 	}
 
-	existing.ScheduleExpression = in.Spec.ScheduleExpression
-	existing.Target = target
-	existing.FlexibleTimeWindow = in.Spec.FlexibleTimeWindow
-	existing.Description = in.Spec.Description
-	existing.ScheduleExpressionTimezone = in.Spec.ScheduleExpressionTimezone
-	existing.KmsKeyArn = in.Spec.KmsKeyArn
-	existing.State = validated.State
-	existing.ActionAfterCompletion = validated.ActionAfterCompletion
-	existing.StartDate = validated.StartDate
-	existing.EndDate = validated.EndDate
-
-	if err := store.UpdateSchedule(ctx, existing); err != nil {
+	// The user's fields are applied through the store-level atomic mutation
+	// so a concurrent engine write (completion or firing markers) can never
+	// be lost to this update's read-modify-write cycle.
+	var scheduleARN string
+	err = store.MutateSchedule(ctx, in.Spec.GroupName, in.Spec.Name, func(existing *schedulerstore.Schedule) error {
+		// Captured before the assignments: re-lifecycling a completed
+		// schedule and changing the expression both start a new firing
+		// lifecycle and must reset the delivered-boundary marker.
+		completionWasSet := existing.CompletionDate != nil
+		exprChanged := existing.ScheduleExpression != in.Spec.ScheduleExpression
+		existing.ScheduleExpression = in.Spec.ScheduleExpression
+		existing.Target = target
+		existing.FlexibleTimeWindow = in.Spec.FlexibleTimeWindow
+		existing.Description = in.Spec.Description
+		existing.ScheduleExpressionTimezone = in.Spec.ScheduleExpressionTimezone
+		existing.KmsKeyArn = in.Spec.KmsKeyArn
+		existing.State = validated.State
+		existing.ActionAfterCompletion = validated.ActionAfterCompletion
+		existing.StartDate = validated.StartDate
+		existing.EndDate = validated.EndDate
+		// Updating a schedule starts a new execution lifecycle: a one-time
+		// schedule whose previous lifecycle had ended becomes eligible to
+		// fire again for its new expression or schedule time.
+		existing.CompletionDate = nil
+		if completionWasSet || exprChanged {
+			// AWS UpdateSchedule is a full override that resets execution
+			// state ("uses all values, including empty values, specified in
+			// the request and overrides the existing schedule"), so the
+			// previous lifecycle's delivered boundary must not suppress
+			// the new lifecycle — not before and not after a restart.
+			existing.LastFiredAt = nil
+		}
+		existing.LastModificationDate = time.Now().UTC()
+		scheduleARN = existing.ARN
+		return nil
+	})
+	if err != nil {
+		if err == schedulerstore.ErrScheduleNotFound {
+			return nil, ErrScheduleNotFound
+		}
 		return nil, ErrInternalServer
 	}
 
-	return &UpdateScheduleResult{ScheduleArn: existing.ARN}, nil
+	return &UpdateScheduleResult{ScheduleArn: scheduleARN}, nil
 }
 
 // deleteScheduleCore is the single entry point for schedule deletion.

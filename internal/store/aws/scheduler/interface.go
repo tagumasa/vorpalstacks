@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"time"
 
 	types "vorpalstacks/internal/common/tags"
 )
@@ -18,7 +19,9 @@ type SchedulerStoreInterface interface {
 	UpdateScheduleGroup(ctx context.Context, group *ScheduleGroup) error
 	CreateSchedule(ctx context.Context, schedule *Schedule) error
 	GetSchedule(ctx context.Context, groupName, name string) (*Schedule, error)
-	UpdateSchedule(ctx context.Context, schedule *Schedule) error
+	MutateSchedule(ctx context.Context, groupName, name string, fn func(*Schedule) error) error
+	CompleteSchedule(ctx context.Context, groupName, name string) error
+	TouchScheduleLastFired(ctx context.Context, groupName, name string, boundary time.Time) error
 	DeleteSchedule(ctx context.Context, groupName, name string) error
 	ListSchedules(ctx context.Context, groupName, namePrefix string, state ScheduleState, limit int32, nextToken string) (*ScheduleListResult, error)
 	GetAllEnabledSchedules(ctx context.Context) ([]*Schedule, error)

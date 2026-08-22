@@ -24,9 +24,11 @@ func (s *CloudTrailService) GetResourcePolicy(ctx context.Context, reqCtx *reque
 		return nil, s.mapStoreError(err)
 	}
 
-	_, err = store.GetTrailByARN(resourceARN)
-	if err != nil {
-		return nil, s.mapStoreError(err)
+	// The operation is documented for trails, event data stores, and
+	// channels; dispatch on the ARN resource type exactly like the Put and
+	// Delete paths so the Get/Put round trip works for every type.
+	if err := s.verifyPolicyResource(store, resourceARN); err != nil {
+		return nil, err
 	}
 
 	policy, err := store.GetResourcePolicy(resourceARN)

@@ -15,6 +15,21 @@ import (
 // shape's ".*" pattern admits multibyte regex patterns.
 const maxRegexPatternStringLength = 512
 
+// entityNamePattern mirrors the Smithy @pattern trait on
+// com.amazonaws.wafv2#EntityName: ^[\w\-]+$ (also the pattern of the
+// CustomResponseBodies map keys, whose key shape is EntityName).
+var entityNamePattern = regexp.MustCompile(`^[\w\-]+$`)
+
+// entityDescriptionPattern mirrors the Smithy @pattern trait on
+// com.amazonaws.wafv2#EntityDescription. The middle class gains \v because
+// Go's \s does not include the vertical tab that the Java-flavoured model
+// pattern accepts.
+var entityDescriptionPattern = regexp.MustCompile(`^[\w+=:#@/\-,.][\w+=:#@/\-,\.\s\v]+[\w+=:#@/\-,.]$`)
+
+// tokenDomainPattern mirrors the Smithy @pattern trait on
+// com.amazonaws.wafv2#TokenDomain: ^[\w./-]+$.
+var tokenDomainPattern = regexp.MustCompile(`^[\w./-]+$`)
+
 // validateScope checks that the Scope parameter is a valid Smithy enum
 // value (CLOUDFRONT or REGIONAL).
 func validateScope(scope string) error {
@@ -96,19 +111,34 @@ func validateIPAddress(addr, version string) error {
 }
 
 // validateEntityName validates a resource name against the Smithy
-// EntityName shape constraint: length 1-128.
+// EntityName shape constraints: length 1-128 and pattern ^[\w\-]+$. The
+// @length trait counts Unicode characters; the pattern only admits pure
+// ASCII, so both counts agree for every accepted name, but counting
+// characters keeps the reported length accurate for rejected input.
 func validateEntityName(name string) error {
-	if len(name) < 1 || len(name) > 128 {
-		return invalidParamError(fmt.Sprintf("Name length must be between 1 and 128 characters (got %d)", len(name)))
+	if n := utf8.RuneCountInString(name); n < 1 || n > 128 {
+		return invalidParamError(fmt.Sprintf("Name length must be between 1 and 128 characters (got %d)", n))
+	}
+	if !entityNamePattern.MatchString(name) {
+		return invalidParamError(fmt.Sprintf("Name must match %s", entityNamePattern.String()))
 	}
 	return nil
 }
 
 // validateEntityDescription validates a resource description against the
-// Smithy EntityDescription shape constraint: length 0-256.
+// Smithy EntityDescription shape constraints: length 0-256 and the
+// EntityDescription pattern. The pattern is only applied to non-empty
+// values: the protocol layer cannot distinguish an omitted optional
+// member from an explicitly empty one. The @length trait counts Unicode
+// characters; the pattern only admits pure ASCII, so both counts agree
+// for every accepted description, but counting characters keeps the
+// reported length accurate for rejected input.
 func validateEntityDescription(desc string) error {
-	if len(desc) > 256 {
-		return invalidParamError(fmt.Sprintf("Description length must not exceed 256 characters (got %d)", len(desc)))
+	if n := utf8.RuneCountInString(desc); n > 256 {
+		return invalidParamError(fmt.Sprintf("Description length must not exceed 256 characters (got %d)", n))
+	}
+	if desc != "" && !entityDescriptionPattern.MatchString(desc) {
+		return invalidParamError("Description must start and end with an allowed character ([\\w+=:#@/-,.]) and contain at least 3 characters")
 	}
 	return nil
 }
@@ -241,8 +271,8 @@ func validateFilterRequirement(r string) error {
 }
 
 // validateTokenDomains validates the TokenDomains field of a WebACL.
-// Per the Smithy model, TokenDomain has length 1-253 and a WebACL may
-// specify at most 5 token domains.
+// Per the Smithy model, TokenDomain has length 1-253, pattern
+// ^[\w./-]+$, and a WebACL may specify at most 5 token domains.
 func validateTokenDomains(domains interface{}) error {
 	if domains == nil {
 		return nil
@@ -262,12 +292,16 @@ func validateTokenDomains(domains interface{}) error {
 		if len(s) < 1 || len(s) > 253 {
 			return invalidParamError(fmt.Sprintf("TokenDomain length must be between 1 and 253 characters (got %d)", len(s)))
 		}
+		if !tokenDomainPattern.MatchString(s) {
+			return invalidParamError(fmt.Sprintf("TokenDomain must match %s (got %q)", tokenDomainPattern.String(), s))
+		}
 	}
 	return nil
 }
 
 // validateCustomResponseBodies validates the CustomResponseBodies field
-// of a WebACL. Keys must be 1-128 characters.
+// of a WebACL. Keys follow the EntityName shape: length 1-128 and pattern
+// ^[\w\-]+$.
 func validateCustomResponseBodies(bodies interface{}) error {
 	if bodies == nil {
 		return nil
@@ -279,6 +313,9 @@ func validateCustomResponseBodies(bodies interface{}) error {
 	for k := range m {
 		if len(k) < 1 || len(k) > 128 {
 			return invalidParamError(fmt.Sprintf("CustomResponseBodies key length must be between 1 and 128 characters (got %d for key %q)", len(k), k))
+		}
+		if !entityNamePattern.MatchString(k) {
+			return invalidParamError(fmt.Sprintf("CustomResponseBodies key must match %s (got %q)", entityNamePattern.String(), k))
 		}
 	}
 	return nil

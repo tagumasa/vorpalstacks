@@ -113,6 +113,12 @@ type Rule struct {
 	Tags               []types.Tag `json:"tags,omitempty"`
 	CreatedAt          time.Time   `json:"createdAt"`
 	LastModifiedAt     time.Time   `json:"lastModifiedAt"`
+	// LastFiredAt records the most recent schedule boundary this rule
+	// fired under. It is an internal durability marker for the scheduler
+	// worker (a restart re-seeds its dedup cache from it); it never
+	// appears in API responses, and recording it does not count as a
+	// rule modification.
+	LastFiredAt time.Time `json:"lastFiredAt"`
 }
 
 // Target represents an EventBridge target.

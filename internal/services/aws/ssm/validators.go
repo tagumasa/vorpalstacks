@@ -88,13 +88,15 @@ func validateKeyID(keyID string) error {
 }
 
 // validateAllowedPattern compiles the AllowedPattern regex at PutParameter
-// time and enforces the Smithy length cap. AWS returns
+// time and enforces the Smithy length cap, counted in Unicode characters
+// (the shape carries no pattern trait of its own, and regex sources may
+// contain multibyte character classes). AWS returns
 // InvalidAllowedPatternException for an invalid regex.
 func validateAllowedPattern(pattern string) error {
 	if pattern == "" {
 		return nil
 	}
-	if len(pattern) > ssmstore.MaxAllowedPatternLength {
+	if utf8.RuneCountInString(pattern) > ssmstore.MaxAllowedPatternLength {
 		return ErrInvalidParameterValue
 	}
 	if _, err := regexp.Compile(pattern); err != nil {
@@ -148,7 +150,9 @@ func validateLabels(labels []string) error {
 		return ErrInvalidParameterLabel
 	}
 	for _, label := range labels {
-		if len(label) < 1 || len(label) > 100 {
+		// ParameterLabel @length(1,100) counts Unicode characters (the
+		// shape carries no pattern).
+		if n := utf8.RuneCountInString(label); n < 1 || n > 100 {
 			return ErrInvalidParameterLabel
 		}
 		if label[0] >= '0' && label[0] <= '9' {
@@ -175,13 +179,14 @@ var policyRequiresVersion = map[string]struct{}{
 
 // validatePolicies parses the PutParameter Policies JSON document at write
 // time. The Smithy ParameterPolicies member is a string of length 1-4096
-// holding a JSON array of policy entries. We accept the canonical shape and
-// reject malformed input; the stored text is replayed verbatim on output.
+// counted in Unicode characters (no pattern), holding a JSON array of
+// policy entries. We accept the canonical shape and reject malformed input;
+// the stored text is replayed verbatim on output.
 func validatePolicies(policies string) error {
 	if policies == "" {
 		return nil
 	}
-	if len(policies) > 4096 {
+	if utf8.RuneCountInString(policies) > 4096 {
 		return ErrInvalidParameterValue
 	}
 	var probe []map[string]string

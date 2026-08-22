@@ -345,7 +345,7 @@ func TestScheduledQueryTriggerDelivers(t *testing.T) {
 		StartTimeOffset: 60 * 60 * 1000,
 		CreationTime:    now,
 	}
-	svc.triggerScheduledQuery("us-east-1", store, sq)
+	svc.triggerScheduledQuery("us-east-1", store, sq, time.UnixMilli(now).UTC())
 
 	execs, err := store.ListScheduledQueryExecutions("sq-deliver", 0, time.Now().Add(time.Hour).UnixMilli())
 	if err != nil {

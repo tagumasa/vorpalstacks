@@ -18,6 +18,15 @@ import (
 // Generic helpers
 // ---------------------------------------------------------------------------
 
+// validateQueryStringSize enforces the Smithy QueryString @length(1, 262144),
+// counted in Unicode characters (paramvalidation counts runes).
+func validateQueryStringSize(qs string) error {
+	return paramvalidation.StringLength("QueryString", qs, 1, maxQueryStringSize,
+		func(field string, length, min, max int) error {
+			return ErrInvalidRequestException
+		})
+}
+
 // validateStringLength checks that a string's length falls within [min, max].
 // If the value is empty and min == 0 the check passes (optional field).
 func validateStringLength(fieldName, value string, min, max int) error {

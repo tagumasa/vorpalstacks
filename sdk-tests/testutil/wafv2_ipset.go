@@ -63,6 +63,23 @@ func (r *TestRunner) runWAFv2IPSetTests(tc *wafv2TestContext) []TestResult {
 		return nil
 	}))
 
+	// EntityName carries the Smithy @pattern ^[\w\-]+$: spaces, "!", and
+	// multibyte characters must be rejected.
+	results = append(results, r.RunTest("wafv2", "CreateIPSet_NamePatternRejected", func() error {
+		for _, name := range []string{"bad ipset name!", "\u65e5\u672c\u8a9e"} {
+			_, err := tc.client.CreateIPSet(tc.ctx, &wafv2.CreateIPSetInput{
+				Name:             aws.String(name),
+				Scope:            tc.scope,
+				IPAddressVersion: types.IPAddressVersionIpv4,
+				Addresses:        []string{},
+			})
+			if err == nil {
+				return fmt.Errorf("expected rejection for EntityName pattern violation %q", name)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("wafv2", "GetIPSet", func() error {
 		resp, err := tc.client.GetIPSet(tc.ctx, &wafv2.GetIPSetInput{
 			Name: aws.String(ipSetName), Scope: tc.scope, Id: aws.String(ipSetID),

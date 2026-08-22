@@ -33,6 +33,7 @@ func runLambdaFunctionTests(
 	functionName := fmt.Sprintf("TestFunction-%d", time.Now().UnixNano())
 	roleName := fmt.Sprintf("TestRole-%d", time.Now().UnixNano())
 	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
+	var functionARN string
 
 	if err := createIAMRole(roleName); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateFunction", Status: "FAIL",
@@ -74,6 +75,7 @@ func runLambdaFunctionTests(
 		if resp.CodeSha256 == nil || *resp.CodeSha256 == "" {
 			return fmt.Errorf("CodeSha256 is nil or empty")
 		}
+		functionARN = aws.ToString(resp.FunctionArn)
 		return nil
 	}))
 
@@ -101,6 +103,27 @@ func runLambdaFunctionTests(
 		}
 		if resp.Code == nil || resp.Code.Location == nil {
 			return fmt.Errorf("Code.Location is nil")
+		}
+		return nil
+	}))
+
+	// FunctionName accepts the bare name, the full ARN, and the partial
+	// ARN (account-id:function:name) per the API reference; all three must
+	// resolve to the same function.
+	results = append(results, r.RunTest("lambda", "GetFunction_ArnForms", func() error {
+		if functionARN == "" {
+			return fmt.Errorf("function ARN not captured from CreateFunction")
+		}
+		for _, ref := range []string{functionARN, fmt.Sprintf("%s:function:%s", r.accountID, functionName)} {
+			resp, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+				FunctionName: aws.String(ref),
+			})
+			if err != nil {
+				return fmt.Errorf("GetFunction with %q: %v", ref, err)
+			}
+			if aws.ToString(resp.Configuration.FunctionName) != functionName {
+				return fmt.Errorf("FunctionName mismatch for %q: got %v", ref, resp.Configuration.FunctionName)
+			}
 		}
 		return nil
 	}))

@@ -181,14 +181,13 @@ func (s *CognitoService) CompleteWebAuthnRegistration(ctx context.Context, reqCt
 		return nil, ErrInvalidParameter
 	}
 
-	friendlyName := credential.ID
-	if len(friendlyName) > 8 {
-		friendlyName = friendlyName[:8]
-	}
-
+	// FriendlyCredentialName is "an automatically-generated friendly name
+	// for the passkey credential" backed by StringType @length(0,131072)
+	// with no pattern: the credential ID itself is the generated name, in
+	// full — no truncation.
 	cred := &cognitostore.WebAuthnCredential{
 		CredentialID: credential.ID,
-		FriendlyName: friendlyName,
+		FriendlyName: credential.ID,
 		UserPoolID:   user.UserPoolID,
 		UserID:       user.ID,
 		PublicKey:    credential.PublicKey,

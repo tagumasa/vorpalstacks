@@ -32,6 +32,13 @@ type EventsStore struct {
 	archiveCountersMu sync.Mutex
 }
 
+// ruleRecordWriteMu serialises rule-record read-modify-write cycles
+// across EventsStore instances: the scheduler worker and the API
+// handlers operate separate store instances over the same Pebble
+// keyspace, so TouchRuleLastFired's read-modify-write could otherwise
+// lose a concurrent UpdateRule write (or vice versa).
+var ruleRecordWriteMu sync.Mutex
+
 // NewEventsStore creates a new EventBridge events store.
 func NewEventsStore(store storage.BasicStorage, accountID, region string) *EventsStore {
 	return &EventsStore{
@@ -255,21 +262,48 @@ func (s *EventsStore) GetRule(ctx context.Context, eventBusName, name string) (*
 	return &rule, nil
 }
 
-// UpdateRule updates an existing rule.
+// MutateRule applies fn to the rule record inside the write mutex so the
+// whole read-modify-write cycle is atomic with respect to every other rule
+// record writer (the delivery worker and the service hold separate store
+// instances over the same Pebble keyspace, hence the package-scope lock).
+// fn mutates the record in place; callers decide whether to stamp
+// LastModifiedAt — user-initiated updates do, internal markers must not.
 //
 // Parameters:
 //   - ctx: The context
-//   - rule: The rule to update
+//   - eventBusName: The event bus name
+//   - name: The rule name
+//   - fn: The mutation applied to the record read under the lock
 //
 // Returns:
-//   - error: An error if update fails
-func (s *EventsStore) UpdateRule(ctx context.Context, rule *Rule) error {
-	key := s.buildRuleKey(rule.EventBusName, rule.Name)
-	if !s.rulesStore.Exists(key) {
+//   - error: ErrRuleNotFound if the rule does not exist
+func (s *EventsStore) MutateRule(ctx context.Context, eventBusName, name string, fn func(*Rule) error) error {
+	key := s.buildRuleKey(eventBusName, name)
+	ruleRecordWriteMu.Lock()
+	defer ruleRecordWriteMu.Unlock()
+
+	var rule Rule
+	if err := s.rulesStore.Get(key, &rule); err != nil {
 		return ErrRuleNotFound
 	}
-	rule.LastModifiedAt = time.Now().UTC()
-	return s.rulesStore.Put(key, rule)
+	if err := fn(&rule); err != nil {
+		return err
+	}
+	return s.rulesStore.Put(key, &rule)
+}
+
+// TouchRuleLastFired records the schedule boundary a rule just fired
+// under. The write carries the record as read and never stamps
+// LastModifiedAt: firing is not a rule modification. The boundary only
+// advances, so a late in-flight fire cannot regress a newer one.
+func (s *EventsStore) TouchRuleLastFired(ctx context.Context, eventBusName, name string, firedAt time.Time) error {
+	return s.MutateRule(ctx, eventBusName, name, func(rule *Rule) error {
+		if !firedAt.After(rule.LastFiredAt) {
+			return nil
+		}
+		rule.LastFiredAt = firedAt
+		return nil
+	})
 }
 
 // DeleteRule deletes a rule by event bus name and rule name.
@@ -283,6 +317,11 @@ func (s *EventsStore) UpdateRule(ctx context.Context, rule *Rule) error {
 //   - error: An error if deletion fails
 func (s *EventsStore) DeleteRule(ctx context.Context, eventBusName, name string) error {
 	key := s.buildRuleKey(eventBusName, name)
+	// The record lock closes the resurrection window: without it a
+	// TouchRuleLastFired or MutateRule cycle that read before the delete
+	// could write the record back after it.
+	ruleRecordWriteMu.Lock()
+	defer ruleRecordWriteMu.Unlock()
 	if !s.rulesStore.Exists(key) {
 		return ErrRuleNotFound
 	}

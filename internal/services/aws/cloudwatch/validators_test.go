@@ -36,3 +36,47 @@ func TestValidateStateReasonUnicodeLengths(t *testing.T) {
 		t.Error("1024-character CJK state reason accepted")
 	}
 }
+
+// TestValidateNamespaceUnicodeLengths pins that Namespace follows the Smithy
+// @length(1, 255) trait counted in Unicode characters; the shape's pattern
+// only forbids a leading colon, so multibyte namespaces are valid input.
+func TestValidateNamespaceUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	if err := validateNamespace(strings.Repeat(cjk, 255)); err != nil {
+		t.Errorf("255-character CJK namespace rejected: %v", err)
+	}
+	if err := validateNamespace(strings.Repeat(cjk, 256)); err == nil {
+		t.Error("256-character CJK namespace accepted")
+	}
+}
+
+// TestValidateMetricNameUnicodeLengths pins that MetricName follows the
+// Smithy @length(1, 255) trait counted in Unicode characters (no pattern).
+func TestValidateMetricNameUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5"
+
+	if err := validateMetricName(strings.Repeat(cjk, 255)); err != nil {
+		t.Errorf("255-character CJK metric name rejected: %v", err)
+	}
+	if err := validateMetricName(strings.Repeat(cjk, 256)); err == nil {
+		t.Error("256-character CJK metric name accepted")
+	}
+}
+
+// TestValidateThresholdMetricIdUnicodeLengths pins that ThresholdMetricId
+// follows the Smithy MetricId @length(1, 255) trait counted in Unicode
+// characters (no pattern).
+func TestValidateThresholdMetricIdUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5"
+
+	if err := validateThresholdMetricId(strings.Repeat(cjk, 255)); err != nil {
+		t.Errorf("255-character CJK threshold metric id rejected: %v", err)
+	}
+	if err := validateThresholdMetricId(strings.Repeat(cjk, 256)); err == nil {
+		t.Error("256-character CJK threshold metric id accepted")
+	}
+	if err := validateThresholdMetricId(""); err != nil {
+		t.Errorf("empty threshold metric id rejected: %v", err)
+	}
+}

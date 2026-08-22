@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
@@ -10,6 +11,32 @@ import (
 
 func (tc *cloudwatchTestCtx) alarmTests() []TestResult {
 	var results []TestResult
+
+	// AlarmName @length(1,255) counts Unicode characters (no pattern), so a
+	// 200-character CJK name (600 bytes) is legal input and must round-trip.
+	results = append(results, tc.runner.RunTest("cloudwatch", "PutMetricAlarm_AlarmNameMultibyteAccepted", func() error {
+		alarmName := strings.Repeat("\u65e5", 200)
+		testNS := tc.uniquePrefix("MbNS")
+		metricName := tc.uniquePrefix("MbMetric")
+		if err := tc.createAlarm(alarmName, testNS, metricName, 50.0); err != nil {
+			return fmt.Errorf("put metric alarm with CJK name: %v", err)
+		}
+		defer tc.deleteAlarms(alarmName)
+
+		descResp, err := tc.client.DescribeAlarms(tc.ctx, &cloudwatch.DescribeAlarmsInput{
+			AlarmNames: []string{alarmName},
+		})
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
+		}
+		if len(descResp.MetricAlarms) != 1 {
+			return fmt.Errorf("expected 1 alarm, got %d", len(descResp.MetricAlarms))
+		}
+		if aws.ToString(descResp.MetricAlarms[0].AlarmName) != alarmName {
+			return fmt.Errorf("alarm name mismatch: got %d characters", len([]rune(aws.ToString(descResp.MetricAlarms[0].AlarmName))))
+		}
+		return nil
+	}))
 
 	results = append(results, tc.runner.RunTest("cloudwatch", "PutMetricAlarm_VerifyFields", func() error {
 		alarmName := tc.uniquePrefix("FieldAlarm")

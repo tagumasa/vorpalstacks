@@ -28,9 +28,12 @@ var (
 	// label: alphanumeric, hyphens, and underscores (AWS SQS API Reference).
 	permissionLabelRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-	// receiveAttemptIdRegex allows alphanumeric characters and punctuation
-	// (AWS SQS API Reference: ReceiveRequestAttemptId).
-	receiveAttemptIdRegex = regexp.MustCompile(`^[a-zA-Z0-9!\-_*\.+/]*$`)
+	// receiveAttemptIdRegex allows exactly the documented
+	// ReceiveRequestAttemptId character set: "alphanumeric characters
+	// (a-z, A-Z, 0-9) and punctuation
+	// !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~" (AWS SQS API Reference) — every
+	// printable non-space ASCII character.
+	receiveAttemptIdRegex = regexp.MustCompile(`^[!-~]*$`)
 )
 
 // isValidQueueName checks whether a queue name conforms to the AWS SQS naming

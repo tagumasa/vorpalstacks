@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -36,12 +37,14 @@ func (s *IAMService) UploadServerCertificate(ctx context.Context, reqCtx *reques
 	if certificateBody == "" {
 		return nil, NewValidationError("CertificateBody")
 	}
-	if len(certificateBody) > maxCertificateBodyLength {
+	// certificateBodyType / certificateChainType / privateKeyType carry
+	// Latin-1 patterns, so lengths count Unicode characters.
+	if utf8.RuneCountInString(certificateBody) > maxCertificateBodyLength {
 		return nil, NewInvalidInputError("CertificateBody", fmt.Sprintf("must be 1 to %d characters", maxCertificateBodyLength))
 	}
 	certificateChain := request.GetStringParam(req.Parameters, "CertificateChain")
-	if certificateChain != "" && len(certificateChain) > 2097152 {
-		return nil, NewInvalidInputError("CertificateChain", "must be 1 to 2097152 characters")
+	if certificateChain != "" && utf8.RuneCountInString(certificateChain) > maxCertificateChainLength {
+		return nil, NewInvalidInputError("CertificateChain", fmt.Sprintf("must be 1 to %d characters", maxCertificateChainLength))
 	}
 	privateKey := request.GetStringParam(req.Parameters, "PrivateKey")
 	if privateKey == "" {

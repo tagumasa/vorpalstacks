@@ -347,11 +347,13 @@ func validatePrecedence(v int) bool {
 var customAttributeNamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
 
 // validateCustomAttributeName validates a custom attribute name against the
-// Smithy CustomAttributeNameType length [1, 20] and pattern constraints.
+// Smithy CustomAttributeNameType length [1, 20] (counted in Unicode
+// characters — the pattern admits multibyte categories) and pattern
+// constraints.
 func validateCustomAttributeName(name string) error {
-	if len(name) < 1 || len(name) > 20 {
+	if n := utf8.RuneCountInString(name); n < 1 || n > 20 {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Custom attribute name length must be 1-20: got %d", len(name)))
+			fmt.Sprintf("Custom attribute name length must be 1-20: got %d", n))
 	}
 	if !customAttributeNamePattern.MatchString(name) {
 		return awserrors.NewInvalidParameterException(
@@ -370,11 +372,11 @@ func validateMFADeliveryMedium(m string) bool {
 }
 
 // validateRegionName validates a region name against the Smithy
-// RegionNameType length constraint [5, 32].
+// RegionNameType length constraint [5, 32] counted in Unicode characters.
 func validateRegionName(name string) error {
-	if len(name) < 5 || len(name) > 32 {
+	if n := utf8.RuneCountInString(name); n < 5 || n > 32 {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("RegionName length must be 5-32: got %d", len(name)))
+			fmt.Sprintf("RegionName length must be 5-32: got %d", n))
 	}
 	return nil
 }
@@ -556,9 +558,11 @@ func validateVerifiedAttribute(v string) bool { return validVerifiedAttributes[v
 var usernamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
 
 // validateUsernamePattern returns true if the value matches the Smithy
-// pattern and length constraint (1-128) for UsernameType / GroupNameType.
+// pattern and length constraint (1-128, counted in Unicode characters) for
+// UsernameType / GroupNameType.
 func validateUsernamePattern(v string) bool {
-	return len(v) >= 1 && len(v) <= 128 && usernamePattern.MatchString(v)
+	n := utf8.RuneCountInString(v)
+	return n >= 1 && n <= 128 && usernamePattern.MatchString(v)
 }
 
 // userPoolNamePattern is the Smithy pattern for UserPoolNameType:

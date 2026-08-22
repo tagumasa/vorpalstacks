@@ -129,9 +129,10 @@ func extractProvidedContexts(params map[string]interface{}) ([]ProvidedContextEn
 			break
 		}
 		// Per-entry validation: contextAssertionType length 4-2048
+		// (counted in Unicode characters — the shape carries no pattern)
 		// when non-empty; ProviderArn arnType format when non-empty.
 		if contextAssertion != "" {
-			if len(contextAssertion) < minContextAssertionLen || len(contextAssertion) > maxContextAssertionLen {
+			if n := utf8.RuneCountInString(contextAssertion); n < minContextAssertionLen || n > maxContextAssertionLen {
 				return nil, ErrInvalidContextAssertion
 			}
 		}

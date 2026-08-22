@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -24,7 +25,9 @@ func (s *IAMService) UploadSigningCertificate(ctx context.Context, reqCtx *reque
 	if certificateBody == "" {
 		return nil, NewValidationError("CertificateBody")
 	}
-	if len(certificateBody) > maxCertificateBodyLength {
+	// certificateBodyType carries a Latin-1 pattern, so lengths count
+	// Unicode characters.
+	if utf8.RuneCountInString(certificateBody) > maxCertificateBodyLength {
 		return nil, NewInvalidInputError("CertificateBody", fmt.Sprintf("must be 1 to %d characters", maxCertificateBodyLength))
 	}
 

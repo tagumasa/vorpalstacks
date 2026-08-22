@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
@@ -47,7 +48,9 @@ func (s *TimestreamQueryService) CreateScheduledQuery(ctx context.Context, reqCt
 		return nil, ErrValidationException
 	}
 	kmsKeyID := request.GetParamCaseInsensitive(req.Parameters, "KmsKeyId")
-	if kmsKeyID != "" && len(kmsKeyID) > maxAmazonResourceName {
+	// StringValue2048 @length(1,2048) counts Unicode characters (no
+	// pattern).
+	if kmsKeyID != "" && utf8.RuneCountInString(kmsKeyID) > maxAmazonResourceName {
 		return nil, ErrValidationException
 	}
 	errorReportConfig, err := s.parseErrorReportConfiguration(req.Parameters)

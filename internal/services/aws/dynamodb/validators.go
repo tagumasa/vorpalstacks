@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -153,9 +154,12 @@ var validProjectionTypes = map[string]bool{
 // Generic helpers
 // ---------------------------------------------------------------------------
 
-// validateLength reports whether a string's length falls within [min, max].
+// validateLength reports whether a string's length falls within [min, max],
+// counted in Unicode characters (Smithy @length on string shapes counts
+// code points).
 func validateLength(val string, min, max int) bool {
-	return len(val) >= min && len(val) <= max
+	n := utf8.RuneCountInString(val)
+	return n >= min && n <= max
 }
 
 // validateRange reports whether an integer falls within [min, max].

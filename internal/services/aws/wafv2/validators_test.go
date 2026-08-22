@@ -118,6 +118,82 @@ func TestValidateDefaultAction(t *testing.T) {
 	}
 }
 
+// TestValidateEntityNamePattern pins the Smithy EntityName @pattern
+// ^[\w\-]+$ alongside the length gate: spaces, punctuation outside the
+// class, and multibyte characters are rejected.
+func TestValidateEntityNamePattern(t *testing.T) {
+	for _, name := range []string{"abc-DEF_1", "ipset", "123"} {
+		if err := validateEntityName(name); err != nil {
+			t.Errorf("valid name %q rejected: %v", name, err)
+		}
+	}
+	for _, name := range []string{"bad name", "name!", "bad/name", "\u65e5\u672c\u8a9e", "a.b"} {
+		if err := validateEntityName(name); err == nil {
+			t.Errorf("invalid name %q accepted", name)
+		}
+	}
+}
+
+// TestValidateEntityDescriptionPattern pins the Smithy EntityDescription
+// @pattern: the value must start and end with a class character and carry
+// at least one middle character (the pattern's minimum is 3 characters).
+// An empty description stays accepted: the protocol layer cannot
+// distinguish an omitted optional member from an explicitly empty one.
+func TestValidateEntityDescriptionPattern(t *testing.T) {
+	for _, desc := range []string{"valid desc", "a:b", "x-y", "WebACL for tests 2026"} {
+		if err := validateEntityDescription(desc); err != nil {
+			t.Errorf("valid description %q rejected: %v", desc, err)
+		}
+	}
+	for _, desc := range []string{"a", "ab", " leading", "trailing ", "desc!", "\u65e5\u672c"} {
+		if err := validateEntityDescription(desc); err == nil {
+			t.Errorf("invalid description %q accepted", desc)
+		}
+	}
+	if err := validateEntityDescription(""); err != nil {
+		t.Errorf("empty description rejected: %v", err)
+	}
+	// A multibyte description over 256 bytes but under 256 characters
+	// passes the length gate and is rejected by the pattern instead, so
+	// the reported character count must reflect runes, not bytes.
+	cjkLong := strings.Repeat("\u65e5", 100)
+	err := validateEntityDescription(cjkLong)
+	if err == nil {
+		t.Error("100-character CJK description accepted")
+	} else if !strings.Contains(err.Error(), "must start and end with an allowed character") {
+		t.Errorf("100-character CJK description rejected on length, not pattern: %v", err)
+	}
+}
+
+// TestValidateTokenDomainPattern pins the Smithy TokenDomain @pattern
+// ^[\w./-]+$ on WebACL API-key token domains.
+func TestValidateTokenDomainPattern(t *testing.T) {
+	valid := []interface{}{"abc.com", "store.abc.com", "a-b.example"}
+	if err := validateTokenDomains(valid); err != nil {
+		t.Errorf("valid token domains rejected: %v", err)
+	}
+	for _, dom := range []string{"a b", "abc!", "abc\\com"} {
+		invalid := []interface{}{dom}
+		if err := validateTokenDomains(invalid); err == nil {
+			t.Errorf("invalid token domain %q accepted", dom)
+		}
+	}
+}
+
+// TestValidateCustomResponseBodiesKeyPattern pins that CustomResponseBodies
+// map keys follow the EntityName shape (the map key targets the same
+// ^[\w\-]+$ pattern).
+func TestValidateCustomResponseBodiesKeyPattern(t *testing.T) {
+	if err := validateCustomResponseBodies(map[string]interface{}{"ok-key_1": nil}); err != nil {
+		t.Errorf("valid key rejected: %v", err)
+	}
+	for _, key := range []string{"bad key", "key!", "key/name"} {
+		if err := validateCustomResponseBodies(map[string]interface{}{key: nil}); err == nil {
+			t.Errorf("invalid key %q accepted", key)
+		}
+	}
+}
+
 // TestValidateStatementRegexStringUnicodeLengths pins that the
 // RegexMatchStatement RegexString bound follows the Smithy
 // RegexPatternString @length(1, 512) trait counted in Unicode characters:

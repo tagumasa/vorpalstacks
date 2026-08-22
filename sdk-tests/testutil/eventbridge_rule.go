@@ -33,6 +33,33 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		return nil
 	}))
 
+	// RuleDescription @length(0,512) counts Unicode characters; the shape
+	// carries no pattern, so a 256-character CJK description (768 bytes) is
+	// legal AWS input and must survive a round trip.
+	results = append(results, r.RunTest("events", "PutRule_DescriptionMultibyteAccepted", func() error {
+		desc := strings.Repeat("\u65e5", 256)
+		if _, err := client.PutRule(ctx, &eventbridge.PutRuleInput{
+			Name:               aws.String(ruleName),
+			EventBusName:       aws.String(busName),
+			Description:        aws.String(desc),
+			ScheduleExpression: aws.String("rate(5 minutes)"),
+		}); err != nil {
+			return fmt.Errorf("PutRule with multibyte description: %v", err)
+		}
+		got, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
+			Name:         aws.String(ruleName),
+			EventBusName: aws.String(busName),
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeRule: %v", err)
+		}
+		if aws.ToString(got.Description) != desc {
+			return fmt.Errorf("Description mismatch: got %d characters, want %d",
+				len([]rune(aws.ToString(got.Description))), len([]rune(desc)))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("events", "PutRule_InvalidScheduleExpression", func() error {
 		invalid := []string{
 			// week is not a unit accepted by scheduled rules

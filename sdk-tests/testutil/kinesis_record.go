@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -38,6 +39,35 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 		}
 		if resp.ShardId == nil || *resp.ShardId == "" {
 			return fmt.Errorf("ShardId is nil or empty")
+		}
+		return nil
+	}))
+
+	// PartitionKey @length(1,256) counts Unicode characters (the shape
+	// carries no pattern), so a 200-character CJK key (600 bytes) is legal.
+	results = append(results, r.RunTest("kinesis", "PutRecord_PartitionKeyMultibyteAccepted", func() error {
+		sn := kinesisStream(ts, "recmb")
+		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(sn),
+			ShardCount: aws.Int32(1),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
+		time.Sleep(500 * time.Millisecond)
+
+		key := strings.Repeat("\u65e5", 200)
+		resp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
+			StreamName:   aws.String(sn),
+			Data:         []byte("test-data"),
+			PartitionKey: aws.String(key),
+		})
+		if err != nil {
+			return fmt.Errorf("PutRecord with 200-character CJK partition key: %v", err)
+		}
+		if resp.SequenceNumber == nil || *resp.SequenceNumber == "" {
+			return fmt.Errorf("SequenceNumber is nil or empty")
 		}
 		return nil
 	}))

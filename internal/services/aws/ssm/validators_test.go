@@ -129,3 +129,34 @@ func TestFiltersFromQueryParams_FailClosed(t *testing.T) {
 		t.Fatalf("unexpected filters: %+v", filters)
 	}
 }
+
+// TestValidateAllowedPatternUnicodeLength pins that AllowedPattern
+// @length(0,1024) is counted in Unicode characters; the shape carries no
+// pattern trait of its own, and regex sources may contain multibyte
+// character classes.
+func TestValidateAllowedPatternUnicodeLength(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes; a valid regex literal
+
+	if err := validateAllowedPattern(strings.Repeat(cjk, 1024)); err != nil {
+		t.Errorf("1024-character CJK allowed pattern rejected: %v", err)
+	}
+	if err := validateAllowedPattern(strings.Repeat(cjk, 1025)); err == nil {
+		t.Error("1025-character CJK allowed pattern accepted")
+	}
+	if err := validateAllowedPattern(""); err != nil {
+		t.Errorf("empty allowed pattern rejected: %v", err)
+	}
+}
+
+// TestValidateLabelsUnicodeLength pins that ParameterLabel @length(1,100)
+// is counted in Unicode characters (the shape carries no pattern).
+func TestValidateLabelsUnicodeLength(t *testing.T) {
+	cjk := "\u65e5"
+
+	if err := validateLabels([]string{strings.Repeat(cjk, 100)}); err != nil {
+		t.Errorf("100-character CJK label rejected: %v", err)
+	}
+	if err := validateLabels([]string{strings.Repeat(cjk, 101)}); err == nil {
+		t.Error("101-character CJK label accepted")
+	}
+}

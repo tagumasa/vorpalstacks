@@ -5,12 +5,23 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/scheduleexpr"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
+)
+
+// Smithy @length maxima for pattern-less string shapes, counted in Unicode
+// characters.
+const (
+	maxTimezoneLength         = 50  // ScheduleExpressionTimezone
+	maxScheduleDescriptionLen = 512 // Description
+	maxPlatformVersionLength  = 64  // PlatformVersion
+	maxEcsGroupLength         = 255 // Group
+	maxReferenceIdLength      = 1024
 )
 
 // namePattern matches the AWS Scheduler Name/GroupName constraint:
@@ -208,7 +219,9 @@ func validateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 	}
 
 	if spec.ScheduleExpressionTimezone != "" {
-		if len(spec.ScheduleExpressionTimezone) < 1 || len(spec.ScheduleExpressionTimezone) > 50 {
+		// ScheduleExpressionTimezone @length(1,50) counts Unicode characters
+		// (no pattern); the non-empty branch guarantees the minimum.
+		if n := utf8.RuneCountInString(spec.ScheduleExpressionTimezone); n > maxTimezoneLength {
 			return nil, awserrors.NewValidationException("ScheduleExpressionTimezone must be 1-50 characters")
 		}
 		if _, err := time.LoadLocation(spec.ScheduleExpressionTimezone); err != nil {
@@ -216,7 +229,8 @@ func validateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		}
 	}
 
-	if len(spec.Description) > 512 {
+	// Description @length(0,512) counts Unicode characters (no pattern).
+	if utf8.RuneCountInString(spec.Description) > maxScheduleDescriptionLen {
 		return nil, awserrors.NewValidationException("Description must be 0-512 characters")
 	}
 
@@ -415,13 +429,15 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 	if len(ecs.PlacementStrategy) > 5 {
 		return awserrors.NewValidationException("EcsParameters.PlacementStrategy must have at most 5 items")
 	}
-	if len(ecs.PlatformVersion) > 64 {
+	// PlatformVersion / Group / ReferenceId carry pattern-less @length
+	// traits, so lengths count Unicode characters.
+	if utf8.RuneCountInString(ecs.PlatformVersion) > maxPlatformVersionLength {
 		return awserrors.NewValidationException("EcsParameters.PlatformVersion must be 1-64 characters")
 	}
-	if len(ecs.Group) > 255 {
+	if utf8.RuneCountInString(ecs.Group) > maxEcsGroupLength {
 		return awserrors.NewValidationException("EcsParameters.Group must be 1-255 characters")
 	}
-	if len(ecs.ReferenceId) > 1024 {
+	if utf8.RuneCountInString(ecs.ReferenceId) > maxReferenceIdLength {
 		return awserrors.NewValidationException("EcsParameters.ReferenceId must be at most 1024 characters")
 	}
 	if ecs.PropagateTags != "" && !validPropagateTags[ecs.PropagateTags] {

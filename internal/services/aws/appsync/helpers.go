@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -44,6 +46,10 @@ func validateEventApiExists(store *appsyncstore.AppSyncStore, apiId string) erro
 }
 
 // parsePaginationOptions extracts list pagination parameters from the request.
+// paginationTokenPattern mirrors the Smithy @pattern on
+// com.amazonaws.appsync#PaginationToken: ^[\S]+$.
+var paginationTokenPattern = regexp.MustCompile(`^\S+$`)
+
 // AppSync uses maxResults (int) and nextToken (string) in query params.
 // Smithy MaxResults shape: range 0-25. When omitted (0), defaults to 25.
 // Values exceeding 25 are rejected with BadRequestException.
@@ -59,8 +65,14 @@ func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, err
 		maxResults = 25
 	}
 	token := request.GetStringParam(req.Parameters, "nextToken")
-	if len(token) > 65536 {
+	// PaginationToken @length(1,65536) counts Unicode characters and the
+	// shape carries the pattern ^[\S]+$ (which admits multibyte): a
+	// supplied token must not contain whitespace.
+	if utf8.RuneCountInString(token) > 65536 {
 		return common.ListOptions{}, NewBadRequestException("nextToken exceeds maximum length of 65536")
+	}
+	if token != "" && !paginationTokenPattern.MatchString(token) {
+		return common.ListOptions{}, NewBadRequestException("nextToken must not contain whitespace")
 	}
 	return common.ListOptions{
 		MaxItems: maxResults,

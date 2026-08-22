@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
@@ -87,9 +88,10 @@ func (s *CloudWatchService) putMetricAlarmCore(stores *cloudwatchStores, input *
 	if input.AlarmName == "" {
 		return "", ErrInvalidParameter
 	}
-	if len(input.AlarmName) > maxAlarmNameLen {
+	// AlarmName @length(1-255) counts Unicode characters.
+	if utf8.RuneCountInString(input.AlarmName) > maxAlarmNameLen {
 		return "", awserrors.NewInvalidParameterValueException(
-			"AlarmName must not exceed 255 characters")
+			fmt.Sprintf("AlarmName must not exceed %d characters", maxAlarmNameLen))
 	}
 	if err := validateAlarmDescription(input.AlarmDescription); err != nil {
 		return "", err
@@ -490,9 +492,10 @@ func (s *CloudWatchService) putCompositeAlarmCore(stores *cloudwatchStores, inpu
 	if input.AlarmName == "" {
 		return "", ErrInvalidParameter
 	}
-	if len(input.AlarmName) > maxAlarmNameLen {
+	// AlarmName @length(1-255) counts Unicode characters.
+	if utf8.RuneCountInString(input.AlarmName) > maxAlarmNameLen {
 		return "", awserrors.NewInvalidParameterValueException(
-			"AlarmName must not exceed 255 characters")
+			fmt.Sprintf("AlarmName must not exceed %d characters", maxAlarmNameLen))
 	}
 	if err := validateAlarmDescription(input.AlarmDescription); err != nil {
 		return "", err

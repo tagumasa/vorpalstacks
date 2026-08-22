@@ -4,7 +4,6 @@ package kms
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -429,19 +428,15 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 	validTo := request.GetIntParam(req.Parameters, "ValidTo")
 	expirationModel := request.GetStringParam(req.Parameters, "ExpirationModel")
 
-	// Enforce AWS-documented length constraints (max 6144
-	// base64-encoded characters) before decoding to prevent memory
-	// exhaustion from arbitrarily large blobs.
+	// Enforce the CiphertextType constraints: both blobs must decode to at
+	// most 6144 bytes, and oversized encoded input is rejected before the
+	// decoder allocates memory.
 	if err := validateImportTokenSize(importToken); err != nil {
 		return nil, err
 	}
-	if err := validateEncryptedKeyMaterialSize(encryptedKeyMaterialB64); err != nil {
-		return nil, err
-	}
-
-	encryptedKeyMaterial, err := base64.StdEncoding.DecodeString(encryptedKeyMaterialB64)
+	encryptedKeyMaterial, err := decodeEncryptedKeyMaterial(encryptedKeyMaterialB64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid EncryptedKeyMaterial: %w", err)
+		return nil, err
 	}
 
 	// Reject expired import tokens. GetParametersForImport issues tokens

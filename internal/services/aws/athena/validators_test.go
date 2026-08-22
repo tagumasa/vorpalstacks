@@ -37,3 +37,21 @@ func TestValidateTagsReportsOffenderAccurately(t *testing.T) {
 		t.Errorf("validateTags 256-character CJK value = %v, want nil", err)
 	}
 }
+
+// TestValidateQueryStringSizeUnicodeLengths pins that the QueryString
+// @length(1, 262144) trait is counted in Unicode characters: the shape
+// carries no pattern, so a query whose text is rune-legal must not be
+// rejected on byte length.
+func TestValidateQueryStringSizeUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	if err := validateQueryStringSize(strings.Repeat(cjk, 262144)); err != nil {
+		t.Errorf("262144-character CJK query rejected: %v", err)
+	}
+	if err := validateQueryStringSize(strings.Repeat(cjk, 262145)); err == nil {
+		t.Error("262145-character CJK query accepted")
+	}
+	if err := validateQueryStringSize(""); err == nil {
+		t.Error("empty query accepted")
+	}
+}

@@ -40,6 +40,7 @@ func TestValidateRuleExpression(t *testing.T) {
 		{"cron both day fields specified", "cron(0 12 15 * FRI 2027)", false},
 		{"cron names both day fields", "cron(0 12 1 JAN MON 2027)", false},
 		{"cron question mark in minutes", "cron(? 12 * * ? *)", false},
+		{"cron question mark in year", "cron(0 12 ? * * ?)", false},
 		{"cron W in day of week", "cron(0 12 ? * 3W 2027)", false},
 		{"cron hash in day of month", "cron(0 12 3#2 * ? 2027)", false},
 		{"cron hash list in day of week", "cron(0 12 ? * 1#1,6#3 2027)", false},
@@ -71,6 +72,11 @@ func TestValidateExpressionSchedulerProfile(t *testing.T) {
 		{"rate beyond hour bound", fmt.Sprintf("rate(%d hours)", MaxRateHours+1), false},
 		{"rate beyond day bound", fmt.Sprintf("rate(%d days)", MaxRateDays+1), false},
 		{"rate singular minute", "rate(1 minute)", true},
+		{"cron day fields both asterisk", "cron(0 9 * * * *)", false},
+		{"cron day fields both values", "cron(0 9 15 * MON *)", false},
+		{"cron dom asterisk dow question", "cron(0 9 * * ? *)", true},
+		{"cron dom question dow asterisk", "cron(0 9 ? * * *)", true},
+		{"cron dom value dow question", "cron(0 9 15 * ? *)", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

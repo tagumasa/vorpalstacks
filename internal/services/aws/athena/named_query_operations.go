@@ -32,8 +32,8 @@ func (s *AthenaService) CreateNamedQuery(ctx context.Context, reqCtx *request.Re
 	database := request.GetParamCaseInsensitive(req.Parameters, "Database")
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
 
-	if len(queryString) > maxQueryStringSize {
-		return nil, ErrInvalidRequestException
+	if err := validateQueryStringSize(queryString); err != nil {
+		return nil, err
 	}
 
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
@@ -174,8 +174,8 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 	if queryString == "" {
 		return nil, awserrors.NewInvalidParameterException("QueryString is required for UpdateNamedQuery")
 	}
-	if len(queryString) > maxQueryStringSize {
-		return nil, ErrInvalidRequestException
+	if err := validateQueryStringSize(queryString); err != nil {
+		return nil, err
 	}
 
 	stores, err := s.store(reqCtx)

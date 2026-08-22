@@ -70,6 +70,24 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 	}
 
 	executor := NewExecutorWithStores(store, s.bus, s.accountID, reqCtx.GetRegion())
+
+	// Record the redrive in the history: the resumed state's next event
+	// follows this one, so the resume point passes lastEventId+1.
+	redriveEventId := rp.LastEventId + 1
+	if err := executor.addExecutionHistoryEvent(ctx, exec, &sfnstore.ExecutionHistoryEvent{
+		ExecutionArn: executionArn,
+		EventId:      redriveEventId,
+		Type:         "ExecutionRedriven",
+		Timestamp:    redriveDate,
+		ExecutionRedrivedEventDetails: &sfnstore.ExecutionRedrivedEventDetails{
+			RedriveDate:     redriveDate,
+			StateMachineArn: exec.StateMachineArn,
+			ExecutionArn:    executionArn,
+		},
+	}); err != nil {
+		logs.Error("Failed to add ExecutionRedriven event", logs.Err(err))
+	}
+
 	resumeCtx, cancel := context.WithCancel(context.Background())
 	store.RegisterExecution(executionArn, cancel)
 	s.asyncWg.Add(1)
@@ -86,7 +104,7 @@ func (s *StepFunctionService) RedriveExecution(ctx context.Context, reqCtx *requ
 				_ = store.UpdateExecution(context.Background(), exec)
 			}
 		}()
-		if err := executor.ExecuteStateMachineFromState(resumeCtx, exec, rp.StateName, rp.Input, rp.LastEventId); err != nil {
+		if err := executor.ExecuteStateMachineFromState(resumeCtx, exec, rp.StateName, rp.Input, redriveEventId); err != nil {
 			logs.Error("sfn: redrive execution failed", logs.String("arn", executionArn), logs.Err(err))
 		}
 	}()

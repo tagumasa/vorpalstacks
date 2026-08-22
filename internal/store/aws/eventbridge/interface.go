@@ -18,7 +18,8 @@ type EventsStoreInterface interface {
 
 	CreateRule(ctx context.Context, rule *Rule) error
 	GetRule(ctx context.Context, eventBusName, name string) (*Rule, error)
-	UpdateRule(ctx context.Context, rule *Rule) error
+	MutateRule(ctx context.Context, eventBusName, name string, fn func(*Rule) error) error
+	TouchRuleLastFired(ctx context.Context, eventBusName, name string, firedAt time.Time) error
 	DeleteRule(ctx context.Context, eventBusName, name string) error
 	ListRules(ctx context.Context, eventBusName, namePrefix string, limit int32, nextToken string) (*RuleListResult, error)
 

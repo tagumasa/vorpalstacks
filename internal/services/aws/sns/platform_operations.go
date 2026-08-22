@@ -29,11 +29,8 @@ func (s *SNSService) CreatePlatformApplication(ctx context.Context, reqCtx *requ
 	name := request.GetStringParam(req.Parameters, "Name")
 	platform := request.GetStringParam(req.Parameters, "Platform")
 
-	if name == "" {
-		return nil, awserrors.NewInvalidParameterException("Name is required")
-	}
-	if len(name) > 100 {
-		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Name too long: %d characters (maximum 100)", len(name)))
+	if err := validatePlatformApplicationName(name); err != nil {
+		return nil, err
 	}
 	if platform == "" {
 		return nil, awserrors.NewInvalidParameterException("Platform is required")

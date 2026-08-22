@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
@@ -152,7 +153,8 @@ func validateLookupTableSpec(name, description string) error {
 			fmt.Sprintf("Invalid lookupTableName %q: 1-%d characters, alphanumeric and underscores only",
 				name, logsstore.MaxLookupTableNameLength), 400)
 	}
-	if len(description) > logsstore.MaxLookupTableDescriptionLength {
+	// LookupTableDescription @length(0-1024) counts Unicode characters.
+	if utf8.RuneCountInString(description) > logsstore.MaxLookupTableDescriptionLength {
 		return NewLogsError("InvalidParameterException",
 			fmt.Sprintf("description exceeds %d characters", logsstore.MaxLookupTableDescriptionLength), 400)
 	}

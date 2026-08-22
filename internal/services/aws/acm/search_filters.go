@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
@@ -211,9 +212,10 @@ func validateRequiredComparisonFilter(m map[string]interface{}, label string) er
 	if !ok || value == "" {
 		return awserrors.NewValidationException(fmt.Sprintf("%s filter Value is required", label))
 	}
-	// Smithy FilterString: @length(min:1, max:256).
-	if len(value) > 256 {
-		return awserrors.NewValidationException(fmt.Sprintf("%s filter Value must not exceed 256 characters", label))
+	// Smithy FilterString: @length(min:1, max:256), counted in Unicode
+	// characters.
+	if utf8.RuneCountInString(value) > maxFilterStringLength {
+		return awserrors.NewValidationException(fmt.Sprintf("%s filter Value must not exceed %d characters", label, maxFilterStringLength))
 	}
 	op, ok := m["ComparisonOperator"].(string)
 	if !ok || op == "" {

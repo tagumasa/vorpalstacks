@@ -197,6 +197,9 @@ func (s *StepFunctionService) ValidateStateMachineDefinition(ctx context.Context
 		}
 	}
 
+	// Wait-state field contract (shared with the creation-time check).
+	diagnostics = append(diagnostics, waitStateDiagnostics(definition)...)
+
 	if severity == "ERROR" {
 		filtered := []map[string]string{}
 		for _, d := range diagnostics {

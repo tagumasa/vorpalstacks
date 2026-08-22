@@ -23,6 +23,14 @@ type ScheduledQueryStore struct {
 	createMu   sync.Mutex
 }
 
+// scheduledQueryRecordWriteMu serialises read-modify-write cycles on
+// scheduled-query records across ScheduledQueryStore instances. The engine
+// and the service each construct their own store over the same Pebble
+// keyspace, so an instance-level lock cannot prevent one record writer's
+// read-modify-write from losing another's fields (e.g. the engine's
+// UpdateLastRun racing UpdateNextRunTime or a state update).
+var scheduledQueryRecordWriteMu sync.Mutex
+
 // NewScheduledQueryStore creates a new scheduled query store.
 func NewScheduledQueryStore(store storage.BasicStorage, accountID, region string) *ScheduledQueryStore {
 	return &ScheduledQueryStore{
@@ -81,6 +89,8 @@ func (s *ScheduledQueryStore) GetScheduledQuery(name string) (*ScheduledQuery, e
 // be modified (ENABLED or DISABLED). All other fields are immutable
 // after creation.
 func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQueryStatus) (*ScheduledQuery, error) {
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
 	sq, err := s.GetScheduledQuery(name)
 	if err != nil {
 		return nil, err
@@ -97,6 +107,11 @@ func (s *ScheduledQueryStore) UpdateScheduledQuery(name string, state ScheduledQ
 
 // DeleteScheduledQuery deletes a scheduled query by name.
 func (s *ScheduledQueryStore) DeleteScheduledQuery(name string) error {
+	// The record lock closes the resurrection window: without it an
+	// UpdateLastRun/UpdateNextRunTime cycle that read before the delete
+	// could write the record back after it.
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
 	if !s.Exists(name) {
 		return ErrScheduledQueryNotFound
 	}
@@ -122,6 +137,8 @@ func (s *ScheduledQueryStore) ListScheduledQueries() ([]*ScheduledQuery, error) 
 
 // UpdateNextRunTime updates the next run time for a scheduled query.
 func (s *ScheduledQueryStore) UpdateNextRunTime(name string, nextRunTime time.Time) error {
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
 	sq, err := s.GetScheduledQuery(name)
 	if err != nil {
 		return err
@@ -132,6 +149,8 @@ func (s *ScheduledQueryStore) UpdateNextRunTime(name string, nextRunTime time.Ti
 
 // UpdateLastRun updates the last run information for a scheduled query.
 func (s *ScheduledQueryStore) UpdateLastRun(name string, status string, runTime time.Time) error {
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
 	sq, err := s.GetScheduledQuery(name)
 	if err != nil {
 		return err

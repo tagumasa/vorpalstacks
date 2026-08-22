@@ -48,3 +48,23 @@ func TestSQSErrors(t *testing.T) {
 		assert.Equal(t, 403, ErrPurgeQueueInProgress.GetHTTPStatusCode())
 	})
 }
+
+// TestValidateReceiveRequestAttemptIdCharset pins the documented
+// ReceiveRequestAttemptId character set: "alphanumeric characters (a-z,
+// A-Z, 0-9) and punctuation !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~" (ReceiveMessage
+// API Reference) — every printable non-space ASCII character, up to 128.
+func TestValidateReceiveRequestAttemptIdCharset(t *testing.T) {
+	for _, id := range []string{"attempt:1;id@x", "try#2&retry(3)", "quote's\"brace{}tilde~caret^back\\slash"} {
+		if err := validateReceiveRequestAttemptId(id); err != nil {
+			t.Errorf("documented-legal attempt id %q rejected: %v", id, err)
+		}
+	}
+	for _, id := range []string{"has space", "tab\tid", "\u65e5\u672c", "nl\nid"} {
+		if err := validateReceiveRequestAttemptId(id); err == nil {
+			t.Errorf("invalid attempt id %q accepted", id)
+		}
+	}
+	if err := validateReceiveRequestAttemptId(""); err != nil {
+		t.Errorf("empty attempt id rejected: %v", err)
+	}
+}

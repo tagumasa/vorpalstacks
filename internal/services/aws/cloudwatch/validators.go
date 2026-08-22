@@ -275,9 +275,9 @@ func validateOutputFormat(format string) error {
 }
 
 // validateNamespace validates a CloudWatch Namespace
-// (Smithy: length 1-255, pattern ^[^:]).
+// (Smithy: length 1-255 counted in Unicode characters, pattern ^[^:]).
 func validateNamespace(ns string) error {
-	if len(ns) == 0 || len(ns) > maxNamespaceLen {
+	if utf8.RuneCountInString(ns) == 0 || utf8.RuneCountInString(ns) > maxNamespaceLen {
 		return awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("Namespace length must be between 1 and %d characters", maxNamespaceLen))
 	}
@@ -289,9 +289,9 @@ func validateNamespace(ns string) error {
 }
 
 // validateMetricName validates a CloudWatch MetricName
-// (Smithy: length 1-255).
+// (Smithy: length 1-255 counted in Unicode characters).
 func validateMetricName(name string) error {
-	if len(name) == 0 || len(name) > maxMetricNameLen {
+	if utf8.RuneCountInString(name) == 0 || utf8.RuneCountInString(name) > maxMetricNameLen {
 		return awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("MetricName length must be between 1 and %d characters", maxMetricNameLen))
 	}
@@ -361,12 +361,12 @@ func validateKmsKeyArn(arn string) error {
 }
 
 // validateThresholdMetricId validates a ThresholdMetricId
-// (Smithy MetricId: length 1-255).
+// (Smithy MetricId: length 1-255 counted in Unicode characters).
 func validateThresholdMetricId(id string) error {
 	if id == "" {
 		return nil
 	}
-	if len(id) > maxMetricIdLen {
+	if utf8.RuneCountInString(id) > maxMetricIdLen {
 		return awserrors.NewInvalidParameterValueException(
 			fmt.Sprintf("ThresholdMetricId must not exceed %d characters", maxMetricIdLen))
 	}

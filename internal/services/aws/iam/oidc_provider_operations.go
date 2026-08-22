@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 	"errors"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -17,7 +18,9 @@ func (s *IAMService) CreateOpenIDConnectProvider(ctx context.Context, reqCtx *re
 	if url == "" {
 		return nil, NewValidationError("Url")
 	}
-	if len(url) > 255 {
+	// OpenIDConnectProviderUrlType @length(1,255) counts Unicode characters
+	// (the shape carries no pattern).
+	if utf8.RuneCountInString(url) > 255 {
 		return nil, NewInvalidInputError("Url", "must be 1 to 255 characters")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	pagination "vorpalstacks/internal/common/pagination"
@@ -277,9 +278,10 @@ func (s *SESv2Service) TestRenderEmailTemplate(ctx context.Context, reqCtx *requ
 	}
 	tmplData := request.GetStringParam(req.Parameters, "TemplateData")
 
-	// Enforce the Smithy @length(max=262144) constraint to prevent
-	// unbounded JSON payload DoS.
-	if len(tmplData) > maxTemplateDataSize {
+	// Enforce the Smithy EmailTemplateData @length(max=262144) constraint,
+	// counted in Unicode characters (the shape carries no pattern), to
+	// prevent unbounded JSON payload DoS.
+	if utf8.RuneCountInString(tmplData) > maxTemplateDataSize {
 		return nil, ErrBadRequest
 	}
 

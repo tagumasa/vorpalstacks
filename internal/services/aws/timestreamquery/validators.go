@@ -3,6 +3,7 @@ package timestreamquery
 import (
 	"fmt"
 	"regexp"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/bucketname"
 	awserrors "vorpalstacks/internal/common/errors"
@@ -140,10 +141,11 @@ func validateQueryID(id string) error {
 }
 
 // validateClientToken validates a ClientToken or ClientRequestToken against
-// the Smithy shapes: length {32,128}. Only called when the client explicitly
+// the Smithy shapes: length {32,128} counted in Unicode characters (the
+// shape carries no pattern). Only called when the client explicitly
 // provides a token (empty tokens are replaced with a generated UUID).
 func validateClientToken(token string) error {
-	if len(token) < minClientTokenLen || len(token) > maxClientTokenLen {
+	if n := utf8.RuneCountInString(token); n < minClientTokenLen || n > maxClientTokenLen {
 		return awserrors.NewAWSError("ValidationException",
 			"ClientToken must be between 32 and 128 characters.", 400)
 	}
@@ -151,9 +153,10 @@ func validateClientToken(token string) error {
 }
 
 // validateQueryString validates a QueryString against the Smithy
-// QueryString shape: length {1,262144}.
+// QueryString shape: length {1,262144} counted in Unicode characters (the
+// shape carries no pattern, so multibyte SQL literals are valid input).
 func validateQueryString(qs string) error {
-	if len(qs) < 1 || len(qs) > maxQueryStringLen {
+	if n := utf8.RuneCountInString(qs); n < 1 || n > maxQueryStringLen {
 		return awserrors.NewAWSError("ValidationException",
 			"QueryString must be between 1 and 262144 characters.", 400)
 	}
@@ -171,9 +174,10 @@ func validateScheduleExpression(expr string) error {
 }
 
 // validateAmazonResourceName validates an ARN against the Smithy
-// AmazonResourceName shape: length {1,2048}.
+// AmazonResourceName shape: length {1,2048} counted in Unicode characters
+// (the shape carries no pattern).
 func validateAmazonResourceName(arn string) error {
-	if len(arn) < 1 || len(arn) > maxAmazonResourceName {
+	if n := utf8.RuneCountInString(arn); n < 1 || n > maxAmazonResourceName {
 		return awserrors.NewAWSError("ValidationException",
 			"ResourceArn must be between 1 and 2048 characters.", 400)
 	}
@@ -207,9 +211,10 @@ func validateS3ObjectKeyPrefix(prefix string) error {
 }
 
 // validateTagKey validates a tag key against the Smithy TagKey shape:
-// length {1,128}.
+// length {1,128} counted in Unicode characters (the shape carries no
+// pattern, unlike the general AWS tag guidance).
 func validateTagKey(key string) error {
-	if len(key) < 1 || len(key) > maxTagKeyLen {
+	if n := utf8.RuneCountInString(key); n < 1 || n > maxTagKeyLen {
 		return awserrors.NewAWSError("ValidationException",
 			"Tag key must be between 1 and 128 characters.", 400)
 	}
@@ -217,9 +222,9 @@ func validateTagKey(key string) error {
 }
 
 // validateTagValue validates a tag value against the Smithy TagValue shape:
-// length {0,256}.
+// length {0,256} counted in Unicode characters (no pattern).
 func validateTagValue(val string) error {
-	if len(val) > maxTagValueLen {
+	if utf8.RuneCountInString(val) > maxTagValueLen {
 		return awserrors.NewAWSError("ValidationException",
 			"Tag value must be between 0 and 256 characters.", 400)
 	}

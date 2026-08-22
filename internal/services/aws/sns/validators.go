@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -15,10 +16,12 @@ import (
 // AWS-documented constants
 // ---------------------------------------------------------------------------
 
-// SNS message and batch size limits (AWS documented constants).
+// SNS message and batch size limits (AWS documented constants). The
+// Publish member documentation states subjects must be "less than 100
+// characters long", so the longest legal subject is 99 characters.
 const (
 	maxMessageSize    = 256 * 1024 // 256 KB
-	maxSubjectLength  = 100
+	maxSubjectLength  = 99
 	maxBatchTotalSize = 256 * 1024 // 256 KB total for all entries
 	maxBatchEntries   = 10
 )
@@ -37,6 +40,33 @@ const (
 	maxMessageAttrStringValue = 256 // chars
 	maxMessageAttrBinaryValue = 256 // bytes
 )
+
+// maxPlatformApplicationNameLength is the documented platform application
+// name ceiling: names "must be between 1 and 256 characters long"
+// (CreatePlatformApplication member documentation).
+const maxPlatformApplicationNameLength = 256
+
+// platformApplicationNamePattern is the documented platform application
+// name charset: "Application names must be made up of only uppercase and
+// lowercase ASCII letters, numbers, underscores, hyphens, and periods"
+// (CreatePlatformApplication member documentation).
+var platformApplicationNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
+
+// validatePlatformApplicationName enforces the non-empty requirement, the
+// documented charset, and the 256-character ceiling on
+// CreatePlatformApplication names, counted in Unicode characters.
+func validatePlatformApplicationName(name string) error {
+	if name == "" {
+		return awserrors.NewInvalidParameterException("Name is required")
+	}
+	if n := utf8.RuneCountInString(name); n > maxPlatformApplicationNameLength {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("Name too long: %d characters (maximum %d)", n, maxPlatformApplicationNameLength))
+	}
+	if !platformApplicationNamePattern.MatchString(name) {
+		return awserrors.NewInvalidParameterException("Invalid parameter: Name must contain only letters, numbers, underscores, hyphens, and periods")
+	}
+	return nil
+}
 
 // Endpoint URL length cap for http/https protocols.
 const maxEndpointURLLength = 2048
@@ -386,8 +416,10 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 		return awserrors.NewAWSError("InvalidParameter", fmt.Sprintf("Message too long: %d bytes (maximum %d)", len(message), maxMessageSize), 400)
 	}
 
-	if len(subject) > maxSubjectLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Subject too long: %d characters (maximum %d)", len(subject), maxSubjectLength))
+	// Subject is documented as "UTF-8 text … less than 100 characters
+	// long", so the ceiling counts Unicode characters.
+	if n := utf8.RuneCountInString(subject); n > maxSubjectLength {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf("Subject too long: %d characters (maximum %d)", n, maxSubjectLength))
 	}
 
 	if messageStructure != "" && messageStructure != "json" {

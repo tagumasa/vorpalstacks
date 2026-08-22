@@ -107,6 +107,9 @@ func (s *StepFunctionService) createStateMachineCore(ctx context.Context, store 
 	if err := validateDefinitionJSON(in.Definition); err != nil {
 		return nil, err
 	}
+	if err := validateWaitStates(in.Definition); err != nil {
+		return nil, err
+	}
 
 	// 3. Type (Smithy StateMachineType enum, default STANDARD).
 	smType, err := validateStateMachineType(in.Type)
@@ -208,6 +211,9 @@ func (s *StepFunctionService) updateStateMachineCore(ctx context.Context, store 
 
 	if in.DefinitionProvided {
 		if err := validateDefinitionJSON(in.Definition); err != nil {
+			return nil, err
+		}
+		if err := validateWaitStates(in.Definition); err != nil {
 			return nil, err
 		}
 		if err := validateDefinitionJSONataFields(in.Definition); err != nil {

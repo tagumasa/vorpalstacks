@@ -34,8 +34,9 @@ func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request
 		return nil, ErrInvalidRequestException
 	}
 
-	if len(queryString) > maxQueryStringSize {
-		return nil, ErrInvalidRequestException
+	// QueryString @length(1-262144) counts Unicode characters.
+	if err := validateQueryStringSize(queryString); err != nil {
+		return nil, err
 	}
 
 	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")

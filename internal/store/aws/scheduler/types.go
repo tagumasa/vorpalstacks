@@ -168,6 +168,17 @@ type Schedule struct {
 	ActionAfterCompletion      ActionAfterCompletion `json:"actionAfterCompletion,omitempty"`
 	CreationDate               time.Time             `json:"creationDate"`
 	LastModificationDate       time.Time             `json:"lastModificationDate"`
+	// CompletionDate records when a one-time schedule's execution
+	// lifecycle ended. The AWS ScheduleState wire enum has no COMPLETED
+	// value, so completion is tracked internally: the schedule keeps its
+	// state on the wire but never fires again — the marker, unlike the
+	// engine's in-memory dedup map, survives restarts.
+	CompletionDate *time.Time `json:"completionDate,omitempty"`
+	// LastFiredAt records the boundary of the most recent delivered
+	// occurrence. Like CompletionDate it is an internal marker: it
+	// survives restarts (the engine's in-memory dedup map does not) and
+	// never appears on the wire, where responses are built field by field.
+	LastFiredAt *time.Time `json:"lastFiredAt,omitempty"`
 }
 
 // ScheduleGroupSummary represents a summary of a schedule group.

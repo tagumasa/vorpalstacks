@@ -375,9 +375,11 @@ func validateEnvVarKey(key string) error {
 	return nil
 }
 
-// validateEnvVarValue validates the EnvironmentVariableValue shape: length 0-512.
+// validateEnvVarValue validates the EnvironmentVariableValue shape: length
+// 0-512 counted in Unicode characters (no pattern; multibyte environment
+// variable values are valid input).
 func validateEnvVarValue(val string) error {
-	if len(val) > 512 {
+	if utf8.RuneCountInString(val) > 512 {
 		return NewBadRequestException("environment variable value must not exceed 512 characters")
 	}
 	return nil
@@ -401,33 +403,39 @@ func validateDescription(desc string) error {
 	return nil
 }
 
-// validateCode validates the Code shape: length 1-32768.
+// validateCode validates the Code shape: length 1-32768 counted in Unicode
+// characters (no pattern; JavaScript code may contain multibyte string
+// literals).
 func validateCode(code string) error {
-	if len(code) < 1 || len(code) > 32768 {
+	if n := utf8.RuneCountInString(code); n < 1 || n > 32768 {
 		return NewBadRequestException("code must be between 1 and 32768 characters")
 	}
 	return nil
 }
 
-// validateMappingTemplate validates the MappingTemplate shape: length 1-65536.
+// validateMappingTemplate validates the MappingTemplate shape: length
+// 1-65536 counted in Unicode characters (the "^.*$" pattern admits
+// multibyte Velocity templates).
 func validateMappingTemplate(tmpl string) error {
-	if len(tmpl) < 1 || len(tmpl) > 65536 {
+	if n := utf8.RuneCountInString(tmpl); n < 1 || n > 65536 {
 		return NewBadRequestException("mapping template must be between 1 and 65536 characters")
 	}
 	return nil
 }
 
-// validateContext validates the Context shape: length 2-28000.
+// validateContext validates the Context shape: length 2-28000 counted in
+// Unicode characters (the "^[\s\S]*$" pattern admits multibyte).
 func validateContext(ctx string) error {
-	if len(ctx) < 2 || len(ctx) > 28000 {
+	if n := utf8.RuneCountInString(ctx); n < 2 || n > 28000 {
 		return NewBadRequestException("context must be between 2 and 28000 characters")
 	}
 	return nil
 }
 
-// validateTemplate validates the Template shape: length 2-65536.
+// validateTemplate validates the Template shape: length 2-65536 counted in
+// Unicode characters (the "^[\s\S]*$" pattern admits multibyte).
 func validateTemplate(tmpl string) error {
-	if len(tmpl) < 2 || len(tmpl) > 65536 {
+	if n := utf8.RuneCountInString(tmpl); n < 2 || n > 65536 {
 		return NewBadRequestException("template must be between 2 and 65536 characters")
 	}
 	return nil

@@ -46,12 +46,13 @@ var (
 )
 
 // validateSecretName validates the secret name against the Smithy
-// NameType @length(1-512) constraint.
+// NameType @length(1-512) constraint, counted in Unicode characters (the
+// shape carries no pattern).
 func validateSecretName(name string) error {
 	if name == "" {
 		return awserrors.ErrMissingParameter
 	}
-	if len(name) > maxSecretNameLength {
+	if utf8.RuneCountInString(name) > maxSecretNameLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			"Secret name must be between 1 and 512 characters long.", http.StatusBadRequest)
 	}
@@ -59,12 +60,13 @@ func validateSecretName(name string) error {
 }
 
 // validateClientRequestToken validates the ClientRequestToken against the
-// Smithy ClientRequestTokenType @length(32-64) constraint.
+// Smithy ClientRequestTokenType @length(32-64) constraint, counted in
+// Unicode characters (the shape carries no pattern).
 func validateClientRequestToken(token string) error {
 	if token == "" {
 		return nil
 	}
-	if len(token) < minClientRequestTokenLen || len(token) > maxClientRequestTokenLen {
+	if n := utf8.RuneCountInString(token); n < minClientRequestTokenLen || n > maxClientRequestTokenLen {
 		return awserrors.NewAWSError("InvalidParameterException",
 			"ClientRequestToken must be 32 to 64 characters long.", http.StatusBadRequest)
 	}
@@ -72,9 +74,10 @@ func validateClientRequestToken(token string) error {
 }
 
 // validateDescription validates the Description against the Smithy
-// DescriptionType @length(0-2048) constraint.
+// DescriptionType @length(0-2048) constraint, counted in Unicode
+// characters (the shape carries no pattern).
 func validateDescription(desc string) error {
-	if len(desc) > maxDescriptionLength {
+	if utf8.RuneCountInString(desc) > maxDescriptionLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			"Description must be between 0 and 2048 characters long.", http.StatusBadRequest)
 	}
@@ -82,7 +85,11 @@ func validateDescription(desc string) error {
 }
 
 // validateSecretStringLength validates the SecretString against the Smithy
-// SecretStringType @length(1-65536) constraint.
+// SecretStringType @length(1-65536) constraint. The AWS quota page caps the
+// secret value at 65,536 bytes; because every Unicode character occupies at
+// least one byte, a byte-length ceiling of 65536 is equivalent to enforcing
+// both the character constraint and the storage quota, so the check stays
+// byte-based.
 func validateSecretStringLength(s string) error {
 	if len(s) > maxSecretValueBytes {
 		return awserrors.NewAWSError("InvalidParameterException",
@@ -185,7 +192,7 @@ func validateSecretIdList(ids []string) error {
 			fmt.Sprintf("You can include up to %d secrets in a batch.", maxSecretIdListItems), http.StatusBadRequest)
 	}
 	for _, id := range ids {
-		if len(id) > maxSecretIdLength {
+		if utf8.RuneCountInString(id) > maxSecretIdLength {
 			return awserrors.NewAWSError("InvalidParameterException",
 				fmt.Sprintf("SecretId must not exceed %d characters.", maxSecretIdLength), http.StatusBadRequest)
 		}
@@ -257,13 +264,14 @@ func decodeAndValidateSecretBinary(secretBinaryStr string) ([]byte, error) {
 }
 
 // validateKmsKeyId validates the KmsKeyId against the Smithy
-// KmsKeyIdType @length(max=2048) constraint.  KmsKeyId may be an ARN,
-// key ID, or alias — the Smithy model defines no pattern, only length.
+// KmsKeyIdType @length(max=2048) constraint, counted in Unicode characters.
+// KmsKeyId may be an ARN, key ID, or alias — the Smithy model defines no
+// pattern, only length.
 func validateKmsKeyId(id string) error {
 	if id == "" {
 		return nil
 	}
-	if len(id) > maxKmsKeyIdLength {
+	if utf8.RuneCountInString(id) > maxKmsKeyIdLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("KmsKeyId must not exceed %d characters.", maxKmsKeyIdLength), http.StatusBadRequest)
 	}
@@ -271,12 +279,13 @@ func validateKmsKeyId(id string) error {
 }
 
 // validateRotationLambdaARN validates the RotationLambdaARN against the
-// Smithy RotationLambdaARNType @length(max=2048) constraint.
+// Smithy RotationLambdaARNType @length(max=2048) constraint, counted in
+// Unicode characters (the shape carries no pattern).
 func validateRotationLambdaARN(arn string) error {
 	if arn == "" {
 		return nil
 	}
-	if len(arn) > maxRotationLambdaARNLength {
+	if utf8.RuneCountInString(arn) > maxRotationLambdaARNLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("RotationLambdaARN must not exceed %d characters.", maxRotationLambdaARNLength), http.StatusBadRequest)
 	}
@@ -284,9 +293,11 @@ func validateRotationLambdaARN(arn string) error {
 }
 
 // validateExcludeCharacters validates ExcludeCharacters against the Smithy
-// ExcludeCharactersType @length(max=4096) constraint.
+// ExcludeCharactersType @length(max=4096) constraint, counted in Unicode
+// characters (the shape carries no pattern; multibyte exclusions such as
+// CJK character sets are valid input).
 func validateExcludeCharacters(s string) error {
-	if len(s) > maxExcludeCharactersLength {
+	if utf8.RuneCountInString(s) > maxExcludeCharactersLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("ExcludeCharacters must not exceed %d characters.", maxExcludeCharactersLength), http.StatusBadRequest)
 	}
@@ -407,12 +418,13 @@ func validateRegion(region string) error {
 }
 
 // validateSecretId validates the SecretId against the Smithy
-// SecretIdType @length(min=1, max=2048) constraint.
+// SecretIdType @length(min=1, max=2048) constraint, counted in Unicode
+// characters (the shape carries no pattern).
 func validateSecretId(id string) error {
 	if id == "" {
 		return awserrors.ErrMissingParameter
 	}
-	if len(id) > maxSecretIdLength {
+	if utf8.RuneCountInString(id) > maxSecretIdLength {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("SecretId must not exceed %d characters.", maxSecretIdLength), http.StatusBadRequest)
 	}

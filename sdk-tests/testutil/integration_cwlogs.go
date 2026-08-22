@@ -293,10 +293,11 @@ func (r *TestRunner) runCWLogsScheduledQueryS3(ic *integClients, ts string) Test
 	queryArn := aws.ToString(createResp.ScheduledQueryArn)
 	defer ic.cwl.DeleteScheduledQuery(ic.ctx, &cloudwatchlogs.DeleteScheduledQueryInput{Identifier: aws.String(queryArn)})
 
-	// The scheduled query worker fires on its one-minute tick; wait for the
-	// delivery to appear under the configured prefix.
+	// The AWS rate() contract runs the first query one full interval
+	// after creation; wait for the delivery to appear under the
+	// configured prefix.
 	var objectKey string
-	res := r.pollVerify(testName, 100*time.Second, func() error {
+	res := r.pollVerify(testName, 150*time.Second, func() error {
 		listResp, err := ic.s3.ListObjectsV2(ic.ctx, &s3.ListObjectsV2Input{
 			Bucket: aws.String(bucket),
 			Prefix: aws.String("results/" + ts + "/"),

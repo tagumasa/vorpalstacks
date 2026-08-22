@@ -100,6 +100,37 @@ func (e *ScheduledQueryEngine) run() {
 	}
 }
 
+// shouldFireQuery resolves the latest elapsed execution boundary for the
+// evaluation time now and reports whether it has not fired yet. The
+// returned boundary is used as the execution's scheduled time. The
+// boundary contract comes from the shared resolver: rate() never runs on
+// the creation boundary (the first run is one full interval after
+// creation), cron() recovers a matching minute missed by a slow ticker
+// but never a boundary older than the creation, and at() fires once its
+// timestamp is reached. previousRun is the record's persisted
+// PreviousRunTime: a boundary at or before it has already been consumed
+// by an earlier run, in this or a previous process lifetime.
+func (e *ScheduledQueryEngine) shouldFireQuery(dedupKey, expr string, now, creation, previousRun time.Time) (time.Time, bool) {
+	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creation, nil)
+	if !ok {
+		return time.Time{}, false
+	}
+	// The persisted last run is the source of truth across restarts (the
+	// in-memory map dies with the process): PreviousRunTime is stamped
+	// after every run — successful or failed, auto-triggered or manual —
+	// with an invocation time at or after the boundary it consumed, so a
+	// boundary at or before it has already run.
+	if !previousRun.IsZero() && !previousRun.Before(boundary) {
+		return time.Time{}, false
+	}
+	if last, ok := e.lastFired.Load(dedupKey); ok {
+		if lastTime, ok := last.(time.Time); ok && !lastTime.Before(boundary) {
+			return time.Time{}, false
+		}
+	}
+	return boundary, true
+}
+
 func (e *ScheduledQueryEngine) checkScheduledQueries() {
 	if e.service.storageManager == nil {
 		return
@@ -137,19 +168,8 @@ func (e *ScheduledQueryEngine) checkScheduledQueries() {
 				continue
 			}
 
-			nextTime, err := scheduleexpr.NextExecutionTime(expr, now, sq.CreationTime, nil)
-			if err != nil {
-				continue
-			}
-
-			if last, ok := e.lastFired.Load(dedupKey); ok {
-				if lastTime, ok := last.(time.Time); ok && !lastTime.Before(nextTime) {
-					continue
-				}
-			}
-
-			diff := now.Sub(nextTime)
-			if diff < 0 || diff >= time.Minute {
+			nextTime, due := e.shouldFireQuery(dedupKey, expr, now, sq.CreationTime, sq.PreviousRunTime)
+			if !due {
 				continue
 			}
 

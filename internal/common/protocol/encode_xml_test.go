@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,6 +58,60 @@ func TestEncodeXMLResponse_StringMap(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "<entry>")
 	assert.Contains(t, w.Body.String(), "<key>Name</key>")
 	assert.Contains(t, w.Body.String(), "<value>test</value>")
+}
+
+// TestEncodeXMLResponse_DeterministicKeyOrder pins that encoding the same
+// response map twice yields byte-identical XML: map iteration order must
+// never leak into the wire output. Element keys and <entry> keys are
+// emitted in sorted order.
+func TestEncodeXMLResponse_DeterministicKeyOrder(t *testing.T) {
+	response := map[string]interface{}{
+		"Zebra": "last",
+		"Apple": "first",
+		"Mango": "middle",
+		"Beta":  "b",
+		"Gamma": "g",
+		"Attrs": map[string]string{
+			"zKey": "zv",
+			"aKey": "av",
+			"mKey": "mv",
+		},
+	}
+
+	var first string
+	for i := 0; i < 50; i++ {
+		w := httptest.NewRecorder()
+		require.NoError(t, EncodeXMLResponse(w, "Det", response))
+		if i == 0 {
+			first = w.Body.String()
+			continue
+		}
+		if w.Body.String() != first {
+			t.Fatal("XML output differs between encodes of the same response map")
+		}
+	}
+
+	for _, pos := range []struct {
+		marker string
+		at     int
+	}{
+		{"<Apple>", strings.Index(first, "<Apple>")},
+		{"<Mango>", strings.Index(first, "<Mango>")},
+		{"<Zebra>", strings.Index(first, "<Zebra>")},
+	} {
+		if pos.at < 0 {
+			t.Fatalf("marker %s missing from output", pos.marker)
+		}
+	}
+	assert.True(t, strings.Index(first, "<Apple>") < strings.Index(first, "<Mango>") &&
+		strings.Index(first, "<Mango>") < strings.Index(first, "<Zebra>"),
+		"element keys must be emitted in sorted order")
+
+	aKey := strings.Index(first, "<key>aKey</key>")
+	mKey := strings.Index(first, "<key>mKey</key>")
+	zKey := strings.Index(first, "<key>zKey</key>")
+	require.True(t, aKey >= 0 && mKey >= 0 && zKey >= 0, "entry keys missing")
+	assert.True(t, aKey < mKey && mKey < zKey, "entry keys must be emitted in sorted order")
 }
 
 func TestEncodeXMLResponse_Slice(t *testing.T) {

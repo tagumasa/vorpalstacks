@@ -185,6 +185,7 @@ func (a *App) wireCrossServiceDeps() {
 
 	if st.stepFunctionService != nil {
 		st.stepFunctionService.SetEventBus(eb)
+		st.stepFunctionService.RecoverRunningExecutions()
 	}
 
 	if st.snsService != nil {

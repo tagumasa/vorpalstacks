@@ -50,11 +50,13 @@ func TestValidateScheduleFields_CronFieldCount(t *testing.T) {
 		expr    string
 		wantErr bool
 	}{
-		{"cron(0 12 * * * ?)", false}, // 6 fields, valid
-		{"cron(0 12 * * ? *)", false}, // 6 fields, valid
+		{"cron(0 12 ? * * *)", false}, // 6 fields, DOM ?, valid
+		{"cron(0 12 * * ? *)", false}, // 6 fields, DOW ?, valid
 		{"cron(0 12 * * *)", true},    // 5 fields, invalid
 		{"cron(0)", true},             // 1 field, invalid
-		{"cron(* * * * * *)", false},  // 6 wildcards, valid
+		{"cron(* * * * * *)", true},   // neither day field is ?, invalid
+		{"cron(0 12 * * * ?)", true},  // neither day field is ?; the year ? is never examined, invalid
+		{"cron(0 12 ? * * ?)", true},  // ? outside the two day fields (year), invalid
 	}
 	for _, tt := range tests {
 		t.Run(tt.expr, func(t *testing.T) {
@@ -408,4 +410,39 @@ func testTokenBaseStore(t *testing.T) (*storecommon.BaseStore, func()) {
 	}
 	bs := storecommon.NewBaseStore(s.Bucket("scheduler-tokens-test"), "scheduler-tokens")
 	return bs, func() { s.Close() }
+}
+
+// TestValidateEcsParametersUnicodeLengths pins that the pattern-less ECS
+// members (Group @length(1,255), ReferenceId @length(max 1024)) count
+// Unicode characters, so rune-legal multibyte values must not be rejected
+// on byte length.
+func TestValidateEcsParametersUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+	base := func() *schedulerstore.EcsParameters {
+		return &schedulerstore.EcsParameters{
+			TaskDefinitionArn: "arn:aws:ecs:us-east-1:123456789012:task-definition/family:1",
+		}
+	}
+
+	ecs := base()
+	ecs.Group = strings.Repeat(cjk, 255)
+	if err := validateEcsParameters(ecs); err != nil {
+		t.Errorf("255-character CJK group rejected: %v", err)
+	}
+	ecs = base()
+	ecs.Group = strings.Repeat(cjk, 256)
+	if err := validateEcsParameters(ecs); err == nil {
+		t.Error("256-character CJK group accepted")
+	}
+
+	ecs = base()
+	ecs.ReferenceId = strings.Repeat(cjk, 1024)
+	if err := validateEcsParameters(ecs); err != nil {
+		t.Errorf("1024-character CJK reference id rejected: %v", err)
+	}
+	ecs = base()
+	ecs.ReferenceId = strings.Repeat(cjk, 1025)
+	if err := validateEcsParameters(ecs); err == nil {
+		t.Error("1025-character CJK reference id accepted")
+	}
 }

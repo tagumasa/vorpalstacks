@@ -67,6 +67,19 @@ func ValidateExpression(expr string) bool {
 		if len(fields) != 6 {
 			return false
 		}
+		// "You can't use * in both the Day-of-month and Day-of-week
+		// fields. If you specify a value or a * in one of the fields,
+		// you must use a ? in the other." (Schedule types in EventBridge
+		// Scheduler; the same AWS cron convention governs every consumer
+		// of this profile). "?" is a wildcard in the two day fields only.
+		if fields[2] != "?" && fields[4] != "?" {
+			return false
+		}
+		for i, f := range fields {
+			if i != 2 && i != 4 && strings.Contains(f, "?") {
+				return false
+			}
+		}
 		return true
 	}
 
@@ -99,46 +112,40 @@ func validateRateFormat(expr string) bool {
 	return false
 }
 
-// NextExecutionTime calculates the next execution time for an AWS schedule
-// expression (cron(...), rate(...), or at(...)) at or after the given
-// reference time. creationTime is the baseline for rate() calculations.
-// startDate, if non-nil, overrides creationTime as the rate() baseline.
+// NextExecutionTime resolves the current or next execution boundary of an
+// AWS schedule expression relative to the reference time now. The return
+// value differs per expression form and callers must pair it with their
+// own once-per-boundary deduplication:
+//   - at(...): the fixed timestamp itself, whether or not it lies in the
+//     past or future relative to now.
+//   - rate(...): the latest period boundary at or before now — the start
+//     of the period now falls in — anchored at creationTime (startDate
+//     overrides the anchor when non-nil). This is not a forward-looking
+//     "next" time: until the first interval elapses the anchor itself is
+//     returned, and when now still lies before the anchor the returned
+//     anchor lies in the future.
+//   - cron(...): the first matching minute at or after the start of
+//     now's minute, so a matching current minute is returned and a
+//     non-matching one yields the next future match.
+//
+// Firing engines that owe an invocation for every elapsed boundary
+// should prefer ElapsedExecutionTime, which expresses that contract
+// directly.
 func NextExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time) (time.Time, error) {
 	if strings.HasPrefix(expr, "at(") {
-		matches := atExprPattern.FindStringSubmatch(expr)
-		if len(matches) == 2 {
-			t, err := time.Parse(timeutils.ISO8601NoZFormat, matches[1])
-			if err != nil {
-				return time.Time{}, err
-			}
+		if t, ok := parseAtTime(expr); ok {
 			return t, nil
 		}
 	}
 
 	if strings.HasPrefix(expr, "rate(") {
-		matches := rateExprPattern.FindStringSubmatch(expr)
-		if len(matches) == 3 {
-			value, _ := strconv.Atoi(matches[1])
-			unit := matches[2]
-
-			var duration time.Duration
-			switch strings.TrimSuffix(unit, "s") {
-			case "minute":
-				duration = time.Duration(value) * time.Minute
-			case "hour":
-				duration = time.Duration(value) * time.Hour
-			case "day":
-				duration = time.Duration(value) * 24 * time.Hour
-			}
-
+		if duration, ok := parseRateDuration(expr); ok {
 			base := creationTime
 			if startDate != nil {
 				base = *startDate
 			}
-			elapsed := now.Sub(base)
-			periods := int(elapsed / duration)
-			nextTime := base.Add(time.Duration(periods) * duration)
-			return nextTime, nil
+			periods := int(now.Sub(base) / duration)
+			return base.Add(time.Duration(periods) * duration), nil
 		}
 	}
 
@@ -147,6 +154,159 @@ func NextExecutionTime(expr string, now time.Time, creationTime time.Time, start
 	}
 
 	return time.Time{}, fmt.Errorf("unsupported schedule expression: %s", expr)
+}
+
+// parseAtTime extracts the timestamp of an at(yyyy-MM-ddTHH:mm:ss)
+// expression, reporting false when the expression is not a well-formed
+// at() form.
+func parseAtTime(expr string) (time.Time, bool) {
+	matches := atExprPattern.FindStringSubmatch(expr)
+	if len(matches) != 2 {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(timeutils.ISO8601NoZFormat, matches[1])
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
+
+// parseRateDuration extracts the interval of a rate(value unit)
+// expression, reporting false when the expression is not a well-formed
+// rate() form.
+func parseRateDuration(expr string) (time.Duration, bool) {
+	matches := rateExprPattern.FindStringSubmatch(expr)
+	if len(matches) != 3 {
+		return 0, false
+	}
+	// The value must be a positive integer that fits an int: a zero or
+	// overflowing value would otherwise produce a zero (or wrapped)
+	// duration and a division by zero in the callers.
+	value, err := strconv.Atoi(matches[1])
+	if err != nil || value < 1 {
+		return 0, false
+	}
+	switch strings.TrimSuffix(matches[2], "s") {
+	case "minute":
+		return time.Duration(value) * time.Minute, true
+	case "hour":
+		return time.Duration(value) * time.Hour, true
+	case "day":
+		return time.Duration(value) * 24 * time.Hour, true
+	}
+	return 0, false
+}
+
+// ElapsedExecutionTime resolves the latest execution instant of an AWS
+// schedule expression that lies at or before the reference time now — the
+// boundary a firing engine owes an invocation for. It reports false when
+// no execution instant has been reached yet; callers pair it with their
+// own once-per-boundary deduplication. A slow sweep fires only the latest
+// elapsed boundary, never the backlog of skipped ones:
+//   - at(...): the fixed timestamp, interpreted in now's location (the
+//     schedule's evaluation timezone), returned once now has reached it.
+//   - rate(...): the anchor (startDate when non-nil, otherwise
+//     creationTime) advanced by the largest whole number of elapsed
+//     periods. Following the AWS rate() contract the first execution
+//     instant is one full interval after the anchor, so the anchor
+//     itself never fires.
+//   - cron(...): the latest matching minute at or before now, evaluated
+//     in now's location and never earlier than creationTime (a boundary
+//     that predates the schedule's creation was never this schedule's
+//     to fire). Boundaries older than cronRecoveryHorizon are not
+//     recovered; an evaluation that arrives late fires the pending
+//     boundary instead of skipping it silently.
+func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time) (time.Time, bool) {
+	if strings.HasPrefix(expr, "at(") {
+		t, ok := parseAtTime(expr)
+		if !ok {
+			return time.Time{}, false
+		}
+		// The at() payload carries no offset, so interpret it in the
+		// evaluation timezone the caller resolved into now.
+		local := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), 0, now.Location())
+		if local.After(now) {
+			return time.Time{}, false
+		}
+		return local, true
+	}
+
+	if strings.HasPrefix(expr, "rate(") {
+		duration, ok := parseRateDuration(expr)
+		if !ok {
+			return time.Time{}, false
+		}
+		base := creationTime
+		if startDate != nil {
+			base = *startDate
+		}
+		periods := int(now.Sub(base) / duration)
+		if periods < 1 {
+			return time.Time{}, false
+		}
+		return base.Add(time.Duration(periods) * duration), true
+	}
+
+	if strings.HasPrefix(expr, "cron(") {
+		return latestCronBoundaryAtOrBefore(expr, now, creationTime)
+	}
+
+	return time.Time{}, false
+}
+
+// cronRecoveryHorizon bounds how far back a late evaluation may recover a
+// missed cron boundary. Boundaries older than the horizon are treated as
+// stale and no longer fire.
+const cronRecoveryHorizon = 7 * 24 * time.Hour
+
+// cronMatchAtOrAfter returns the first cron matching minute at or after
+// the minute of m, reporting false when the expression has no match.
+func cronMatchAtOrAfter(expr string, m time.Time) (time.Time, bool) {
+	// parseCronNextTime returns the first match at or after the start of
+	// the argument's minute, so evaluating just inside m's minute yields
+	// the first match at or after m itself.
+	t, err := parseCronNextTime(expr, m.Add(time.Second))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
+
+// latestCronBoundaryAtOrBefore returns the latest cron matching minute at
+// or before now, searching at most cronRecoveryHorizon back and never
+// earlier than the schedule's creation minute. The search is a binary
+// search over minutes: "a match exists in [m, hi]" is false for every m
+// past the latest match and true before it, so halving the window
+// converges on the match without scanning every minute.
+func latestCronBoundaryAtOrBefore(expr string, now, creationTime time.Time) (time.Time, bool) {
+	hi := now.Truncate(time.Minute)
+	if match, ok := cronMatchAtOrAfter(expr, hi); ok && match.Equal(hi) {
+		return hi, true
+	}
+	lo := hi.Add(-cronRecoveryHorizon)
+	if !creationTime.IsZero() {
+		// A boundary that predates the schedule's creation was never
+		// this schedule's to fire: clamp the recovery window to it.
+		// The clamped probe keeps hi's location so every probe of the
+		// search evaluates the expression in the same timezone.
+		if created := creationTime.Truncate(time.Minute).In(hi.Location()); created.After(lo) {
+			lo = created
+		}
+	}
+	match, ok := cronMatchAtOrAfter(expr, lo)
+	if !ok || match.After(hi) {
+		return time.Time{}, false
+	}
+	for hi.Sub(lo) > time.Minute {
+		mid := lo.Add((hi.Sub(lo) / 2 / time.Minute) * time.Minute)
+		if candidate, ok := cronMatchAtOrAfter(expr, mid); ok && !candidate.After(hi) {
+			lo = mid
+		} else {
+			hi = mid
+		}
+	}
+	latest, _ := cronMatchAtOrAfter(expr, lo)
+	return latest, true
 }
 
 func parseCronNextTime(expr string, now time.Time) (time.Time, error) {

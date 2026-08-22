@@ -40,10 +40,13 @@ const (
 	// logs need the explicit console output.
 	echoHandlerCode = `exports.handler = async (event) => { console.log(JSON.stringify(event)); return JSON.stringify(event); };`
 
-	pollInterval         = 300 * time.Millisecond
-	integTestTimeout     = 3 * time.Minute
-	defaultPollTimeout   = 10 * time.Second
-	schedulerPollTimeout = 15 * time.Second
+	pollInterval       = 300 * time.Millisecond
+	integTestTimeout   = 3 * time.Minute
+	defaultPollTimeout = 10 * time.Second
+	// The AWS rate() contract fires the first invocation one full
+	// interval after creation, so a rate(1 minute) schedule cannot
+	// deliver before ~60 seconds however fast the engine evaluates.
+	schedulerPollTimeout = 90 * time.Second
 )
 
 func intTimestamp() string {

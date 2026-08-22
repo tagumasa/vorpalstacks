@@ -120,5 +120,44 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 		return nil
 	}))
 
+	// The resource policy operations are documented for event data stores
+	// and channels as well as trails, so the Put/Get round trip must work
+	// on an event data store ARN too.
+	results = append(results, r.RunTest("cloudtrail", "PutResourcePolicy_GetResourcePolicy_EventDataStore", func() error {
+		createResp, err := tc.client.CreateEventDataStore(tc.ctx, &cloudtrail.CreateEventDataStoreInput{
+			Name:                         aws.String(fmt.Sprintf("ct-eds-policy-%d", time.Now().UnixNano())),
+			TerminationProtectionEnabled: aws.Bool(false),
+			RetentionPeriod:              aws.Int32(90),
+		})
+		if err != nil {
+			return fmt.Errorf("CreateEventDataStore failed: %w", err)
+		}
+		if createResp.EventDataStoreArn == nil {
+			return fmt.Errorf("EventDataStoreArn is nil")
+		}
+		defer tc.client.DeleteEventDataStore(tc.ctx, &cloudtrail.DeleteEventDataStoreInput{
+			EventDataStore: createResp.EventDataStoreArn,
+		})
+
+		policyDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"cloudtrail:GetQueryResults","Resource":"*"}]}`
+		if _, err := tc.client.PutResourcePolicy(tc.ctx, &cloudtrail.PutResourcePolicyInput{
+			ResourceArn:    createResp.EventDataStoreArn,
+			ResourcePolicy: aws.String(policyDoc),
+		}); err != nil {
+			return fmt.Errorf("put resource policy: %v", err)
+		}
+
+		getResp, err := tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
+			ResourceArn: createResp.EventDataStoreArn,
+		})
+		if err != nil {
+			return fmt.Errorf("get resource policy: %v", err)
+		}
+		if getResp.ResourcePolicy == nil || *getResp.ResourcePolicy != policyDoc {
+			return fmt.Errorf("policy content mismatch, got: %v", getResp.ResourcePolicy)
+		}
+		return nil
+	}))
+
 	return results
 }

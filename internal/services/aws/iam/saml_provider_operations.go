@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -54,7 +55,9 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	if metadataDocument == "" {
 		return nil, NewValidationError("SAMLMetadataDocument")
 	}
-	if len(metadataDocument) < 1000 || len(metadataDocument) > 10000000 {
+	// SAMLMetadataDocumentType @length(1000,10000000) counts Unicode
+	// characters (no pattern — XML metadata may carry multibyte text).
+	if n := utf8.RuneCountInString(metadataDocument); n < 1000 || n > 10000000 {
 		return nil, NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
 	}
 
@@ -70,7 +73,9 @@ func (s *IAMService) CreateSAMLProvider(ctx context.Context, reqCtx *request.Req
 
 	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
 	if addPrivateKey != "" {
-		if len(addPrivateKey) > maxPrivateKeyLength {
+		// privateKeyType carries a Latin-1 pattern, so lengths count Unicode
+		// characters.
+		if utf8.RuneCountInString(addPrivateKey) > maxPrivateKeyLength {
 			return nil, NewInvalidInputError("AddPrivateKey", fmt.Sprintf("must be 1 to %d characters", maxPrivateKeyLength))
 		}
 	}
@@ -179,8 +184,12 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 		return nil, NewValidationError("SAMLProviderArn")
 	}
 	metadataDocument := request.GetStringParam(req.Parameters, "SAMLMetadataDocument")
-	if metadataDocument != "" && (len(metadataDocument) < 1000 || len(metadataDocument) > 10000000) {
-		return nil, NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
+	if metadataDocument != "" {
+		// SAMLMetadataDocumentType @length(1000,10000000) counts Unicode
+		// characters.
+		if n := utf8.RuneCountInString(metadataDocument); n < 1000 || n > 10000000 {
+			return nil, NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
+		}
 	}
 
 	assertionEncryptionMode := request.GetStringParam(req.Parameters, "AssertionEncryptionMode")
@@ -189,7 +198,7 @@ func (s *IAMService) UpdateSAMLProvider(ctx context.Context, reqCtx *request.Req
 	}
 
 	addPrivateKey := request.GetStringParam(req.Parameters, "AddPrivateKey")
-	if addPrivateKey != "" && len(addPrivateKey) > maxPrivateKeyLength {
+	if addPrivateKey != "" && utf8.RuneCountInString(addPrivateKey) > maxPrivateKeyLength {
 		return nil, NewInvalidInputError("AddPrivateKey", fmt.Sprintf("must be 1 to %d characters", maxPrivateKeyLength))
 	}
 

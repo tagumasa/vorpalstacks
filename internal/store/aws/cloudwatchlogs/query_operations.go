@@ -3,6 +3,7 @@ package cloudwatchlogs
 import (
 	"encoding/json"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -53,8 +54,57 @@ func (s *Store) GetScheduledQuery(id string) (*ScheduledQuery, error) {
 	return &sq, nil
 }
 
+// scheduledQueryRecordWriteMu serialises read-modify-write cycles on
+// scheduled query records. The delivery worker and the API handlers
+// write these records concurrently: a full-record put from either side
+// must not interleave with the other's read-modify-write, and a write
+// racing a delete must not resurrect the deleted record.
+var scheduledQueryRecordWriteMu sync.Mutex
+
+// MutateScheduledQuery loads the stored scheduled query, applies fn, and
+// persists the result as one atomic read-modify-write. The put advances
+// LastUpdatedTime, so this is the path for user-driven mutations.
+func (s *Store) MutateScheduledQuery(id string, fn func(*ScheduledQuery) error) error {
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
+	sq, err := s.GetScheduledQuery(id)
+	if err != nil {
+		return err
+	}
+	if err := fn(sq); err != nil {
+		return err
+	}
+	return s.PutScheduledQuery(sq)
+}
+
+// TouchScheduledQueryDelivery records the outcome of a scheduled query
+// execution: the consumed schedule boundary (the internal
+// deduplication marker, only ever advancing), the execution clock
+// (surfaced as lastTriggeredTime, the timestamp the query was last
+// executed), and the execution status. It never advances
+// LastUpdatedTime — an execution is not an update.
+func (s *Store) TouchScheduledQueryDelivery(id string, boundary, executedAt int64, status string) error {
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
+	sq, err := s.GetScheduledQuery(id)
+	if err != nil {
+		return err
+	}
+	if boundary > sq.LastExecutedBoundary {
+		sq.LastExecutedBoundary = boundary
+	}
+	sq.LastTriggeredTime = executedAt
+	sq.LastExecutionStatus = status
+	return s.Put(s.scheduledQueryKey(sq.Id), sq)
+}
+
 func (s *Store) DeleteScheduledQuery(id string) error {
 	key := s.scheduledQueryKey(id)
+	// The lock closes the resurrection window: a delivery touch or a
+	// mutation that read the record before the delete must not write it
+	// back afterwards.
+	scheduledQueryRecordWriteMu.Lock()
+	defer scheduledQueryRecordWriteMu.Unlock()
 	if !s.Exists(key) {
 		return ErrResourceNotFound
 	}

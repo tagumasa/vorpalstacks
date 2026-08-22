@@ -51,7 +51,10 @@ func validateSecretArn(arn string) error {
 }
 
 // validateSQL enforces the AWS-spec sql constraints.
-// AWS docs: "Minimum length of 0. Maximum length of 65536."
+// AWS docs: "Minimum length of 0. Maximum length of 65536." — expressed as
+// "Maximum length of 64 KB" in the parameter description, so the ceiling is
+// a byte size (the Smithy SqlStatement @length(max 65536) trait on the
+// string shape carries the same value).
 func validateSQL(sqlStr string) error {
 	return validateLength("sql", sqlStr, 0, sqlMaxLen, true)
 }

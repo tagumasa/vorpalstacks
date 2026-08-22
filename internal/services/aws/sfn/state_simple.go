@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -154,34 +155,56 @@ func (e *Executor) executeWait(ctx context.Context, execCtx *ExecutionContext, s
 	var waitUntil time.Time
 
 	if state.Timestamp != "" {
-		if targetTime, err := time.Parse(time.RFC3339, state.Timestamp); err == nil {
-			waitUntil = targetTime
+		targetTime, ok := parseWaitTimestamp(state.Timestamp)
+		if !ok {
+			return "", "", newJSONPathEvalError("Timestamp", fmt.Errorf("value %q does not conform to the RFC3339 profile of ISO 8601", state.Timestamp))
 		}
+		waitUntil = targetTime
 	}
 
 	if state.TimestampPath != "" {
 		var inputData map[string]interface{}
-		if err := json.Unmarshal([]byte(processedInput), &inputData); err == nil {
-			if val, ok := getJSONPathValueRaw(inputData, state.TimestampPath); ok {
-				if tsStr, ok := val.(string); ok {
-					if targetTime, err := time.Parse(time.RFC3339, tsStr); err == nil {
-						waitUntil = targetTime
-					}
-				}
-			}
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", newJSONPathEvalError("TimestampPath", fmt.Errorf("input is not a JSON object"))
 		}
+		val, ok := getJSONPathValueRaw(inputData, state.TimestampPath)
+		if !ok {
+			return "", "", newJSONPathEvalError("TimestampPath", fmt.Errorf("path %s does not select a value", state.TimestampPath))
+		}
+		tsStr, ok := val.(string)
+		if !ok {
+			return "", "", newJSONPathEvalError("TimestampPath", fmt.Errorf("path %s selected a non-string value", state.TimestampPath))
+		}
+		targetTime, ok := parseWaitTimestamp(tsStr)
+		if !ok {
+			return "", "", newJSONPathEvalError("TimestampPath", fmt.Errorf("value %q does not conform to the RFC3339 profile of ISO 8601", tsStr))
+		}
+		waitUntil = targetTime
 	}
 
 	if state.SecondsPath != "" {
 		var inputData map[string]interface{}
-		if err := json.Unmarshal([]byte(processedInput), &inputData); err == nil {
-			if val, ok := getJSONPathValueRaw(inputData, state.SecondsPath); ok {
-				if numVal, ok := toFloat64(val); ok {
-					waitSeconds = int32(numVal)
-				}
-			}
+		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
+			return "", "", newJSONPathEvalError("SecondsPath", fmt.Errorf("input is not a JSON object"))
 		}
+		val, ok := getJSONPathValueRaw(inputData, state.SecondsPath)
+		if !ok {
+			return "", "", newJSONPathEvalError("SecondsPath", fmt.Errorf("path %s does not select a value", state.SecondsPath))
+		}
+		numVal, ok := toFloat64(val)
+		if !ok || numVal != math.Trunc(numVal) || numVal < 0 || numVal > sfnstore.MaxWaitSeconds {
+			return "", "", newJSONPathEvalError("SecondsPath", fmt.Errorf("path %s selected %v, not an integer value from 0 to %d", state.SecondsPath, val, sfnstore.MaxWaitSeconds))
+		}
+		waitSeconds = int32(numVal)
 	}
+
+	// A negative literal reaches here only through definitions persisted
+	// before creation-time validation existed.
+	if waitSeconds < 0 {
+		return "", "", newJSONPathEvalError("Seconds", fmt.Errorf("value %d is not an integer value from 0 to %d", waitSeconds, sfnstore.MaxWaitSeconds))
+	}
+	// AWS truncates wait timestamps to whole seconds.
+	waitUntil = waitUntil.Truncate(time.Second)
 
 	eventId := execCtx.nextEventId()
 	e.logHistoryEvent(ctx, execCtx.Execution, &sfnstore.ExecutionHistoryEvent{
@@ -237,6 +260,24 @@ func (e *Executor) executeWait(ctx context.Context, execCtx *ExecutionContext, s
 	return output, state.Next, nil
 }
 
+// waitTimestampStringFromResult normalises a JSONata expression result
+// to a timestamp string: a direct string is used as-is, any other value
+// must marshal and decode as a JSON string.
+func waitTimestampStringFromResult(result interface{}) (string, bool) {
+	if s, ok := result.(string); ok {
+		return s, true
+	}
+	b, err := json.Marshal(result)
+	if err != nil {
+		return "", false
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return "", false
+	}
+	return s, true
+}
+
 func (e *Executor) executeWaitJSONata(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.WaitState) (string, string, error) {
 	var inputData interface{}
 	if execCtx.Input != "" {
@@ -268,19 +309,67 @@ func (e *Executor) executeWaitJSONata(ctx context.Context, execCtx *ExecutionCon
 		execCtx.PendingAssign = evaluated
 	}
 
-	var waitSeconds int32 = state.GetSeconds()
-	if s, ok := state.Seconds.(string); ok && IsExpression(s) {
-		vars := buildVarsMap(statesVar, execCtx.VariableScope)
-		result, err := EvaluateJSONata(ctx, UnwrapExpression(s), nil, vars)
-		if err != nil {
-			return "", "", e.newQueryEvalError(ctx, execCtx, "Seconds", err.Error())
+	// A JSONata Wait specifies exactly one of Seconds or Timestamp. A
+	// Timestamp expression must evaluate to a string conforming to the
+	// same RFC3339 profile as the JSONPath literal; both wait values are
+	// held to the integer range 0..MaxWaitSeconds at run time.
+	var waitSeconds int32
+	var waitUntil time.Time
+
+	if state.Timestamp != "" {
+		value := state.Timestamp
+		if IsExpression(value) {
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			result, err := EvaluateJSONata(ctx, UnwrapExpression(value), nil, vars)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Timestamp", err.Error())
+			}
+			s, ok := waitTimestampStringFromResult(result)
+			if !ok {
+				return "", "", newRuntimeValueError("Timestamp", "expression result is not a timestamp string")
+			}
+			value = s
 		}
-		if f, ok := toFloat64(result); ok {
+		targetTime, ok := parseWaitTimestamp(value)
+		if !ok {
+			return "", "", newRuntimeValueError("Timestamp", fmt.Sprintf("value %q does not conform to the RFC3339 profile of ISO 8601", value))
+		}
+		// AWS truncates wait timestamps to whole seconds.
+		waitUntil = targetTime.Truncate(time.Second)
+	} else if state.Seconds != nil {
+		secondsLiteral, isExpression := state.Seconds.(string)
+		if isExpression && IsExpression(secondsLiteral) {
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			result, err := EvaluateJSONata(ctx, UnwrapExpression(secondsLiteral), nil, vars)
+			if err != nil {
+				return "", "", e.newQueryEvalError(ctx, execCtx, "Seconds", err.Error())
+			}
+			f, ok := toFloat64(result)
+			if !ok || f != math.Trunc(f) || f < 0 || f > sfnstore.MaxWaitSeconds {
+				return "", "", newRuntimeValueError("Seconds", fmt.Sprintf("expression result %v is not an integer value from 0 to %d", result, sfnstore.MaxWaitSeconds))
+			}
+			waitSeconds = int32(f)
+		} else {
+			f, ok := toFloat64(state.Seconds)
+			if !ok || f != math.Trunc(f) || f < 0 || f > sfnstore.MaxWaitSeconds {
+				return "", "", newRuntimeValueError("Seconds", fmt.Sprintf("value %v is not an integer value from 0 to %d", state.Seconds, sfnstore.MaxWaitSeconds))
+			}
 			waitSeconds = int32(f)
 		}
 	}
 
-	if waitSeconds > 0 {
+	if !waitUntil.IsZero() {
+		now := time.Now().UTC()
+		if waitUntil.After(now) {
+			timer := time.NewTimer(waitUntil.Sub(now))
+			select {
+			case <-timer.C:
+			case <-ctx.Done():
+				timer.Stop()
+				return "", "", ctx.Err()
+			}
+		}
+	} else if waitSeconds > 0 {
 		timer := time.NewTimer(time.Duration(waitSeconds) * time.Second)
 		select {
 		case <-timer.C:

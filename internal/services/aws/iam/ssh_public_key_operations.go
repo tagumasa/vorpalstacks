@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -22,7 +23,9 @@ func (s *IAMService) UploadSSHPublicKey(ctx context.Context, reqCtx *request.Req
 	if sshPublicKeyBody == "" {
 		return nil, NewValidationError("SSHPublicKeyBody")
 	}
-	if len(sshPublicKeyBody) > maxSSHPublicKeyLength {
+	// publicKeyMaterialType carries a Latin-1 pattern, so lengths count
+	// Unicode characters.
+	if utf8.RuneCountInString(sshPublicKeyBody) > maxSSHPublicKeyLength {
 		return nil, NewInvalidInputError("SSHPublicKeyBody", fmt.Sprintf("must be 1 to %d characters", maxSSHPublicKeyLength))
 	}
 

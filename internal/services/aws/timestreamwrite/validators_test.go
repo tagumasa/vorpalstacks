@@ -113,6 +113,7 @@ func TestValidateS3ObjectKeyPrefix(t *testing.T) {
 		{"928 chars valid (Smithy upper bound)", patternValid(928), true},
 		{"929 chars rejected", patternValid(929), false},
 		{"space rejected by pattern", "pre fix/", false},
+		{"backslash rejected by pattern", "pre\\fix", false},
 		{"empty rejected", "", false},
 	}
 	for _, tc := range cases {
@@ -132,6 +133,7 @@ func TestValidateS3ObjectKey(t *testing.T) {
 		{"a", false}, // pattern requires at least 2 chars
 		{"path/to/file.csv", true},
 		{"file name.csv", false},            // space not in pattern
+		{"a\\b.csv", false},                 // backslash not in the model pattern
 		{"", false},                         // below min length 1
 		{string(make([]byte, 1025)), false}, // above max length 1024
 	}
@@ -139,5 +141,29 @@ func TestValidateS3ObjectKey(t *testing.T) {
 		if got := validateS3ObjectKey(tc.key); got != tc.want {
 			t.Errorf("validateS3ObjectKey(%q) = %v, want %v", tc.key, got, tc.want)
 		}
+	}
+}
+
+// TestValidateKmsKeyIdAndClientTokenUnicodeLengths pins that the
+// S3Configuration KmsKeyId shape (StringValue2048) @length(1,2048) and the
+// ClientToken parameter are counted in Unicode characters; neither shape
+// carries a pattern.
+func TestValidateKmsKeyIdAndClientTokenUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	if !validateKmsKeyId(strings.Repeat(cjk, 2048)) {
+		t.Error("2048-character CJK KmsKeyId rejected")
+	}
+	if validateKmsKeyId(strings.Repeat(cjk, 2049)) {
+		t.Error("2049-character CJK KmsKeyId accepted")
+	}
+	if validateKmsKeyId("") {
+		t.Error("empty KmsKeyId accepted")
+	}
+	if !validateClientToken(strings.Repeat(cjk, 64)) {
+		t.Error("64-character CJK client token rejected")
+	}
+	if validateClientToken(strings.Repeat(cjk, 65)) {
+		t.Error("65-character CJK client token accepted")
 	}
 }

@@ -3,6 +3,7 @@ package timestreamwrite
 import (
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -43,9 +44,10 @@ func isValidTimestreamName(name string) bool {
 }
 
 // validateKmsKeyId checks that KmsKeyId is within Smithy StringValue2048 bounds
-// (1-2048) and, when it looks like an ARN, validates the ARN format.
+// (1-2048, counted in Unicode characters — the shape carries no pattern) and,
+// when it looks like an ARN, validates the ARN format.
 func validateKmsKeyId(kmsKeyId string) bool {
-	if len(kmsKeyId) < 1 || len(kmsKeyId) > 2048 {
+	if n := utf8.RuneCountInString(kmsKeyId); n < 1 || n > 2048 {
 		return false
 	}
 	if strings.HasPrefix(kmsKeyId, "arn:") {
@@ -54,8 +56,11 @@ func validateKmsKeyId(kmsKeyId string) bool {
 	return true
 }
 
+// validateClientToken enforces ClientRequestToken @length(1,64) counted in
+// Unicode characters (the shape carries no pattern).
 func validateClientToken(token string) bool {
-	return len(token) >= 1 && len(token) <= 64
+	n := utf8.RuneCountInString(token)
+	return n >= 1 && n <= 64
 }
 
 func validateS3BucketName(bucket string) bool {
@@ -66,10 +71,11 @@ func validateS3BucketName(bucket string) bool {
 }
 
 // s3ObjectKeyPattern is shared by the S3ObjectKey and S3ObjectKeyPrefix
-// Smithy shapes, which carry the identical pattern trait
-// ^[a-zA-Z0-9|!\-_*'\(\\)]([a-zA-Z0-9]|[!\-_*'\(\\)/.])+$; they differ
-// only in their length bounds (1-1024 vs 1-928).
-var s3ObjectKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'\(\\)]([a-zA-Z0-9]|[!\-_*'\(\\)/.])+$`)
+// Smithy shapes, which carry the identical pattern trait (model text:
+// "^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$"); they differ only
+// in their length bounds (1-1024 vs 1-928). The classes contain unescaped
+// parentheses only — a backslash is NOT part of the accepted charset.
+var s3ObjectKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9|!\-_*'()]([a-zA-Z0-9]|[!\-_*'()/.])+$`)
 
 // maxS3ObjectKeyLen and maxS3ObjectKeyPrefixLen bound the two S3 key
 // shapes per the Smithy length traits (S3ObjectKey 1-1024,

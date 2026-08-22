@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
@@ -545,8 +546,9 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	if webIdentityToken == "" {
 		return nil, ErrInvalidWebIdentityToken
 	}
-	// clientTokenType Smithy trait: length 4-20000.
-	if len(webIdentityToken) < 4 || len(webIdentityToken) > 20000 {
+	// clientTokenType Smithy trait: length 4-20000 counted in Unicode
+	// characters (no pattern).
+	if n := utf8.RuneCountInString(webIdentityToken); n < 4 || n > 20000 {
 		return nil, ErrInvalidWebIdentityToken
 	}
 
@@ -621,24 +623,10 @@ func (s *STSService) AssumeRoleWithWebIdentity(ctx context.Context, reqCtx *requ
 	// fall back to legacy defaults when the token is not a parseable JWT
 	// (e.g. the SDK test dummy 'dummy-web-identity-token').
 	subject := extractJWTClaim(webIdentityToken, "sub")
-	// webIdentitySubjectType (Smithy) requires length 6-255.  When the
-	// JWT sub claim is absent and roleSessionName is used as a fallback,
-	// ensure it meets the minimum length by left-padding with
-	// underscores.  roleSessionName itself is validated at 2-64 chars
-	// (roleSessionNameType), so we only need to handle the 2-5 char
-	// range.
 	if subject == "" {
 		subject = roleSessionName
 	}
-	for len(subject) < 6 {
-		subject = "_" + subject
-	}
-	// Enforce the webIdentitySubjectType maximum (255 chars).  A JWT sub
-	// claim exceeding this length is truncated to stay within the Smithy
-	// constraint.
-	if len(subject) > 255 {
-		subject = subject[:255]
-	}
+	subject = fitWebIdentitySubject(subject)
 	audience := extractJWTClaim(webIdentityToken, "aud")
 	if audience == "" {
 		audience = "sts.amazonaws.com"
@@ -702,9 +690,10 @@ func (s *STSService) AssumeRoot(ctx context.Context, reqCtx *request.RequestCont
 	if targetPrincipal == "" {
 		return nil, ErrTargetPrincipalRequired
 	}
-	// TargetPrincipalType Smithy trait: length 12-2048. Accepts account ID
-	// (12 digits) or principal ARN.
-	if len(targetPrincipal) < 12 || len(targetPrincipal) > 2048 {
+	// TargetPrincipalType Smithy trait: length 12-2048 counted in Unicode
+	// characters (no pattern). Accepts account ID (12 digits) or principal
+	// ARN.
+	if n := utf8.RuneCountInString(targetPrincipal); n < 12 || n > 2048 {
 		return nil, ErrInvalidTargetPrincipal
 	}
 

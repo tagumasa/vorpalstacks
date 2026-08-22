@@ -4,6 +4,7 @@ import (
 	"context"
 	crand "crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -43,10 +44,17 @@ type Engine struct {
 	// guarantee is maintained.
 	retryStores sync.Map // region → *schedulerstore.RetryStore
 
-	// lastFired tracks the last execution time per schedule (key: groupName/name)
+	// lastFired tracks the last execution per schedule (key: groupName/name)
 	// to prevent duplicate firing when the ticker polls multiple times within
-	// the same execution window.
-	lastFired sync.Map // string → time.Time
+	// the same execution window. The entry carries the expression so a
+	// schedule whose expression changed (UpdateSchedule also re-lifecycles
+	// a completed one-time schedule) starts a new firing lifecycle instead
+	// of inheriting the previous expression's suppression. Slots are
+	// released once the delivered boundary is persisted on the schedule
+	// record (LastFiredAt), which — unlike this map — survives restarts;
+	// the map only guards deliveries in flight in this process and the
+	// window where persisting the boundary failed.
+	lastFired sync.Map // string → lastFiredEntry
 
 	running   bool
 	runningMu sync.RWMutex
@@ -170,6 +178,14 @@ func (e *Engine) ensureDefaultGroups() {
 	}
 }
 
+// lastFiredEntry records the most recent fire of a schedule: when it
+// fired and under which expression. The expression scopes the dedup —
+// only boundaries of the same expression are suppressed.
+type lastFiredEntry struct {
+	firedAt time.Time
+	expr    string
+}
+
 // lastFiredKey builds the deduplication key used by the lastFired map.
 // Region is part of the key so that schedules sharing the same
 // group/name across regions do not interfere with each other's
@@ -212,15 +228,16 @@ func (e *Engine) checkSchedules() {
 		for _, schedule := range schedules {
 			schedule.Region = region
 			allActiveKeys[lastFiredKey(region, schedule.GroupName, schedule.Name)] = true
-			if e.shouldExecute(schedule, now) {
+			boundary, due := e.dueBoundary(schedule, now)
+			if due {
 				// Provisionally reserve the dedup slot so a concurrent tick
 				// does not double-fire while the goroutine is still in flight.
 				// If executeSchedule fails or panics the goroutine releases
 				// the reservation so the next tick can retry the schedule.
 				dedupKey := lastFiredKey(region, schedule.GroupName, schedule.Name)
-				e.lastFired.Store(dedupKey, now)
+				e.lastFired.Store(dedupKey, lastFiredEntry{firedAt: now, expr: schedule.ScheduleExpression})
 				e.wg.Add(1)
-				go func(sch *schedulerstore.Schedule, key string) {
+				go func(sch *schedulerstore.Schedule, key string, st *schedulerstore.SchedulerStore, fired time.Time) {
 					defer e.wg.Done()
 					defer func() {
 						if r := recover(); r != nil {
@@ -236,9 +253,24 @@ func (e *Engine) checkSchedules() {
 						if err := e.executeSchedule(e.ctx, sch); err != nil {
 							// Release the dedup slot so the next tick can retry the schedule.
 							e.lastFired.Delete(key)
+							return
 						}
+						// Persist the delivered boundary on the schedule record
+						// so a restart cannot deliver it twice. The in-memory
+						// slot then becomes redundant (the persisted marker
+						// suppresses the boundary) and is released for the
+						// next boundary.
+						if err := st.TouchScheduleLastFired(e.ctx, sch.GroupName, sch.Name, fired); err != nil && !errors.Is(err, schedulerstore.ErrScheduleNotFound) {
+							// A schedule deleted by its own completion has
+							// nothing left to guard; any other failure keeps
+							// the in-flight slot, which is then the only
+							// duplicate guard until a restart.
+							logs.Warn("Failed to persist the delivered boundary of schedule", logs.String("name", sch.Name), logs.Err(err))
+							return
+						}
+						e.lastFired.Delete(key)
 					}
-				}(schedule, dedupKey)
+				}(schedule, dedupKey, store, boundary)
 			}
 		}
 	}
@@ -272,7 +304,10 @@ func resolveScheduleLocation(schedule *schedulerstore.Schedule) *time.Location {
 	return time.UTC
 }
 
-func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time) bool {
+// dueBoundary returns the schedule boundary this evaluation should deliver,
+// if any. It is the decision core of the sweep; shouldExecute wraps it for
+// callers that only need the boolean.
+func (e *Engine) dueBoundary(schedule *schedulerstore.Schedule, now time.Time) (time.Time, bool) {
 	// Convert "now" to the schedule's evaluation timezone so that rate/cron/at
 	// expressions are evaluated in the timezone the user configured.
 	loc := resolveScheduleLocation(schedule)
@@ -284,29 +319,36 @@ func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time)
 	isAtExpression := strings.HasPrefix(schedule.ScheduleExpression, "at(")
 	if !isAtExpression {
 		if schedule.StartDate != nil && nowLocal.Before(schedule.StartDate.In(loc)) {
-			return false
+			return time.Time{}, false
 		}
 		if schedule.EndDate != nil && nowLocal.After(schedule.EndDate.In(loc)) {
-			return false
+			return time.Time{}, false
 		}
 	}
 
-	nextTime, err := scheduleexpr.NextExecutionTime(schedule.ScheduleExpression, nowLocal, schedule.CreationDate, schedule.StartDate)
-	if err != nil {
-		logs.Debug("Failed to calculate next execution time",
-			logs.String("schedule", schedule.Name),
-			logs.String("error", err.Error()))
-		return false
+	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(schedule.ScheduleExpression, nowLocal, schedule.CreationDate, schedule.StartDate)
+	if !elapsed {
+		return time.Time{}, false
+	}
+
+	// The persisted delivered-boundary marker is the source of truth across
+	// restarts (the in-memory map dies with the process): an occurrence
+	// already recorded as delivered must not fire again.
+	if schedule.LastFiredAt != nil && !schedule.LastFiredAt.Before(boundary) {
+		return time.Time{}, false
 	}
 
 	// Prevent duplicate firing: skip if already executed for this interval.
 	// Key includes region so multi-region schedules do not share state.
-	// shouldExecute is a pure predicate; the caller reserves the dedup slot
-	// after this returns true.
+	// dueBoundary is a pure predicate; the caller reserves the dedup slot
+	// after this returns the boundary.
 	key := lastFiredKey(schedule.Region, schedule.GroupName, schedule.Name)
 	if last, ok := e.lastFired.Load(key); ok {
-		if lastTime, ok := last.(time.Time); ok && !lastTime.Before(nextTime) {
-			return false
+		// Only a fire under the same expression suppresses: an expression
+		// change starts a new firing lifecycle (a completed one-time
+		// schedule updated to a new past at() must fire again).
+		if entry, ok := last.(lastFiredEntry); ok && entry.expr == schedule.ScheduleExpression && !entry.firedAt.Before(boundary) {
+			return time.Time{}, false
 		}
 	}
 
@@ -316,20 +358,27 @@ func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time)
 			maxWindow = *schedule.FlexibleTimeWindow.MaximumWindowInMinutes
 		}
 		// AWS flexible time window starts at the scheduled time and extends
-		// forward for MaximumWindowInMinutes. Execution must NOT occur before
-		// the scheduled time.
-		windowEnd := nextTime.Add(time.Duration(maxWindow) * time.Minute)
-		if !nowLocal.Before(nextTime) && nowLocal.Before(windowEnd) {
-			return true
+		// forward for MaximumWindowInMinutes. Execution never occurs before
+		// the scheduled time (the resolved boundary already lies at or
+		// before now); an occurrence whose window has closed is skipped,
+		// not resurrected.
+		windowEnd := boundary.Add(time.Duration(maxWindow) * time.Minute)
+		if !nowLocal.Before(windowEnd) {
+			return time.Time{}, false
 		}
-		return false
 	}
 
-	diff := nowLocal.Sub(nextTime)
-	if diff >= 0 && diff < time.Minute {
-		return true
-	}
-	return false
+	// The boundary lies at or before now: fire on this evaluation. A late
+	// evaluation (ticker gap longer than the boundary interval) still fires
+	// the pending boundary once instead of silently skipping it, and the
+	// dedup checks above cap each boundary at one fire.
+	return boundary, true
+}
+
+// shouldExecute reports whether the schedule should fire at this evaluation.
+func (e *Engine) shouldExecute(schedule *schedulerstore.Schedule, now time.Time) bool {
+	_, ok := e.dueBoundary(schedule, now)
+	return ok
 }
 
 func scheduleInput(target *schedulerstore.Target, scheduleName string) string {
@@ -394,11 +443,13 @@ func (e *Engine) executeSchedule(ctx context.Context, schedule *schedulerstore.S
 		e.deliverWithRetry(ctx, schedule, target)
 	}
 
-	// NOTE: ActionAfterCompletion=DELETE is handled at delivery lifecycle
-	// completion (success or retry exhaustion) by maybeAutoDelete, not here.
-	// AWS deletes the schedule "shortly after its last target invocation",
-	// i.e. after the retry policy terminates. Deleting here would orphan
-	// retry records and break at-least-once delivery semantics.
+	// NOTE: post-execution actions are handled at delivery lifecycle
+	// completion (success or retry exhaustion) by maybeActionAfterCompletion,
+	// not here: ActionAfterCompletion=DELETE deletes the schedule (AWS
+	// deletes it "shortly after its last target invocation", i.e. after the
+	// retry policy terminates — deleting here would orphan retry records and
+	// break at-least-once delivery semantics), and a one-time schedule with
+	// no action is marked completed so it never fires again.
 
 	return nil
 }
@@ -451,6 +502,47 @@ func (e *Engine) maybeAutoDelete(ctx context.Context, schedule *schedulerstore.S
 	}
 	if err := store.DeleteSchedule(ctx, schedule.GroupName, schedule.Name); err != nil {
 		logs.Debug("Failed to auto-delete schedule after completion",
+			logs.String("schedule", schedule.Name),
+			logs.String("group", schedule.GroupName),
+			logs.String("error", err.Error()))
+	}
+}
+
+// maybeActionAfterCompletion applies the post-execution action at the
+// delivery lifecycle completion points (success or retry exhaustion):
+// ActionAfterCompletion=DELETE removes the schedule via maybeAutoDelete,
+// and a one-time schedule with no action is marked completed so it never
+// fires again.
+func (e *Engine) maybeActionAfterCompletion(ctx context.Context, schedule *schedulerstore.Schedule) {
+	if schedule == nil {
+		return
+	}
+	if schedule.ActionAfterCompletion == schedulerstore.ActionAfterCompletionDelete {
+		e.maybeAutoDelete(ctx, schedule)
+		return
+	}
+	e.maybeCompleteOnetime(ctx, schedule)
+}
+
+// maybeCompleteOnetime ends the firing lifecycle of a one-time at()
+// schedule. The AWS ScheduleState enum has no COMPLETED value, so the
+// wire state is preserved and completion is recorded as an internal
+// persisted marker — without it the in-memory dedup map would forget the
+// fire on the next server restart and run the one-time schedule again.
+func (e *Engine) maybeCompleteOnetime(ctx context.Context, schedule *schedulerstore.Schedule) {
+	if !strings.HasPrefix(schedule.ScheduleExpression, "at(") {
+		return
+	}
+	store := e.getStoreForSchedule(schedule)
+	if store == nil {
+		logs.Warn("No store available to complete one-time schedule",
+			logs.String("schedule", schedule.Name),
+			logs.String("group", schedule.GroupName),
+			logs.String("region", schedule.Region))
+		return
+	}
+	if err := store.CompleteSchedule(ctx, schedule.GroupName, schedule.Name); err != nil {
+		logs.Debug("Failed to mark one-time schedule completed",
 			logs.String("schedule", schedule.Name),
 			logs.String("group", schedule.GroupName),
 			logs.String("error", err.Error()))
@@ -567,20 +659,23 @@ func computeRetryBackoff(attemptCount int) time.Duration {
 // The RetryRecord survives server restarts so that at-least-once delivery
 // is maintained.
 //
-// ActionAfterCompletion=DELETE is handled at lifecycle completion:
-//   - success on attempt 1 or 2 → maybeAutoDelete here
-//   - maxRetries=0 DLQ route    → maybeAutoDelete here
-//   - retry exhausted / event age exceeded → maybeAutoDelete in processRetryRecord
+// Post-execution actions are handled at lifecycle completion via
+// maybeActionAfterCompletion:
+//   - success on attempt 1 or 2 → applied here
+//   - maxRetries=0 DLQ route    → applied here
+//   - retry exhausted / event age exceeded → applied in processRetryRecord
 //
-// See the AWS blog: "the schedule is deleted shortly after its last target
-// invocation" — NOT at fire time.
+// For ActionAfterCompletion=DELETE see the AWS blog: "the schedule is
+// deleted shortly after its last target invocation" — NOT at fire time;
+// for a one-time schedule with no action the completion marker ends its
+// firing lifecycle.
 func (e *Engine) deliverWithRetry(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) {
 	maxRetries, _ := retryDefaults(target)
 
 	// First attempt (immediate).
 	err := e.deliverToTarget(ctx, schedule, target)
 	if err == nil {
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 
@@ -593,7 +688,7 @@ func (e *Engine) deliverWithRetry(ctx context.Context, schedule *schedulerstore.
 			logs.Err(err))
 		e.routeToDLQ(ctx, schedule, target, "delivery failed (MaximumRetryAttempts=0)")
 		// Retry lifecycle is now complete (no retries configured).
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 
@@ -605,7 +700,7 @@ func (e *Engine) deliverWithRetry(ctx context.Context, schedule *schedulerstore.
 	// Immediate retry (attempt 2).
 	err = e.deliverToTarget(ctx, schedule, target)
 	if err == nil {
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 
@@ -746,7 +841,7 @@ func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.Retr
 		e.routeToDLQ(ctx, schedule, &target, "maximum event age exceeded")
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 
@@ -762,7 +857,7 @@ func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.Retr
 		e.routeToDLQ(ctx, schedule, &target, "retry policy exhausted")
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 
@@ -775,7 +870,7 @@ func (e *Engine) processRetryRecord(ctx context.Context, rs *schedulerstore.Retr
 			logs.Int("attempts", record.AttemptCount+1))
 		_ = rs.DeleteRetryRecord(record.ID, record.NextAttemptAt)
 		// Retry lifecycle complete — auto-delete if configured.
-		e.maybeAutoDelete(ctx, schedule)
+		e.maybeActionAfterCompletion(ctx, schedule)
 		return
 	}
 

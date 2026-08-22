@@ -461,9 +461,10 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 			})
 		}()
 
-		// The scheduled query worker runs on a one-minute tick, so the first
-		// delivery arrives within that window.
-		deadline := time.Now().Add(100 * time.Second)
+		// The AWS rate() contract runs the first query one full interval
+		// after creation, so the first delivery arrives just past the
+		// one-minute mark.
+		deadline := time.Now().Add(150 * time.Second)
 		var table *cloudwatchlogs.GetLookupTableOutput
 		for time.Now().Before(deadline) {
 			getResp, err := client.GetLookupTable(tc.ctx, &cloudwatchlogs.GetLookupTableInput{

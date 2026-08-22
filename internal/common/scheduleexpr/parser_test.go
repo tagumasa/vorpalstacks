@@ -117,6 +117,17 @@ func TestNextExecutionTimeRateAndAt(t *testing.T) {
 		t.Errorf("rate(5 minutes) with StartDate = %s, want %s", got, want)
 	}
 
+	// Period zero: before the first interval elapses the anchor itself is
+	// the boundary; callers gate the first fire on it being strictly
+	// after the creation time.
+	got, err = NextExecutionTime("rate(5 minutes)", creation.Add(2*time.Minute), creation, nil)
+	if err != nil {
+		t.Fatalf("rate period zero error: %v", err)
+	}
+	if !got.Equal(creation) {
+		t.Errorf("rate(5 minutes) period zero = %s, want %s", got, creation)
+	}
+
 	got, err = NextExecutionTime("at(2027-06-01T08:30:00)", now, creation, nil)
 	if err != nil {
 		t.Fatalf("at error: %v", err)
