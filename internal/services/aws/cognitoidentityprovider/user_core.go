@@ -45,8 +45,8 @@ func (s *CognitoService) listUsersCore(region string, in ListUsersInput) (*ListU
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	var filterFunc func(*cognitostore.User) bool

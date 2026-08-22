@@ -47,21 +47,21 @@ func (s *CognitoService) handleUserSrpAuth(reqCtx *request.RequestContext, req *
 	}
 
 	if !user.Enabled {
-		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 	if user.UserStatus != "CONFIRMED" {
 		// Users in FORCE_CHANGE_PASSWORD or other transitional states cannot
 		// complete SRP; they must first complete the NEW_PASSWORD_REQUIRED
 		// challenge via the non-SRP admin flow.
-		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrUserNotConfirmed
 	}
 	if user.SrpVerifier == "" || user.SrpSalt == "" {
 		// The user was created before SRP support was added. They must reset
 		// their password via ForgotPassword/AdminSetUserPassword to obtain a
 		// verifier before USER_SRP_AUTH will succeed.
-		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPool.ID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 
@@ -87,7 +87,7 @@ func (s *CognitoService) handleUserSrpAuth(reqCtx *request.RequestContext, req *
 		Username:      user.Username,
 		ChallengeName: "PASSWORD_VERIFIER",
 		CreatedAt:     time.Now().UTC(),
-		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+		ExpiresAt:     time.Now().UTC().Add(srpChallengeSessionTTL),
 		SrpA:          srpAHex,
 		SrpB:          B.Text(16),
 		SrpPrivateB:   b.Text(16),
@@ -97,7 +97,7 @@ func (s *CognitoService) handleUserSrpAuth(reqCtx *request.RequestContext, req *
 		return nil, ErrInternalError
 	}
 
-	s.recordAuthEvent(reqCtx, userPool.ID, user.ID, "SignIn", "InProgress")
+	s.recordAuthEvent(reqCtx, userPool.ID, user.ID, username, clientID, "SignIn", "InProgress")
 
 	return map[string]interface{}{
 		"ChallengeName": "PASSWORD_VERIFIER",
@@ -225,12 +225,12 @@ func (s *CognitoService) respondToPasswordVerifier(reqCtx *request.RequestContex
 	expectedSig := VerifyClaim(K, poolName, user.Username, secretBlock, timestamp)
 
 	if subtle.ConstantTimeCompare(clientSig, expectedSig) != 1 {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 
 	if !user.Enabled {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 
@@ -238,7 +238,7 @@ func (s *CognitoService) respondToPasswordVerifier(reqCtx *request.RequestContex
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
-	s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Pass")
+	s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Pass")
 
 	return map[string]interface{}{
 		"AuthenticationResult": map[string]interface{}{

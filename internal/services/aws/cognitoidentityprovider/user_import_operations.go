@@ -42,7 +42,7 @@ func (s *CognitoService) CreateUserImportJob(ctx context.Context, reqCtx *reques
 		return nil, ErrInternalError
 	}
 	jobID := "import-" + id
-	preSignedUrl := "https://cognito-import." + s.region + ".amazonaws.com/" + userPoolID + "/" + jobID
+	preSignedUrl := fmt.Sprintf("https://%s/%s/%s", cognitoImportHost(s.region), userPoolID, jobID)
 
 	job := &cognitostore.UserImportJob{
 		JobID:                 jobID,

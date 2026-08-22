@@ -934,6 +934,25 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string
 	return result.StatusCode, result.Payload, nil
 }
 
+// InvokeForTrigger invokes a Lambda function for synchronous trigger
+// consumers that must distinguish a failed function execution
+// (LambdaInvocation.FunctionError) from an invocation-transport failure
+// (the returned error).
+func (s *LambdaService) InvokeForTrigger(ctx context.Context, functionRef string, payload []byte) (eventbus.LambdaInvocation, error) {
+	result, err := s.InvokeForEventSource(ctx, functionRef, payload)
+	if err != nil {
+		return eventbus.LambdaInvocation{}, err
+	}
+	if result == nil {
+		return eventbus.LambdaInvocation{}, fmt.Errorf("invocation returned nil result")
+	}
+	return eventbus.LambdaInvocation{
+		StatusCode:    result.StatusCode,
+		Payload:       result.Payload,
+		FunctionError: result.FunctionError,
+	}, nil
+}
+
 // InvokeForEventSource invokes a Lambda function and returns the complete
 // invocation result. Event source consumers must observe FunctionError: the
 // invoke transport succeeds (HTTP 200) even when the function itself fails,

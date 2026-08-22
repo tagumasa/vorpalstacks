@@ -12,6 +12,7 @@ import (
 	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ===================== WebAuthn =====================
@@ -52,7 +53,7 @@ func (s *CognitoService) StartWebAuthnRegistration(ctx context.Context, reqCtx *
 		Username:      user.Username,
 		ChallengeName: "WEB_AUTHN_REGISTRATION",
 		CreatedAt:     time.Now().UTC(),
-		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+		ExpiresAt:     time.Now().UTC().Add(srpChallengeSessionTTL),
 		ChallengeData: challengeB64,
 	}
 	if err := store.SaveChallengeSession(challengeSession); err != nil {
@@ -224,12 +225,12 @@ func (s *CognitoService) ListWebAuthnCredentials(ctx context.Context, reqCtx *re
 		return nil, ErrUserNotFound
 	}
 
-	maxResults := 20
+	maxResults := maxWebAuthnCredentialListLimit
 	if mr := request.GetIntParam(req.Parameters, "MaxResults"); mr > 0 {
 		maxResults = mr
 	}
 	// Smithy WebAuthnCredentialsQueryLimitType: range {min: 0, max: 20}
-	if maxResults > 20 {
+	if maxResults > maxWebAuthnCredentialListLimit {
 		return nil, ErrInvalidParameter
 	}
 
@@ -765,7 +766,9 @@ func (s *CognitoService) CreateUserPoolReplica(ctx context.Context, reqCtx *requ
 		return nil, ErrResourceNotFound
 	}
 
-	replicaArn := "arn:aws:cognito-idp:" + s.region + ":" + s.accountID + ":userpool/" + pool.ID
+	// The replica lives in the region named by the request, so its pool ARN
+	// carries that region, not the service's constructor region.
+	replicaArn := svcarn.NewARNBuilder(s.accountID, regionName).Build("cognito-idp", "userpool/"+pool.ID)
 	replica := &cognitostore.UserPoolReplica{
 		UserPoolID:   userPoolID,
 		RegionName:   regionName,
@@ -807,7 +810,7 @@ func (s *CognitoService) ListUserPoolReplicas(ctx context.Context, reqCtx *reque
 	}
 
 	result, err := store.ListUserPoolReplicasPaginated(userPoolID, storecommon.ListOptions{
-		MaxItems: 60,
+		MaxItems: listLimitMax,
 		Marker:   req.GetParam("NextToken"),
 	})
 	if err != nil {

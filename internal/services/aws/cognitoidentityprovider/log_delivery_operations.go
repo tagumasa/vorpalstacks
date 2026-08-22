@@ -2,6 +2,9 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"encoding/json"
+	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -148,7 +151,9 @@ func (s *CognitoService) publishToCloudWatchLogs(logGroupArn, userPoolID, messag
 			},
 		},
 	}
-	_ = s.bus.Publish(context.Background(), evt)
+	if err := s.bus.Publish(context.Background(), evt); err != nil {
+		log.Printf("warning: failed to deliver auth event to CloudWatch Logs for pool %s: %v", userPoolID, err)
+	}
 }
 
 func extractLogGroupName(arn string) string {
@@ -163,11 +168,69 @@ func extractLogGroupName(arn string) string {
 	return ""
 }
 
+// formatAuthEventLogMessage renders an authentication event in the JSON
+// envelope AWS exports for userAuthEvents log delivery: an outer record with
+// the event timestamp, source, and level, and a message object whose members
+// mirror the AdminListUserAuthEvents event (fields this platform does not
+// populate are logged empty, matching the documented "some fields might be
+// logged with null values" contract).
+// authEventCreationDateLayout renders the creationDate member the way AWS
+// renders it in the exported user activity log (the Java Date.toString
+// style, e.g. "Wed Jul 17 17:25:55 UTC 2024").
+const authEventCreationDateLayout = "Mon Jan 2 15:04:05 MST 2006"
+
 func formatAuthEventLogMessage(event *cognitostore.AuthEvent) string {
-	return event.CreationDate.Format(time.RFC3339) + " " +
-		event.EventType + " " + event.EventResponse +
-		" eventId=" + event.EventID +
-		" userId=" + event.UserID
+	record := map[string]interface{}{
+		"eventTimestamp": strconv.FormatInt(event.CreationDate.UnixMilli(), 10),
+		"eventSource":    "USER_ACTIVITY",
+		"logLevel":       "INFO",
+		"message": map[string]interface{}{
+			"version":                       "1",
+			"eventId":                       event.EventID,
+			"eventType":                     event.EventType,
+			"userSub":                       event.UserID,
+			"userName":                      event.UserName,
+			"userPoolId":                    event.UserPoolID,
+			"clientId":                      event.ClientID,
+			"creationDate":                  event.CreationDate.Format(authEventCreationDateLayout),
+			"eventResponse":                 event.EventResponse,
+			"riskLevel":                     event.RiskLevel,
+			"riskDecision":                  event.RiskDecision,
+			"challenges":                    formatAuthEventChallenges(event),
+			"deviceName":                    event.ContextDeviceName,
+			"ipAddress":                     event.ContextIPAddress,
+			"requestId":                     "",
+			"idpName":                       "",
+			"compromisedCredentialDetected": strconv.FormatBool(event.CompromisedFlag),
+			"city":                          "",
+			"country":                       "",
+			"eventFeedbackValue":            "",
+			"eventFeedbackDate":             "",
+			"eventFeedbackProvider":         "",
+			"hasContextData":                strconv.FormatBool(event.ContextIPAddress != "" || event.ContextDeviceName != ""),
+		},
+		"logSourceId": map[string]interface{}{
+			"userPoolId": event.UserPoolID,
+		},
+	}
+	buf, err := json.Marshal(record)
+	if err != nil {
+		return ""
+	}
+	return string(buf)
+}
+
+// formatAuthEventChallenges renders the recorded challenge responses in the
+// exported-log shape (name/response pairs).
+func formatAuthEventChallenges(event *cognitostore.AuthEvent) []map[string]string {
+	challenges := make([]map[string]string, 0, len(event.ChallengeResponses))
+	for _, cr := range event.ChallengeResponses {
+		challenges = append(challenges, map[string]string{
+			"challengeName":     cr.ChallengeName,
+			"challengeResponse": cr.ChallengeResponse,
+		})
+	}
+	return challenges
 }
 
 func formatLogDeliveryConfiguration(cfg *cognitostore.LogDeliveryConfiguration) map[string]interface{} {

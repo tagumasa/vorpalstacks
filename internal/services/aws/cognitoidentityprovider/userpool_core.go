@@ -86,8 +86,8 @@ func (s *CognitoService) listUserPoolsCore(region string, in ListUserPoolsInput)
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListUserPoolsPaginated(storecommon.ListOptions{
@@ -126,14 +126,9 @@ func (s *CognitoService) createUserPoolCore(in CreateUserPoolInput) (*cognitosto
 		return nil, ErrInvalidParameter
 	}
 
-	// AliasAttributes and UsernameAttributes are mutually exclusive.
-	if len(in.Pool.AliasAttributes) > 0 && len(in.Pool.UsernameAttributes) > 0 {
-		return nil, ErrInvalidParameter
-	}
-
-	// Validate PasswordHistorySize per Smithy PasswordHistorySizeType [0, 24].
-	if in.Pool.PasswordPolicy != nil && !validatePasswordHistorySize(in.Pool.PasswordPolicy.PasswordHistorySize) {
-		return nil, ErrInvalidParameter
+	// Single model-derived validation entry point shared by every transport.
+	if err := validateUserPoolConfig(in.Pool); err != nil {
+		return nil, err
 	}
 
 	store, err := s.GetStoreForRegion(in.Region)

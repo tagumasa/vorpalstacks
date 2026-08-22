@@ -12,6 +12,13 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
+// Neutral values from the Smithy EventRiskType enums, used for every
+// recorded authentication event in the absence of a risk engine.
+const (
+	riskDecisionNoRisk = "NoRisk"
+	riskLevelLow       = "Low"
+)
+
 // AdminListUserAuthEvents lists authentication events for a user.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminListUserAuthEvents.html
 func (s *CognitoService) AdminListUserAuthEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -143,7 +150,12 @@ func (s *CognitoService) UpdateAuthEventFeedback(ctx context.Context, reqCtx *re
 
 // recordAuthEvent creates and stores an authentication event. Called from
 // authenticateUser and other auth flows.
-func (s *CognitoService) recordAuthEvent(reqCtx *request.RequestContext, userPoolID, userID, eventType, eventResponse string) {
+//
+// Every event is recorded with the neutral risk assessment values from the
+// Smithy EventRiskType enums (RiskDecision NoRisk, RiskLevel Low): this
+// platform does not run a threat-protection risk engine, so no event is ever
+// escalated to a riskier decision or level.
+func (s *CognitoService) recordAuthEvent(reqCtx *request.RequestContext, userPoolID, userID, username, clientID, eventType, eventResponse string) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return
@@ -151,13 +163,15 @@ func (s *CognitoService) recordAuthEvent(reqCtx *request.RequestContext, userPoo
 
 	event := &cognitostore.AuthEvent{
 		EventID:       generateEventID(),
+		UserName:      username,
+		ClientID:      clientID,
 		UserPoolID:    userPoolID,
 		UserID:        userID,
 		EventType:     eventType,
 		CreationDate:  time.Now().UTC(),
 		EventResponse: eventResponse,
-		RiskDecision:  "NoRisk",
-		RiskLevel:     "Low",
+		RiskDecision:  riskDecisionNoRisk,
+		RiskLevel:     riskLevelLow,
 	}
 
 	if err := store.CreateAuthEvent(event); err != nil {

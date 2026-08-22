@@ -446,6 +446,15 @@ func NewGroup(userPoolID, name string) *Group {
 	}
 }
 
+// Default token validity periods for a user pool client, applied when the
+// client (or its validity members) are absent: access and ID tokens last
+// sixty minutes, refresh tokens thirty days.
+const (
+	DefaultAccessTokenValidityMinutes = 60
+	DefaultIDTokenValidityMinutes     = 60
+	DefaultRefreshTokenValidityDays   = 30
+)
+
 // NewUserPoolClient creates a new Cognito user pool client for the specified user pool.
 func NewUserPoolClient(userPoolID, clientName string) *UserPoolClient {
 	now := time.Now().UTC()
@@ -454,9 +463,9 @@ func NewUserPoolClient(userPoolID, clientName string) *UserPoolClient {
 		UserPoolID:           userPoolID,
 		ClientName:           clientName,
 		ClientSecret:         generateClientSecret(),
-		RefreshTokenValidity: 30,
+		RefreshTokenValidity: DefaultRefreshTokenValidityDays,
 		AccessTokenValidity:  60,
-		IDTokenValidity:      60,
+		IDTokenValidity:      DefaultIDTokenValidityMinutes,
 		ExplicitAuthFlows:    []string{"ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"},
 		CreationDate:         now,
 		LastModifiedDate:     now,
@@ -632,6 +641,8 @@ type Device struct {
 // AuthEvent represents a user authentication event recorded by Cognito.
 type AuthEvent struct {
 	EventID            string                  `json:"eventId"`
+	UserName           string                  `json:"userName,omitempty"`
+	ClientID           string                  `json:"clientId,omitempty"`
 	UserPoolID         string                  `json:"userPoolId"`
 	UserID             string                  `json:"userId"`
 	EventType          string                  `json:"eventType"`

@@ -9,7 +9,6 @@ import (
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -18,6 +17,10 @@ import (
 )
 
 const totpSecretSize = 20
+
+// totpCodeModulus is 10^totpCodeDigits, used to truncate the HMAC to the
+// fixed six-digit code length.
+const totpCodeModulus uint32 = 1_000_000
 
 func generateTOTPSecret() (string, error) {
 	secret := make([]byte, totpSecretSize)
@@ -40,7 +43,7 @@ func totpCodeAt(key []byte, step int64) string {
 	off := hash[len(hash)-1] & 0x0f
 	truncated := binary.BigEndian.Uint32(hash[off : off+4])
 	truncated &= 0x7fffffff
-	return fmt.Sprintf("%06d", truncated%uint32(math.Pow10(6)))
+	return fmt.Sprintf("%0*d", totpCodeDigits, truncated%totpCodeModulus)
 }
 
 // validateTOTPCode reports whether code matches the TOTP generated from
@@ -53,8 +56,8 @@ func validateTOTPCode(secret, code string) bool {
 		return false
 	}
 
-	step := time.Now().Unix() / 30
-	for offset := int64(-1); offset <= 1; offset++ {
+	step := time.Now().Unix() / totpTimeStepSec
+	for offset := int64(-totpAllowedDrift); offset <= totpAllowedDrift; offset++ {
 		if subtle.ConstantTimeCompare([]byte(totpCodeAt(key, step+offset)), []byte(code)) == 1 {
 			return true
 		}
@@ -112,7 +115,7 @@ func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *req
 
 	secret, err := generateTOTPSecret()
 	if err != nil {
-		return nil, ErrInvalidParameter
+		return nil, ErrInternalError
 	}
 	user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{
 		Enabled:      false,

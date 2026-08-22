@@ -126,7 +126,7 @@ func (s *CognitoService) respondToNewPasswordChallenge(reqCtx *request.RequestCo
 		return nil, ErrUserNotFound
 	}
 	if !user.Enabled {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 

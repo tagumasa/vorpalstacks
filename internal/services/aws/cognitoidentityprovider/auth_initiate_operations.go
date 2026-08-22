@@ -170,7 +170,7 @@ func (s *CognitoService) handleCustomAuth(ctx context.Context, reqCtx *request.R
 		Username:      username,
 		ChallengeName: challengeName,
 		CreatedAt:     time.Now().UTC(),
-		ExpiresAt:     time.Now().UTC().Add(3 * time.Minute),
+		ExpiresAt:     time.Now().UTC().Add(challengeSessionTTL),
 	}
 	if err := store.SaveChallengeSession(challengeSession); err != nil {
 		return nil, ErrInternalError
@@ -208,7 +208,7 @@ func (s *CognitoService) handleUserAuth(ctx context.Context, reqCtx *request.Req
 	// fails uniformly with NotAuthorized for unknown users. The contents
 	// of AvailableChallenges reflect the user's enrolled factors, which is
 	// the documented behaviour of choice-based authentication.
-	available := make([]string, 0, 5)
+	var available []string
 	available = append(available, "PASSWORD")
 	if userPool.WebAuthnConfiguration != nil && userPool.WebAuthnConfiguration.RelyingPartyId != "" {
 		available = append(available, "WEB_AUTHN")
@@ -234,7 +234,7 @@ func (s *CognitoService) handleUserAuth(ctx context.Context, reqCtx *request.Req
 		Username:      username,
 		ChallengeName: "SELECT_CHALLENGE",
 		CreatedAt:     time.Now().UTC(),
-		ExpiresAt:     time.Now().UTC().Add(3 * time.Minute),
+		ExpiresAt:     time.Now().UTC().Add(challengeSessionTTL),
 	}
 	if err := store.SaveChallengeSession(challengeSession); err != nil {
 		return nil, ErrInternalError
@@ -265,7 +265,15 @@ func (s *CognitoService) authenticateUser(
 	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
 		migrationResult, migrationErr := invokeUserMigration(ctx, s, userPoolID, username, clientID, password, lambdaConfig, validationData, clientMetadata)
-		if migrationErr != nil || migrationResult == nil {
+		// A Lambda function that raises an error rejects the migration and
+		// fails the sign-in as a wrong password; an invocation-transport
+		// failure is an infrastructure error. A missing trigger means no
+		// migration path exists and authentication fails as an incorrect
+		// password.
+		if migrationErr != nil {
+			return nil, classifyMigrationFailure(migrationErr)
+		}
+		if migrationResult == nil {
 			return nil, ErrIncorrectPassword
 		}
 
@@ -301,7 +309,7 @@ func (s *CognitoService) authenticateUser(
 	}
 
 	if !user.Enabled {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrNotAuthorized
 	}
 
@@ -311,23 +319,23 @@ func (s *CognitoService) authenticateUser(
 	// alone would let anyone reset a FORCE_CHANGE_PASSWORD or RESET_REQUIRED
 	// account by username only.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrIncorrectPassword
 	}
 
 	if user.UserStatus == "FORCE_CHANGE_PASSWORD" || user.UserStatus == "RESET_REQUIRED" {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "InProgress")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "InProgress")
 		return s.newPasswordChallenge(reqCtx, userPoolID, clientID, user)
 	}
 
 	if user.UserStatus != "CONFIRMED" {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, ErrUserNotConfirmed
 	}
 
 	attrs := userAttributesMap(user)
 	if err := invokePreAuthentication(ctx, s, userPoolID, username, clientID, lambdaConfig, attrs, clientMetadata); err != nil {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Fail")
+		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
 		return nil, fmt.Errorf("PreAuthentication trigger failed: %w", err)
 	}
 
@@ -339,7 +347,7 @@ func (s *CognitoService) authenticateUser(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokens: %w", err)
 	}
-	s.recordAuthEvent(reqCtx, userPoolID, user.ID, "SignIn", "Pass")
+	s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Pass")
 	return authResult(accessToken, idToken, refreshToken, expiresIn), nil
 }
 
@@ -358,7 +366,7 @@ func (s *CognitoService) newPasswordChallenge(reqCtx *request.RequestContext, us
 		Username:      user.Username,
 		ChallengeName: "NEW_PASSWORD_REQUIRED",
 		CreatedAt:     time.Now().UTC(),
-		ExpiresAt:     time.Now().UTC().Add(5 * time.Minute),
+		ExpiresAt:     time.Now().UTC().Add(srpChallengeSessionTTL),
 	}
 	if err := store.SaveChallengeSession(challengeSession); err != nil {
 		return nil, ErrInternalError

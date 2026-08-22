@@ -33,13 +33,21 @@ func (s *CognitoService) AddUserPoolClientSecret(ctx context.Context, reqCtx *re
 	}
 
 	now := time.Now().UTC()
+	secretID, err := generateSecretID()
+	if err != nil {
+		return nil, ErrInternalError
+	}
 	descriptor := cognitostore.ClientSecretDescriptor{
-		ClientSecretID:         "secret-" + generateSecretID(),
+		ClientSecretID:         "secret-" + secretID,
 		ClientSecretValue:      secretValue,
 		ClientSecretCreateDate: now,
 	}
 	if descriptor.ClientSecretValue == "" {
-		descriptor.ClientSecretValue = generateSecretValue()
+		generated, gerr := generateSecretValue()
+		if gerr != nil {
+			return nil, ErrInternalError
+		}
+		descriptor.ClientSecretValue = generated
 	}
 
 	client.ClientSecrets = append(client.ClientSecrets, descriptor)
@@ -157,14 +165,18 @@ func formatClientSecretDescriptor(d cognitostore.ClientSecretDescriptor) map[str
 	}
 }
 
-func generateSecretID() string {
+func generateSecretID() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-func generateSecretValue() string {
+func generateSecretValue() (string, error) {
 	b := make([]byte, 40)
-	rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }

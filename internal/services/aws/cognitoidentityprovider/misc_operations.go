@@ -358,7 +358,7 @@ func (s *CognitoService) GetProvisionedLimit(ctx context.Context, reqCtx *reques
 	limit := provisionedLimits[key]
 	provisionedLimitsMu.RUnlock()
 	if limit == 0 {
-		limit = 400000
+		limit = defaultProvisionedLimit
 	}
 
 	return map[string]interface{}{

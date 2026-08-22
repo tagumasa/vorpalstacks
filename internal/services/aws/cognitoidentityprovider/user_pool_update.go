@@ -62,7 +62,9 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 	if schemaAttrs := parseSchemaAttributes(req); len(schemaAttrs) > 0 {
 		pool.SchemaAttributes = schemaAttrs
 	}
-	if v := parsePasswordPolicyWithBase(req, pool.PasswordPolicy); v != nil {
+	if v, err := parsePasswordPolicyWithBase(req, pool.PasswordPolicy); err != nil {
+		return err
+	} else if v != nil {
 		pool.PasswordPolicy = v
 	}
 	if v := parseLambdaConfigWithBase(req, pool.LambdaConfig); v != nil {
@@ -126,5 +128,8 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		}
 		pool.UserPoolTier = v
 	}
-	return nil
+
+	// Re-run the whole-pool validation so updates are held to the same
+	// model-derived constraints as creation.
+	return validateUserPoolConfig(pool)
 }

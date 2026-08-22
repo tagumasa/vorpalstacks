@@ -387,3 +387,137 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 
 	return results
 }
+
+// cognitoPoolValidationNegativeTests pins the model-derived range and
+// pattern validation on the pool and client creation paths.
+func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, client *cognitoidentityprovider.Client) []TestResult {
+	var results []TestResult
+
+	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidPasswordPolicyMinimumLength", func() error {
+		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("invalid-policy-%d", time.Now().UnixNano())),
+			Policies: &types.UserPoolPolicyType{
+				PasswordPolicy: &types.PasswordPolicyType{
+					MinimumLength: aws.Int32(5),
+				},
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidTemporaryPasswordValidityDays", func() error {
+		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("invalid-days-%d", time.Now().UnixNano())),
+			Policies: &types.UserPoolPolicyType{
+				PasswordPolicy: &types.PasswordPolicyType{
+					MinimumLength:                 aws.Int32(8),
+					TemporaryPasswordValidityDays: 366,
+				},
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidLambdaConfigArn", func() error {
+		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("invalid-lambda-%d", time.Now().UnixNano())),
+			LambdaConfig: &types.LambdaConfigType{
+				PreSignUp: aws.String("not-an-arn"),
+			},
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// Standard attribute names are part of the schema name domain: AWS
+	// documents modifying standard attribute properties through the
+	// CreateUserPool Schema parameter, including the 21-character
+	// phone_number_verified. Only custom attribute names carry the
+	// 1-20 character constraint.
+	results = append(results, r.RunTest("cognito", "CreateUserPool_StandardSchemaAttributes", func() error {
+		schemaPoolName := fmt.Sprintf("standard-schema-%d", time.Now().UnixNano())
+		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(schemaPoolName),
+			Schema: []types.SchemaAttributeType{
+				{
+					Name:              aws.String("email"),
+					AttributeDataType: types.AttributeDataTypeString,
+					Required:          aws.Bool(true),
+				},
+				{
+					Name:              aws.String("phone_number_verified"),
+					AttributeDataType: types.AttributeDataTypeBoolean,
+					Mutable:           aws.Bool(true),
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("standard schema attributes rejected: %v", err)
+		}
+		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: createResp.UserPool.Id,
+		})
+
+		_, err = client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(schemaPoolName + "-custom"),
+			Schema: []types.SchemaAttributeType{
+				{
+					Name:              aws.String("customnameexceedinglimit"),
+					AttributeDataType: types.AttributeDataTypeString,
+				},
+			},
+		})
+		return AssertErrorContains(err, "InvalidParameterException")
+	}))
+
+	poolName := fmt.Sprintf("client-validation-%d", time.Now().UnixNano())
+	var poolID string
+	results = append(results, r.RunTest("cognito", "CreateUserPoolClient_InvalidClientName", func() error {
+		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(poolName),
+		})
+		if err != nil {
+			return fmt.Errorf("create pool: %v", err)
+		}
+		poolID = *createResp.UserPool.Id
+
+		_, err = client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
+			UserPoolId: aws.String(poolID),
+			ClientName: aws.String("bad:name"),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+	if poolID != "" {
+		results = append(results, r.RunTest("cognito", "UpdateUserPool_InvalidTemporaryPasswordValidityDays", func() error {
+			_, err := client.UpdateUserPool(ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+				UserPoolId: aws.String(poolID),
+				Policies: &types.UserPoolPolicyType{
+					PasswordPolicy: &types.PasswordPolicyType{
+						MinimumLength:                 aws.Int32(8),
+						TemporaryPasswordValidityDays: 366,
+					},
+				},
+			})
+			if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+				return err
+			}
+			_, _ = client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+				UserPoolId: aws.String(poolID),
+			})
+			return nil
+		}))
+	}
+
+	return results
+}

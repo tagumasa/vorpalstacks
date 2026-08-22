@@ -78,7 +78,7 @@ func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestCont
 			return nil, ErrInternalError
 		}
 		user.ConfirmationCode = code
-		user.ConfirmationCodeExpiry = time.Now().UTC().Add(24 * time.Hour)
+		user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
 	}
 
 	if err := store.CreateUser(user); err != nil {

@@ -82,6 +82,7 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 	}
 
 	results = append(results, r.cognitoEdgeCaseTests(ctx, client)...)
+	results = append(results, r.cognitoPoolValidationNegativeTests(ctx, client)...)
 
 	return results
 }

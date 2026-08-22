@@ -150,7 +150,7 @@ func (s *CognitoService) GetUserAttributeVerificationCode(ctx context.Context, r
 	}
 	user.AttributeVerificationCodes[attributeName] = &cognitostore.AttributeVerification{
 		Code:   code,
-		Expiry: time.Now().Add(24 * time.Hour),
+		Expiry: time.Now().UTC().Add(verificationCodeTTL),
 	}
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -254,7 +254,7 @@ func (s *CognitoService) ResendConfirmationCode(ctx context.Context, reqCtx *req
 		return nil, ErrInternalError
 	}
 	user.ConfirmationCode = code
-	user.ConfirmationCodeExpiry = time.Now().Add(24 * time.Hour)
+	user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}

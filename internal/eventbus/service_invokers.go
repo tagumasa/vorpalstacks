@@ -11,7 +11,19 @@ import (
 // package.
 type LambdaInvoker interface {
 	InvokeForGateway(ctx context.Context, functionName string, payload []byte) (statusCode int64, responsePayload []byte, err error)
+	InvokeForTrigger(ctx context.Context, functionName string, payload []byte) (LambdaInvocation, error)
 	GetFunctionARN(ctx context.Context, functionName string) (string, error)
+}
+
+// LambdaInvocation carries the outcome of a direct Lambda invocation for
+// synchronous trigger consumers. A failed function execution is reported
+// through FunctionError (the invoke transport succeeds even when the
+// function itself raises an error), while an invocation-transport failure
+// is reported through err.
+type LambdaInvocation struct {
+	StatusCode    int64
+	Payload       []byte
+	FunctionError string
 }
 
 // SQSInvoker provides SQS operations for cross-service consumers.

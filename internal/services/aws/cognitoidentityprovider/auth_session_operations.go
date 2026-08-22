@@ -254,7 +254,7 @@ func (s *CognitoService) ForgotPassword(ctx context.Context, reqCtx *request.Req
 		return nil, ErrInternalError
 	}
 	user.ConfirmationCode = confirmationCode
-	user.ConfirmationCodeExpiry = time.Now().Add(24 * time.Hour)
+	user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}

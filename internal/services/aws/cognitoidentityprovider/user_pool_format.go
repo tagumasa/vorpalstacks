@@ -20,7 +20,7 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		"DeletionProtection": pool.DeletionProtection,
 	}
 	if pool.DeletionProtection == "" {
-		result["DeletionProtection"] = "INACTIVE"
+		result["DeletionProtection"] = deletionProtectionInactive
 	}
 
 	if pool.AliasAttributes != nil {

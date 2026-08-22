@@ -60,6 +60,16 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 	user.UserStatus = "FORCE_CHANGE_PASSWORD"
 
 	tempPassword := req.GetParam("TemporaryPassword")
+	if tempPassword == "" && req.GetParam("MessageAction") != "SUPPRESS" {
+		// AWS generates a temporary password when none is supplied and the
+		// invitation is not suppressed; the CustomMessage trigger below then
+		// receives it in the code parameter.
+		generated, gerr := generateTemporaryPassword(userPool.PasswordPolicy)
+		if gerr != nil {
+			return nil, ErrInternalError
+		}
+		tempPassword = generated
+	}
 	if tempPassword != "" {
 		if err := validatePassword(tempPassword, userPool.PasswordPolicy); err != nil {
 			return nil, ErrPasswordPolicyViolation
@@ -105,7 +115,11 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
 		}
 	} else {
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, "####", attrs, parseClientMetadata(req)); err != nil {
+		code := "####"
+		if tempPassword != "" {
+			code = tempPassword
+		}
+		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, code, attrs, parseClientMetadata(req)); err != nil {
 			logs.Warn("CustomMessage trigger failed", logs.Err(err))
 		}
 	}

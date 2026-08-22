@@ -96,7 +96,7 @@ func generateAuthCode() (string, error) {
 func (s *CognitoService) startAuthCodeCleanup() {
 	s.authCodeCleanupOnce.Do(func() {
 		go func() {
-			ticker := time.NewTicker(1 * time.Minute)
+			ticker := time.NewTicker(hostedUIAuthCodeSweepEvery)
 			defer ticker.Stop()
 			for range ticker.C {
 				now := time.Now()
@@ -200,7 +200,7 @@ func (s *CognitoService) handleLoginSubmit(w http.ResponseWriter, r *http.Reques
 		poolID:   poolID,
 		userID:   user.ID,
 		clientID: clientID,
-		expires:  time.Now().Add(5 * time.Minute),
+		expires:  time.Now().Add(hostedUIAuthCodeTTL),
 	})
 	s.startAuthCodeCleanup()
 
@@ -245,7 +245,6 @@ func (s *CognitoService) resolveDomainToPoolID(domain string) (string, error) {
 }
 
 func (s *CognitoService) renderLoginPage(w http.ResponseWriter, r *http.Request, poolID string) {
-	_ = r.URL.Query().Get("client_id")
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	responseType := r.URL.Query().Get("response_type")
 
@@ -280,8 +279,6 @@ button:hover { background: #1274A3; }
 }
 
 func (s *CognitoService) renderSignUpPage(w http.ResponseWriter, r *http.Request, poolID string) {
-	_ = r.URL.Query().Get("client_id")
-
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `<!DOCTYPE html>

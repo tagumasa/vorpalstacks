@@ -7,7 +7,7 @@ import (
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
-func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.PasswordPolicy) *cognitostore.PasswordPolicy {
+func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.PasswordPolicy) (*cognitostore.PasswordPolicy, error) {
 	hasPolicy := false
 	policy := &cognitostore.PasswordPolicy{}
 	if base != nil {
@@ -31,6 +31,15 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 					policy.MinimumLength = int(v)
 				case string:
 					policy.MinimumLength = parseInt(v)
+				}
+				// The member was explicitly present, so zero is a rejected
+				// out-of-range value, not the "unset" marker the
+				// stored-policy check tolerates.
+				if err := validateExplicitMinimumLength(policy.MinimumLength); err != nil {
+					return nil, err
+				}
+				if err := validatePasswordPolicyRanges(policy); err != nil {
+					return nil, err
 				}
 				hasPolicy = true
 			}
@@ -75,6 +84,9 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 				case string:
 					policy.TemporaryPasswordValidityDays = parseInt(v)
 				}
+				if err := validatePasswordPolicyRanges(policy); err != nil {
+					return nil, err
+				}
 				hasPolicy = true
 			}
 			if val, ok := ppMap["PasswordHistorySize"]; ok {
@@ -86,8 +98,8 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 				case string:
 					policy.PasswordHistorySize = parseInt(v)
 				}
-				if !validatePasswordHistorySize(policy.PasswordHistorySize) {
-					policy.PasswordHistorySize = 0
+				if err := validatePasswordPolicyRanges(policy); err != nil {
+					return nil, err
 				}
 				hasPolicy = true
 			}
@@ -96,6 +108,15 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 
 	if val := req.GetParam("Policies.PasswordPolicy.MinimumLength"); val != "" {
 		policy.MinimumLength = parseInt(val)
+		// The member was explicitly present, so zero is a rejected
+		// out-of-range value, not the "unset" marker the stored-policy
+		// check tolerates.
+		if err := validateExplicitMinimumLength(policy.MinimumLength); err != nil {
+			return nil, err
+		}
+		if err := validatePasswordPolicyRanges(policy); err != nil {
+			return nil, err
+		}
 		hasPolicy = true
 	}
 	if val := req.GetParam("Policies.PasswordPolicy.RequireUppercase"); val != "" {
@@ -115,25 +136,24 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 		hasPolicy = true
 	}
 	if val := req.GetParam("Policies.PasswordPolicy.PasswordHistorySize"); val != "" {
-		phs := parseInt(val)
-		if validatePasswordHistorySize(phs) {
-			policy.PasswordHistorySize = phs
+		policy.PasswordHistorySize = parseInt(val)
+		if err := validatePasswordPolicyRanges(policy); err != nil {
+			return nil, err
 		}
 		hasPolicy = true
 	}
 	if val := req.GetParam("Policies.PasswordPolicy.TemporaryPasswordValidityDays"); val != "" {
 		policy.TemporaryPasswordValidityDays = parseInt(val)
+		if err := validatePasswordPolicyRanges(policy); err != nil {
+			return nil, err
+		}
 		hasPolicy = true
 	}
 
 	if !hasPolicy {
-		return nil
+		return nil, nil
 	}
-	return policy
-}
-
-func parsePasswordPolicy(req *request.ParsedRequest) *cognitostore.PasswordPolicy {
-	return parsePasswordPolicyWithBase(req, nil)
+	return policy, nil
 }
 
 func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {

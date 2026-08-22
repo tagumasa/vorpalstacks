@@ -49,8 +49,8 @@ func (s *CognitoService) listUserPoolClientsCore(region string, in ListUserPoolC
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListUserPoolClientsPaginated(in.UserPoolID, storecommon.ListOptions{
@@ -120,6 +120,9 @@ func (s *CognitoService) createUserPoolClientCore(region string, client *cognito
 	if client.UserPoolID == "" || client.ClientName == "" {
 		return nil, ErrInvalidParameter
 	}
+	if !validateClientNamePattern(client.ClientName) {
+		return nil, ErrInvalidParameter
+	}
 
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
@@ -141,6 +144,10 @@ func (s *CognitoService) createUserPoolClientCore(region string, client *cognito
 
 // updateUserPoolClientCore persists updates to a user pool client.
 func (s *CognitoService) updateUserPoolClientCore(region string, client *cognitostore.UserPoolClient) error {
+	if !validateClientNamePattern(client.ClientName) {
+		return ErrInvalidParameter
+	}
+
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
 		return err

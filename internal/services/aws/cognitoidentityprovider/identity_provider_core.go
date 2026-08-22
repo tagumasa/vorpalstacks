@@ -118,8 +118,8 @@ func (s *CognitoService) listIdentityProvidersCore(region string, in ListIdentit
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListIdentityProvidersPaginated(in.UserPoolID, storecommon.ListOptions{

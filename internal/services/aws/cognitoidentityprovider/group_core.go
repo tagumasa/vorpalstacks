@@ -144,8 +144,8 @@ func (s *CognitoService) listGroupsCore(region string, in ListGroupsInput) (*Lis
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListGroupsPaginated(in.UserPoolID, storecommon.ListOptions{
@@ -234,8 +234,8 @@ func (s *CognitoService) listUsersInGroupCore(region string, in ListUsersInGroup
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListUsersInGroupPaginated(in.UserPoolID, in.GroupName, storecommon.ListOptions{
@@ -264,8 +264,8 @@ func (s *CognitoService) adminListGroupsForUserCore(region string, in AdminListG
 	}
 
 	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > 60 {
-		maxResults = 60
+	if maxResults <= 0 || maxResults > listLimitMax {
+		maxResults = listLimitMax
 	}
 
 	result, err := store.ListGroupsForUserPaginated(in.UserPoolID, in.Username, storecommon.ListOptions{

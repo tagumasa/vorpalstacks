@@ -11,6 +11,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
+	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 // validators.go — input validation functions derived from Smithy model traits.
@@ -119,12 +120,6 @@ func validateChallengeName(name string) bool {
 // Smithy IdentityProviderTypeType enum value.
 func validateProviderType(t string) bool {
 	return validProviderTypes[t]
-}
-
-// validatePasswordHistorySize returns true if the value is within the Smithy
-// PasswordHistorySizeType range [0, 24].
-func validatePasswordHistorySize(v int) bool {
-	return v >= 0 && v <= 24
 }
 
 // maxImageFileSize is the maximum allowed ImageFile blob size in bytes.
@@ -342,6 +337,23 @@ func validatePrecedence(v int) bool {
 	return v >= 0
 }
 
+// standardSchemaAttributeNames is the set of standard user pool attribute
+// names that may appear in the schema to modify their properties (data
+// type, mutability, requiredness). AWS documents modifying standard
+// attribute properties through the CreateUserPool Schema parameter and
+// returns the standard set — including the 21-character
+// phone_number_verified — in DescribeUserPool responses, so the custom
+// attribute name constraints do not apply to them.
+var standardSchemaAttributeNames = map[string]bool{
+	"address": true, "birthdate": true, "email": true,
+	"email_verified": true, "family_name": true, "gender": true,
+	"given_name": true, "locale": true, "middle_name": true,
+	"name": true, "nickname": true, "phone_number": true,
+	"phone_number_verified": true, "picture": true,
+	"preferred_username": true, "profile": true, "sub": true,
+	"updated_at": true, "website": true, "zoneinfo": true,
+}
+
 // customAttributeNamePattern is the Smithy CustomAttributeNameType pattern:
 // ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$
 var customAttributeNamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
@@ -402,6 +414,10 @@ var validUserPoolMfaConfigs = map[string]bool{
 }
 
 func validateUserPoolMfaConfig(v string) bool { return validUserPoolMfaConfigs[v] }
+
+// deletionProtectionInactive is the wire value of the inactive
+// DeletionProtectionLevelType enum member.
+const deletionProtectionInactive = "INACTIVE"
 
 // validDeletionProtections is the Smithy DeletionProtectionType enum.
 var validDeletionProtections = map[string]bool{
@@ -573,6 +589,163 @@ var userPoolNamePattern = regexp.MustCompile(`^[\w\s+=,.@-]+$`)
 // pattern and length constraint (1-128) for UserPoolNameType.
 func validateUserPoolNamePattern(v string) bool {
 	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+}
+
+// Password-policy range bounds from the Smithy model:
+// PasswordPolicyMinLengthType {6, 99}, TemporaryPasswordValidityDaysType
+// {0, 365}, PasswordHistorySizeType {0, 24}, and
+// AdminCreateUserUnusedAccountValidityDaysType {0, 365}.
+const (
+	MinPasswordPolicyMinimumLength   = 6
+	MaxPasswordPolicyMinimumLength   = 99
+	MaxTemporaryPasswordValidityDays = 365
+	MaxPasswordHistorySize           = 24
+	MaxUnusedAccountValidityDays     = 365
+)
+
+func validatePasswordHistorySize(v int) bool {
+	return v >= 0 && v <= MaxPasswordHistorySize
+}
+
+// validateClientNamePattern returns true if the value matches the Smithy
+// ClientNameType constraints (length 1-128, pattern ^[\w\s+=,.@-]+$, which is
+// shared with UserPoolNameType).
+func validateClientNamePattern(v string) bool {
+	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+}
+
+// arnTypePattern is the Smithy ArnType pattern.
+var arnTypePattern = regexp.MustCompile(`^arn:[\w+=/,.@-]+:[\w+=/,.@-]+:([\w+=/,.@-]*)?:[0-9]+:[\w+=/,.@-]+(:[\w+=/,.@-]+)?(:[\w+=/,.@-]+)?$`)
+
+// validateArnType returns true if the value matches the Smithy ArnType
+// constraints (length 20-2048 plus the generic ARN pattern).
+func validateArnType(v string) bool {
+	return len(v) >= 20 && len(v) <= 2048 && arnTypePattern.MatchString(v)
+}
+
+// validateExplicitMinimumLength checks the Smithy
+// PasswordPolicyMinimumLengthType range for a value explicitly supplied in
+// a request. Unlike validatePasswordPolicyRanges, zero is not treated as
+// "unset" here because the member was present.
+func validateExplicitMinimumLength(v int) error {
+	if v < MinPasswordPolicyMinimumLength || v > MaxPasswordPolicyMinimumLength {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf(
+			"MinimumLength must be between %d and %d", MinPasswordPolicyMinimumLength, MaxPasswordPolicyMinimumLength))
+	}
+	return nil
+}
+
+// validatePasswordPolicyRanges checks the Smithy range traits of the
+// password-policy members. A zero MinimumLength means the member was never
+// set (the store default is applied instead), so it is accepted here;
+// explicitly supplied values are range-checked at parse time.
+func validatePasswordPolicyRanges(p *cognitostore.PasswordPolicy) error {
+	if p == nil {
+		return nil
+	}
+	if p.MinimumLength != 0 && (p.MinimumLength < MinPasswordPolicyMinimumLength || p.MinimumLength > MaxPasswordPolicyMinimumLength) {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf(
+			"MinimumLength must be between %d and %d", MinPasswordPolicyMinimumLength, MaxPasswordPolicyMinimumLength))
+	}
+	if p.TemporaryPasswordValidityDays < 0 || p.TemporaryPasswordValidityDays > MaxTemporaryPasswordValidityDays {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf(
+			"TemporaryPasswordValidityDays must be between 0 and %d", MaxTemporaryPasswordValidityDays))
+	}
+	if !validatePasswordHistorySize(p.PasswordHistorySize) {
+		return awserrors.NewInvalidParameterException(fmt.Sprintf(
+			"PasswordHistorySize must be between 0 and %d", MaxPasswordHistorySize))
+	}
+	return nil
+}
+
+// validateUserPoolConfig performs the model-derived validation that applies to
+// a whole user pool, on both the create and the update path. It is the single
+// validation entry point shared by the HTTP handler, the admin handler, and
+// the Core functions, so that no transport bypasses it.
+func validateUserPoolConfig(pool *cognitostore.UserPool) error {
+	if pool == nil {
+		return ErrInvalidParameter
+	}
+	if !validateUserPoolNamePattern(pool.Name) {
+		return ErrInvalidParameter
+	}
+	// AliasAttributes and UsernameAttributes are mutually exclusive.
+	if len(pool.AliasAttributes) > 0 && len(pool.UsernameAttributes) > 0 {
+		return ErrInvalidParameter
+	}
+	if pool.MfaConfiguration != "" && !validateUserPoolMfaConfig(pool.MfaConfiguration) {
+		return ErrInvalidParameter
+	}
+	if pool.DeletionProtection != "" && !validateDeletionProtection(pool.DeletionProtection) {
+		return ErrInvalidParameter
+	}
+	for _, a := range pool.AutoVerifiedAttributes {
+		if !validateVerifiedAttribute(a) {
+			return ErrInvalidParameter
+		}
+	}
+	for _, a := range pool.AliasAttributes {
+		if !validateAliasAttribute(a) {
+			return ErrInvalidParameter
+		}
+	}
+	for _, a := range pool.UsernameAttributes {
+		if !validateUsernameAttribute(a) {
+			return ErrInvalidParameter
+		}
+	}
+	if err := validatePasswordPolicyRanges(pool.PasswordPolicy); err != nil {
+		return err
+	}
+	if pool.LambdaConfig != nil {
+		for _, arn := range []string{
+			pool.LambdaConfig.PreSignUp,
+			pool.LambdaConfig.CustomMessage,
+			pool.LambdaConfig.PostConfirmation,
+			pool.LambdaConfig.PreAuthentication,
+			pool.LambdaConfig.PostAuthentication,
+			pool.LambdaConfig.DefineAuthChallenge,
+			pool.LambdaConfig.CreateAuthChallenge,
+			pool.LambdaConfig.VerifyAuthChallengeResponse,
+			pool.LambdaConfig.PreTokenGeneration,
+			pool.LambdaConfig.UserMigration,
+		} {
+			if arn != "" && !validateArnType(arn) {
+				return ErrInvalidParameter
+			}
+		}
+	}
+	if pool.EmailConfiguration != nil {
+		if pool.EmailConfiguration.EmailSendingAccount != "" && !validateEmailSendingAccount(pool.EmailConfiguration.EmailSendingAccount) {
+			return ErrInvalidParameter
+		}
+		if pool.EmailConfiguration.SourceArn != "" && !validateArnType(pool.EmailConfiguration.SourceArn) {
+			return ErrInvalidParameter
+		}
+	}
+	if pool.SmsConfiguration != nil && pool.SmsConfiguration.SnsCallerArn != "" && !validateArnType(pool.SmsConfiguration.SnsCallerArn) {
+		return ErrInvalidParameter
+	}
+	if pool.AdminCreateUserConfig != nil {
+		days := pool.AdminCreateUserConfig.UnusedAccountValidityDays
+		if days < 0 || days > MaxUnusedAccountValidityDays {
+			return ErrInvalidParameter
+		}
+	}
+	for _, sa := range pool.SchemaAttributes {
+		// The schema name domain is the union of the standard attribute
+		// names and custom attribute names; the custom-attribute
+		// constraints apply only to the latter.
+		if !standardSchemaAttributeNames[sa.Name] {
+			if err := validateCustomAttributeName(sa.Name); err != nil {
+				return err
+			}
+		}
+		if sa.AttributeDataType != "" && !validateAttributeDataType(sa.AttributeDataType) {
+			return ErrInvalidParameter
+		}
+	}
+	return nil
 }
 
 // listLimitMax is the upper bound shared by the Cognito list-limit shapes

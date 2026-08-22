@@ -77,9 +77,9 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 	}
 
 	// Determine token validity from client configuration.
-	atValidityMin := 60
-	idValidityMin := 60
-	rtValidityDays := 30
+	atValidityMin := cognitostore.DefaultAccessTokenValidityMinutes
+	idValidityMin := cognitostore.DefaultIDTokenValidityMinutes
+	rtValidityDays := cognitostore.DefaultRefreshTokenValidityDays
 	if client, cerr := store.GetUserPoolClient(userPoolID, clientID); cerr == nil && client != nil {
 		if client.AccessTokenValidity > 0 {
 			atValidityMin = client.AccessTokenValidity
@@ -145,34 +145,41 @@ func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tok
 		return "", err
 	}
 
-	_, err = store.GetAccessTokenByValue(tokenString)
+	// The stored token record pins the owning pool, so the signature can be
+	// verified against that pool's key alone instead of scanning every pool.
+	record, err := store.GetAccessTokenByValue(tokenString)
 	if err != nil {
 		return "", ErrNotAuthorized
 	}
 
-	userPools, err := store.ListUserPools()
-	if err != nil || len(userPools) == 0 {
+	pool, err := store.GetUserPool(record.UserPoolID)
+	if err != nil {
 		return "", ErrNotAuthorized
 	}
 
-	for _, pool := range userPools {
-		publicKey, err := vsjwt.DecodePublicKeyFromPEM(pool.JwtPublicKey)
-		if err != nil {
-			continue
-		}
+	return validateAccessTokenSignature(pool, reqCtx.GetRegion(), tokenString)
+}
 
-		issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(reqCtx.GetRegion()), pool.ID)
-		jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
-		if err != nil {
-			continue
-		}
-		claims, err := jwtManager.ValidateToken(tokenString)
-		if err == nil && claims.TokenUse == "access" {
-			return claims.Subject, nil
-		}
+// validateAccessTokenSignature verifies an access token against a specific
+// pool's signing key and returns the subject (user ID).
+func validateAccessTokenSignature(pool *cognitostore.UserPool, region, tokenString string) (string, error) {
+	publicKey, err := vsjwt.DecodePublicKeyFromPEM(pool.JwtPublicKey)
+	if err != nil {
+		return "", ErrNotAuthorized
 	}
 
-	return "", ErrNotAuthorized
+	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(region), pool.ID)
+	jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
+	if err != nil {
+		return "", ErrNotAuthorized
+	}
+
+	claims, err := jwtManager.ValidateToken(tokenString)
+	if err != nil || claims.TokenUse != "access" {
+		return "", ErrNotAuthorized
+	}
+
+	return claims.Subject, nil
 }
 
 // ValidateTokenForPool validates a Cognito access token for a specific
@@ -195,21 +202,5 @@ func (s *CognitoService) ValidateTokenForPool(ctx context.Context, region, userP
 		return "", ErrNotAuthorized
 	}
 
-	publicKey, err := vsjwt.DecodePublicKeyFromPEM(pool.JwtPublicKey)
-	if err != nil {
-		return "", ErrNotAuthorized
-	}
-
-	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(region), pool.ID)
-	jwtManager, err := vsjwt.NewManagerWithPublicKey(publicKey, pool.JwtKeyID, issuer)
-	if err != nil {
-		return "", ErrNotAuthorized
-	}
-
-	claims, err := jwtManager.ValidateToken(accessToken)
-	if err != nil || claims.TokenUse != "access" {
-		return "", ErrNotAuthorized
-	}
-
-	return claims.Subject, nil
+	return validateAccessTokenSignature(pool, region, accessToken)
 }

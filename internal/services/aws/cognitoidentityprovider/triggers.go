@@ -3,6 +3,7 @@ package cognitoidentityprovider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -13,6 +14,11 @@ import (
 // TriggerVersion is the Cognito Lambda trigger payload version, matching
 // the AWS Cognito User Pools trigger event format (currently version 1).
 const TriggerVersion = 1
+
+// triggerCallerSdkVersion identifies the platform component that invokes the
+// trigger, occupying the awsSdkVersion field of the callerContext that AWS
+// fills with its own internal SDK version.
+const triggerCallerSdkVersion = "vorpalstacks/1.0"
 
 // PreSignUpSignUp is the trigger source constant for the PreSignUp Lambda
 // trigger fired during user self-registration.
@@ -104,7 +110,7 @@ func (s *CognitoService) handleCognitoTrigger(ctx context.Context, event *eventb
 		return eventbus.HandlerResult{StatusCode: 200}
 	}
 
-	_, payload, err := s.bus.LambdaInvoker().InvokeForGateway(ctx, event.LambdaARN, event.Payload)
+	invocation, err := s.bus.LambdaInvoker().InvokeForTrigger(ctx, event.LambdaARN, event.Payload)
 	if err != nil {
 		logs.Error("cognito trigger Lambda invocation failed",
 			logs.String("trigger_source", event.TriggerSource),
@@ -116,7 +122,35 @@ func (s *CognitoService) handleCognitoTrigger(ctx context.Context, event *eventb
 		return eventbus.HandlerResult{StatusCode: 500, Error: err}
 	}
 
-	return eventbus.HandlerResult{StatusCode: 200, Payload: payload}
+	// A raised function error still means the invoke transport succeeded;
+	// surface it distinctly so trigger consumers can classify it as a
+	// function-level outcome rather than an infrastructure failure.
+	if invocation.FunctionError != "" {
+		return eventbus.HandlerResult{StatusCode: 200, Error: &lambdaFunctionError{msg: invocation.FunctionError}}
+	}
+
+	return eventbus.HandlerResult{StatusCode: 200, Payload: invocation.Payload}
+}
+
+// lambdaFunctionError marks a trigger invocation where the Lambda function
+// itself raised an error, as opposed to an invocation-transport failure.
+type lambdaFunctionError struct {
+	msg string
+}
+
+func (e *lambdaFunctionError) Error() string { return e.msg }
+
+// classifyMigrationFailure maps a UserMigration trigger failure onto the
+// AWS contract: a Lambda function that raises an error fails the sign-in
+// with NotAuthorizedException (the documented way to reject a bad password
+// during migration), while an invocation-transport failure is an
+// infrastructure error.
+func classifyMigrationFailure(err error) error {
+	var fnErr *lambdaFunctionError
+	if errors.As(err, &fnErr) {
+		return ErrIncorrectPassword
+	}
+	return ErrInternalError
 }
 
 // invokeTrigger is the core trigger invocation function. It builds the
@@ -144,7 +178,7 @@ func (s *CognitoService) invokeTrigger(
 		"userPoolId":    userPoolID,
 		"userName":      username,
 		"callerContext": map[string]interface{}{
-			"awsSdkVersion": "aws-sdk-go-v2/1.30.0",
+			"awsSdkVersion": triggerCallerSdkVersion,
 			"clientId":      clientID,
 		},
 		"request":  requestPayload,

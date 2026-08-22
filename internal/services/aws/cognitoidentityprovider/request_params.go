@@ -18,6 +18,16 @@ func cognitoIdpHost(region string) string {
 	return "cognito-idp." + region + ".amazonaws.com"
 }
 
+// cognitoImportHost returns the hostname of the user-import CSV upload
+// endpoint, accounting for partition-specific suffixes (aws-cn uses
+// .amazonaws.com.cn).
+func cognitoImportHost(region string) string {
+	if strings.HasPrefix(region, "cn-") {
+		return "cognito-import." + region + ".amazonaws.com.cn"
+	}
+	return "cognito-import." + region + ".amazonaws.com"
+}
+
 func getBoolParam(req *request.ParsedRequest, key string) bool {
 	lowerKey := strings.ToLower(key[:1]) + key[1:]
 
