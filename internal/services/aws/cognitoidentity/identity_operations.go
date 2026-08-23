@@ -43,21 +43,11 @@ func (s *CognitoIdentityService) GetId(ctx context.Context, reqCtx *request.Requ
 	}
 
 	// For authenticated identities (Logins provided), AWS reuses the existing
-	// identity whose logins match. Only create a new identity when no match exists.
-	if len(logins) > 0 {
-		if existing, err := store.FindIdentityByLogins(poolID, logins); err == nil && existing != nil {
-			return map[string]interface{}{
-				"IdentityId": existing.ID,
-			}, nil
-		}
-	}
-
-	identity := cognitoidentitystore.NewIdentity(poolID)
-	if len(logins) > 0 {
-		identity.Logins = logins
-	}
-
-	if err := store.CreateIdentity(identity); err != nil {
+	// identity whose logins match. Only create a new identity when no match
+	// exists; the store resolves both paths under the pool's key lock so
+	// concurrent callers cannot create duplicate identities.
+	identity, err := store.GetOrCreateIdentityByLogins(poolID, logins)
+	if err != nil {
 		return nil, ErrInternalError
 	}
 
@@ -107,8 +97,7 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 			identity.Logins[k] = v
 		}
 		identity.LastModifiedDate = time.Now().UTC()
-		key := cognitoidentitystore.IdentityPoolIdentityKey(identity.IdentityPoolID, identity.ID)
-		if err := store.Identities().Put(key, identity); err != nil {
+		if err := store.PutIdentity(identity); err != nil {
 			return nil, ErrInternalError
 		}
 	}
@@ -136,7 +125,7 @@ func (s *CognitoIdentityService) GetCredentialsForIdentity(ctx context.Context, 
 		return nil, ErrInternalError
 	}
 
-	result, err := s.credentialIssuer.IssueSession(roleArn, identityID, 3600)
+	result, err := s.credentialIssuer.IssueSession(roleArn, identityID, credentialSessionDurationSeconds)
 	if err != nil {
 		return nil, ErrInternalError
 	}

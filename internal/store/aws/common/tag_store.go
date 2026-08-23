@@ -117,15 +117,52 @@ func (t *TagStore) Tag(resourceKey string, newTags map[string]string) error {
 
 	suffix := indexSeparator + resourceKey
 	for k, v := range newTags {
-		oldIdxPrefix := k + "="
-		if err := t.index.ScanPrefix(oldIdxPrefix, func(idxKey string, _ []byte) error {
-			if strings.HasSuffix(idxKey, suffix) {
-				return t.index.Delete(idxKey)
-			}
-			return nil
-		}); err != nil {
+		if err := t.deleteIndexEntriesUnlocked(k, suffix); err != nil {
 			return err
 		}
+		idxKey := k + "=" + v + indexSeparator + resourceKey
+		if err := t.index.Put(idxKey, []byte{0x01}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Replace swaps the full tag set of a resource: keys absent from the new set
+// are removed, present keys are set to the new values, and the main entry and
+// the inverted index are rewritten under one lock with a single main write.
+// Callers whose input is the desired end state use this instead of an
+// Untag/Tag pair, which needs a rollback path when the second write fails.
+func (t *TagStore) Replace(resourceKey string, tags map[string]string) error {
+	if err := t.ValidateTags(tags); err != nil {
+		return err
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	existing, err := t.listUnlocked(resourceKey)
+	if err != nil {
+		return err
+	}
+
+	if len(tags) == 0 {
+		if err := t.main.Delete(resourceKey); err != nil {
+			return err
+		}
+	} else if err := t.main.Put(resourceKey, tags); err != nil {
+		return err
+	}
+
+	suffix := indexSeparator + resourceKey
+	// Drop the index entries of the old set, then recreate the entries of the
+	// new set, so removed keys and changed values both leave no stale entries.
+	for k := range existing {
+		if err := t.deleteIndexEntriesUnlocked(k, suffix); err != nil {
+			return err
+		}
+	}
+	for k, v := range tags {
 		idxKey := k + "=" + v + indexSeparator + resourceKey
 		if err := t.index.Put(idxKey, []byte{0x01}); err != nil {
 			return err
@@ -177,17 +214,23 @@ func (t *TagStore) Untag(resourceKey string, tagKeys []string) error {
 
 	suffix := indexSeparator + resourceKey
 	for k := range removeSet {
-		prefix := k + "="
-		if err := t.index.ScanPrefix(prefix, func(idxKey string, _ []byte) error {
-			if strings.HasSuffix(idxKey, suffix) {
-				return t.index.Delete(idxKey)
-			}
-			return nil
-		}); err != nil {
+		if err := t.deleteIndexEntriesUnlocked(k, suffix); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// deleteIndexEntriesUnlocked removes the index entries of one tag key for the
+// resource identified by suffix; the caller must hold the store lock.
+func (t *TagStore) deleteIndexEntriesUnlocked(tagKey, suffix string) error {
+	prefix := tagKey + "="
+	return t.index.ScanPrefix(prefix, func(idxKey string, _ []byte) error {
+		if strings.HasSuffix(idxKey, suffix) {
+			return t.index.Delete(idxKey)
+		}
+		return nil
+	})
 }
 
 // Delete removes all tags and index entries for a resource.

@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
@@ -73,6 +74,22 @@ func (r *TestRunner) cognitoIdentityDeveloperTests(ctx context.Context, client *
 			return fmt.Errorf("expected same IdentityId for same developer user, got %s want %s", *resp.IdentityId, devIdentityID)
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "GetOpenIdTokenForDeveloperIdentity_PrincipalTagNameTooLong", func() error {
+		_, err := client.GetOpenIdTokenForDeveloperIdentity(ctx, &cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+			IdentityPoolId: aws.String(poolID),
+			Logins: map[string]string{
+				"my-dev-provider": "dev-user-tags",
+			},
+			PrincipalTags: map[string]string{
+				strings.Repeat("a", 129): "value",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected InvalidParameterException for a 129-character principal tag name")
+		}
+		return AssertErrorContains(err, "InvalidParameterException")
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "MergeDeveloperIdentities", func() error {

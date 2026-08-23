@@ -70,9 +70,32 @@ const (
 	maxIdentityProviderNameLength  = 128
 	maxClaimNameLength             = 64
 	maxClaimValueLength            = 128
+	maxPrincipalTagIDLength        = 128
 	maxPrincipalTagValueLength     = 256
 	maxIdentityProviderTokenLength = 50000
 	maxDeveloperUserIdentifierLen  = 1024
+
+	// Smithy IdentityIdList @length max: DeleteIdentities accepts at most 60
+	// identity IDs per call.
+	maxIdentityIdsToDelete = 60
+	// Smithy QueryLimit @range max, matching the AWS quota "Results from a
+	// single list or lookup call: 60". LookupDeveloperIdentity also uses the
+	// value as the MaxResults default when the caller omits the parameter.
+	maxQueryLimit           = 60
+	defaultLookupMaxResults = 60
+	// Smithy PaginationKey @length max for page tokens.
+	maxPaginationKeyLength = 65535
+	// Smithy MappingRulesList @length max for role-mapping rules.
+	maxRoleMappingRules = 400
+
+	// Token and session lifetimes pinned to the model documentation:
+	// GetOpenIdToken returns a token "valid for 10 minutes"; a
+	// developer-identity token without an explicit TokenDuration is "valid
+	// for 15 minutes"; the STS session exchanged by GetCredentialsForIdentity
+	// is "valid for a maximum of one hour".
+	openIdTokenTTLSeconds            = 600
+	developerTokenDefaultTTLSeconds  = 900
+	credentialSessionDurationSeconds = 3600
 )
 
 // ---------------------------------------------------------------------------
@@ -112,7 +135,7 @@ func validateProviderClientId(id string) bool {
 // LookupDeveloperIdentity. AWS rejects values outside this range server-side
 // with InvalidParameterException.
 func validateQueryLimit(n int) bool {
-	return n >= 1 && n <= 60
+	return n >= 1 && n <= maxQueryLimit
 }
 
 func validateRoleKeys(authRole, unauthRole string) bool {
@@ -142,7 +165,7 @@ func validateRoleMappings(mappings map[string]RoleMappingInput) bool {
 			if len(rm.RulesConfiguration.Rules) == 0 {
 				return false
 			}
-			if len(rm.RulesConfiguration.Rules) > 400 {
+			if len(rm.RulesConfiguration.Rules) > maxRoleMappingRules {
 				return false
 			}
 			for _, rule := range rm.RulesConfiguration.Rules {
@@ -203,7 +226,7 @@ func validatePaginationKey(token string) bool {
 	if token == "" {
 		return true
 	}
-	if utf8.RuneCountInString(token) > 65535 {
+	if utf8.RuneCountInString(token) > maxPaginationKeyLength {
 		return false
 	}
 	return paginationKeyPattern.MatchString(token)
@@ -242,6 +265,13 @@ func validateClaimValue(v string) bool {
 func validatePrincipalTagValue(v string) bool {
 	n := utf8.RuneCountInString(v)
 	return n >= 1 && n <= maxPrincipalTagValueLength
+}
+
+// validatePrincipalTagName enforces the Smithy PrincipalTagID constraints for
+// principal tag map keys: length 1-128 counted in Unicode characters.
+func validatePrincipalTagName(k string) bool {
+	n := utf8.RuneCountInString(k)
+	return n >= 1 && n <= maxPrincipalTagIDLength
 }
 
 // validateLoginTokenValue enforces the Smithy IdentityProviderToken

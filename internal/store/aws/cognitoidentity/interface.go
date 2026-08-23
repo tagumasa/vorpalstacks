@@ -18,16 +18,20 @@ type CognitoIdentityStoreInterface interface {
 	GetIdentityPoolRoles(poolID string) (authRole, unauthRole string, mappings map[string]RoleMapping, err error)
 	GetIdentityByID(identityID string) (*Identity, error)
 	FindIdentityByLogins(poolID string, logins map[string]string) (*Identity, error)
+	GetOrCreateIdentityByLogins(poolID string, logins map[string]string) (*Identity, error)
+	PutIdentity(identity *Identity) error
 	Exists(id string) bool
 	List(resourceKey string) (map[string]string, error)
 	Tag(resourceKey string, tags map[string]string) error
 	Untag(resourceKey string, tagKeys []string) error
+	Replace(resourceKey string, tags map[string]string) error
 	Raw() *CognitoIdentityStore
 	Identities() *common.BaseStore
 	ListIdentitiesByPool(poolID string, maxResults int, nextToken string) ([]*Identity, string, error)
-	DeleteIdentitiesBatch(poolID string, identityIDs []string) ([]string, error)
 	UnlinkLogins(poolID, identityID string, loginsToRemove []string) error
 	LinkDeveloperIdentity(di *DeveloperIdentity) error
+	EnsureDeveloperIdentity(poolID, providerName, devUserID, suppliedIdentityID string) (string, error)
+	MergeDeveloperIdentities(poolID, providerName, sourceUserID, destUserID string) (destIdentityID string, err error)
 	LookupDeveloperIdentity(poolID string, identityID, devUserID string, maxResults int, nextToken string) (matchedIdentityID string, devUserIDs []string, nextTokenOut string, err error)
 	UnlinkDeveloperIdentity(poolID, providerName, devUserID string) error
 	GetDeveloperIdentity(poolID, providerName, devUserID string) (*DeveloperIdentity, error)

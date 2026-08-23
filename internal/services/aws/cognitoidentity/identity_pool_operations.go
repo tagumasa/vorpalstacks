@@ -2,12 +2,10 @@ package cognitoidentity
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
@@ -208,41 +206,18 @@ func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx 
 	var updatedTags map[string]string
 	if _, ok := req.Parameters["IdentityPoolTags"]; ok {
 		updatedTags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
-		if !validateTagValues(updatedTags) {
+		if !validateTagKeys(updatedTags) || !validateTagValues(updatedTags) {
 			return nil, ErrInvalidParameter
 		}
-		existingTags, _ := store.List(pool.Arn)
-		var keysToRemove []string
-		removedTags := make(map[string]string)
-		for k, v := range existingTags {
-			if _, keep := updatedTags[k]; !keep {
-				keysToRemove = append(keysToRemove, k)
-				removedTags[k] = v
-			}
-		}
-		if len(keysToRemove) > 0 {
-			if err := store.Untag(pool.Arn, keysToRemove); err != nil {
-				return nil, ErrInternalError
-			}
-		}
-		if err := store.Tag(pool.Arn, updatedTags); err != nil {
-			// Rollback: re-apply the tags that were removed to avoid
-			// leaving the resource in a partially-untagged state.
-			if len(removedTags) > 0 {
-				if rbErr := store.Tag(pool.Arn, removedTags); rbErr != nil {
-					logs.Error("Failed to rollback identity pool tags",
-						logs.String("poolId", poolID),
-						logs.Err(rbErr))
-				}
-			}
+		// A single replace write swaps the whole tag set under the tag
+		// store's lock, so a failure cannot leave a partially-untagged
+		// resource and no rollback path is needed.
+		if err := store.Replace(pool.Arn, updatedTags); err != nil {
 			return nil, ErrInternalError
 		}
-		pool.Tags = updatedTags
 	} else {
 		updatedTags, _ = store.List(pool.Arn)
 	}
-
-	pool.LastModifiedDate = time.Now().UTC()
 
 	if err := store.UpdateIdentityPool(pool); err != nil {
 		return nil, ErrInternalError

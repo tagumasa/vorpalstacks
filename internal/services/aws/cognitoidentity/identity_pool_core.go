@@ -138,14 +138,8 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 		}
 	}
 
-	// Enforce per-account identity pool limit (AWS default: 50).
-	existing, err := store.ListIdentityPools(storecommon.ListOptions{MaxItems: 100})
-	if err != nil {
-		return nil, ErrInternalError
-	}
-	if len(existing.Items) >= 50 {
-		return nil, ErrLimitExceeded
-	}
+	// The per-account quota is enforced by the store atomically with the
+	// creation itself, so no separate pre-check is needed here.
 
 	pool := cognitoidentitystore.NewIdentityPool(in.IdentityPoolName, in.AllowUnauthenticatedIdentities, in.Region)
 
@@ -172,6 +166,9 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 	if err != nil {
 		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolAlreadyExists) {
 			return nil, ErrResourceInUse
+		}
+		if errors.Is(err, cognitoidentitystore.ErrTooManyIdentityPools) {
+			return nil, ErrLimitExceeded
 		}
 		return nil, ErrInternalError
 	}

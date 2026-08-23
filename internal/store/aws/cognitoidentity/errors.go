@@ -19,4 +19,10 @@ var (
 	ErrIdentityNotFound = errors.New("identity not found")
 	// ErrIdentityAlreadyExists is returned when attempting to create an Identity that already exists.
 	ErrIdentityAlreadyExists = errors.New("identity already exists")
+	// ErrTooManyIdentityPools is returned when creating an Identity Pool would
+	// exceed the per-account quota documented by AWS.
+	ErrTooManyIdentityPools = errors.New("too many identity pools")
+	// ErrDeveloperIdentityConflict is returned when a developer user identifier
+	// is already linked to a different identity than the one supplied.
+	ErrDeveloperIdentityConflict = errors.New("developer identity conflict")
 )

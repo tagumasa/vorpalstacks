@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
@@ -133,6 +134,20 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 			return fmt.Errorf("expected UseDefaults=true for non-existent mapping")
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "SetPrincipalTagAttributeMap_PrincipalTagNameTooLong", func() error {
+		_, err := client.SetPrincipalTagAttributeMap(ctx, &cognitoidentity.SetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(poolID),
+			IdentityProviderName: aws.String("graph.facebook.com"),
+			PrincipalTags: map[string]string{
+				strings.Repeat("a", 129): "value",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected InvalidParameterException for a 129-character principal tag name")
+		}
+		return AssertErrorContains(err, "InvalidParameterException")
 	}))
 
 	return results

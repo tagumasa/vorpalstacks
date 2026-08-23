@@ -11,8 +11,12 @@ import (
 )
 
 func cognitoIdentityMapError(err error) error {
-	switch err.(type) {
-	case *tagutil.MissingResourceError, *tagutil.MissingTagsError, *tagutil.MissingTagKeysError:
+	// errors.As rather than a type switch so wrapped tag errors map the same
+	// way as bare ones.
+	var missingResource *tagutil.MissingResourceError
+	var missingTags *tagutil.MissingTagsError
+	var missingTagKeys *tagutil.MissingTagKeysError
+	if errors.As(err, &missingResource) || errors.As(err, &missingTags) || errors.As(err, &missingTagKeys) {
 		return ErrInvalidParameter
 	}
 	if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {

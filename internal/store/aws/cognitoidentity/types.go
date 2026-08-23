@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"vorpalstacks/internal/common/defaults"
 )
 
 // IdentityPool represents an Amazon Cognito Identity Pool.
@@ -85,7 +84,7 @@ type MappingRule struct {
 // Timestamps are set by the store on creation; zero values here indicate "not yet persisted".
 func NewIdentityPool(name string, allowUnauthenticated bool, region string) *IdentityPool {
 	return &IdentityPool{
-		ID:                             generateIdentityPoolID(region),
+		ID:                             newRegionalID(region),
 		Name:                           name,
 		AllowUnauthenticatedIdentities: allowUnauthenticated,
 		CognitoIdentityProviders:       []CognitoIdentityProvider{},
@@ -102,7 +101,7 @@ func NewIdentity(identityPoolID string) *Identity {
 	now := time.Now().UTC()
 	region := extractRegionFromPoolID(identityPoolID)
 	return &Identity{
-		ID:               region + ":" + uuid.New().String(),
+		ID:               newRegionalID(region),
 		IdentityPoolID:   identityPoolID,
 		Logins:           make(map[string]string),
 		CreationDate:     now,
@@ -110,13 +109,20 @@ func NewIdentity(identityPoolID string) *Identity {
 	}
 }
 
+// extractRegionFromPoolID returns the region segment of a pool ID. Every
+// caller validates the pool ID against the Smithy IdentityPoolId pattern
+// (^[\w-]+:[0-9a-f-]+$) before reaching the store, so the input always
+// contains a colon; a malformed ID yields an empty region rather than a
+// silent substitution that would mask the validation failure.
 func extractRegionFromPoolID(poolID string) string {
 	if idx := strings.Index(poolID, ":"); idx > 0 {
 		return poolID[:idx]
 	}
-	return defaults.DefaultRegion
+	return ""
 }
 
-func generateIdentityPoolID(region string) string {
+// newRegionalID builds a REGION:GUID identifier — the shared format of
+// identity pool IDs and identity IDs.
+func newRegionalID(region string) string {
 	return region + ":" + uuid.New().String()
 }

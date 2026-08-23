@@ -3,11 +3,9 @@ package cognitoidentity
 import (
 	"context"
 	"errors"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
@@ -17,7 +15,7 @@ func (s *CognitoIdentityService) DeleteIdentities(ctx context.Context, reqCtx *r
 	if len(identityIDs) == 0 {
 		return nil, ErrInvalidParameter
 	}
-	if len(identityIDs) > 60 {
+	if len(identityIDs) > maxIdentityIdsToDelete {
 		return nil, ErrInvalidParameter
 	}
 
@@ -141,7 +139,7 @@ func (s *CognitoIdentityService) GetOpenIdToken(ctx context.Context, reqCtx *req
 		}
 	}
 
-	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, 600, nil, nil)
+	token, err := s.tokenMgr.generateOpenIdToken(identityID, identity.IdentityPoolID, openIdTokenTTLSeconds, nil, nil)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -187,7 +185,7 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 	}
 
 	// TokenDuration controls token expiry (range 1-86400 seconds per AWS spec).
-	tokenDuration := int64(900) // default 15 minutes
+	tokenDuration := int64(developerTokenDefaultTTLSeconds)
 	if _, ok := req.Parameters["TokenDuration"]; ok {
 		td := int64(request.GetIntParam(req.Parameters, "TokenDuration"))
 		if !validateTokenDuration(td) {
@@ -206,6 +204,9 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 			}
 			principalTags = make(map[string]string, len(ptMap))
 			for k, v := range ptMap {
+				if !validatePrincipalTagName(k) {
+					return nil, ErrInvalidParameter
+				}
 				s, ok := v.(string)
 				if !ok || !validatePrincipalTagValue(s) {
 					return nil, ErrInvalidParameter
@@ -216,35 +217,21 @@ func (s *CognitoIdentityService) GetOpenIdTokenForDeveloperIdentity(ctx context.
 	}
 
 	for providerName, devUserID := range logins {
-		existing, err := store.GetDeveloperIdentity(poolID, providerName, devUserID)
-		if err == nil && existing.IdentityID != "" {
-			// The developer identity already exists. If the caller supplied
-			// an IdentityId that differs from the existing link, AWS returns
-			// DeveloperUserAlreadyRegisteredException.
-			if identityID != "" && existing.IdentityID != identityID {
+		// The store resolves the developer identity under its key lock: an
+		// existing link is reused (a differing supplied IdentityId maps to
+		// DeveloperUserAlreadyRegisteredException), otherwise a fresh identity
+		// is created and linked in one critical section.
+		resolved, err := store.EnsureDeveloperIdentity(poolID, providerName, devUserID, identityID)
+		if err != nil {
+			if errors.Is(err, cognitoidentitystore.ErrDeveloperIdentityConflict) {
 				return nil, ErrDeveloperUserAlreadyRegistered
 			}
-			identityID = existing.IdentityID
-			break
-		}
-
-		if identityID == "" {
-			identity := cognitoidentitystore.NewIdentity(poolID)
-			identityID = identity.ID
-			if err := store.CreateIdentity(identity); err != nil {
-				return nil, ErrInternalError
+			if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
+				return nil, ErrResourceNotFound
 			}
-		}
-
-		di := &cognitoidentitystore.DeveloperIdentity{
-			DeveloperUserIdentifier: devUserID,
-			DeveloperProviderName:   providerName,
-			IdentityPoolID:          poolID,
-			IdentityID:              identityID,
-		}
-		if err := store.LinkDeveloperIdentity(di); err != nil {
 			return nil, ErrInternalError
 		}
+		identityID = resolved
 	}
 
 	token, err := s.tokenMgr.generateOpenIdToken(identityID, poolID, tokenDuration, nil, principalTags)
@@ -324,8 +311,8 @@ func (s *CognitoIdentityService) SetPrincipalTagAttributeMap(ctx context.Context
 		if !validateMapSize(len(principalTags), 50) {
 			return nil, ErrInvalidParameter
 		}
-		for _, v := range principalTags {
-			if !validatePrincipalTagValue(v) {
+		for k, v := range principalTags {
+			if !validatePrincipalTagName(k) || !validatePrincipalTagValue(v) {
 				return nil, ErrInvalidParameter
 			}
 		}
@@ -371,7 +358,7 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 	if devUserID != "" && !validateDeveloperUserIdentifier(devUserID) {
 		return nil, ErrInvalidParameter
 	}
-	maxResults := 60
+	maxResults := defaultLookupMaxResults
 	if _, ok := req.Parameters["MaxResults"]; ok {
 		n := request.GetIntParam(req.Parameters, "MaxResults")
 		if !validateQueryLimit(n) {
@@ -389,18 +376,24 @@ func (s *CognitoIdentityService) LookupDeveloperIdentity(ctx context.Context, re
 		return nil, ErrInternalError
 	}
 
+	return lookupDeveloperIdentityResult(matchedIdentityID, devUserIDs, nextTokenOut), nil
+}
+
+// lookupDeveloperIdentityResult builds the LookupDeveloperIdentity response
+// from the store lookup outcome, carrying the model's response members only:
+// the developer user identifiers, plus the matched identity ID and the page
+// token when present.
+func lookupDeveloperIdentityResult(matchedIdentityID string, devUserIDs []string, nextToken string) map[string]interface{} {
 	result := map[string]interface{}{
-		"IdentityPoolId":              poolID,
 		"DeveloperUserIdentifierList": devUserIDs,
 	}
 	if matchedIdentityID != "" {
 		result["IdentityId"] = matchedIdentityID
 	}
-	if nextTokenOut != "" {
-		result["NextToken"] = nextTokenOut
+	if nextToken != "" {
+		result["NextToken"] = nextToken
 	}
-
-	return result, nil
+	return result
 }
 
 // MergeDeveloperIdentities merges two developer user identities.
@@ -427,69 +420,18 @@ func (s *CognitoIdentityService) MergeDeveloperIdentities(ctx context.Context, r
 		return nil, err
 	}
 
-	sourceDI, err := store.GetDeveloperIdentity(poolID, providerName, sourceUserID)
+	// The store performs the merge under the pool lock with the developer
+	// identity link moving before any identity record is destroyed.
+	destIdentityID, err := store.MergeDeveloperIdentities(poolID, providerName, sourceUserID, destUserID)
 	if err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
-	}
-	destDI, err := store.GetDeveloperIdentity(poolID, providerName, destUserID)
-	if err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
-	}
-
-	if sourceDI.IdentityID != "" && destDI.IdentityID != "" && sourceDI.IdentityID != destDI.IdentityID {
-		// Merge the source identity's logins into the destination identity so that
-		// public provider links (Facebook, Google, etc.) are not lost. Both
-		// identities must be retrievable before any mutation occurs; if either
-		// lookup fails the operation aborts to prevent data loss.
-		sourceIdentity, srcErr := store.GetIdentity(poolID, sourceDI.IdentityID)
-		if srcErr != nil {
-			return nil, mapStoreError(srcErr, cognitoidentitystore.ErrIdentityNotFound)
+		if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
+			return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 		}
-
-		destIdentity, dstErr := store.GetIdentity(poolID, destDI.IdentityID)
-		if dstErr != nil {
-			return nil, mapStoreError(dstErr, cognitoidentitystore.ErrIdentityNotFound)
-		}
-
-		if destIdentity.Logins == nil {
-			destIdentity.Logins = make(map[string]string)
-		}
-		for provider, token := range sourceIdentity.Logins {
-			if _, exists := destIdentity.Logins[provider]; !exists {
-				destIdentity.Logins[provider] = token
-			}
-		}
-		destIdentity.LastModifiedDate = time.Now().UTC()
-		destKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, destDI.IdentityID)
-		if putErr := store.Identities().Put(destKey, destIdentity); putErr != nil {
-			logs.Error("Failed to merge identity logins during developer identity merge",
-				logs.String("sourceIdentityId", sourceDI.IdentityID),
-				logs.String("destIdentityId", destDI.IdentityID),
-				logs.Err(putErr))
-			return nil, ErrInternalError
-		}
-
-		sourceKey := cognitoidentitystore.IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
-		if err := store.Identities().Delete(sourceKey); err != nil {
-			return nil, ErrInternalError
-		}
-	}
-
-	destDI, err = store.GetDeveloperIdentity(poolID, providerName, destUserID)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-	if err := store.LinkDeveloperIdentity(&cognitoidentitystore.DeveloperIdentity{
-		DeveloperUserIdentifier: sourceUserID,
-		DeveloperProviderName:   providerName,
-		IdentityPoolID:          poolID,
-		IdentityID:              destDI.IdentityID,
-	}); err != nil {
 		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
-		"IdentityId": destDI.IdentityID,
+		"IdentityId": destIdentityID,
 	}, nil
 }
 
