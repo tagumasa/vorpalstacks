@@ -165,6 +165,32 @@ func (s *CloudWatchService) GetStoreForRegion(region string) (*cloudwatchStores,
 	return stores, nil
 }
 
+// MetricStoreForRegion returns the metric store for the given region,
+// creating the store group if not already cached. Cross-service consumers
+// (the eventbus CloudWatch metric invoker) resolve stores through this
+// method so that every writer and the API read plane share one
+// MetricChunkStore per region — the store tracks chunk files in per-
+// instance memory, so a second instance would orphan chunks.
+func (s *CloudWatchService) MetricStoreForRegion(region string) (*cwstore.MetricChunkStore, error) {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return stores.metrics, nil
+}
+
+// AlarmStoreForRegion returns the alarm store for the given region,
+// creating the store group if not already cached. Cross-service consumers
+// (the eventbus CloudWatch alarm invoker) resolve stores through this
+// method for the same single-instance-per-region guarantee.
+func (s *CloudWatchService) AlarmStoreForRegion(region string) (*cwstore.AlarmStore, error) {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return stores.alarms, nil
+}
+
 // RegisterHandlers registers CloudWatch handlers with the dispatcher.
 func (s *CloudWatchService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("monitoring", "PutMetricData", s.PutMetricData)

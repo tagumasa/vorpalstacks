@@ -23,13 +23,8 @@ type Store struct {
 	bucketName   string
 	chunksDir    string
 	chunkMutex   sync.Mutex
-	activeChunks map[string]*activeChunk
 	chunkCounter uint64
 	subFilterMu  sync.Mutex
-}
-
-type activeChunk struct {
-	entries []LogEntry
 }
 
 // NewStore creates a new CloudWatch Logs store.
@@ -46,14 +41,13 @@ func NewStore(store storage.BasicStorage, bucket storage.Bucket, accountID, regi
 	}
 
 	return &Store{
-		BaseStore:    baseStore,
-		tagStore:     common.NewTagStoreWithRegion(store, "cloudwatchlogs", region),
-		ts:           ts,
-		arnBuilder:   svcarn.NewARNBuilder(accountID, region),
-		region:       region,
-		bucketName:   "logs-" + region,
-		chunksDir:    chunksDir,
-		activeChunks: make(map[string]*activeChunk),
+		BaseStore:  baseStore,
+		tagStore:   common.NewTagStoreWithRegion(store, "cloudwatchlogs", region),
+		ts:         ts,
+		arnBuilder: svcarn.NewARNBuilder(accountID, region),
+		region:     region,
+		bucketName: "logs-" + region,
+		chunksDir:  chunksDir,
 	}, nil
 }
 

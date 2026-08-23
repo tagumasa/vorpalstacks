@@ -288,6 +288,12 @@ func (a *App) initTimestreamWrite(st *serviceState) error {
 	timestreamWriteService.SetStorageManager(a.server.StorageManager())
 	if eb := a.server.EventBus(); eb != nil {
 		timestreamWriteService.SetS3Invoker(eb.S3Invoker())
+		// The timestream invoker is registered here (not in
+		// wireCrossServiceDeps) because optional services are initialised
+		// after cross-service wiring; it resolves stores through the
+		// service so the API plane and cross-service writers share one
+		// RecordStore per region.
+		eb.SetTimestreamInvoker(&timestreamInvokerAdapter{provider: timestreamWriteService})
 	}
 	timestreamWriteService.RegisterHandlers(a.server.Dispatcher())
 	st.timestreamWriteService = timestreamWriteService

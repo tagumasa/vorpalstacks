@@ -317,10 +317,32 @@ func (s *CognitoService) authenticateUser(
 	// Cognito returns NEW_PASSWORD_REQUIRED only for users who signed in
 	// successfully with their temporary password; issuing it on user status
 	// alone would let anyone reset a FORCE_CHANGE_PASSWORD or RESET_REQUIRED
-	// account by username only.
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
-		return nil, ErrIncorrectPassword
+	// account by username only. Users imported from a CSV are the documented
+	// exception: "the first time they sign in, they can enter any password.
+	// Amazon Cognito prompts them to enter a new password" — an imported
+	// RESET_REQUIRED user with no stored hash goes straight to the
+	// NEW_PASSWORD_REQUIRED challenge, and a user holding an imported hash
+	// verifies against the import algorithm, migrating to the native
+	// bcrypt+SRP credentials on success.
+	switch {
+	case user.PasswordHashAlgo != "":
+		if !verifyImportedPasswordHash(user.PasswordHashAlgo, user.PasswordHash, password) {
+			s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
+			return nil, ErrIncorrectPassword
+		}
+		if err := s.migrateImportedCredentials(store, userPoolID, user, password); err != nil {
+			return nil, err
+		}
+	case user.PasswordHash == "":
+		if user.UserStatus != "RESET_REQUIRED" {
+			s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
+			return nil, ErrIncorrectPassword
+		}
+	default:
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+			s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Fail")
+			return nil, ErrIncorrectPassword
+		}
 	}
 
 	if user.UserStatus == "FORCE_CHANGE_PASSWORD" || user.UserStatus == "RESET_REQUIRED" {
@@ -349,6 +371,19 @@ func (s *CognitoService) authenticateUser(
 	}
 	s.recordAuthEvent(reqCtx, userPoolID, user.ID, username, clientID, "SignIn", "Pass")
 	return authResult(accessToken, idToken, refreshToken, expiresIn), nil
+}
+
+// migrateImportedCredentials replaces an imported password hash with the
+// native bcrypt+SRP pair after successful verification, mirroring AWS's
+// transparent credential migration at first sign-in.
+func (s *CognitoService) migrateImportedCredentials(store cognitostore.CognitoStoreInterface, userPoolID string, user *cognitostore.User, password string) error {
+	if err := setNativePasswordCredentials(user, userPoolID, user.Username, password); err != nil {
+		return ErrInternalError
+	}
+	if err := store.UpdateUser(user); err != nil {
+		return ErrInternalError
+	}
+	return nil
 }
 
 // newPasswordChallenge creates a NEW_PASSWORD_REQUIRED challenge session and

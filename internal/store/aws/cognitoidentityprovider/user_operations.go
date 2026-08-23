@@ -17,6 +17,40 @@ func (s *CognitoStore) ListUsersPaginated(userPoolID string, opts common.ListOpt
 	return common.List[User](s.usersStore, opts, filter)
 }
 
+// userCIIndexKey is the case-insensitive username index: it maps the
+// lowercased username to the canonical stored one so that lookups and
+// uniqueness checks honour UsernameConfiguration. The index is written
+// for every user but only consulted when the pool does not opt into
+// case-sensitive usernames (the AWS default is case-insensitive).
+func userCIIndexKey(userPoolID, username string) string {
+	return "userci:" + userPoolID + "#" + strings.ToLower(username)
+}
+
+// usernameCaseSensitive reports whether the pool enforces case-sensitive
+// usernames. A missing UsernameConfiguration means case-insensitive.
+func (s *CognitoStore) usernameCaseSensitive(userPoolID string) bool {
+	pool, err := s.GetUserPool(userPoolID)
+	if err != nil {
+		return false
+	}
+	return pool.UsernameConfiguration != nil && pool.UsernameConfiguration.CaseSensitive
+}
+
+// resolveUsername maps the supplied username to the canonical stored
+// username. Case-insensitive pools resolve through the lowercased index;
+// when no index entry exists (an exact match, or a record predating the
+// index) the input is returned unchanged.
+func (s *CognitoStore) resolveUsername(userPoolID, username string) string {
+	if s.usernameCaseSensitive(userPoolID) {
+		return username
+	}
+	var canonical string
+	if err := s.usersStore.Get(userCIIndexKey(userPoolID, username), &canonical); err == nil && canonical != "" {
+		return canonical
+	}
+	return username
+}
+
 // CreateUser creates a new Cognito user.
 func (s *CognitoStore) CreateUser(user *User) error {
 	s.createMu.Lock()
@@ -33,6 +67,12 @@ func (s *CognitoStore) CreateUser(user *User) error {
 	if s.usersStore.Exists(key) {
 		return ErrUserAlreadyExists
 	}
+	// Uniqueness is case-insensitive unless the pool opts into
+	// case-sensitive usernames.
+	ciKey := userCIIndexKey(user.UserPoolID, user.Username)
+	if !s.usernameCaseSensitive(user.UserPoolID) && s.usersStore.Exists(ciKey) {
+		return ErrUserAlreadyExists
+	}
 
 	now := time.Now().UTC()
 	user.CreatedDate = now
@@ -43,6 +83,8 @@ func (s *CognitoStore) CreateUser(user *User) error {
 	}
 	// Write secondary index for O(1) GetUserByID lookup.
 	_ = s.usersStore.Put(userIndexKey(user.ID), user.UserPoolID+"#"+user.Username)
+	// Write the case-insensitive username index.
+	_ = s.usersStore.Put(ciKey, user.Username)
 	// Write secondary index for O(1) GetUserByProvider lookup.
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
@@ -50,9 +92,11 @@ func (s *CognitoStore) CreateUser(user *User) error {
 	return nil
 }
 
-// GetUser retrieves a Cognito user by user pool ID and username.
+// GetUser retrieves a Cognito user by user pool ID and username. The
+// username matches case-insensitively unless the pool opts into
+// case-sensitive usernames.
 func (s *CognitoStore) GetUser(userPoolID, username string) (*User, error) {
-	key := userPoolUserKey(userPoolID, username)
+	key := userPoolUserKey(userPoolID, s.resolveUsername(userPoolID, username))
 	var user User
 	if err := s.usersStore.Get(key, &user); err != nil {
 		return nil, ErrUserNotFound
@@ -137,7 +181,7 @@ func (s *CognitoStore) UpdateUser(user *User) error {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
-	key := userPoolUserKey(user.UserPoolID, user.Username)
+	key := userPoolUserKey(user.UserPoolID, s.resolveUsername(user.UserPoolID, user.Username))
 	if !s.usersStore.Exists(key) {
 		return ErrUserNotFound
 	}
@@ -145,6 +189,8 @@ func (s *CognitoStore) UpdateUser(user *User) error {
 	if err := s.usersStore.Put(key, user); err != nil {
 		return err
 	}
+	// Keep the case-insensitive index pointing at the canonical username.
+	_ = s.usersStore.Put(userCIIndexKey(user.UserPoolID, user.Username), user.Username)
 	// Update provider index if provider info is set.
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Put(providerIndexKey(user.UserPoolID, user.ProviderName, user.ProviderAttributeValue), user.Username)
@@ -156,11 +202,12 @@ func (s *CognitoStore) UpdateUser(user *User) error {
 func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 	s.groupMu.Lock()
 	defer s.groupMu.Unlock()
-	key := userPoolUserKey(userPoolID, username)
+	canonical := s.resolveUsername(userPoolID, username)
+	key := userPoolUserKey(userPoolID, canonical)
 	if !s.usersStore.Exists(key) {
 		return ErrUserNotFound
 	}
-	user, err := s.GetUser(userPoolID, username)
+	user, err := s.GetUser(userPoolID, canonical)
 	if err != nil {
 		return s.usersStore.Delete(key)
 	}
@@ -171,7 +218,7 @@ func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 		}
 		var newMembers []string
 		for _, m := range group.Members {
-			if m != username {
+			if m != canonical {
 				newMembers = append(newMembers, m)
 			}
 		}
@@ -182,6 +229,7 @@ func (s *CognitoStore) DeleteUser(userPoolID, username string) error {
 	}
 	// Clean up secondary indexes.
 	_ = s.usersStore.Delete(userIndexKey(user.ID))
+	_ = s.usersStore.Delete(userCIIndexKey(userPoolID, canonical))
 	if user.ProviderName != "" && user.ProviderAttributeValue != "" {
 		_ = s.usersStore.Delete(providerIndexKey(userPoolID, user.ProviderName, user.ProviderAttributeValue))
 	}

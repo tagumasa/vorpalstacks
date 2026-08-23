@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
+
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -75,6 +77,29 @@ func generateTemporaryPassword(policy *cognitostore.PasswordPolicy) (string, err
 		buf[i], buf[j.Int64()] = buf[j.Int64()], buf[i]
 	}
 	return string(buf), nil
+}
+
+// setNativePasswordCredentials installs the native bcrypt+SRP credential
+// pair for a password and clears the imported-hash format flag: every flow
+// that writes a native password (administrative set/reset, self-service
+// change and confirmation, and the post-verification migration) makes the
+// native hash authoritative, and a lingering imported-algorithm flag would
+// send subsequent sign-ins down the imported-hash verification path
+// against the wrong hash format.
+func setNativePasswordCredentials(user *cognitostore.User, userPoolID, username, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	saltHex, verifierHex, err := computeSrpVerifier(userPoolID, username, password)
+	if err != nil {
+		return err
+	}
+	user.PasswordHash = string(hash)
+	user.PasswordHashAlgo = ""
+	user.SrpSalt = saltHex
+	user.SrpVerifier = verifierHex
+	return nil
 }
 
 // pickRandomChar picks one character uniformly at random from set. An empty

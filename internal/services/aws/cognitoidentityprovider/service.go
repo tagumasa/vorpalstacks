@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sync"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -26,14 +27,38 @@ type CognitoService struct {
 	stores              sync.Map // region → cognitostore.CognitoStoreInterface
 	authCodes           sync.Map // code string → authCodeEntry
 	authCodeCleanupOnce sync.Once
+	bgCtx               context.Context
+	bgCancel            context.CancelFunc
+	bgWg                sync.WaitGroup
+	// importCredentials supplies the SigV4 keys used to presign the CSV
+	// upload URL handed out by CreateUserImportJob.
+	importCredentials auth.CredentialsProvider
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.
 func NewCognitoService(accountID, region string) *CognitoService {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &CognitoService{
 		accountID: accountID,
 		region:    region,
+		bgCtx:     ctx,
+		bgCancel:  cancel,
 	}
+}
+
+// SetImportCredentialsProvider sets the credentials used to presign the
+// user import CSV upload URL.
+func (s *CognitoService) SetImportCredentialsProvider(provider auth.CredentialsProvider) {
+	s.importCredentials = provider
+}
+
+// Close stops background workers (user import jobs) and waits for them to
+// finish.
+func (s *CognitoService) Close() {
+	if s.bgCancel != nil {
+		s.bgCancel()
+	}
+	s.bgWg.Wait()
 }
 
 // SetStorageManager injects the storage manager, required for the JWKS handler.

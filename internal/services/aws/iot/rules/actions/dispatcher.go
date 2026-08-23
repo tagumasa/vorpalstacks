@@ -418,7 +418,7 @@ func (d *Dispatcher) dispatchCloudWatch(ctx context.Context, config *ActionConfi
 		}
 	}
 
-	err := invoker.PutMetricData("", namespace, metricName, value, ts)
+	err := invoker.PutMetricData(config.Region, namespace, metricName, value, ts)
 	if err != nil {
 		return fmt.Errorf("cloudwatch put metric failed: %w", err)
 	}
@@ -441,43 +441,86 @@ func (d *Dispatcher) dispatchCloudWatchAlarm(ctx context.Context, config *Action
 	if stateValue == "" {
 		stateValue = "ALARM"
 	}
-	err := invoker.SetAlarmState("", alarmName, stateValue, stateReason)
+	err := invoker.SetAlarmState(config.Region, alarmName, stateValue, stateReason)
 	if err != nil {
 		return fmt.Errorf("cloudwatch set alarm state failed: %w", err)
 	}
 	return nil
 }
 
+// dispatchCloudWatchLogs delivers the message payload to CloudWatch Logs
+// (Smithy CloudwatchLogsAction: logGroupName, roleArn, batchMode). AWS does
+// not document the log stream name this action writes to; the platform
+// writes to a fixed "default" stream within the configured group.
 func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionConfig, p *ActionPayload) error {
 	invoker := d.bus.LogsInvoker()
 	if invoker == nil {
 		return fmt.Errorf("cloudwatch logs invoker not available")
 	}
 
-	logGroup := "aws-iot-rules"
-	if lg, ok := config.Extra["logGroup"].(string); ok {
-		logGroup = lg
+	// logGroupName supports substitution templates (AWS IoT developer
+	// guide, CloudWatch Logs rule action).
+	logGroup := iotutil.ResolveTemplate(iotutil.StrFromMap(config.Extra, "logGroupName"), p.Topic, "", p.Raw)
+	if logGroup == "" {
+		return fmt.Errorf("cloudwatchLogs: logGroupName not specified")
 	}
 
 	logStream := "default"
-	if ls, ok := config.Extra["logStream"].(string); ok {
-		logStream = ls
-	}
 
-	if err := invoker.EnsureLogGroup(ctx, "", logGroup, ""); err != nil {
+	if err := invoker.EnsureLogGroup(ctx, config.Region, logGroup, ""); err != nil {
 		return fmt.Errorf("ensure log group failed: %w", err)
 	}
-	if err := invoker.EnsureLogStream(ctx, "", logGroup, logStream); err != nil {
+	if err := invoker.EnsureLogStream(ctx, config.Region, logGroup, logStream); err != nil {
 		return fmt.Errorf("ensure log stream failed: %w", err)
 	}
 
-	entries := []eventbus.LogsLogEntry{
-		{Timestamp: time.Now().UnixMilli(), Message: p.JSONString},
+	entries, err := cloudWatchLogsEntries(config, p)
+	if err != nil {
+		return err
 	}
-	if err := invoker.PutLogEvents(ctx, "", logGroup, logStream, entries); err != nil {
+	if len(entries) == 0 {
+		return nil
+	}
+	if err := invoker.PutLogEvents(ctx, config.Region, logGroup, logStream, entries); err != nil {
 		return fmt.Errorf("cloudwatch logs put failed: %w", err)
 	}
 	return nil
+}
+
+// cloudWatchLogsEntries builds the log entries for the cloudwatchLogs
+// action. With batchMode off the whole payload is a single entry; with
+// batchMode on the payload must be a JSON array of {timestamp, message}
+// records, each uploaded as its own entry (AWS IoT developer guide,
+// CloudWatch Logs rule action).
+func cloudWatchLogsEntries(config *ActionConfig, p *ActionPayload) ([]eventbus.LogsLogEntry, error) {
+	if bm, ok := config.Extra["batchMode"].(bool); ok && bm {
+		return parseBatchLogEntries(p.JSONBytes)
+	}
+	return []eventbus.LogsLogEntry{
+		{Timestamp: time.Now().UnixMilli(), Message: p.JSONString},
+	}, nil
+}
+
+// parseBatchLogEntries parses the batchMode payload format: an array of
+// {"timestamp": <milliseconds>, "message": "..."} records. An empty array
+// contains no records and writes nothing; AWS does not specify behaviour
+// for it, so it is treated as a successful no-op.
+func parseBatchLogEntries(raw []byte) ([]eventbus.LogsLogEntry, error) {
+	var records []struct {
+		Timestamp *int64 `json:"timestamp"`
+		Message   string `json:"message"`
+	}
+	if err := json.Unmarshal(raw, &records); err != nil {
+		return nil, fmt.Errorf("cloudwatchLogs: batchMode payload is not a timestamp/message array: %w", err)
+	}
+	entries := make([]eventbus.LogsLogEntry, 0, len(records))
+	for _, r := range records {
+		if r.Timestamp == nil {
+			return nil, fmt.Errorf("cloudwatchLogs: batchMode record missing timestamp")
+		}
+		entries = append(entries, eventbus.LogsLogEntry{Timestamp: *r.Timestamp, Message: r.Message})
+	}
+	return entries, nil
 }
 
 // buildDynamoDBItem constructs the DynamoDB key map and attribute map from

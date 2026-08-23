@@ -100,6 +100,14 @@ func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, err
 	return store, nil
 }
 
+// GetStoreForRegion resolves the CloudWatch Logs store for the given region,
+// creating it on first use. Cross-service consumers (the eventbus logs
+// invoker) resolve stores through this method so that every writer and the
+// API read plane share one store instance per region.
+func (s *LogsService) GetStoreForRegion(region string) (*logsstore.Store, error) {
+	return s.getLogsStoreByRegion(region)
+}
+
 // SetCloudWatchMetricInvoker injects the CloudWatch metric invoker for emitting
 // metric data when metric filters match log events.
 func (s *LogsService) SetCloudWatchMetricInvoker(invoker eventbus.CloudWatchMetricInvoker) {

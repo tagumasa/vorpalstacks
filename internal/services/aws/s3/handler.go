@@ -29,6 +29,10 @@ type S3Handler struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	auditRecorder  request.AuditRecorder
+	// signatureVerification enables full SigV4 verification of presigned
+	// URLs; with it off (the test configuration), only the documented
+	// validity window is enforced.
+	signatureVerification bool
 }
 
 // NewS3Handler creates a new S3Handler for the given service, region, and storage manager.
@@ -171,11 +175,20 @@ func (h *S3Handler) isPresignedURLRequest(query url.Values) bool {
 }
 
 func (h *S3Handler) verifyPresignedURL(r *http.Request, bucket string) error {
-	if h.svc.credentialsProvider == nil {
-		return nil
+	if h.svc.credentialsProvider == nil || !h.signatureVerification {
+		// Without verifiable credentials, or when signature verification
+		// is disabled platform-wide, the signature cannot be checked,
+		// but the documented validity window still applies.
+		return crypto.CheckPresignedURLFreshness(r.URL.Query())
 	}
 	verifier := crypto.NewPresignedURLVerifier(h.svc.credentialsProvider)
 	return verifier.VerifyPresignedURL(r, bucket, h.region)
+}
+
+// SetSignatureVerification controls whether presigned URLs are fully
+// SigV4-verified or only checked for freshness.
+func (h *S3Handler) SetSignatureVerification(enabled bool) {
+	h.signatureVerification = enabled
 }
 
 func (h *S3Handler) recordAudit(eventName string, reqCtx *request.RequestContext, r *http.Request, response interface{}, err error) {

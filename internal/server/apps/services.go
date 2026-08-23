@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"vorpalstacks/internal/client/mobyclient"
+	"vorpalstacks/internal/common/auth"
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -169,8 +170,18 @@ func (a *App) initCloudWatchLogs(st *serviceState) error {
 func (a *App) initCognito(st *serviceState) error {
 	st.cognitoService = svccognito.NewCognitoService(st.accountID, st.region)
 	st.cognitoService.SetStorageManager(a.server.StorageManager())
+	st.cognitoService.SetImportCredentialsProvider(auth.NewStaticCredentialsProvider(
+		a.cfg.AccessKeyID,
+		a.cfg.SecretAccessKey,
+		a.cfg.Region,
+		"",
+	))
 	st.cognitoService.RegisterHandlers(a.server.Dispatcher())
 	a.server.RegisterJWKSHandler(http.HandlerFunc(st.cognitoService.JWKSHandler))
+	a.addShutdown("cognito", func(ctx context.Context) error {
+		st.cognitoService.Close()
+		return nil
+	})
 	return nil
 }
 
@@ -272,6 +283,7 @@ func (a *App) initKinesis(st *serviceState) error {
 		st.kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, st.accountID, st.region)
 	}
 	st.kinesisService = svckinesis.NewKinesisService(st.accountID, st.region)
+	st.kinesisService.SetStorageManager(a.server.StorageManager())
 	if st.kinesisStoreInstance != nil {
 		st.kinesisService.SetKinesisStore(st.region, st.kinesisStoreInstance)
 	}
@@ -326,7 +338,14 @@ func (a *App) initS3(st *serviceState) error {
 	st.s3Service = svcs3.NewS3Service(s3Store, blobStore, st.accountID)
 	st.s3Service.SetStorageManager(a.server.StorageManager())
 	st.s3Service.RestoreSSE3Keys()
+	st.s3Service.SetCredentialsProvider(auth.NewStaticCredentialsProvider(
+		a.cfg.AccessKeyID,
+		a.cfg.SecretAccessKey,
+		a.cfg.Region,
+		"",
+	))
 	s3Handler := svcs3.NewS3Handler(st.s3Service, st.region, a.server.StorageManager())
+	s3Handler.SetSignatureVerification(a.cfg.SignatureVerification)
 	a.server.RegisterS3Handler(s3Handler)
 
 	if eb := a.server.EventBus(); eb != nil {

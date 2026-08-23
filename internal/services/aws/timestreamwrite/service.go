@@ -108,6 +108,20 @@ func (s *TimestreamWriteService) GetStoresForRegion(region string) (*tsWriteStor
 	return actual.(*tsWriteStores), nil
 }
 
+// RecordStoreForRegion returns the record store for the given region,
+// creating the store group if not already cached. Cross-service consumers
+// (the eventbus timestream invoker) resolve stores through this method so
+// that every writer and the API plane share one RecordStore per region —
+// the store buffers writes in per-instance memory, so a second instance
+// would diverge from the API read plane.
+func (s *TimestreamWriteService) RecordStoreForRegion(region string) (*tsstore.RecordStore, error) {
+	stores, err := s.GetStoresForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return stores.recordStore, nil
+}
+
 func (s *TimestreamWriteService) store(ctx *request.RequestContext) (*tsWriteStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, ctx.GetRegion(), func() (*tsWriteStores, error) {
 		storage, err := ctx.GetStorage()

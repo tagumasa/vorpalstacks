@@ -92,4 +92,12 @@ var (
 
 	// ErrNotFound is returned when a generic resource is not found.
 	ErrNotFound = errors.New("not found")
+
+	// ErrImportJobStatusConflict is returned when a conditional import job
+	// status transition finds the job in a different state than expected.
+	ErrImportJobStatusConflict = errors.New("user import job status conflict")
+
+	// ErrImportJobActiveExists is returned when starting an import job
+	// while another job is still active in the account.
+	ErrImportJobActiveExists = errors.New("another user import job is active")
 )

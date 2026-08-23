@@ -8,8 +8,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // AdminCreateUser creates a new user in the specified user pool with admin privileges.
@@ -74,17 +72,9 @@ func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.Re
 		if err := validatePassword(tempPassword, userPool.PasswordPolicy); err != nil {
 			return nil, ErrPasswordPolicyViolation
 		}
-		hash, err := bcrypt.GenerateFromPassword([]byte(tempPassword), bcrypt.DefaultCost)
-		if err != nil {
+		if err := setNativePasswordCredentials(user, userPoolID, username, tempPassword); err != nil {
 			return nil, ErrInternalError
 		}
-		user.PasswordHash = string(hash)
-		saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, username, tempPassword)
-		if verr != nil {
-			return nil, ErrInternalError
-		}
-		user.SrpSalt = saltHex
-		user.SrpVerifier = verifierHex
 	}
 
 	if preSignUpResult.AutoConfirmUser {
@@ -332,17 +322,9 @@ func (s *CognitoService) AdminSetUserPassword(ctx context.Context, reqCtx *reque
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
+	if err := setNativePasswordCredentials(user, userPoolID, username, password); err != nil {
 		return nil, ErrInternalError
 	}
-	user.PasswordHash = string(hash)
-	saltHex, verifierHex, verr := computeSrpVerifier(userPoolID, username, password)
-	if verr != nil {
-		return nil, ErrInternalError
-	}
-	user.SrpSalt = saltHex
-	user.SrpVerifier = verifierHex
 
 	if permanent {
 		user.UserStatus = "CONFIRMED"

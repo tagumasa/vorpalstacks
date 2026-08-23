@@ -3,10 +3,15 @@ package testutil
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cwTypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	cloudwatchlogs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
@@ -182,6 +187,71 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 			}
 		}
 		return nil
+	}))
+
+	// A metric filter must publish a datapoint that GetMetricStatistics can
+	// read back: this pins the whole chain (PutLogEvents → filter
+	// evaluation → CloudWatch metric invoker → metric store → API read
+	// plane) with immediate visibility.
+	results = append(results, tc.runner.RunTest("logs", "MetricFilter_PublishesMetric", func() error {
+		groupName := tc.uniquePrefix("MFDeliver")
+		if err := tc.createLogGroup(groupName); err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.deleteLogGroup(groupName)
+		if err := tc.createLogStream(groupName, "stream"); err != nil {
+			return fmt.Errorf("create stream: %v", err)
+		}
+
+		metricName := tc.uniquePrefix("ErrorCount")
+		if err := tc.putMetricFilter(groupName, "ErrorFilter", "ERROR", metricName, "vorpalstacks/test"); err != nil {
+			return fmt.Errorf("put metric filter: %v", err)
+		}
+		defer func() {
+			_, _ = tc.client.DeleteMetricFilter(tc.ctx, &cloudwatchlogs.DeleteMetricFilterInput{
+				LogGroupName: aws.String(groupName),
+				FilterName:   aws.String("ErrorFilter"),
+			})
+		}()
+
+		now := time.Now().UnixMilli()
+		if err := tc.putLogEvent(groupName, "stream", "ERROR something failed", now-2000); err != nil {
+			return fmt.Errorf("put matching event: %v", err)
+		}
+		if err := tc.putLogEvent(groupName, "stream", "INFO all good", now-1000); err != nil {
+			return fmt.Errorf("put non-matching event: %v", err)
+		}
+
+		cwCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: tc.runner.endpoint,
+			Region:   tc.region,
+		})
+		if err != nil {
+			return fmt.Errorf("cloudwatch config: %v", err)
+		}
+		cwClient := cloudwatch.NewFromConfig(cwCfg)
+		start := time.Now().Add(-5 * time.Minute)
+		end := time.Now().Add(1 * time.Minute)
+		for i := 0; i < 10; i++ {
+			time.Sleep(1 * time.Second)
+			out, err := cwClient.GetMetricStatistics(tc.ctx, &cloudwatch.GetMetricStatisticsInput{
+				Namespace:  aws.String("vorpalstacks/test"),
+				MetricName: aws.String(metricName),
+				StartTime:  aws.Time(start),
+				EndTime:    aws.Time(end),
+				Period:     aws.Int32(300),
+				Statistics: []cwTypes.Statistic{cwTypes.StatisticSum},
+			})
+			if err != nil {
+				continue
+			}
+			for _, dp := range out.Datapoints {
+				if dp.Sum != nil && *dp.Sum >= 1 {
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("metric %s not visible via GetMetricStatistics after 10s", metricName)
 	}))
 
 	return results

@@ -105,6 +105,106 @@ func (s *CognitoStore) ListUserImportJobsPaginated(userPoolID string, opts commo
 	return common.List[UserImportJob](s.userImportJobsStore, opts, nil)
 }
 
+// StartUserImportJobIfEligible atomically moves a Created job to Pending
+// under the import-job lock, after verifying that no other job in the
+// account is active. Serialising the eligibility check with the status
+// write prevents two concurrent starts from launching two workers.
+func (s *CognitoStore) StartUserImportJobIfEligible(userPoolID, jobID string) (*UserImportJob, error) {
+	s.importJobMu.Lock()
+	defer s.importJobMu.Unlock()
+
+	job, err := s.GetUserImportJob(userPoolID, jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job.Status != "Created" {
+		return nil, ErrImportJobStatusConflict
+	}
+	allJobs, err := s.ListUserImportJobsAll()
+	if err != nil {
+		return nil, err
+	}
+	for _, other := range allJobs {
+		if other.UserPoolID == userPoolID && other.JobID == jobID {
+			continue
+		}
+		switch other.Status {
+		case "Pending", "InProgress", "Stopping":
+			return nil, ErrImportJobActiveExists
+		}
+	}
+	job.Status = "Pending"
+	job.StartDate = time.Now().UTC()
+	if err := s.UpdateUserImportJob(job); err != nil {
+		return nil, err
+	}
+	return job, nil
+}
+
+// TransitionUserImportJobStatus atomically moves a job from the expected
+// status to a new one under the import-job lock. mutate adjusts counters,
+// dates, or messages on the loaded record before the write; it may be nil.
+// The returned job reflects the post-transition state.
+func (s *CognitoStore) TransitionUserImportJobStatus(userPoolID, jobID, from, to string, mutate func(*UserImportJob)) (*UserImportJob, error) {
+	s.importJobMu.Lock()
+	defer s.importJobMu.Unlock()
+
+	job, err := s.GetUserImportJob(userPoolID, jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job.Status != from {
+		return job, ErrImportJobStatusConflict
+	}
+	job.Status = to
+	if mutate != nil {
+		mutate(job)
+	}
+	if err := s.UpdateUserImportJob(job); err != nil {
+		return nil, err
+	}
+	return job, nil
+}
+
+// UpdateUserImportJobProgress applies a mutation to a running job's
+// counters under the import-job lock, so a concurrent stop or worker
+// finalisation cannot interleave with the per-row progress write.
+func (s *CognitoStore) UpdateUserImportJobProgress(userPoolID, jobID string, mutate func(*UserImportJob)) error {
+	s.importJobMu.Lock()
+	defer s.importJobMu.Unlock()
+
+	job, err := s.GetUserImportJob(userPoolID, jobID)
+	if err != nil {
+		return err
+	}
+	switch job.Status {
+	case "InProgress", "Stopping":
+	default:
+		return ErrImportJobStatusConflict
+	}
+	mutate(job)
+	return s.UpdateUserImportJob(job)
+}
+
+// ListUserImportJobsAll returns every import job across all user pools in
+// the regional store, walking all pages. Callers use it to enforce the
+// one-active-job-per-account start guard.
+func (s *CognitoStore) ListUserImportJobsAll() ([]*UserImportJob, error) {
+	var all []*UserImportJob
+	opts := common.ListOptions{MaxItems: 1000}
+	for {
+		result, err := common.List[UserImportJob](s.userImportJobsStore, opts, nil)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, result.Items...)
+		if !result.IsTruncated {
+			return all, nil
+		}
+		opts.Marker = result.NextMarker
+	}
+}
+
 // ===================== Managed Login Branding =====================
 
 func (s *CognitoStore) SaveManagedLoginBranding(b *ManagedLoginBranding) error {

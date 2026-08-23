@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	svccognitoidentity "vorpalstacks/internal/services/aws/cognitoidentity"
 	"vorpalstacks/internal/services/aws/dynamodb"
@@ -55,12 +54,10 @@ func (a *App) wireCrossServiceDeps() {
 		}
 		eb.SetSNSInvoker(&snsInvokerAdapter{store: st.snsStoreInstance, kvStore: st.snsStoreInstance.BaseStore, publisher: pub})
 	}
-	if st.kinesisStoreInstance != nil {
+	if st.kinesisService != nil {
 		eb.SetKinesisInvoker(&kinesisInvokerAdapter{
-			store:         st.kinesisStoreInstance,
-			accountID:     st.accountID,
+			provider:      st.kinesisService,
 			defaultRegion: st.region,
-			storageMgr:    a.server.StorageManager(),
 		})
 	}
 	if st.eventsStoreInstance != nil {
@@ -81,41 +78,28 @@ func (a *App) wireCrossServiceDeps() {
 		logs.Warn("WAFInvoker not initialised: failed to get global storage", logs.Err(err))
 	}
 
-	if st.sqsStoreInstance != nil {
-		eb.SetSQSInvoker(&sqsInvokerAdapter{
-			storageMgr: sm,
-			accountID:  st.accountID,
-			baseURL:    appconfig.BaseURL(),
-		})
+	if st.sqsService != nil {
+		eb.SetSQSInvoker(&sqsInvokerAdapter{provider: st.sqsService})
 	}
-	eb.SetCloudWatchMetricInvoker(&cloudWatchMetricInvokerAdapter{
-		storageMgr: sm,
-		dataPath:   a.cfg.DataPath,
-	})
-	eb.SetCloudWatchAlarmInvoker(&cloudWatchAlarmInvokerAdapter{
-		storageMgr: sm,
-	})
-	eb.SetTimestreamInvoker(&timestreamInvokerAdapter{
-		storageMgr: sm,
-		dataPath:   a.cfg.DataPath,
-	})
-	eb.SetCloudTrailInvoker(&cloudTrailInvokerAdapter{
-		storageMgr: sm,
-		accountID:  st.accountID,
-	})
-	eb.SetLogsInvoker(&logsInvokerAdapter{
-		storageMgr: sm,
-		accountID:  st.accountID,
-		dataPath:   a.cfg.DataPath,
-	})
-
+	if st.cloudTrailService != nil {
+		eb.SetCloudTrailInvoker(&cloudTrailInvokerAdapter{provider: st.cloudTrailService})
+	}
 	if st.iamService != nil {
 		st.iamService.SetCloudTrailInvoker(eb.CloudTrailInvoker())
+	}
+
+	// Register the CloudWatch invokers before the logs service reads them
+	// back: its metric-filter evaluation publishes through the metric
+	// invoker at PutLogEvents time.
+	if st.cloudWatchService != nil {
+		eb.SetCloudWatchMetricInvoker(&cloudWatchMetricInvokerAdapter{provider: st.cloudWatchService})
+		eb.SetCloudWatchAlarmInvoker(&cloudWatchAlarmInvokerAdapter{provider: st.cloudWatchService})
 	}
 
 	if st.logsService != nil {
 		st.logsService.SetCloudWatchMetricInvoker(eb.CloudWatchMetricInvoker())
 		st.logsService.SetEventBus(eb)
+		eb.SetLogsInvoker(&logsInvokerAdapter{provider: st.logsService})
 	}
 
 	if st.cloudWatchService != nil {

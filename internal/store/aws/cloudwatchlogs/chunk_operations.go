@@ -78,15 +78,20 @@ func (s *Store) updateLogGroupStreamAndChunks(logGroupName string, lg *LogGroup,
 // entry WITHOUT committing it to Pebble. The caller must commit the
 // returned pendingChunkIndex to Pebble (ideally inside a transaction) or
 // remove chunkPath on failure.
-func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, ac *activeChunk) (pendingChunkIndex, error) {
-	if len(ac.entries) == 0 {
+func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, entries []LogEntry) (pendingChunkIndex, error) {
+	if len(entries) == 0 {
 		return pendingChunkIndex{}, nil
 	}
 
 	chunkSeq := atomic.AddUint64(&s.chunkCounter, 1)
-	chunkID := fmt.Sprintf("%d-%d-%d", ac.entries[0].Timestamp, len(ac.entries), chunkSeq)
+	// Fixed-width components in timestamp-sequence-entryCount order keep
+	// the lexicographic order of the chunk index keys equal to the
+	// chronological order of the chunks: with variable-width numbers, or
+	// with the entry count ahead of the sequence, same-timestamp reads
+	// return chunks out of ingestion order.
+	chunkID := fmt.Sprintf("%013d-%010d-%06d", entries[0].Timestamp, chunkSeq, len(entries))
 
-	actualPath, header, err := s.writeChunkFile(ac.entries)
+	actualPath, header, err := s.writeChunkFile(entries)
 	if err != nil {
 		return pendingChunkIndex{}, err
 	}
@@ -115,31 +120,6 @@ func (s *Store) prepareChunkFlush(logGroupName, logStreamName string, ac *active
 	}, nil
 }
 
-// flushChunk writes a chunk to disk and commits its index entry to Pebble.
-// Used by callers that do not need transactional atomicity with metadata
-// updates (e.g. flushIfNeeded before reads). PutLogEvents uses
-// prepareChunkFlush instead so the index can be committed inside the
-// metadata transaction.
-func (s *Store) flushChunk(logGroupName, logStreamName string, ac *activeChunk) error {
-	pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
-	if err != nil {
-		return err
-	}
-	if pi.meta == nil {
-		return nil
-	}
-	if err := s.PutProto(pi.indexKey, ChunkMetaToProto(pi.meta)); err != nil {
-		// Remove the orphaned chunk file so it does not leak storage
-		// with no index entry pointing to it.
-		if rmErr := os.Remove(pi.chunkPath); rmErr != nil && !os.IsNotExist(rmErr) {
-			logs.Error("Failed to remove orphaned chunk file after index failure",
-				logs.String("path", pi.chunkPath), logs.Err(rmErr))
-		}
-		return err
-	}
-	return nil
-}
-
 // readChunkHeader is indirected so tests can exercise the ReadHeader
 // failure path of writeChunkFile.
 var readChunkHeader = chunk.ReadHeader
@@ -154,10 +134,15 @@ func (s *Store) writeChunkFile(entries []LogEntry) (string, *chunk.Header, error
 		}
 	}
 
+	// Each acknowledged PutLogEvents must be durable across a crash, not
+	// only a process restart: the chunk file is fsynced before the chunk
+	// index transaction commits, so the index can never point at data
+	// that a crash lost. The cost is one fsync per chunk, and a chunk is
+	// written exactly once per PutLogEvents call.
 	opts := &chunk.WriterOptions{
 		ChunksDir:   s.chunksDir,
 		Encoding:    chunk.EncodingZstd,
-		SyncOnWrite: false,
+		SyncOnWrite: true,
 	}
 
 	w := chunk.NewWriter(opts)

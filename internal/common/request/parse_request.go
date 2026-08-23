@@ -26,6 +26,13 @@ type ParsedRequest struct {
 	Body        []byte
 	Region      string
 	AccessKeyID string
+	// Host carries the request's host (r.Host, which includes the port
+	// when non-default). Handlers that must hand a caller an absolute URL
+	// back (e.g. the Cognito user-import CSV upload URL) derive it from
+	// here. IsTLS records whether the request arrived over TLS so the
+	// generated URL keeps the caller's scheme.
+	Host  string
+	IsTLS bool
 }
 
 // GetRegion returns the request region, defaulting to defaults.DefaultRegion if unset.
@@ -51,6 +58,8 @@ func ParseAWSRequest(r *http.Request) (*ParsedRequest, error) {
 		QueryParams: r.URL.Query(),
 		PathParams:  make(map[string]string),
 		Parameters:  make(map[string]interface{}),
+		Host:        r.Host,
+		IsTLS:       r.TLS != nil,
 	}
 
 	var bodyBytes []byte

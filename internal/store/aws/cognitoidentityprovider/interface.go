@@ -71,6 +71,20 @@ type UserImportJobOperations interface {
 	GetUserImportJob(userPoolID, jobID string) (*UserImportJob, error)
 	UpdateUserImportJob(job *UserImportJob) error
 	ListUserImportJobsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserImportJob], error)
+	// ListUserImportJobsAll returns every import job in the regional store
+	// across all user pools, walking all pages. The start guard that limits
+	// the account to one active import job needs the cross-pool view.
+	ListUserImportJobsAll() ([]*UserImportJob, error)
+	// StartUserImportJobIfEligible atomically moves a Created job to
+	// Pending when no other job in the account is active.
+	StartUserImportJobIfEligible(userPoolID, jobID string) (*UserImportJob, error)
+	// TransitionUserImportJobStatus atomically moves a job from an
+	// expected status to a new one; concurrent Start, Stop, and worker
+	// finalisation serialise on the import-job lock.
+	TransitionUserImportJobStatus(userPoolID, jobID, from, to string, mutate func(*UserImportJob)) (*UserImportJob, error)
+	// UpdateUserImportJobProgress applies a mutation to a running job's
+	// counters under the import-job lock.
+	UpdateUserImportJobProgress(userPoolID, jobID string, mutate func(*UserImportJob)) error
 }
 
 // WebAuthnOperations defines operations for managing WebAuthn credentials.

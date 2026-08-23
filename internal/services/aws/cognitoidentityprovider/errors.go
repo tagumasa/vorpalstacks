@@ -9,6 +9,10 @@ import (
 var (
 	// ErrInvalidParameter is returned when a parameter is invalid.
 	ErrInvalidParameter = awserrors.NewAWSError("InvalidParameterException", "Invalid parameter", http.StatusBadRequest)
+	// ErrPreconditionNotMet is returned when the request preconditions are
+	// not met (e.g. starting a user import job when the pool has no
+	// auto-verified attribute or another import job is already active).
+	ErrPreconditionNotMet = awserrors.NewAWSError("PreconditionNotMetException", "Precondition not met", http.StatusBadRequest)
 	// ErrResourceNotFound is returned when the specified resource does not exist.
 	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFoundException", "Resource not found", http.StatusNotFound)
 	// ErrResourceExists is returned when attempting to create a resource that already exists.

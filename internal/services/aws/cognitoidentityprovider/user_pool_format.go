@@ -32,32 +32,42 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 	if pool.AutoVerifiedAttributes != nil {
 		result["AutoVerifiedAttributes"] = pool.AutoVerifiedAttributes
 	}
-	if len(pool.SchemaAttributes) > 0 {
-		schema := make([]map[string]interface{}, 0, len(pool.SchemaAttributes))
-		for _, sa := range pool.SchemaAttributes {
-			entry := map[string]interface{}{
-				"Name":                   sa.Name,
-				"AttributeDataType":      sa.AttributeDataType,
-				"DeveloperOnlyAttribute": sa.DeveloperOnlyAttribute,
-				"Mutable":                sa.Mutable,
-				"Required":               sa.Required,
-			}
-			if sa.NumberAttributeConstraints != nil {
-				entry["NumberAttributeConstraints"] = map[string]interface{}{
-					"MinValue": sa.NumberAttributeConstraints.MinValue,
-					"MaxValue": sa.NumberAttributeConstraints.MaxValue,
-				}
-			}
-			if sa.StringAttributeConstraints != nil {
-				entry["StringAttributeConstraints"] = map[string]interface{}{
-					"MinLength": sa.StringAttributeConstraints.MinLength,
-					"MaxLength": sa.StringAttributeConstraints.MaxLength,
-				}
-			}
-			schema = append(schema, entry)
+	// The wire member is SchemaAttributes (the model member name) and the
+	// value is the projected schema: the standard attribute set plus the
+	// pool's custom attributes with their custom:/dev: prefix.
+	schemaAttrs := schemaAttributesForDescribe(pool)
+	schema := make([]map[string]interface{}, 0, len(schemaAttrs))
+	for _, sa := range schemaAttrs {
+		entry := map[string]interface{}{
+			"Name":                   sa.Name,
+			"AttributeDataType":      sa.AttributeDataType,
+			"DeveloperOnlyAttribute": sa.DeveloperOnlyAttribute,
+			"Mutable":                sa.Mutable,
+			"Required":               sa.Required,
 		}
-		result["Schema"] = schema
+		if sa.NumberAttributeConstraints != nil {
+			num := map[string]interface{}{}
+			if sa.NumberAttributeConstraints.MinValue != "" {
+				num["MinValue"] = sa.NumberAttributeConstraints.MinValue
+			}
+			if sa.NumberAttributeConstraints.MaxValue != "" {
+				num["MaxValue"] = sa.NumberAttributeConstraints.MaxValue
+			}
+			entry["NumberAttributeConstraints"] = num
+		}
+		if sa.StringAttributeConstraints != nil {
+			str := map[string]interface{}{}
+			if sa.StringAttributeConstraints.MinLength != "" {
+				str["MinLength"] = sa.StringAttributeConstraints.MinLength
+			}
+			if sa.StringAttributeConstraints.MaxLength != "" {
+				str["MaxLength"] = sa.StringAttributeConstraints.MaxLength
+			}
+			entry["StringAttributeConstraints"] = str
+		}
+		schema = append(schema, entry)
 	}
+	result["SchemaAttributes"] = schema
 	if pool.PasswordPolicy != nil {
 		result["Policies"] = map[string]interface{}{
 			"PasswordPolicy": map[string]interface{}{

@@ -1,7 +1,6 @@
 package cloudwatchlogs
 
 import (
-	"fmt"
 	"os"
 
 	"vorpalstacks/internal/core/logs"
@@ -40,11 +39,6 @@ func (s *Store) DeleteLogStream(logGroupName, logStreamName string) error {
 	if _, err := s.GetLogStream(logGroupName, logStreamName); err != nil {
 		return err
 	}
-
-	streamKey := fmt.Sprintf("%s:%s", logGroupName, logStreamName)
-	s.chunkMutex.Lock()
-	delete(s.activeChunks, streamKey)
-	s.chunkMutex.Unlock()
 
 	chunks := s.ListChunksForStream(logGroupName, logStreamName)
 	for _, chunk := range chunks {

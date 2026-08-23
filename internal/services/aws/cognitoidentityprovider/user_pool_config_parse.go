@@ -487,9 +487,18 @@ func parseSchemaAttributes(req *request.ParsedRequest) []cognitostore.SchemaAttr
 			if !ok {
 				continue
 			}
-			sa := cognitostore.SchemaAttributeType{
-				Name:              getStringParam(m, "Name"),
-				AttributeDataType: getStringParam(m, "AttributeDataType"),
+			name := getStringParam(m, "Name")
+			// A standard attribute definition starts from the documented
+			// defaults so that members the request leaves unset keep the
+			// properties Amazon Cognito reports in describe responses;
+			// supplied members overwrite them below.
+			sa := cognitostore.SchemaAttributeType{Name: name}
+			if def, ok := standardSchemaAttributeDefault(name); ok {
+				sa = def
+				sa.Name = name
+			}
+			if v := getStringParam(m, "AttributeDataType"); v != "" {
+				sa.AttributeDataType = v
 			}
 			if v, ok := m["DeveloperOnlyAttribute"].(bool); ok {
 				sa.DeveloperOnlyAttribute = v

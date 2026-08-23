@@ -478,6 +478,174 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 		return AssertErrorContains(err, "InvalidParameterException")
 	}))
 
+	// The schema projection pins the AWS wire contract: SchemaAttributes is
+	// SDK-visible, carries the full standard attribute set with the pool's
+	// settings, and prefixes custom attribute names.
+	results = append(results, r.RunTest("cognito", "CreateUserPool_SchemaAttributesPrefixedOutput", func() error {
+		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("schema-output-%d", time.Now().UnixNano())),
+			Schema: []types.SchemaAttributeType{
+				{Name: aws.String("rank"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
+				{Name: aws.String("email"), AttributeDataType: types.AttributeDataTypeString, Required: aws.Bool(true)},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create pool with schema: %v", err)
+		}
+		if createResp.UserPool == nil || createResp.UserPool.Id == nil {
+			return fmt.Errorf("UserPool missing from create response")
+		}
+		poolID := *createResp.UserPool.Id
+		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+
+		assertSchema := func(attrs []types.SchemaAttributeType) error {
+			byName := make(map[string]types.SchemaAttributeType, len(attrs))
+			for _, a := range attrs {
+				if a.Name == nil {
+					return fmt.Errorf("schema attribute without a name")
+				}
+				byName[*a.Name] = a
+			}
+			for _, want := range []string{"sub", "email", "phone_number_verified", "updated_at", "identities", "custom:rank"} {
+				if _, ok := byName[want]; !ok {
+					return fmt.Errorf("SchemaAttributes missing %q (have %v)", want, byName)
+				}
+			}
+			if sub := byName["sub"]; sub.Required == nil || !*sub.Required {
+				return fmt.Errorf("sub must be a required attribute")
+			}
+			if email := byName["email"]; email.Required == nil || !*email.Required {
+				return fmt.Errorf("email must keep the supplied Required=true")
+			}
+			if _, ok := byName["rank"]; ok {
+				return fmt.Errorf("custom attribute returned without the custom: prefix")
+			}
+			return nil
+		}
+		if err := assertSchema(createResp.UserPool.SchemaAttributes); err != nil {
+			return fmt.Errorf("create response: %v", err)
+		}
+
+		descResp, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+		if err != nil {
+			return fmt.Errorf("describe pool: %v", err)
+		}
+		if descResp.UserPool == nil {
+			return fmt.Errorf("UserPool missing from describe response")
+		}
+		return assertSchema(descResp.UserPool.SchemaAttributes)
+	}))
+
+	// The CSV header carries the documented base columns (including
+	// cognito:mfa_enabled) plus the pool's custom attribute columns with
+	// the custom: prefix, without duplicating standard attribute names.
+	results = append(results, r.RunTest("cognito", "GetCSVHeader_CustomAttributeColumns", func() error {
+		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("csv-header-%d", time.Now().UnixNano())),
+			Schema: []types.SchemaAttributeType{
+				{Name: aws.String("rank"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
+				{Name: aws.String("email"), AttributeDataType: types.AttributeDataTypeString, Required: aws.Bool(true)},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create pool with schema: %v", err)
+		}
+		if createResp.UserPool == nil || createResp.UserPool.Id == nil {
+			return fmt.Errorf("UserPool missing from create response")
+		}
+		poolID := *createResp.UserPool.Id
+		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+
+		resp, err := client.GetCSVHeader(ctx, &cognitoidentityprovider.GetCSVHeaderInput{
+			UserPoolId: aws.String(poolID),
+		})
+		if err != nil {
+			return err
+		}
+		emailColumns, hasMfa, hasUsername, hasRank := 0, false, false, false
+		for _, column := range resp.CSVHeader {
+			switch column {
+			case "email":
+				emailColumns++
+			case "cognito:mfa_enabled":
+				hasMfa = true
+			case "cognito:username":
+				hasUsername = true
+			case "custom:rank":
+				hasRank = true
+			}
+		}
+		if !hasMfa || !hasUsername {
+			return fmt.Errorf("base columns missing (mfa_enabled=%v username=%v): %v", hasMfa, hasUsername, resp.CSVHeader)
+		}
+		if !hasRank {
+			return fmt.Errorf("custom attribute column custom:rank missing: %v", resp.CSVHeader)
+		}
+		if emailColumns != 1 {
+			return fmt.Errorf("standard attribute column duplicated: email appears %d times: %v", emailColumns, resp.CSVHeader)
+		}
+		return nil
+	}))
+
+	// UpdateUserPool carries no Schema member in the model; an update must
+	// never drop custom attributes added through AddCustomAttributes.
+	results = append(results, r.RunTest("cognito", "UpdateUserPool_PreservesSchemaAttributes", func() error {
+		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(fmt.Sprintf("schema-preserve-%d", time.Now().UnixNano())),
+		})
+		if err != nil {
+			return fmt.Errorf("create pool: %v", err)
+		}
+		if createResp.UserPool == nil || createResp.UserPool.Id == nil {
+			return fmt.Errorf("UserPool missing from create response")
+		}
+		poolID := *createResp.UserPool.Id
+		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+
+		if _, err := client.AddCustomAttributes(ctx, &cognitoidentityprovider.AddCustomAttributesInput{
+			UserPoolId: aws.String(poolID),
+			CustomAttributes: []types.SchemaAttributeType{
+				{Name: aws.String("loyalty"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
+			},
+		}); err != nil {
+			return fmt.Errorf("add custom attributes: %v", err)
+		}
+		if _, err := client.UpdateUserPool(ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+			UserPoolId: aws.String(poolID),
+			Policies: &types.UserPoolPolicyType{
+				PasswordPolicy: &types.PasswordPolicyType{
+					MinimumLength: aws.Int32(10),
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("update pool: %v", err)
+		}
+
+		descResp, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+		if err != nil {
+			return fmt.Errorf("describe pool: %v", err)
+		}
+		if descResp.UserPool == nil {
+			return fmt.Errorf("UserPool missing from describe response")
+		}
+		for _, a := range descResp.UserPool.SchemaAttributes {
+			if a.Name != nil && *a.Name == "custom:loyalty" {
+				return nil
+			}
+		}
+		return fmt.Errorf("custom:loyalty missing from SchemaAttributes after update")
+	}))
+
 	poolName := fmt.Sprintf("client-validation-%d", time.Now().UnixNano())
 	var poolID string
 	results = append(results, r.RunTest("cognito", "CreateUserPoolClient_InvalidClientName", func() error {

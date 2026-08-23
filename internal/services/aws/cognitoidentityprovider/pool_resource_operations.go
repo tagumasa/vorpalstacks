@@ -540,29 +540,14 @@ func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	pool, err := store.GetUserPool(userPoolID)
 	if err != nil {
 		return nil, ErrResourceNotFound
 	}
 
-	csvHeader := []string{
-		"cognito:username", "name", "given_name", "family_name", "middle_name",
-		"nickname", "preferred_username", "profile", "picture", "website",
-		"email", "email_verified", "gender", "birthdate", "zoneinfo",
-		"locale", "phone_number", "phone_number_verified", "address", "updated_at",
-	}
-	for _, sa := range pool.SchemaAttributes {
-		if sa.Name != "" {
-			csvHeader = append(csvHeader, sa.Name)
-		}
-	}
-
 	return map[string]interface{}{
-		"CSVHeader": csvHeader,
+		"CSVHeader":  csvHeaderForPool(pool),
+		"UserPoolId": userPoolID,
 	}, nil
 }
 

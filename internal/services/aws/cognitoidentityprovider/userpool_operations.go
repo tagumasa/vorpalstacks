@@ -20,6 +20,10 @@ func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.Req
 	}
 
 	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
+	// CreateUserPool is the only operation that carries the Schema member;
+	// apply it before the shared update path so the whole-pool validation
+	// still sees the schema definitions.
+	userPool.SchemaAttributes = parseSchemaAttributes(req)
 	if err := applyUserPoolUpdates(userPool, req); err != nil {
 		return nil, err
 	}

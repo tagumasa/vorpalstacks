@@ -352,6 +352,9 @@ var standardSchemaAttributeNames = map[string]bool{
 	"phone_number_verified": true, "picture": true,
 	"preferred_username": true, "profile": true, "sub": true,
 	"updated_at": true, "website": true, "zoneinfo": true,
+	// identities is the reserved federation-populated standard attribute;
+	// Amazon Cognito returns it in the DescribeUserPool standard set.
+	"identities": true,
 }
 
 // customAttributeNamePattern is the Smithy CustomAttributeNameType pattern:
@@ -602,6 +605,25 @@ const (
 	MaxPasswordHistorySize           = 24
 	MaxUnusedAccountValidityDays     = 365
 )
+
+// UserImportJobNameType bounds from the Smithy model: length 1-128 and
+// the pattern ^[\w\s+=,.@-]+$.
+const (
+	MinImportJobNameLength = 1
+	MaxImportJobNameLength = 128
+)
+
+// importJobNamePattern is the UserImportJobNameType Smithy pattern.
+var importJobNamePattern = regexp.MustCompile(`^[\w\s+=,.@-]+$`)
+
+// validateImportJobName checks an import job name against the Smithy
+// UserImportJobNameType constraints.
+func validateImportJobName(name string) bool {
+	if len(name) < MinImportJobNameLength || len(name) > MaxImportJobNameLength {
+		return false
+	}
+	return importJobNamePattern.MatchString(name)
+}
 
 func validatePasswordHistorySize(v int) bool {
 	return v >= 0 && v <= MaxPasswordHistorySize

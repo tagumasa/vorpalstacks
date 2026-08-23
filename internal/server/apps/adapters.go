@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	dynamodbsvc "vorpalstacks/internal/services/aws/dynamodb"
 	"vorpalstacks/internal/services/aws/rds/rdsdata"
@@ -30,44 +28,31 @@ import (
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
-// sqsInvokerAdapter adapts the SQS store to the eventbus.SQSInvoker
-// interface using per-region store caching via RegionStorageManager.
-// This enables cross-region SQS delivery (e.g. alarm actions targeting
-// queues in a different region than the source service).
-type sqsInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	accountID  string
-	baseURL    string
-	stores     sync.Map
+// sqsStoreProvider resolves the per-region SQS store owned by the SQS
+// service. The adapter must not construct its own store: the store keeps
+// per-instance deduplication, sequence, and receive-attempt caches, so a
+// second instance would diverge from the API plane.
+type sqsStoreProvider interface {
+	GetStoreForRegion(region string) (storesqs.SQSStoreInterface, error)
 }
 
-func (a *sqsInvokerAdapter) getOrCreateStore(region string) (*storesqs.SQSStore, error) {
+// sqsInvokerAdapter adapts the SQS service store to the eventbus.SQSInvoker
+// interface. This enables cross-region SQS delivery (e.g. alarm actions
+// targeting queues in a different region than the source service).
+type sqsInvokerAdapter struct {
+	provider sqsStoreProvider
+}
+
+func (a *sqsInvokerAdapter) getStore(region string) (storesqs.SQSStoreInterface, error) {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*storesqs.SQSStore); ok {
-			return typed, nil
-		}
-	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := storesqs.NewSQSStore(regionStorage, a.accountID, region, a.baseURL)
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		typed, ok := actual.(*storesqs.SQSStore)
-		if !ok {
-			return nil, fmt.Errorf("sqs: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return store, nil
+	return a.provider.GetStoreForRegion(region)
 }
 
 // GetQueueByName looks up a queue by name in the specified region and returns its URL.
 func (a *sqsInvokerAdapter) GetQueueByName(_ context.Context, region, queueName string) (string, error) {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +65,7 @@ func (a *sqsInvokerAdapter) GetQueueByName(_ context.Context, region, queueName 
 
 // GetQueueARN looks up a queue by URL in the specified region and returns its ARN.
 func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, region, queueURL string) (string, error) {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +78,7 @@ func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, region, queueURL stri
 
 // SendMessage sends a message to the specified queue in the given region.
 func (a *sqsInvokerAdapter) SendMessage(_ context.Context, region, queueURL, body string, opts eventbus.SQSSendOptions) (string, string, error) {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return "", "", err
 	}
@@ -133,7 +118,7 @@ func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesq
 
 // ReceiveMessage retrieves messages from the specified queue in the given region.
 func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]eventbus.ReceivedSQSMessage, error) {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +150,7 @@ func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL s
 
 // DeleteMessage deletes a message from the specified queue in the given region.
 func (a *sqsInvokerAdapter) DeleteMessage(_ context.Context, region, queueURL, receiptHandle string) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return err
 	}
@@ -258,44 +243,36 @@ func (a *snsInvokerAdapter) DeleteStoredMessage(_ context.Context, key string) e
 	return a.kvStore.Delete(key)
 }
 
-// kinesisInvokerAdapter adapts the Kinesis concrete store to the
-// eventbus.KinesisInvoker interface.
-type kinesisInvokerAdapter struct {
-	store         *storekinesis.KinesisStore
-	accountID     string
-	defaultRegion string
-	// storageMgr lazily builds stores for regions other than
-	// defaultRegion; it is nil only when the manager is unavailable at
-	// wiring time, in which case only the default region resolves.
-	storageMgr *storage.RegionStorageManager
-	stores     sync.Map
+// kinesisStoreProvider resolves the per-region Kinesis store owned by the
+// Kinesis service. The adapter must not construct its own store: the store
+// keeps in-memory sequence and shard-id counters, so a second instance
+// would diverge from the API plane.
+type kinesisStoreProvider interface {
+	GetStoreForRegion(region string) (*storekinesis.KinesisStore, error)
 }
 
-// getOrCreateStore returns the KinesisStore for the region, building it from
-// the region's storage on first use.
-func (a *kinesisInvokerAdapter) getOrCreateStore(region string) (*storekinesis.KinesisStore, error) {
-	if cached, ok := a.stores.Load(region); ok {
-		return cached.(*storekinesis.KinesisStore), nil
+// kinesisInvokerAdapter adapts the Kinesis service store to the
+// eventbus.KinesisInvoker interface.
+type kinesisInvokerAdapter struct {
+	provider kinesisStoreProvider
+	// defaultRegion is the region for interface methods that do not carry
+	// a region parameter.
+	defaultRegion string
+}
+
+// getStore returns the KinesisStore for the region, resolved through the
+// owning service so the API plane and cross-service writers share one
+// instance per region.
+func (a *kinesisInvokerAdapter) getStore(region string) (*storekinesis.KinesisStore, error) {
+	if region == "" {
+		region = a.defaultRegion
 	}
-	if a.storageMgr == nil {
-		if region == a.defaultRegion {
-			return a.store, nil
-		}
-		return nil, fmt.Errorf("kinesis: regional store unavailable for region %s", region)
-	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("kinesis: storage for region %s does not support 2PC", region)
-	}
-	store := storekinesis.NewKinesisStore(tstore, a.accountID, region)
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		return actual.(*storekinesis.KinesisStore), nil
-	}
-	return store, nil
+	return a.provider.GetStoreForRegion(region)
+}
+
+// defaultStore returns the KinesisStore of the adapter's default region.
+func (a *kinesisInvokerAdapter) defaultStore() (*storekinesis.KinesisStore, error) {
+	return a.provider.GetStoreForRegion(a.defaultRegion)
 }
 
 // StreamExists reports whether the stream addressed by the ARN exists in the
@@ -313,7 +290,7 @@ func (a *kinesisInvokerAdapter) StreamExists(_ context.Context, region, streamAR
 	if streamName == "" || streamName == parsed.Resource {
 		return false, nil
 	}
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return false, err
 	}
@@ -328,7 +305,11 @@ func (a *kinesisInvokerAdapter) StreamExists(_ context.Context, region, streamAR
 
 // ListShards lists the shards in the given Kinesis stream.
 func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string) ([]eventbus.ShardInfo, error) {
-	shards, err := a.store.ListShards(streamName, nil, "", 0)
+	store, err := a.defaultStore()
+	if err != nil {
+		return nil, err
+	}
+	shards, err := store.ListShards(streamName, nil, "", 0)
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +329,11 @@ func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string)
 
 // PutRecord puts a record into the given Kinesis stream on an open shard.
 func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, partitionKey string, data []byte) (string, error) {
-	shards, err := a.store.ListShards(streamName, nil, "", 0)
+	store, err := a.defaultStore()
+	if err != nil {
+		return "", err
+	}
+	shards, err := store.ListShards(streamName, nil, "", 0)
 	if err != nil {
 		return "", err
 	}
@@ -356,7 +341,7 @@ func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, 
 	if openShard == nil {
 		return "", fmt.Errorf("kinesis: no open shard in stream %s", streamName)
 	}
-	record, err := a.store.PutRecord(streamName, openShard.ShardID, partitionKey, string(data))
+	record, err := store.PutRecord(streamName, openShard.ShardID, partitionKey, string(data))
 	if err != nil {
 		return "", err
 	}
@@ -366,7 +351,11 @@ func (a *kinesisInvokerAdapter) PutRecord(_ context.Context, streamName string, 
 // CreateShardIterator creates a shard iterator for the given stream and shard.
 // The timestamp parameter is honoured for AT_TIMESTAMP iterators.
 func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamName string, shardID string, iteratorType string, startingSequenceNumber string, timestamp *time.Time) (string, error) {
-	iterator, err := a.store.CreateShardIterator(streamName, shardID, iteratorType, startingSequenceNumber, timestamp)
+	store, err := a.defaultStore()
+	if err != nil {
+		return "", err
+	}
+	iterator, err := store.CreateShardIterator(streamName, shardID, iteratorType, startingSequenceNumber, timestamp)
 	if err != nil {
 		return "", err
 	}
@@ -380,7 +369,11 @@ func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamNam
 // every iterator type except AT_SEQUENCE_NUMBER. includeStart re-enables
 // the inclusive read for the poller's initial LATEST anchor.
 func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
-	records, nextSeq, err := a.store.GetRecords(streamName, shardID, startingSequenceNumber, limit, includeStart)
+	store, err := a.defaultStore()
+	if err != nil {
+		return nil, "", err
+	}
+	records, nextSeq, err := store.GetRecords(streamName, shardID, startingSequenceNumber, limit, includeStart)
 	if err != nil {
 		return nil, "", err
 	}
@@ -955,87 +948,54 @@ func (a *wafInvokerAdapter) SetWebACLProvider(p *svcwafv2.WAFv2Service) {
 	a.provider = p
 }
 
-type cloudWatchMetricInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	dataPath   string
-	stores     sync.Map
+// cwAlarmStoreProvider resolves the per-region alarm store owned by the
+// CloudWatch service. The adapter must not construct its own store: the
+// service owns the store-group lifecycle, and a second instance would
+// silently diverge the moment the store gains in-memory state.
+type cwAlarmStoreProvider interface {
+	AlarmStoreForRegion(region string) (*cwstore.AlarmStore, error)
 }
 
 type cloudWatchAlarmInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	stores     sync.Map
+	provider cwAlarmStoreProvider
 }
 
-func (a *cloudWatchAlarmInvokerAdapter) getOrCreateStore(region string) (*cwstore.AlarmStore, error) {
+func (a *cloudWatchAlarmInvokerAdapter) getStore(region string) (*cwstore.AlarmStore, error) {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*cwstore.AlarmStore); ok {
-			return typed, nil
-		}
-	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := cwstore.NewAlarmStore(regionStorage, "", region)
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		typed, ok := actual.(*cwstore.AlarmStore)
-		if !ok {
-			return nil, fmt.Errorf("cloudwatch alarm: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return store, nil
+	return a.provider.AlarmStoreForRegion(region)
 }
 
 func (a *cloudWatchAlarmInvokerAdapter) SetAlarmState(region, alarmName, stateValue, stateReason string) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return err
 	}
 	return store.SetAlarmState(alarmName, stateValue, stateReason, "")
 }
 
-type timestreamInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	dataPath   string
-	stores     sync.Map
+// timestreamRecordStoreProvider resolves the per-region record store owned
+// by the Timestream Write service. The adapter must not construct its own
+// store: the store buffers writes in per-instance memory, so a second
+// instance would diverge from the API read plane.
+type timestreamRecordStoreProvider interface {
+	RecordStoreForRegion(region string) (*timestreamstore.RecordStore, error)
 }
 
-func (a *timestreamInvokerAdapter) getOrCreateStore(region string) (*timestreamstore.RecordStore, error) {
+type timestreamInvokerAdapter struct {
+	provider timestreamRecordStoreProvider
+}
+
+func (a *timestreamInvokerAdapter) getStore(region string) (*timestreamstore.RecordStore, error) {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*timestreamstore.RecordStore); ok {
-			return typed, nil
-		}
-	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	tsStore := timestreamstore.NewStore(regionStorage, "", region)
-	tableStore := timestreamstore.NewTableStore(regionStorage, tsStore, "", region)
-	store, err := timestreamstore.NewRecordStoreWithIndex(regionStorage, tableStore, region, a.dataPath)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		store.Close()
-		typed, ok := actual.(*timestreamstore.RecordStore)
-		if !ok {
-			return nil, fmt.Errorf("timestream: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return store, nil
+	return a.provider.RecordStoreForRegion(region)
 }
 
 func (a *timestreamInvokerAdapter) WriteRecords(region, databaseName, tableName string, dimensions map[string]string, measureName string, measureValue string, measureType string, timestamp time.Time) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return err
 	}
@@ -1059,34 +1019,29 @@ func (a *timestreamInvokerAdapter) WriteRecords(region, databaseName, tableName 
 	return err
 }
 
-func (a *cloudWatchMetricInvokerAdapter) getOrCreateStore(region string) (*cwstore.MetricChunkStore, error) {
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*cwstore.MetricChunkStore); ok {
-			return typed, nil
-		}
+// cwMetricStoreProvider resolves the per-region metric store owned by the
+// CloudWatch service. The adapter must not construct its own store: the
+// MetricChunkStore tracks chunk files in per-instance memory and runs
+// background goroutines, so a second instance would orphan chunks and leak
+// goroutines that nothing ever closes.
+type cwMetricStoreProvider interface {
+	MetricStoreForRegion(region string) (*cwstore.MetricChunkStore, error)
+}
+
+type cloudWatchMetricInvokerAdapter struct {
+	provider cwMetricStoreProvider
+}
+
+func (a *cloudWatchMetricInvokerAdapter) getStore(region string) (*cwstore.MetricChunkStore, error) {
+	if region == "" {
+		region = defaults.DefaultRegion
 	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store, err := cwstore.NewMetricChunkStoreWithIndex(regionStorage, region, a.dataPath)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		store.Close()
-		typed, ok := actual.(*cwstore.MetricChunkStore)
-		if !ok {
-			return nil, fmt.Errorf("cloudwatch metric: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return store, nil
+	return a.provider.MetricStoreForRegion(region)
 }
 
 // PutMetricData writes a single metric datum to CloudWatch in the given region.
 func (a *cloudWatchMetricInvokerAdapter) PutMetricData(region, namespace string, metricName string, value float64, timestamp time.Time) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.getStore(region)
 	if err != nil {
 		return err
 	}
@@ -1099,40 +1054,29 @@ func (a *cloudWatchMetricInvokerAdapter) PutMetricData(region, namespace string,
 	return store.PutMetricData(namespace, []cwstore.MetricDatum{datum})
 }
 
-type cloudTrailInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	accountID  string
-	stores     sync.Map
+// cloudTrailStoreProvider resolves the per-region CloudTrail store owned by
+// the CloudTrail service. The adapter must not construct its own store: the
+// service owns the store lifecycle, and a second instance would silently
+// diverge the moment the store gains in-memory state.
+type cloudTrailStoreProvider interface {
+	GetStoreForRegion(region string) (cloudtrailstore.CloudTrailStoreInterface, error)
 }
 
-func (a *cloudTrailInvokerAdapter) getOrCreateStore(region string) (*cloudtrailstore.CloudTrailStore, error) {
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*cloudtrailstore.CloudTrailStore); ok {
-			return typed, nil
-		}
+type cloudTrailInvokerAdapter struct {
+	provider cloudTrailStoreProvider
+}
+
+func (a *cloudTrailInvokerAdapter) getStore(region string) (cloudtrailstore.CloudTrailStoreInterface, error) {
+	if region == "" {
+		region = defaults.DefaultRegion
 	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	ctStore := cloudtrailstore.NewCloudTrailStore(regionStorage, a.accountID, region)
-	if actual, loaded := a.stores.LoadOrStore(region, ctStore); loaded {
-		typed, ok := actual.(*cloudtrailstore.CloudTrailStore)
-		if !ok {
-			return nil, fmt.Errorf("cloudtrail: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return ctStore, nil
+	return a.provider.GetStoreForRegion(region)
 }
 
 // LookupEvents queries CloudTrail for events matching the given criteria.
-// The adapter is scoped to a single account via a.accountID at construction
-// time, so the per-call accountID parameter of the previous signature was
-// redundant; the resolved CloudTrailStore already filters by account.
 // nextToken supports pagination by forwarding it to EventQuery.NextToken.
 func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
-	ctStore, err := a.getOrCreateStore(region)
+	ctStore, err := a.getStore(region)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1167,54 +1111,40 @@ func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, usern
 	return out, nextToken, nil
 }
 
-type logsInvokerAdapter struct {
-	storageMgr *storage.RegionStorageManager
-	accountID  string
-	dataPath   string
-	stores     sync.Map
+// logsStoreProvider resolves the per-region CloudWatch Logs store owned by
+// the CloudWatch Logs service. The adapter must not construct its own store:
+// every writer and the API read plane must share the one store instance per
+// region, or the per-store chunk sequence and in-memory registry state would
+// silently diverge between instances.
+type logsStoreProvider interface {
+	GetStoreForRegion(region string) (*logsstore.Store, error)
 }
 
-func (a *logsInvokerAdapter) getOrCreateStore(region string) (*logsstore.Store, error) {
-	if cached, ok := a.stores.Load(region); ok {
-		if typed, ok := cached.(*logsstore.Store); ok {
-			return typed, nil
-		}
-	}
-	regionStorage, err := a.storageMgr.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store, err := logsstore.NewStore(regionStorage, regionStorage.Bucket("logs-"+region), a.accountID, region, a.dataPath)
-	if err != nil {
-		return nil, err
-	}
-	if actual, loaded := a.stores.LoadOrStore(region, store); loaded {
-		typed, ok := actual.(*logsstore.Store)
-		if !ok {
-			return nil, fmt.Errorf("logs: unexpected store type for region %s", region)
-		}
-		return typed, nil
-	}
-	return store, nil
+type logsInvokerAdapter struct {
+	provider logsStoreProvider
 }
 
 // EnsureLogGroup creates the log group if it does not already exist.
 func (a *logsInvokerAdapter) EnsureLogGroup(_ context.Context, region, logGroupName, accountID string) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.provider.GetStoreForRegion(region)
 	if err != nil {
 		return err
 	}
 	_, err = store.GetLogGroup(logGroupName)
 	if err != nil {
 		lg := logsstore.NewLogGroup(logGroupName, region, accountID)
-		return store.CreateLogGroup(lg)
+		// A concurrent creator winning the race is fine: the group exists,
+		// which is all this method has to guarantee.
+		if createErr := store.CreateLogGroup(lg); createErr != nil && !errors.Is(createErr, logsstore.ErrLogGroupAlreadyExists) {
+			return createErr
+		}
 	}
 	return nil
 }
 
 // EnsureLogStream creates the log stream if it does not already exist.
 func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroupName, logStreamName string) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.provider.GetStoreForRegion(region)
 	if err != nil {
 		return err
 	}
@@ -1222,12 +1152,15 @@ func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroup
 		return nil
 	}
 	ls := logsstore.NewLogStream(logStreamName, logGroupName)
-	return store.CreateLogStream(ls)
+	if createErr := store.CreateLogStream(ls); createErr != nil && !errors.Is(createErr, logsstore.ErrLogStreamAlreadyExists) {
+		return createErr
+	}
+	return nil
 }
 
 // PutLogEvents writes log entries to the specified log stream.
 func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []eventbus.LogsLogEntry) error {
-	store, err := a.getOrCreateStore(region)
+	store, err := a.provider.GetStoreForRegion(region)
 	if err != nil {
 		return err
 	}

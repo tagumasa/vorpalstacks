@@ -33,47 +33,6 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 		}
 	}
 
-	streamKey := fmt.Sprintf("%s:%s", logGroupName, logStreamName)
-	ac, exists := s.activeChunks[streamKey]
-	if !exists {
-		ac = &activeChunk{
-			entries: make([]LogEntry, 0, MaxChunkSize),
-		}
-		s.activeChunks[streamKey] = ac
-	}
-
-	// Collect chunk index entries that must be committed atomically with
-	// the LogGroup/LogStream metadata update. If the metadata transaction
-	// fails, the chunk files are removed to prevent orphans.
-	var pendingChunks []pendingChunkIndex
-
-	// Flush existing entries first if appending the new batch would
-	// exceed MaxChunkSize, preventing a single chunk from growing
-	// up to ~2× MaxChunkSize.
-	if len(ac.entries)+len(events) > MaxChunkSize && len(ac.entries) > 0 {
-		pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
-		if err != nil {
-			return "", err
-		}
-		if pi.meta != nil {
-			pendingChunks = append(pendingChunks, pi)
-		}
-		ac.entries = ac.entries[:0]
-	}
-
-	ac.entries = append(ac.entries, events...)
-
-	if len(ac.entries) >= MaxChunkSize {
-		pi, err := s.prepareChunkFlush(logGroupName, logStreamName, ac)
-		if err != nil {
-			return "", err
-		}
-		if pi.meta != nil {
-			pendingChunks = append(pendingChunks, pi)
-		}
-		delete(s.activeChunks, streamKey)
-	}
-
 	var minTs, maxTs int64
 	var bytesAdded int64
 	for i, e := range events {
@@ -92,6 +51,26 @@ func (s *Store) PutLogEvents(logGroupName, logStreamName string, events []LogEnt
 	if err != nil {
 		return "", err
 	}
+
+	// Every acknowledged PutLogEvents call persists its own chunk. AWS
+	// treats a successful PutLogEvents as durable, so buffering events in
+	// memory across calls (and losing the buffer on restart) would break
+	// that contract. Collect the chunk index entry that must be committed
+	// atomically with the LogGroup/LogStream metadata update; if the
+	// metadata transaction fails, the chunk file is removed to prevent
+	// orphans. The sequence token is advanced before the chunk is written
+	// so a token failure cannot orphan an already-persisted chunk.
+	var pendingChunks []pendingChunkIndex
+	if len(events) > 0 {
+		pi, err := s.prepareChunkFlush(logGroupName, logStreamName, events)
+		if err != nil {
+			return "", err
+		}
+		if pi.meta != nil {
+			pendingChunks = append(pendingChunks, pi)
+		}
+	}
+
 	ls.UploadSequenceToken = newToken
 	lg.StoredBytes += bytesAdded
 
@@ -131,32 +110,11 @@ func matchFilterPattern(message, pattern string) bool {
 }
 
 func sortEventsByTimestamp(events []*OutputLogEvent) {
-	sort.Slice(events, func(i, j int) bool {
+	// Stable: events with identical timestamps keep their relative
+	// (ingestion) order, matching the order AWS returns them in.
+	sort.SliceStable(events, func(i, j int) bool {
 		return events[i].Timestamp < events[j].Timestamp
 	})
-}
-
-func (s *Store) flushIfNeeded(logGroupName, logStreamName string) {
-	streamKey := fmt.Sprintf("%s:%s", logGroupName, logStreamName)
-	s.chunkMutex.Lock()
-	defer s.chunkMutex.Unlock()
-
-	if ac, exists := s.activeChunks[streamKey]; exists && len(ac.entries) > 0 {
-		if err := s.flushChunk(logGroupName, logStreamName, ac); err != nil {
-			logs.Error("Failed to flush chunk", logs.String("logGroup", logGroupName), logs.String("logStream", logStreamName), logs.Err(err))
-		}
-		ac.entries = ac.entries[:0]
-	}
-}
-
-func (s *Store) flushAllForLogGroup(logGroupName string) {
-	streams, _, err := s.ListLogStreams(logGroupName, "", "", 10000)
-	if err != nil {
-		return
-	}
-	for _, stream := range streams {
-		s.flushIfNeeded(logGroupName, stream.Name)
-	}
 }
 
 // GetLogEvents retrieves log events from a CloudWatch Logs log stream.
@@ -168,8 +126,6 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 	if _, err := s.GetLogStream(logGroupName, logStreamName); err != nil {
 		return nil, "", "", ErrLogStreamNotFound
 	}
-
-	s.flushIfNeeded(logGroupName, logStreamName)
 
 	chunks := s.ListChunksForStream(logGroupName, logStreamName)
 	var allEvents []*OutputLogEvent
@@ -187,6 +143,11 @@ func (s *Store) GetLogEvents(logGroupName, logStreamName string, startTime, endT
 
 		entries, err := s.readChunkFile(chunk.ChunkPath)
 		if err != nil {
+			// A chunk that fails to read is invisible to the caller;
+			// log it so corruption is discoverable instead of silently
+			// shrinking the result.
+			logs.Warn("Failed to read log events chunk",
+				logs.String("chunkPath", chunk.ChunkPath), logs.Err(err))
 			continue
 		}
 
@@ -282,14 +243,6 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 		return nil, nil, "", ErrLogGroupNotFound
 	}
 
-	for _, streamName := range logStreamNames {
-		s.flushIfNeeded(logGroupName, streamName)
-	}
-
-	if len(logStreamNames) == 0 {
-		s.flushAllForLogGroup(logGroupName)
-	}
-
 	var chunks []*ChunkMeta
 	if len(logStreamNames) > 0 {
 		for _, streamName := range logStreamNames {
@@ -314,6 +267,11 @@ func (s *Store) FilterLogEvents(logGroupName string, logStreamNames []string, st
 
 		entries, err := s.readChunkFile(chunk.ChunkPath)
 		if err != nil {
+			// A chunk that fails to read is invisible to the caller;
+			// log it so corruption is discoverable instead of silently
+			// shrinking the result.
+			logs.Warn("Failed to read log events chunk",
+				logs.String("chunkPath", chunk.ChunkPath), logs.Err(err))
 			continue
 		}
 

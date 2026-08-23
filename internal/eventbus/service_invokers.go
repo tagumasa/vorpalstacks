@@ -277,6 +277,15 @@ type S3Invoker interface {
 	// Consumers use it to distinguish a missing source bucket from an
 	// empty one, which listing alone cannot do.
 	BucketExists(ctx context.Context, region, bucket string) (bool, error)
+	// EnsureBucket creates the named bucket when it does not exist yet.
+	// Consumers that own an internal service bucket (e.g. the Cognito
+	// user-import upload bucket) use it instead of requiring operators to
+	// provision the bucket manually.
+	EnsureBucket(ctx context.Context, region, bucket string) error
+	// DeleteObject removes an object. Consumers use it to purge transient
+	// payloads after use, mirroring AWS services that delete uploaded
+	// import files once the job completes.
+	DeleteObject(ctx context.Context, region, bucket, key string) error
 }
 
 // WAFInvoker provides WAF WebACL association operations for cross-service

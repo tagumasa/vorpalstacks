@@ -207,6 +207,11 @@ type User struct {
 	LastModifiedDate time.Time         `json:"lastModifiedDate"`
 	Attributes       map[string]string `json:"attributes,omitempty"`
 	PasswordHash     string            `json:"passwordHash,omitempty"`
+	// PasswordHashAlgo names the algorithm an imported PasswordHash was
+	// encoded with (BCRYPT, SCRYPT, ARGON2ID, PBKDF2_SHA256). It is set by
+	// CSV user import and cleared once the credentials migrate to the
+	// native bcrypt+SRP pair at first successful sign-in.
+	PasswordHashAlgo string `json:"passwordHashAlgo,omitempty"`
 	// SrpSalt is the hex-encoded 16-byte random salt used to derive the SRP
 	// verifier. It is sent to clients in the SALT ChallengeParameter.
 	SrpSalt string `json:"srpSalt,omitempty"`
@@ -776,10 +781,14 @@ type UserImportJob struct {
 	CompletionDate        time.Time `json:"completionDate,omitempty"`
 	Status                string    `json:"status"`
 	CloudWatchLogsRoleArn string    `json:"cloudWatchLogsRoleArn,omitempty"`
-	ImportedUsers         int64     `json:"importedUsers"`
-	SkippedUsers          int64     `json:"skippedUsers"`
-	FailedUsers           int64     `json:"failedUsers"`
-	CompletionMessage     string    `json:"completionMessage,omitempty"`
+	// PasswordHashingAlgorithm records the algorithm the CSV password_hash
+	// column is encoded with (BCRYPT, SCRYPT, ARGON2ID, PBKDF2_SHA256).
+	// Empty when the import carries no password hashes.
+	PasswordHashingAlgorithm string `json:"passwordHashingAlgorithm,omitempty"`
+	ImportedUsers            int64  `json:"importedUsers"`
+	SkippedUsers             int64  `json:"skippedUsers"`
+	FailedUsers              int64  `json:"failedUsers"`
+	CompletionMessage        string `json:"completionMessage,omitempty"`
 }
 
 // WebAuthnCredential represents a registered FIDO2/WebAuthn credential.

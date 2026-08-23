@@ -14,8 +14,9 @@ import (
 
 // KinesisService provides AWS Kinesis stream operations.
 type KinesisService struct {
-	accountID string
-	stores    sync.Map // region → *kinesisstore.KinesisStore
+	accountID      string
+	storageManager *storage.RegionStorageManager
+	stores         sync.Map // region → *kinesisstore.KinesisStore
 }
 
 // NewKinesisService creates a new Kinesis service instance.
@@ -23,6 +24,12 @@ func NewKinesisService(accountID, region string) *KinesisService {
 	return &KinesisService{
 		accountID: accountID,
 	}
+}
+
+// SetStorageManager injects the region storage manager for lazy store
+// creation in GetStoreForRegion.
+func (s *KinesisService) SetStorageManager(sm *storage.RegionStorageManager) {
+	s.storageManager = sm
 }
 
 // SetKinesisStore pre-populates the store cache for the given region so that
@@ -47,15 +54,31 @@ func (s *KinesisService) store(reqCtx *request.RequestContext) (*kinesisstore.Ki
 	})
 }
 
-// getStoreForRegion returns the cached KinesisStore for the given region.
-// Returns an error if no store has been initialised for that region
-// (the store cache is populated by SetKinesisStore or lazily by the
-// HTTP API handler's store() method).
-func (s *KinesisService) getStoreForRegion(region string) (*kinesisstore.KinesisStore, error) {
+// GetStoreForRegion returns the KinesisStore for the given region, creating
+// it from the region storage on first use. The service handlers, the admin
+// console, and cross-service integrations (the eventbus kinesis invoker)
+// resolve stores through this method so that all callers share one store
+// instance per region.
+func (s *KinesisService) GetStoreForRegion(region string) (*kinesisstore.KinesisStore, error) {
 	if v, ok := s.stores.Load(region); ok {
 		return v.(*kinesisstore.KinesisStore), nil
 	}
-	return nil, fmt.Errorf("kinesis store not initialised for region %s", region)
+	if s.storageManager == nil {
+		return nil, fmt.Errorf("kinesis store not initialised for region %s", region)
+	}
+	regionStorage, err := s.storageManager.GetStorage(region)
+	if err != nil {
+		return nil, err
+	}
+	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
+	if !ok {
+		return nil, fmt.Errorf("kinesis: storage for region %s does not support 2PC", region)
+	}
+	store := kinesisstore.NewKinesisStore(tstore, s.accountID, region)
+	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
+		return actual.(*kinesisstore.KinesisStore), nil
+	}
+	return store, nil
 }
 
 // RegisterHandlers registers the Kinesis service handlers with the dispatcher.

@@ -25,11 +25,12 @@ type CognitoStore struct {
 	userImportJobsStore    *common.BaseStore
 	webauthnStore          *common.BaseStore
 	*common.TagStore
-	arnBuilder *svcarn.ARNBuilder
-	accountID  string
-	region     string
-	groupMu    sync.Mutex
-	createMu   sync.Mutex
+	arnBuilder  *svcarn.ARNBuilder
+	accountID   string
+	region      string
+	groupMu     sync.Mutex
+	createMu    sync.Mutex
+	importJobMu sync.Mutex
 }
 
 // NewCognitoStore creates a new Cognito identity provider store.

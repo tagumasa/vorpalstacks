@@ -59,9 +59,9 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		}
 		pool.AutoVerifiedAttributes = v
 	}
-	if schemaAttrs := parseSchemaAttributes(req); len(schemaAttrs) > 0 {
-		pool.SchemaAttributes = schemaAttrs
-	}
+	// The Schema parameter is a CreateUserPool-only member; the caller
+	// applies it on the create path. UpdateUserPool has no such member in
+	// the model, so an update request never mutates the pool schema.
 	if v, err := parsePasswordPolicyWithBase(req, pool.PasswordPolicy); err != nil {
 		return err
 	} else if v != nil {

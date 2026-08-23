@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -261,4 +262,90 @@ func parseInt(s string) (int, error) {
 	var result int
 	_, err := fmt.Sscanf(s, "%d", &result)
 	return result, err
+}
+
+// CheckPresignedURLFreshness validates only the freshness of a presigned
+// URL's date and expiry parameters. It is used when the signature itself
+// cannot be verified (no credentials provider wired): an expired URL is
+// still rejected, which keeps the documented validity window enforced
+// even without full SigV4 verification.
+func CheckPresignedURLFreshness(query url.Values) error {
+	params, err := ParsePresignedURL(query)
+	if err != nil {
+		return err
+	}
+	requestTime, err := time.Parse("20060102T150405Z", params.Date)
+	if err != nil {
+		return fmt.Errorf("invalid X-Amz-Date: %w", err)
+	}
+	if time.Now().UTC().After(requestTime.Add(time.Duration(params.Expires) * time.Second)) {
+		return fmt.Errorf("presigned URL has expired")
+	}
+	return nil
+}
+
+// PresignS3URL builds a SigV4 presigned URL for an S3 object request. It
+// is the counterpart of PresignedURLVerifier: the canonical request is
+// constructed exactly as the verifier reconstructs it (virtual-host style
+// canonical host, "host" as the only signed header, UNSIGNED-PAYLOAD), so
+// a URL produced here passes VerifyPresignedURL until it expires. The
+// endpoint host in the returned URL is the caller's own — typically the
+// platform's S3 plane rather than the AWS DNS name used for signing.
+func PresignS3URL(method, scheme, endpointHost, bucket, key, region string, expires time.Duration, accessKeyID, secretAccessKey string) string {
+	now := time.Now().UTC()
+	amzDate := now.Format("20060102T150405Z")
+	dateStamp := now.Format("20060102")
+	credentialScope := dateStamp + "/" + region + "/s3/aws4_request"
+	credential := accessKeyID + "/" + credentialScope
+
+	// The canonical host mirrors the verifier: virtual-host style unless
+	// the bucket name itself contains dots.
+	canonicalHost := bucket + ".s3." + region + ".amazonaws.com"
+	if strings.Contains(bucket, ".") {
+		canonicalHost = "s3." + region + ".amazonaws.com"
+	}
+	// The canonical request mirrors the verifier exactly, including its
+	// canonical headers block: the host line's own newline plus the
+	// block-terminating newline.
+	canonicalRequest := method + "\n" +
+		"/" + bucket + "/" + key + "\n" +
+		"" + "\n" +
+		"host:" + canonicalHost + "\n" +
+		"\n" +
+		"host" + "\n" +
+		"UNSIGNED-PAYLOAD"
+
+	stringToSign := buildPresignedStringToSign(amzDate, credentialScope, canonicalRequest)
+	signingKey := DeriveSigningKey(secretAccessKey, dateStamp, region, "s3")
+	signature := HMACSHA256HexString(signingKey, stringToSign)
+
+	query := url.Values{}
+	query.Set("X-Amz-Algorithm", Algorithm)
+	query.Set("X-Amz-Credential", credential)
+	query.Set("X-Amz-Date", amzDate)
+	query.Set("X-Amz-Expires", strconv.Itoa(int(expires.Seconds())))
+	query.Set("X-Amz-SignedHeaders", "host")
+	query.Set("X-Amz-Signature", signature)
+
+	return scheme + "://" + endpointHost + "/" + bucket + "/" + key + "?" + buildPresignedQueryEncoding(query)
+}
+
+// buildPresignedQueryEncoding renders the presign parameters in the
+// RFC 3986 form the canonical query string comparison expects.
+func buildPresignedQueryEncoding(query url.Values) string {
+	keys := make([]string, 0, len(query))
+	for key := range query {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	var b strings.Builder
+	for i, key := range keys {
+		if i > 0 {
+			b.WriteString("&")
+		}
+		b.WriteString(rfc3986Encode(key))
+		b.WriteString("=")
+		b.WriteString(rfc3986Encode(query.Get(key)))
+	}
+	return b.String()
 }

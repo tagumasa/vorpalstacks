@@ -79,8 +79,10 @@ func (s *CognitoStore) DeleteGroup(userPoolID, groupName string) error {
 			}
 		}
 		user.Groups = newGroups
-		if err := s.usersStore.Put(userPoolUserKey(userPoolID, member), user); err != nil {
-			logs.Warn("failed to update user after group deletion", logs.String("user", member), logs.Err(err))
+		// Key the write-back by the user's own canonical username rather
+		// than the member string.
+		if err := s.usersStore.Put(userPoolUserKey(userPoolID, user.Username), user); err != nil {
+			logs.Warn("failed to update user after group deletion", logs.String("user", user.Username), logs.Err(err))
 		}
 	}
 	return s.groupsStore.Delete(key)
@@ -104,7 +106,10 @@ func (s *CognitoStore) ListGroups(userPoolID string) ([]*Group, error) {
 	return groups, nil
 }
 
-// AddUserToGroup adds a user to a Cognito group.
+// AddUserToGroup adds a user to a Cognito group. The membership is keyed
+// on the canonical stored username so that differently-cased spellings of
+// the same user share one entry, matching the case-insensitive username
+// resolution used by every other user lookup.
 func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) error {
 	s.groupMu.Lock()
 	defer s.groupMu.Unlock()
@@ -113,19 +118,20 @@ func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) er
 		return err
 	}
 
+	canonical := s.resolveUsername(userPoolID, username)
+	user, err := s.GetUser(userPoolID, canonical)
+	if err != nil {
+		return err
+	}
+
 	for _, member := range group.Members {
-		if member == username {
+		if member == canonical {
 			return ErrUserAlreadyInGroup
 		}
 	}
 
-	group.Members = append(group.Members, username)
+	group.Members = append(group.Members, canonical)
 	if err := s.UpdateGroup(group); err != nil {
-		return err
-	}
-
-	user, err := s.GetUser(userPoolID, username)
-	if err != nil {
 		return err
 	}
 
@@ -139,7 +145,9 @@ func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) er
 	return s.UpdateUser(user)
 }
 
-// RemoveUserFromGroup removes a user from a Cognito group.
+// RemoveUserFromGroup removes a user from a Cognito group. Like the add
+// path, the username is resolved to its canonical form first so a
+// differently-cased spelling still matches the stored membership.
 func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username string) error {
 	s.groupMu.Lock()
 	defer s.groupMu.Unlock()
@@ -148,10 +156,11 @@ func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username strin
 		return err
 	}
 
+	canonical := s.resolveUsername(userPoolID, username)
 	found := false
 	var newMembers []string
 	for _, member := range group.Members {
-		if member == username {
+		if member == canonical {
 			found = true
 		} else {
 			newMembers = append(newMembers, member)
@@ -167,7 +176,7 @@ func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username strin
 		return err
 	}
 
-	user, err := s.GetUser(userPoolID, username)
+	user, err := s.GetUser(userPoolID, canonical)
 	if err != nil {
 		return err
 	}

@@ -3,10 +3,12 @@ package s3
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	"vorpalstacks/internal/eventbus"
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // GetObject implements the eventbus.S3Invoker interface. It retrieves the
@@ -70,6 +72,33 @@ const maxListAllKeys = 100000
 // source bucket apart from an empty one.
 func (s *S3Service) BucketExists(ctx context.Context, region, bucket string) (bool, error) {
 	return s.s3Store.Buckets(region).Exists(bucket), nil
+}
+
+// EnsureBucket implements the eventbus.S3Invoker interface. It creates the
+// bucket when it does not exist yet so services that own an internal bucket
+// do not depend on manual provisioning. A concurrent creator winning the
+// race is fine: the bucket exists, which is all this method guarantees.
+func (s *S3Service) EnsureBucket(ctx context.Context, region, bucket string) error {
+	buckets := s.s3Store.Buckets(region)
+	if buckets.Exists(bucket) {
+		return nil
+	}
+	// The store returns its own already-exists sentinel when the race is
+	// lost, so compare against that sentinel rather than the service-level
+	// error shape.
+	if _, err := buckets.Create(bucket, region); err != nil && !errors.Is(err, s3store.ErrBucketAlreadyExists) {
+		return fmt.Errorf("s3 EnsureBucket %s: %w", bucket, err)
+	}
+	return nil
+}
+
+// DeleteObject implements the eventbus.S3Invoker interface. It removes the
+// object so transient payloads can be purged after use.
+func (s *S3Service) DeleteObject(ctx context.Context, region, bucket, key string) error {
+	if err := s.s3Store.Objects(region).Delete(ctx, bucket, key); err != nil {
+		return fmt.Errorf("s3 DeleteObject %s/%s: %w", bucket, key, err)
+	}
+	return nil
 }
 
 // ListObjects lists objects in an S3 bucket via the cross-service invoker.

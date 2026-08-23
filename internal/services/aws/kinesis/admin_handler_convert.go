@@ -21,7 +21,7 @@ import (
 // request headers.
 func (h *AdminHandler) getStores(headers http.Header) (*kinesisstore.KinesisStore, error) {
 	region := defaults.GetRegionFromHeader(headers)
-	return h.service.getStoreForRegion(region)
+	return h.service.GetStoreForRegion(region)
 }
 
 // toPbStreamDescription converts store Stream and Shard objects to a proto

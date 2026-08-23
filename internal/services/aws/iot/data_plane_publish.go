@@ -20,13 +20,18 @@ func (s *IoTService) Publish(ctx context.Context, reqCtx *request.RequestContext
 	if topic == "" {
 		return nil, nil
 	}
-	// The payload arrives as the raw request body; the framework stores it
-	// under the "body" key for operations without a structured input shape.
+	// The restjson1 Publish operation carries the payload blob as the raw
+	// request body (the httpPayload trait): the generic body parser merges
+	// a JSON object body into req.Parameters field by field, so the payload
+	// must be recovered from req.Body. Wrapped "body"/"payload" string
+	// parameters keep working for callers that send an envelope.
 	payload := []byte{}
 	if body, ok := req.Parameters["body"].(string); ok && body != "" {
 		payload = []byte(body)
 	} else if raw, ok := req.Parameters["payload"].(string); ok && raw != "" {
 		payload = []byte(raw)
+	} else if len(req.Body) > 0 {
+		payload = req.Body
 	}
 
 	// Publish to the broker for MQTT subscriber delivery, and trigger the

@@ -199,17 +199,9 @@ func (s *CognitoService) ChangePassword(ctx context.Context, reqCtx *request.Req
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
+	if err := setNativePasswordCredentials(user, user.UserPoolID, user.Username, newPassword); err != nil {
 		return nil, ErrInternalError
 	}
-	user.PasswordHash = string(hash)
-	saltHex, verifierHex, verr := computeSrpVerifier(user.UserPoolID, user.Username, newPassword)
-	if verr != nil {
-		return nil, ErrInternalError
-	}
-	user.SrpSalt = saltHex
-	user.SrpVerifier = verifierHex
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -314,17 +306,9 @@ func (s *CognitoService) ConfirmForgotPassword(ctx context.Context, reqCtx *requ
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
+	if err := setNativePasswordCredentials(user, user.UserPoolID, user.Username, password); err != nil {
 		return nil, ErrInternalError
 	}
-	user.PasswordHash = string(hash)
-	saltHex, verifierHex, verr := computeSrpVerifier(user.UserPoolID, user.Username, password)
-	if verr != nil {
-		return nil, ErrInternalError
-	}
-	user.SrpSalt = saltHex
-	user.SrpVerifier = verifierHex
 	user.UserStatus = "CONFIRMED"
 	user.ConfirmationCode = ""
 	user.ConfirmationCodeExpiry = time.Time{}
