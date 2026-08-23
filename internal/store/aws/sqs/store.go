@@ -22,7 +22,9 @@ import (
 )
 
 const (
-	maxQueueNameLength    = 80
+	// MaxQueueNameLength is the maximum queue name length in characters
+	// (80 per the AWS SQS specification).
+	MaxQueueNameLength    = 80
 	maxBatchEntryIdLength = 80
 )
 
@@ -35,27 +37,76 @@ func messagePrefix(queueURL string) string {
 }
 
 const (
-	purgeTimeout         = 60 * time.Second
-	minVisibilityTimeout = 0
+	purgeTimeout = 60 * time.Second
+	// MinVisibilityTimeout is the VisibilityTimeout lower bound in seconds.
+	MinVisibilityTimeout = 0
 	// MaxVisibilityTimeout is the SQS VisibilityTimeout maximum in seconds
 	// (12 hours per the AWS SQS specification).
-	MaxVisibilityTimeout      = 43200
-	minDelaySeconds           = 0
-	maxDelaySeconds           = 900
-	minMessageRetentionPeriod = 60
-	maxMessageRetentionPeriod = 1209600
-	MinMaximumMessageSize     = 1024
-	MaxMaximumMessageSize     = 1048576
-	minReceiveMessageWaitTime = 0
-	maxReceiveMessageWaitTime = 20
-	minMaxNumberOfMessages    = 1
+	MaxVisibilityTimeout = 43200
+	// MinDelaySeconds is the DelaySeconds lower bound in seconds.
+	MinDelaySeconds = 0
+	// MaxDelaySeconds is the DelaySeconds upper bound in seconds
+	// (15 minutes per the AWS SQS specification).
+	MaxDelaySeconds = 900
+	// MinMessageRetentionPeriod is the MessageRetentionPeriod lower bound in
+	// seconds (1 minute per the AWS SQS specification).
+	MinMessageRetentionPeriod = 60
+	// MaxMessageRetentionPeriod is the MessageRetentionPeriod upper bound in
+	// seconds (14 days per the AWS SQS specification).
+	MaxMessageRetentionPeriod = 1209600
+	// MinMaximumMessageSize is the MaximumMessageSize lower bound in bytes
+	// (1 KiB per the AWS SQS specification).
+	MinMaximumMessageSize = 1024
+	// MaxMaximumMessageSize is the MaximumMessageSize upper bound in bytes
+	// (1 MiB per the AWS SQS specification).
+	MaxMaximumMessageSize = 1048576
+	// MinReceiveMessageWaitTimeSeconds is the ReceiveMessageWaitTimeSeconds
+	// lower bound in seconds.
+	MinReceiveMessageWaitTimeSeconds = 0
+	// MaxReceiveMessageWaitTimeSeconds is the ReceiveMessageWaitTimeSeconds
+	// upper bound in seconds (20 per the AWS SQS specification).
+	MaxReceiveMessageWaitTimeSeconds = 20
+	// MinMaxNumberOfMessages is the ReceiveMessage MaxNumberOfMessages lower
+	// bound (1 per the AWS SQS specification).
+	MinMaxNumberOfMessages = 1
 	// MaxMaxNumberOfMessages is the ReceiveMessage MaxNumberOfMessages
 	// upper bound (10 per the AWS SQS specification).
 	MaxMaxNumberOfMessages = 10
 	// MaxBatchEntries is the maximum number of entries in SendMessageBatch,
 	// DeleteMessageBatch and ChangeMessageVisibilityBatch requests.
-	MaxBatchEntries     = 10
+	MaxBatchEntries = 10
+	// MinKmsDataKeyReusePeriodSeconds is the KmsDataKeyReusePeriodSeconds
+	// lower bound in seconds (1 minute per the AWS SQS specification).
+	MinKmsDataKeyReusePeriodSeconds = 60
+	// MaxKmsDataKeyReusePeriodSeconds is the KmsDataKeyReusePeriodSeconds
+	// upper bound in seconds (24 hours per the AWS SQS specification).
+	MaxKmsDataKeyReusePeriodSeconds = 86400
+	// MaxListResults is the maximum and default MaxResults page size for
+	// ListQueues and ListDeadLetterSourceQueues (AWS SQS API Reference:
+	// "Value range is 1 to 1000").
+	MaxListResults = 1000
+	// DefaultMaxReceiveCount is the maxReceiveCount a RedrivePolicy uses when
+	// the field is absent (AWS SQS API Reference: "Default: 10.").
+	DefaultMaxReceiveCount = 10
+	// MaxFifoIdLength is the maximum length in characters of MessageGroupId
+	// and MessageDeduplicationId (AWS SQS API Reference: "The maximum length
+	// of MessageDeduplicationId is 128 characters." / "The length of
+	// MessageGroupId is 128 characters.").
+	MaxFifoIdLength = 128
+	// queueDeletionWindow is the minimum interval between deleting a queue
+	// and creating another queue with the same name (AWS SQS API Reference:
+	// "You must wait 60 seconds after deleting a queue before you can create
+	// another queue with the same name.").
+	queueDeletionWindow = 60 * time.Second
 	deduplicationWindow = 5 * time.Minute
+	// receiptHandleRetention bounds how long a receipt-handle entry stays
+	// resolvable after it was issued. A handle can only be the current
+	// in-flight handle within its visibility window, whose maximum
+	// configurable length is MaxVisibilityTimeout; beyond that the handle is
+	// a best-effort old handle ("If you use an old ReceiptHandle, the
+	// request will succeed, but the message might not be deleted."), which
+	// the platform is free to stop resolving.
+	receiptHandleRetention = time.Duration(MaxVisibilityTimeout) * time.Second
 )
 
 // SQSStore provides SQS queue storage functionality.
@@ -141,6 +192,7 @@ func (s *SQSStore) cleanupExpiredMessages() {
 			return
 		case <-ticker.C:
 			s.doMessageRetentionCleanup()
+			s.doReceiptHandleCleanup()
 		}
 	}
 }
@@ -164,7 +216,7 @@ func (s *SQSStore) doMessageRetentionCleanup() {
 			opts.Marker = marker
 		}
 
-		result, err := s.ListQueues(opts)
+		result, err := s.ListQueues(opts, "")
 		if err != nil {
 			logs.Warn("SQS retention cleanup: ListQueues failed", logs.Err(err))
 			return
@@ -203,6 +255,43 @@ func (s *SQSStore) doMessageRetentionCleanup() {
 }
 
 // Close stops the background cleanup goroutine.
+// doReceiptHandleCleanup deletes receipt-handle entries older than
+// receiptHandleRetention. Receipt handles embed their issue instant
+// ("<uuid>#<unix-nano>", see generateReceiptHandle), so the age is read from
+// the key alone; entries with an unparseable key are left untouched. Every
+// receive adds an entry, and old handles that are never reused have no other
+// reclamation path on queues that are neither purged nor deleted, so this
+// sweep is what bounds the receipts bucket.
+func (s *SQSStore) doReceiptHandleCleanup() {
+	if s.ctx.Err() != nil {
+		return
+	}
+	cutoff := time.Now().UTC().Add(-receiptHandleRetention)
+	receiptsBucket := s.storage.Bucket("sqs-receipts-" + s.region)
+	var stale [][]byte
+	_ = receiptsBucket.ForEach(func(k, _ []byte) error {
+		sep := strings.LastIndexByte(string(k), '#')
+		if sep < 0 || sep == len(k)-1 {
+			return nil
+		}
+		issuedNano, err := strconv.ParseInt(string(k[sep+1:]), 10, 64)
+		if err != nil {
+			return nil
+		}
+		if time.Unix(0, issuedNano).Before(cutoff) {
+			keyCopy := make([]byte, len(k))
+			copy(keyCopy, k)
+			stale = append(stale, keyCopy)
+		}
+		return nil
+	})
+	for _, k := range stale {
+		if err := receiptsBucket.Delete(k); err != nil {
+			logs.Warn("SQS receipt cleanup: delete failed", logs.String("handle", string(k)), logs.Err(err))
+		}
+	}
+}
+
 func (s *SQSStore) Close() {
 	if s.cancel != nil {
 		s.cancel()
@@ -239,6 +328,61 @@ func (s *SQSStore) arnToQueueURL(arn string) string {
 		return ""
 	}
 	return s.buildQueueURL(queueName)
+}
+
+// validateRedrivePolicyTarget enforces the documented dead-letter-queue
+// constraints on a queue's RedrivePolicy: the target ARN must be well formed
+// and in the same account and Region, must resolve to an existing queue, and
+// "The dead-letter queue of a FIFO queue must also be a FIFO queue.
+// Similarly, the dead-letter queue of a standard queue must also be a
+// standard queue." (AWS SQS API Reference.)
+func (s *SQSStore) validateRedrivePolicyTarget(source *Queue, rdp *RedrivePolicy) error {
+	if rdp == nil {
+		return nil
+	}
+	if rdp.DeadLetterTargetARN == "" {
+		return ErrInvalidAttributeValue
+	}
+	_, _, region, accountID, resource := svcarn.SplitARN(rdp.DeadLetterTargetARN)
+	if region != s.region || accountID != s.accountID || resource == "" {
+		return ErrInvalidAttributeValue
+	}
+	dlq, err := s.GetQueue(s.arnToQueueURL(rdp.DeadLetterTargetARN))
+	if err != nil {
+		return ErrInvalidAttributeValue
+	}
+	if dlq.FifoQueue != source.FifoQueue {
+		return ErrInvalidAttributeValue
+	}
+	return nil
+}
+
+// deletedRecently reports whether a queue with the given URL was deleted
+// within the recreate-prohibition window. Stale markers are dropped
+// opportunistically so the ledger does not grow without bound.
+func (s *SQSStore) deletedRecently(queueURL string) bool {
+	bucket := s.storage.Bucket("sqs-queue-deletions-" + s.region)
+	raw, err := bucket.Get([]byte(queueURL))
+	if err != nil || len(raw) == 0 {
+		return false
+	}
+	deletedAt, err := strconv.ParseInt(string(raw), 10, 64)
+	if err != nil {
+		return false
+	}
+	if time.Since(time.Unix(deletedAt, 0)) < queueDeletionWindow {
+		return true
+	}
+	_ = bucket.Delete([]byte(queueURL))
+	return false
+}
+
+// recordQueueDeletion persists the deletion timestamp of a queue so that
+// same-name recreation inside the prohibition window can be rejected across
+// restarts.
+func (s *SQSStore) recordQueueDeletion(queueURL string) {
+	bucket := s.storage.Bucket("sqs-queue-deletions-" + s.region)
+	_ = bucket.Put([]byte(queueURL), []byte(strconv.FormatInt(time.Now().Unix(), 10)))
 }
 
 func (s *SQSStore) buildDeduplicationKey(queueURL string, message *Message) string {
@@ -360,6 +504,10 @@ func (s *SQSStore) moveToDLQ(msg *Message, dlqARN string) error {
 	}
 	newMsg.Attributes["SenderId"] = s.accountID
 	newMsg.Attributes["SentTimestamp"] = fmt.Sprintf("%d", newMsg.SentTimestamp.UnixMilli())
+	// DeadLetterQueueSourceArn identifies the source queue on messages
+	// delivered through a redrive policy; it is a documented receive system
+	// attribute.
+	newMsg.Attributes["DeadLetterQueueSourceArn"] = msg.QueueARN
 
 	dlqKey := messageKey(dlqURL, newMsg.ID)
 	srcKey := messageKey(msg.QueueURL, msg.ID)

@@ -13,21 +13,11 @@ import (
 // ---------------------------------------------------------------------------
 
 const (
-	maxActionsPerStatement = 7
 	maxReceiveAttemptIdLen = 128
 	maxMessageMoveRate     = 500
-
-	// maxListDeadLetterSourceQueuesResults is the maximum and default value
-	// of the ListDeadLetterSourceQueues MaxResults parameter (AWS SQS API
-	// Reference).
-	maxListDeadLetterSourceQueuesResults = 1000
 )
 
 var (
-	// permissionLabelRegex matches the allowed characters for an AddPermission
-	// label: alphanumeric, hyphens, and underscores (AWS SQS API Reference).
-	permissionLabelRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-
 	// receiveAttemptIdRegex allows exactly the documented
 	// ReceiveRequestAttemptId character set: "alphanumeric characters
 	// (a-z, A-Z, 0-9) and punctuation
@@ -40,7 +30,7 @@ var (
 // rules: 1–80 characters of [a-zA-Z0-9_-], with an optional .fifo suffix for
 // FIFO queues.
 func isValidQueueName(name string) bool {
-	if len(name) == 0 || len(name) > 80 {
+	if len(name) == 0 || len(name) > sqsstore.MaxQueueNameLength {
 		return false
 	}
 	if strings.HasSuffix(name, ".fifo") {
@@ -91,19 +81,16 @@ func validateReceiveRequestAttemptId(s string) error {
 // validatePermissionActionsCount enforces the AWS SQS limit of at most seven
 // actions per AddPermission statement.
 func validatePermissionActionsCount(actions []string) error {
-	if len(actions) > maxActionsPerStatement {
+	if len(actions) > sqsstore.MaxActionsPerStatement {
 		return ErrOverLimit
 	}
 	return nil
 }
 
-// validatePermissionLabelFormat checks that the label contains only the
-// allowed character set (alphanumeric, hyphens, underscores).
+// validatePermissionLabelFormat checks the label against the store's single
+// permission-label rule (length and character set).
 func validatePermissionLabelFormat(label string) error {
-	if !permissionLabelRegex.MatchString(label) {
-		return ErrInvalidParameterValue
-	}
-	return nil
+	return convertStoreError(sqsstore.ValidatePermissionLabel(label))
 }
 
 // validateMessageMoveRate enforces the AWS SQS limit: MaxNumberOfMessagesPerSecond

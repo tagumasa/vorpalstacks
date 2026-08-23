@@ -25,8 +25,14 @@ func convertStoreError(err error) error {
 	if errors.Is(err, sqsstore.ErrQueueNotFound) {
 		return ErrQueueDoesNotExist
 	}
+	if errors.Is(err, sqsstore.ErrQueueDeletedRecently) {
+		return ErrQueueDeletedRecently
+	}
 	if errors.Is(err, sqsstore.ErrInvalidReceiptHandle) {
 		return ErrReceiptHandleIsInvalid
+	}
+	if errors.Is(err, sqsstore.ErrMessageNotInflight) {
+		return ErrMessageNotInflight
 	}
 	if errors.Is(err, sqsstore.ErrMessageTooLarge) {
 		return ErrMessageTooLarge
@@ -67,8 +73,14 @@ func convertStoreError(err error) error {
 	if errors.Is(err, sqsstore.ErrInvalidDataType) {
 		return ErrInvalidParameterValue
 	}
+	if errors.Is(err, sqsstore.ErrInvalidMessageContents) {
+		return ErrInvalidMessageContents
+	}
 	if errors.Is(err, sqsstore.ErrTaskAlreadyTerminal) {
 		return ErrInvalidParameterValue
+	}
+	if errors.Is(err, sqsstore.ErrTaskNotFound) {
+		return ErrResourceNotFound
 	}
 	return err
 }
@@ -135,6 +147,10 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 	messageBody := request.GetParamCaseInsensitive(req.Parameters, "MessageBody")
 	if messageBody == "" {
 		return nil, ErrMissingParameter
+	}
+
+	if err := rejectAttributeListValues(req.Parameters); err != nil {
+		return nil, err
 	}
 
 	delaySeconds := int32(request.GetIntParam(req.Parameters, "DelaySeconds"))
@@ -249,18 +265,29 @@ func (s *SQSService) SendMessage(ctx context.Context, reqCtx *request.RequestCon
 		return nil, convertStoreError(err)
 	}
 
-	response := map[string]interface{}{
-		"MessageId":              created.ID,
-		"MD5OfMessageBody":       created.MD5OfBody,
-		"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
-	}
+	response := messageSendResponseFields(created)
 	if len(systemAttrs) > 0 {
 		response["MD5OfMessageSystemAttributes"] = sqsstore.CalculateMessageAttributesMD5(systemAttrs)
 	}
-	if created.SequenceNumber != "" {
-		response["SequenceNumber"] = created.SequenceNumber
-	}
 	return response, nil
+}
+
+// messageSendResponseFields builds the response members shared by SendMessage
+// and SendMessageBatch successful entries. MD5OfMessageAttributes is only
+// present when the message carries attributes, matching the AWS response
+// surface.
+func messageSendResponseFields(msg *sqsstore.Message) map[string]interface{} {
+	response := map[string]interface{}{
+		"MessageId":        msg.ID,
+		"MD5OfMessageBody": msg.MD5OfBody,
+	}
+	if len(msg.MessageAttributes) > 0 {
+		response["MD5OfMessageAttributes"] = msg.MD5OfMessageAttributes
+	}
+	if msg.SequenceNumber != "" {
+		response["SequenceNumber"] = msg.SequenceNumber
+	}
+	return response
 }
 
 // batchSendEntry holds a parsed and validated SendMessageBatch entry awaiting
@@ -292,10 +319,20 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	if err := rejectAttributeListValues(req.Parameters); err != nil {
+		return nil, err
+	}
+
 	// Pass 1: Parse and validate all entries (no sends).
 	parsed, err := parseBatchSendEntries(req.Parameters)
 	if err != nil {
 		return nil, err
+	}
+
+	// QueueDoesNotExist is a request-level error: the whole request fails
+	// before any entry is processed.
+	if _, err := store.GetQueue(queueURL); err != nil {
+		return nil, convertStoreError(err)
 	}
 
 	// Pass 2: Send each validated message.
@@ -316,16 +353,13 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 		}
 
 		entry := map[string]interface{}{
-			"Id":                     e.id,
-			"MessageId":              created.ID,
-			"MD5OfMessageBody":       created.MD5OfBody,
-			"MD5OfMessageAttributes": created.MD5OfMessageAttributes,
+			"Id": e.id,
+		}
+		for k, v := range messageSendResponseFields(created) {
+			entry[k] = v
 		}
 		if len(e.systemAttrs) > 0 {
 			entry["MD5OfMessageSystemAttributes"] = sqsstore.CalculateMessageAttributesMD5(e.systemAttrs)
-		}
-		if created.SequenceNumber != "" {
-			entry["SequenceNumber"] = created.SequenceNumber
 		}
 		successEntries = append(successEntries, entry)
 	}
@@ -334,6 +368,62 @@ func (s *SQSService) SendMessageBatch(ctx context.Context, reqCtx *request.Reque
 		"Successful": successEntries,
 		"Failed":     failedEntries,
 	}, nil
+}
+
+// rejectAttributeListValues rejects message-sending requests that carry
+// message-attribute list values. The service model marks StringListValues
+// and BinaryListValues as not implemented ("Not implemented. Reserved for
+// future use."), and AWS rejects any request that includes them with
+// UnsupportedOperation, so they must not be silently accepted and dropped.
+func rejectAttributeListValues(params map[string]interface{}) error {
+	// JSON protocol: SendMessage carries the attribute maps at the top level
+	// and SendMessageBatch nests them inside each batch entry.
+	attrMaps := make([]map[string]interface{}, 0, 8)
+	for _, key := range []string{"MessageAttributes", "MessageSystemAttributes"} {
+		if attrs, ok := params[key].(map[string]interface{}); ok {
+			for _, val := range attrs {
+				if attrMap, ok := val.(map[string]interface{}); ok {
+					attrMaps = append(attrMaps, attrMap)
+				}
+			}
+		}
+	}
+	if entries, ok := params["Entries"].([]interface{}); ok {
+		for _, raw := range entries {
+			entryMap, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for _, key := range []string{"MessageAttributes", "MessageSystemAttributes"} {
+				if attrs, ok := entryMap[key].(map[string]interface{}); ok {
+					for _, val := range attrs {
+						if attrMap, ok := val.(map[string]interface{}); ok {
+							attrMaps = append(attrMaps, attrMap)
+						}
+					}
+				}
+			}
+		}
+	}
+	for _, attrMap := range attrMaps {
+		if list, ok := attrMap["StringListValues"].([]interface{}); ok && len(list) > 0 {
+			return ErrUnsupportedOperation
+		}
+		if list, ok := attrMap["BinaryListValues"].([]interface{}); ok && len(list) > 0 {
+			return ErrUnsupportedOperation
+		}
+	}
+	// Query protocol: the flattened members arrive as indexed flat keys on
+	// every message-sending operation (MessageAttribute.1.Value.StringListValue.1,
+	// MessageSystemAttribute.1.Value.StringListValue.1, or the batch-entry
+	// prefixed variants).
+	for key := range params {
+		lower := strings.ToLower(key)
+		if strings.Contains(lower, ".value.stringlistvalue.") || strings.Contains(lower, ".value.binarylistvalue.") {
+			return ErrUnsupportedOperation
+		}
+	}
+	return nil
 }
 
 // parseBatchSendEntries extracts and validates all SendMessageBatch entries
@@ -456,11 +546,15 @@ func parseBatchEntriesQuery(params map[string]interface{}) ([]*batchSendEntry, e
 	batchTotalSize := 0
 	result := make([]*batchSendEntry, 0)
 
-	for i := 1; i <= 10; i++ {
+	for i := 1; ; i++ {
 		prefix := "SendMessageBatchRequestEntry." + strconv.Itoa(i) + "."
 		id := request.GetParamCaseInsensitive(params, prefix+"Id")
 		if id == "" {
-			continue
+			// Query-protocol entries are contiguous; the loop is bounded by
+			// the entry-count check below, which fails with
+			// TooManyEntriesInBatchRequest instead of silently dropping
+			// entries beyond a fixed limit.
+			break
 		}
 
 		if err := sqsstore.ValidateBatchEntryId(id); err != nil {
@@ -630,7 +724,17 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 		vt := int32(request.GetIntParam(req.Parameters, "VisibilityTimeout"))
 		visibilityTimeoutPtr = &vt
 	}
-	waitTimeSeconds := int32(request.GetIntParam(req.Parameters, "WaitTimeSeconds"))
+	// WaitTimeSeconds: a negative sentinel tells the store the request
+	// omitted the parameter so it applies the queue's
+	// ReceiveMessageWaitTimeSeconds attribute; explicit values are validated
+	// here and long-poll in the store.
+	waitTimeSeconds := int32(-1)
+	if val, ok := request.GetIntParamCaseInsensitive(req.Parameters, "WaitTimeSeconds"); ok {
+		if val < 0 {
+			return nil, ErrInvalidParameterValue
+		}
+		waitTimeSeconds = int32(val)
+	}
 
 	// Parse system attribute names: support both legacy AttributeNames
 	// and newer MessageSystemAttributeNames. Specifying both is an error.
@@ -673,11 +777,13 @@ func (s *SQSService) ReceiveMessage(ctx context.Context, reqCtx *request.Request
 	messageList := make([]map[string]interface{}, 0, len(messages))
 	for _, msg := range messages {
 		msgMap := map[string]interface{}{
-			"MessageId":              msg.ID,
-			"ReceiptHandle":          msg.ReceiptHandle,
-			"MD5OfBody":              msg.MD5OfBody,
-			"Body":                   msg.Body,
-			"MD5OfMessageAttributes": msg.MD5OfMessageAttributes,
+			"MessageId":     msg.ID,
+			"ReceiptHandle": msg.ReceiptHandle,
+			"MD5OfBody":     msg.MD5OfBody,
+			"Body":          msg.Body,
+		}
+		if len(msg.MessageAttributes) > 0 {
+			msgMap["MD5OfMessageAttributes"] = msg.MD5OfMessageAttributes
 		}
 
 		if msg.MessageGroupID != "" {
@@ -872,6 +978,12 @@ func (s *SQSService) DeleteMessageBatch(ctx context.Context, reqCtx *request.Req
 		return nil, ErrTooManyEntriesInBatch
 	}
 
+	// QueueDoesNotExist is a request-level error: the whole request fails
+	// before any entry is processed.
+	if _, err := store.GetQueue(queueURL); err != nil {
+		return nil, convertStoreError(err)
+	}
+
 	// Pass 2: Execute deletions.
 	successEntries := make([]map[string]interface{}, 0)
 	failedEntries := make([]map[string]interface{}, 0)
@@ -1025,6 +1137,12 @@ func (s *SQSService) ChangeMessageVisibilityBatch(ctx context.Context, reqCtx *r
 	}
 	if len(entries) > sqsstore.MaxBatchEntries {
 		return nil, ErrTooManyEntriesInBatch
+	}
+
+	// QueueDoesNotExist is a request-level error: the whole request fails
+	// before any entry is processed.
+	if _, err := store.GetQueue(queueURL); err != nil {
+		return nil, convertStoreError(err)
 	}
 
 	// Pass 2: Execute visibility changes.

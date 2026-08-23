@@ -25,42 +25,62 @@ var typedQueueAttributes = map[string]bool{
 	"RedrivePolicy": true,
 }
 
-func queuesHaveSameAttributes(q1, q2 *sqsstore.Queue) bool {
-	if q1.VisibilityTimeout != q2.VisibilityTimeout {
-		return false
-	}
-	if q1.MaximumMessageSize != q2.MaximumMessageSize {
-		return false
-	}
-	if q1.MessageRetentionPeriod != q2.MessageRetentionPeriod {
-		return false
-	}
-	if q1.DelaySeconds != q2.DelaySeconds {
-		return false
-	}
-	if q1.ReceiveMessageWaitTimeSeconds != q2.ReceiveMessageWaitTimeSeconds {
-		return false
-	}
-	if q1.FifoQueue != q2.FifoQueue {
-		return false
-	}
-	if q1.ContentBasedDeduplication != q2.ContentBasedDeduplication {
-		return false
-	}
-	if q1.Policy != q2.Policy {
-		return false
-	}
-	if q1.RedrivePolicy != nil && q2.RedrivePolicy != nil {
-		if q1.RedrivePolicy.DeadLetterTargetARN != q2.RedrivePolicy.DeadLetterTargetARN {
+// requestAttrsMatchExisting compares only the attributes a CreateQueue
+// request actually provides against the existing queue. AWS returns
+// QueueNameExists "only if the request includes attributes whose values
+// differ from those of the existing queue"; attributes the request omits are
+// not compared and the existing queue URL is returned instead.
+func requestAttrsMatchExisting(requestAttrs map[string]string, existing *sqsstore.Queue) bool {
+	for name, value := range requestAttrs {
+		if !queueAttrMatches(name, value, existing) {
 			return false
 		}
-		if q1.RedrivePolicy.MaxReceiveCount != q2.RedrivePolicy.MaxReceiveCount {
-			return false
-		}
-	} else if q1.RedrivePolicy != nil || q2.RedrivePolicy != nil {
-		return false
 	}
 	return true
+}
+
+// queueAttrMatches reports whether a single request attribute value matches
+// the existing queue. Numeric and boolean attributes are compared by parsed
+// value; attributes without a dedicated queue field fall back to the stored
+// attribute map (request attributes are persisted verbatim on create).
+func queueAttrMatches(name, value string, existing *sqsstore.Queue) bool {
+	switch name {
+	case "VisibilityTimeout":
+		return int32AttrMatches(value, existing.VisibilityTimeout)
+	case "MaximumMessageSize":
+		return int32AttrMatches(value, existing.MaximumMessageSize)
+	case "MessageRetentionPeriod":
+		return int32AttrMatches(value, existing.MessageRetentionPeriod)
+	case "DelaySeconds":
+		return int32AttrMatches(value, existing.DelaySeconds)
+	case "ReceiveMessageWaitTimeSeconds":
+		return int32AttrMatches(value, existing.ReceiveMessageWaitTimeSeconds)
+	case "FifoQueue":
+		return boolAttrMatches(value, existing.FifoQueue)
+	case "ContentBasedDeduplication":
+		return boolAttrMatches(value, existing.ContentBasedDeduplication)
+	case "Policy":
+		return value == existing.Policy
+	case "RedrivePolicy":
+		rdp, err := sqsstore.ParseRedrivePolicy(value)
+		if err != nil || existing.RedrivePolicy == nil {
+			return false
+		}
+		return rdp.DeadLetterTargetARN == existing.RedrivePolicy.DeadLetterTargetARN &&
+			rdp.MaxReceiveCount == existing.RedrivePolicy.MaxReceiveCount
+	default:
+		return value == existing.Attributes[name]
+	}
+}
+
+func int32AttrMatches(value string, existing int32) bool {
+	n, err := strconv.ParseInt(value, 10, 32)
+	return err == nil && int32(n) == existing
+}
+
+func boolAttrMatches(value string, existing bool) bool {
+	b, err := strconv.ParseBool(value)
+	return err == nil && b == existing
 }
 
 // applyQueueAttributes validates and applies attribute key-value pairs to a Queue
@@ -93,7 +113,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			}
 		case "MessageRetentionPeriod":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 60 || val > 1209600 {
+				if val < int64(sqsstore.MinMessageRetentionPeriod) || val > int64(sqsstore.MaxMessageRetentionPeriod) {
 					return ErrInvalidParameterValue
 				}
 				queue.MessageRetentionPeriod = int32(val)
@@ -102,7 +122,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			}
 		case "DelaySeconds":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 900 {
+				if val < int64(sqsstore.MinDelaySeconds) || val > int64(sqsstore.MaxDelaySeconds) {
 					return ErrInvalidParameterValue
 				}
 				queue.DelaySeconds = int32(val)
@@ -111,7 +131,7 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			}
 		case "ReceiveMessageWaitTimeSeconds":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 0 || val > 20 {
+				if val < int64(sqsstore.MinReceiveMessageWaitTimeSeconds) || val > int64(sqsstore.MaxReceiveMessageWaitTimeSeconds) {
 					return ErrInvalidParameterValue
 				}
 				queue.ReceiveMessageWaitTimeSeconds = int32(val)
@@ -143,19 +163,19 @@ func applyQueueAttributes(attrs map[string]string, queue *sqsstore.Queue) error 
 			queue.RedrivePolicy = rdp
 		case "KmsDataKeyReusePeriodSeconds":
 			if val, err := strconv.ParseInt(attrValue, 10, 32); err == nil {
-				if val < 60 || val > 86400 {
+				if val < int64(sqsstore.MinKmsDataKeyReusePeriodSeconds) || val > int64(sqsstore.MaxKmsDataKeyReusePeriodSeconds) {
 					return ErrInvalidParameterValue
 				}
 			} else {
 				return ErrInvalidParameterValue
 			}
 		case "DeduplicationScope":
-			if attrValue != "queueMessageGroup" && attrValue != "queue" {
-				return ErrInvalidParameterValue
+			if err := sqsstore.ValidateDeduplicationScope(attrValue); err != nil {
+				return convertStoreError(err)
 			}
 		case "FifoThroughputLimit":
-			if attrValue != "perMessageGroupId" && attrValue != "perQueue" {
-				return ErrInvalidParameterValue
+			if err := sqsstore.ValidateFifoThroughputLimit(attrValue); err != nil {
+				return convertStoreError(err)
 			}
 		case "SqsManagedSseEnabled":
 			if _, err := strconv.ParseBool(attrValue); err != nil {
@@ -244,7 +264,17 @@ func (s *SQSService) GetQueueUrl(ctx context.Context, reqCtx *request.RequestCon
 // ListQueues lists the SQS queues.
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ListQueues.html
 func (s *SQSService) ListQueues(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	opts := getListOptions(req)
+	// MaxResults is documented as "Value range is 1 to 1000"; absent means
+	// the default page size. NextToken is only returned when MaxResults was
+	// set ("You must set MaxResults to receive a value for NextToken in the
+	// response").
+	maxResults := 0
+	if val, ok := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults"); ok {
+		if val < 1 || val > sqsstore.MaxListResults {
+			return nil, ErrInvalidParameterValue
+		}
+		maxResults = val
+	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -253,8 +283,8 @@ func (s *SQSService) ListQueues(ctx context.Context, reqCtx *request.RequestCont
 
 	result, err := s.listQueuesCore(store, ListQueuesInput{
 		QueueNamePrefix: request.GetParamCaseInsensitive(req.Parameters, "QueueNamePrefix"),
-		MaxResults:      opts.MaxItems,
-		NextToken:       opts.Marker,
+		MaxResults:      maxResults,
+		NextToken:       request.GetParamCaseInsensitive(req.Parameters, "NextToken"),
 	})
 	if err != nil {
 		return nil, err
@@ -410,14 +440,16 @@ func (s *SQSService) SetQueueAttributes(ctx context.Context, reqCtx *request.Req
 		if err := applyQueueAttributes(attrs, &sqsstore.Queue{}); err != nil {
 			return nil, err
 		}
+	}
 
-		store, err := s.store(reqCtx)
-		if err != nil {
-			return nil, err
-		}
-		if err := store.SetQueueAttributes(queueURL, attrs); err != nil {
-			return nil, convertStoreError(err)
-		}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	// The store call resolves the queue even for an empty attribute map so a
+	// nonexistent queue is rejected with QueueDoesNotExist.
+	if err := store.SetQueueAttributes(queueURL, attrs); err != nil {
+		return nil, convertStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -462,9 +494,9 @@ func (s *SQSService) ListDeadLetterSourceQueues(ctx context.Context, reqCtx *req
 	// MaxResults is 1-1000 per the AWS API reference; the default is 1000.
 	maxResults := int32(request.GetIntParam(req.Parameters, "MaxResults"))
 	if maxResults == 0 {
-		maxResults = maxListDeadLetterSourceQueuesResults
+		maxResults = int32(sqsstore.MaxListResults)
 	}
-	if maxResults < 1 || maxResults > maxListDeadLetterSourceQueuesResults {
+	if maxResults < 1 || maxResults > int32(sqsstore.MaxListResults) {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -484,7 +516,7 @@ func (s *SQSService) ListDeadLetterSourceQueues(ctx context.Context, reqCtx *req
 	}
 
 	resp := map[string]interface{}{
-		"QueueUrls": queueURLs,
+		"queueUrls": queueURLs,
 	}
 	if result.IsTruncated && result.NextMarker != "" {
 		resp["NextToken"] = result.NextMarker
@@ -505,11 +537,9 @@ func (s *SQSService) StartMessageMoveTask(ctx context.Context, reqCtx *request.R
 	if err := validateMessageMoveRate(maxMessages); err != nil {
 		return nil, err
 	}
-	if maxMessages == 0 {
-		// Unset — system-optimised variable rate (AWS: "the system will
-		// optimise the rate based on the queue message backlog size").
-		maxMessages = 1000
-	}
+	// An unset rate (0) means the system-optimised variable rate and is
+	// stored as-is; AWS documents a fixed-rate maximum of 500 messages per
+	// second, so substituting a concrete rate would exceed it.
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -583,9 +613,13 @@ func (s *SQSService) ListMessageMoveTasks(ctx context.Context, reqCtx *request.R
 		entry := map[string]interface{}{
 			"Status":                           t.Status,
 			"SourceArn":                        t.SourceQueueARN,
-			"MaxNumberOfMessagesPerSecond":     t.MaxNumberOfMessages,
 			"ApproximateNumberOfMessagesMoved": t.MovedMessages,
 			"StartedTimestamp":                 t.StartTime.UnixMilli(),
+		}
+		// The rate member is only reported when a fixed rate was requested;
+		// an unset rate means the system-optimised variable rate.
+		if t.MaxNumberOfMessages > 0 {
+			entry["MaxNumberOfMessagesPerSecond"] = t.MaxNumberOfMessages
 		}
 		if t.TaskId != "" {
 			entry["TaskHandle"] = t.TaskId
@@ -605,18 +639,6 @@ func (s *SQSService) ListMessageMoveTasks(ctx context.Context, reqCtx *request.R
 	return map[string]interface{}{
 		"Results": results,
 	}, nil
-}
-
-// getListOptions extracts list options from the request.
-func getListOptions(req *request.ParsedRequest) common.ListOptions {
-	opts := common.ListOptions{MaxItems: 1000}
-	if maxResults := request.GetParamCaseInsensitive(req.Parameters, "MaxResults"); maxResults != "" {
-		if val, err := strconv.Atoi(maxResults); err == nil && val > 0 {
-			opts.MaxItems = val
-		}
-	}
-	opts.Marker = request.GetParamCaseInsensitive(req.Parameters, "NextToken")
-	return opts
 }
 
 func buildPrincipalARNs(accountIDs []string) []string {

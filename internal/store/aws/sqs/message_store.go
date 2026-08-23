@@ -62,7 +62,18 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 		return nil, err
 	}
 
-	if message.DelaySeconds < 0 || message.DelaySeconds > 900 {
+	if err := validateMessageBody(message.Body); err != nil {
+		return nil, err
+	}
+
+	if err := validateFifoIdentifier(message.MessageGroupID); err != nil {
+		return nil, err
+	}
+	if err := validateFifoIdentifier(message.MessageDeduplicationID); err != nil {
+		return nil, err
+	}
+
+	if message.DelaySeconds < MinDelaySeconds || message.DelaySeconds > MaxDelaySeconds {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -137,14 +148,21 @@ func (s *SQSStore) SendMessage(queueURL string, message *Message) (*Message, err
 	return message, nil
 }
 
-// ReceiveMessage retrieves messages from the specified queue.
+// ReceiveMessage retrieves messages from the specified queue. A negative
+// waitTimeSeconds means "unset" and selects the queue's
+// ReceiveMessageWaitTimeSeconds attribute; a non-negative value is used
+// directly. When the effective wait is positive the call long-polls: it
+// rescans the queue until messages are available or the wait deadline
+// expires ("The duration (in seconds) for which the call waits for a message
+// to arrive in the queue before returning. If a message is available, the
+// call returns sooner than WaitTimeSeconds.").
 func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32, receiveRequestAttemptId string) ([]*Message, error) {
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
 		return nil, err
 	}
 
-	if maxNumberOfMessages < minMaxNumberOfMessages || maxNumberOfMessages > MaxMaxNumberOfMessages {
+	if maxNumberOfMessages < MinMaxNumberOfMessages || maxNumberOfMessages > MaxMaxNumberOfMessages {
 		return nil, ErrInvalidParameterValue
 	}
 
@@ -155,12 +173,40 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 	if err := validateVisibilityTimeout(visibilityTimeout); err != nil {
 		return nil, err
 	}
-	if waitTimeSeconds > 0 {
-		if err := validateReceiveMessageWaitTimeSeconds(waitTimeSeconds); err != nil {
-			return nil, err
-		}
+	wait := waitTimeSeconds
+	if wait < 0 {
+		wait = queue.ReceiveMessageWaitTimeSeconds
+	}
+	if err := validateReceiveMessageWaitTimeSeconds(wait); err != nil {
+		return nil, err
 	}
 
+	deadline := time.Now().Add(time.Duration(wait) * time.Second)
+	for {
+		messages, err := s.receiveMessagesOnce(queue, queueURL, maxNumberOfMessages, visibilityTimeout, receiveRequestAttemptId)
+		if err != nil {
+			return nil, err
+		}
+		if len(messages) > 0 || !time.Now().Before(deadline) {
+			return messages, nil
+		}
+		// Poll in short slices so a server shutdown is observed promptly
+		// instead of blocking out the whole wait.
+		select {
+		case <-s.ctx.Done():
+			return messages, nil
+		case <-time.After(receivePollInterval):
+		}
+	}
+}
+
+// receivePollInterval is the rescan interval of the long-polling receive
+// loop. The message mutex is released between scans so concurrent senders
+// and receivers make progress.
+const receivePollInterval = 200 * time.Millisecond
+
+// receiveMessagesOnce performs a single receive scan of the queue.
+func (s *SQSStore) receiveMessagesOnce(queue *Queue, queueURL string, maxNumberOfMessages int32, visibilityTimeout int32, receiveRequestAttemptId string) ([]*Message, error) {
 	now := time.Now().UTC()
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()
@@ -190,10 +236,10 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 			logs.Warn("Failed to move message to DLQ, delivering to consumer", logs.String("messageId", msg.ID))
 		}
 
-		if msg.ReceiptHandle != "" {
-			_ = s.storage.Bucket("sqs-receipts-" + s.region).Delete([]byte(msg.ReceiptHandle))
-		}
-
+		// A new receipt handle is issued for every receive; previously
+		// issued handles stay resolvable so that deletes with an older
+		// handle still succeed ("If you use an old ReceiptHandle, the
+		// request will succeed, but the message might not be deleted.").
 		msg.ReceiptHandle = generateReceiptHandle()
 		msg.VisibilityTimeout = visibilityTimeout
 		msg.ReceivedAt = now
@@ -203,6 +249,9 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 
 		msg.Attributes["ApproximateReceiveCount"] = fmt.Sprintf("%d", msg.ApproximateReceiveCount)
 		msg.Attributes["ApproximateFirstReceiveTimestamp"] = fmt.Sprintf("%d", msg.ApproximateFirstReceiveTimestamp.UnixMilli())
+		if msg.SequenceNumber != "" {
+			msg.Attributes["SequenceNumber"] = msg.SequenceNumber
+		}
 		if msg.MessageGroupID != "" {
 			msg.Attributes["MessageGroupId"] = msg.MessageGroupID
 		}
@@ -233,15 +282,13 @@ func (s *SQSStore) ReceiveMessage(queueURL string, maxNumberOfMessages int32, vi
 // selectCandidates returns candidate messages for ReceiveMessage, applying
 // standard or FIFO-specific filtering depending on queue type.
 func (s *SQSStore) selectCandidates(queueURL string, queue *Queue, maxItems int32, now time.Time) []*pb.Message {
-	scanLimit := int(maxItems) * 10
-	if queue.FifoQueue && scanLimit < 200 {
-		scanLimit = 200
-	}
-
 	if !queue.FifoQueue {
+		// Standard queues have no cross-message ordering constraints, so a
+		// bounded scan that returns the first visible messages suffices.
+		scanLimit := int(maxItems) * 10
 		return s.selectStandardCandidates(queueURL, queue, scanLimit, now)
 	}
-	return s.selectFIFOCandidates(queueURL, queue, scanLimit, maxItems, now)
+	return s.selectFIFOCandidates(queueURL, queue, maxItems, now)
 }
 
 // selectStandardCandidates returns visible, non-expired messages for a
@@ -261,26 +308,31 @@ func (s *SQSStore) selectStandardCandidates(queueURL string, queue *Queue, scanL
 // selectFIFOCandidates returns visible, non-expired messages for a FIFO queue,
 // sorted by SentTimestamp, with at most one message per MessageGroupID, and
 // excluding groups that already have an in-flight message.
-func (s *SQSStore) selectFIFOCandidates(queueURL string, queue *Queue, scanLimit int, maxItems int32, now time.Time) []*pb.Message {
+func (s *SQSStore) selectFIFOCandidates(queueURL string, queue *Queue, maxItems int32, now time.Time) []*pb.Message {
 	retentionCutoff := now.Add(-time.Duration(queue.MessageRetentionPeriod) * time.Second)
 
-	opts := common.ListOptions{Prefix: messagePrefix(queueURL), MaxItems: scanLimit}
-	allResult, err := common.ListProto[*pb.Message](s.messagesStore, opts, func() *pb.Message { return &pb.Message{} }, func(m *pb.Message) bool {
-		return true
-	})
-	if err != nil {
-		return nil
-	}
+	// "Messages within the same message group are always processed one at a
+	// time, in strict order" — both the in-flight group exclusion and the
+	// send-order sort are queue-wide guarantees, so the whole queue is
+	// scanned rather than a bounded window.
+	allMessages := make([]*pb.Message, 0)
+	_ = common.ForEachAllProto(s.messagesStore, messagePrefix(queueURL),
+		func() *pb.Message { return &pb.Message{} }, nil,
+		func(m *pb.Message) error {
+			allMessages = append(allMessages, m)
+			return nil
+		},
+	)
 
 	inFlightGroups := make(map[string]bool)
-	for _, m := range allResult.Items {
+	for _, m := range allMessages {
 		if s.isMessageInFlight(m, now) && m.MessageGroupId != "" {
 			inFlightGroups[m.MessageGroupId] = true
 		}
 	}
 
 	var visible []*pb.Message
-	for _, m := range allResult.Items {
+	for _, m := range allMessages {
 		if !s.isMessageVisible(m, now) || s.isMessageExpired(m, retentionCutoff) {
 			continue
 		}
@@ -358,6 +410,11 @@ func (s *SQSStore) DeleteMessage(queueURL, receiptHandle string) error {
 	if err != nil || len(msgKeyBytes) == 0 {
 		return ErrInvalidReceiptHandle
 	}
+	// Receipt handles are scoped to their queue: a handle issued by another
+	// queue must not delete this queue's messages.
+	if !bytes.HasPrefix(msgKeyBytes, []byte(messagePrefix(queueURL))) {
+		return ErrInvalidReceiptHandle
+	}
 	messagesBucket := "sqs-messages-" + s.region
 	return s.storage.Update(context.Background(), func(txn storage.Transaction) error {
 		if err := txn.Bucket(messagesBucket).Delete(msgKeyBytes); err != nil {
@@ -385,10 +442,22 @@ func (s *SQSStore) ChangeMessageVisibility(queueURL, receiptHandle string, visib
 	if err != nil || len(msgKeyBytes) == 0 {
 		return ErrInvalidReceiptHandle
 	}
+	// Receipt handles are scoped to their queue: a handle issued by another
+	// queue must not mutate this queue's messages.
+	if !bytes.HasPrefix(msgKeyBytes, []byte(messagePrefix(queueURL))) {
+		return ErrInvalidReceiptHandle
+	}
 
 	var msgPb pb.Message
 	if err := s.messagesStore.GetProto(string(msgKeyBytes), &msgPb); err != nil {
 		return ErrInvalidReceiptHandle
+	}
+
+	// Only in-flight messages can have their visibility changed: the AWS
+	// contract returns MessageNotInflight once the visibility timeout has
+	// expired ("The specified message isn't in flight.").
+	if !s.isMessageInFlight(&msgPb, time.Now()) {
+		return ErrMessageNotInflight
 	}
 
 	msg := ProtoToMessage(&msgPb)
@@ -440,11 +509,11 @@ func (s *SQSStore) PurgeQueue(queueURL string) error {
 	s.purgeInProgress[queueURL] = time.Now()
 	s.purgeMutex.Unlock()
 
-	defer func() {
-		s.purgeMutex.Lock()
-		delete(s.purgeInProgress, queueURL)
-		s.purgeMutex.Unlock()
-	}()
+	// The cooldown marker is deliberately NOT removed when the purge
+	// completes: the documented window is measured from the previous
+	// PurgeQueue request ("the specified queue previously received a
+	// PurgeQueue request within the last 60 seconds"), so it expires via the
+	// stale-entry sweep above instead.
 
 	s.msgMutex.Lock()
 	defer s.msgMutex.Unlock()

@@ -48,10 +48,22 @@ func NewAWSError(code, message string, httpStatus int) *AWSError {
 	}
 }
 
-// SetQueryErrorCode sets the x-amzn-query-error header value and returns the error for chaining.
+// SetQueryErrorCode sets the query-protocol error code — the value the
+// service model's awsQueryError trait defines. The value is the bare code;
+// the ";Sender"/";Receiver" fault suffix of the x-amzn-query-error header is
+// derived from the error fault when the response is written.
 func (e *AWSError) SetQueryErrorCode(code string) *AWSError {
 	e.QueryErrorCode = code
 	return e
+}
+
+// faultString maps the stored fault to the wire form shared by the query
+// protocols' <Type> element and the x-amzn-query-error header suffix.
+func (e *AWSError) faultString() string {
+	if e.Fault == "Client" {
+		return "Sender"
+	}
+	return "Receiver"
 }
 
 // WithField adds an extra JSON field to the error response and returns
@@ -78,16 +90,14 @@ func (e *AWSError) WithRawField(key string, value interface{}) *AWSError {
 
 // ToXML converts the error to XML format.
 func (e *AWSError) ToXML() string {
-	var faultType string
-	if e.Fault == "Client" {
-		faultType = "Sender"
-	} else {
-		faultType = "Receiver"
-	}
-
 	resp := XMLErrorResponse{}
-	resp.Error.Type = faultType
+	resp.Error.Type = e.faultString()
 	resp.Error.Code = e.Code
+	// The query protocols carry the model's awsQueryError code on the wire;
+	// legacy XML clients string-match that code rather than the shape name.
+	if e.QueryErrorCode != "" {
+		resp.Error.Code = e.QueryErrorCode
+	}
 	resp.Error.Message = e.Message
 	resp.RequestID = e.RequestID
 	for k, v := range e.ExtraFields {
@@ -312,7 +322,7 @@ func WriteAWSError(w http.ResponseWriter, err *AWSError, contentType string) {
 		w.Header().Set("Content-Type", ct)
 		w.Header().Set("X-Amzn-ErrorType", err.Code)
 		if err.QueryErrorCode != "" {
-			w.Header().Set("x-amzn-query-error", err.QueryErrorCode)
+			w.Header().Set("x-amzn-query-error", err.QueryErrorCode+";"+err.faultString())
 		}
 		w.WriteHeader(err.HTTPStatus)
 		if _, writeErr := w.Write([]byte(err.ToJSON())); writeErr != nil {

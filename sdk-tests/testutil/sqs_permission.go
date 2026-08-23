@@ -130,6 +130,41 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "AddPermission_AnyActionName_Accepted", func() error {
+		// The Actions parameter documents "the name of any action or `*`";
+		// names outside any fixed list must be accepted.
+		anyQName := fmt.Sprintf("AnyActionQueue-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(anyQName),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(anyQName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(anyQName),
+		})
+		if err != nil {
+			return fmt.Errorf("get url: %v", err)
+		}
+
+		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
+			QueueUrl:      urlResp.QueueUrl,
+			Label:         aws.String("AnyActionPerm"),
+			AWSAccountIds: []string{r.accountID},
+			Actions:       []string{"CreateQueue", "ListQueues"},
+		})
+		if err != nil {
+			return fmt.Errorf("AddPermission with queue-management action names rejected: %v", err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "AddPermission", func() error {
 		permQueueName := fmt.Sprintf("PermQueue-%d", time.Now().UnixNano())
 		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{

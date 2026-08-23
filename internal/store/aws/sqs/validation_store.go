@@ -43,7 +43,7 @@ func validateQueueName(name string) error {
 	if len(name) == 0 {
 		return ErrInvalidQueueName
 	}
-	if len(name) > maxQueueNameLength {
+	if len(name) > MaxQueueNameLength {
 		return ErrInvalidQueueName
 	}
 	if strings.HasSuffix(name, ".fifo") {
@@ -75,21 +75,21 @@ func IsValidAttributeName(name string) bool {
 }
 
 func validateVisibilityTimeout(value int32) error {
-	if value < minVisibilityTimeout || value > MaxVisibilityTimeout {
+	if value < MinVisibilityTimeout || value > MaxVisibilityTimeout {
 		return ErrInvalidParameterValue
 	}
 	return nil
 }
 
 func validateDelaySeconds(value int32) error {
-	if value < minDelaySeconds || value > maxDelaySeconds {
+	if value < MinDelaySeconds || value > MaxDelaySeconds {
 		return ErrInvalidParameterValue
 	}
 	return nil
 }
 
 func validateMessageRetentionPeriod(value int32) error {
-	if value < minMessageRetentionPeriod || value > maxMessageRetentionPeriod {
+	if value < MinMessageRetentionPeriod || value > MaxMessageRetentionPeriod {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -103,7 +103,7 @@ func validateMaximumMessageSize(value int32) error {
 }
 
 func validateReceiveMessageWaitTimeSeconds(value int32) error {
-	if value < minReceiveMessageWaitTime || value > maxReceiveMessageWaitTime {
+	if value < MinReceiveMessageWaitTimeSeconds || value > MaxReceiveMessageWaitTimeSeconds {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -136,15 +136,18 @@ var (
 )
 
 const (
-	maxPermissionLabels    = 10
-	maxPermissionAccounts  = 10
-	maxPermissionLabelLen  = 80
-	maxActionsPerStatement = 7
+	maxPermissionLabels   = 10
+	maxPermissionAccounts = 10
+	maxPermissionLabelLen = 80
+	// MaxActionsPerStatement is the maximum number of actions per
+	// AddPermission statement (7 per the AWS SQS API Reference: "An Amazon
+	// SQS policy can have a maximum of seven actions per statement.").
+	MaxActionsPerStatement = 7
 )
 
 var validDeduplicationScopes = map[string]bool{
-	"queueMessageGroup": true,
-	"queue":             true,
+	"messageGroup": true,
+	"queue":        true,
 }
 
 var validFifoThroughputLimits = map[string]bool{
@@ -158,32 +161,59 @@ var validRedrivePermissions = map[string]bool{
 	"denyAll":  true,
 }
 
-var validSQSActions = map[string]bool{
-	"*":                            true,
-	"SendMessage":                  true,
-	"SendMessageBatch":             true,
-	"ReceiveMessage":               true,
-	"DeleteMessage":                true,
-	"DeleteMessageBatch":           true,
-	"ChangeMessageVisibility":      true,
-	"ChangeMessageVisibilityBatch": true,
-	"GetQueueAttributes":           true,
-	"GetQueueUrl":                  true,
-	"PurgeQueue":                   true,
-	"SetQueueAttributes":           true,
-	"AddPermission":                true,
-	"RemovePermission":             true,
-	"ListQueueTags":                true,
-	"TagQueue":                     true,
-	"UntagQueue":                   true,
-	"ListDeadLetterSourceQueues":   true,
-	"StartMessageMoveTask":         true,
-	"CancelMessageMoveTask":        true,
-	"ListMessageMoveTasks":         true,
+// sqsActionNameRegex matches SQS action names: "the name of any action or
+// `*`" (AWS SQS API Reference, AddPermission Actions parameter). Action names
+// are alphanumeric, so anything outside [A-Za-z0-9*] is rejected without
+// keeping a closed list that would go stale as new actions are added.
+var sqsActionNameRegex = regexp.MustCompile(`^[A-Za-z0-9*]+$`)
+
+// validateMessageBody enforces the documented message-body character set:
+// "#x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to
+// #x10FFFF" — "If a message contains characters outside the allowed set,
+// Amazon SQS rejects the message and returns an InvalidMessageContents
+// error." (AWS SQS API Reference).
+func validateMessageBody(body string) error {
+	for _, r := range body {
+		if r == 0x9 || r == 0xA || r == 0xD {
+			continue
+		}
+		if r >= 0x20 && r <= 0xD7FF {
+			continue
+		}
+		if r >= 0xE000 && r <= 0xFFFD {
+			continue
+		}
+		if r >= 0x10000 && r <= 0x10FFFF {
+			continue
+		}
+		return ErrInvalidMessageContents
+	}
+	return nil
+}
+
+// validateFifoIdentifier enforces the documented MessageGroupId and
+// MessageDeduplicationId rules: at most 128 characters of "alphanumeric
+// characters (a-z, A-Z, 0-9) and punctuation
+// (!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~)" — every printable non-space ASCII
+// character (AWS SQS API Reference). An empty identifier means the field was
+// not provided and is validated by the FIFO presence rules instead.
+func validateFifoIdentifier(value string) error {
+	if value == "" {
+		return nil
+	}
+	if len(value) > MaxFifoIdLength {
+		return ErrInvalidParameterValue
+	}
+	for i := 0; i < len(value); i++ {
+		if value[i] < 0x21 || value[i] > 0x7E {
+			return ErrInvalidParameterValue
+		}
+	}
+	return nil
 }
 
 func validateKmsDataKeyReusePeriod(value int32) error {
-	if value < 60 || value > 86400 {
+	if value < MinKmsDataKeyReusePeriodSeconds || value > MaxKmsDataKeyReusePeriodSeconds {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -198,6 +228,42 @@ func validateDeduplicationScope(value string) error {
 
 func validateFifoThroughputLimit(value string) error {
 	if !validFifoThroughputLimits[value] {
+		return ErrInvalidParameterValue
+	}
+	return nil
+}
+
+// ValidateDeduplicationScope applies the store deduplication-scope rule
+// (valid values "messageGroup" and "queue") for callers outside the store
+// package.
+func ValidateDeduplicationScope(value string) error {
+	return validateDeduplicationScope(value)
+}
+
+// ValidateFifoThroughputLimit applies the store FIFO throughput-limit rule
+// (valid values "perQueue" and "perMessageGroupId") for callers outside the
+// store package.
+func ValidateFifoThroughputLimit(value string) error {
+	return validateFifoThroughputLimit(value)
+}
+
+// validateHighThroughputFifo enforces the documented cross-rule on the merged
+// attribute view of a queue: "The perMessageGroupId value is allowed only
+// when the value for DeduplicationScope is messageGroup." An absent
+// DeduplicationScope behaves as the documented default "queue".
+func validateHighThroughputFifo(attrs map[string]string) error {
+	if attrs["FifoThroughputLimit"] == "perMessageGroupId" && attrs["DeduplicationScope"] != "messageGroup" {
+		return ErrInvalidParameterValue
+	}
+	return nil
+}
+
+// validateSSEExclusion enforces the documented server-side-encryption rule on
+// the merged attribute view of a queue: "Only one server-side encryption
+// option is supported per queue (for example, SSE-KMS or SSE-SQS)." An empty
+// KmsMasterKeyId behaves as unset.
+func validateSSEExclusion(attrs map[string]string) error {
+	if attrs["KmsMasterKeyId"] != "" && attrs["SqsManagedSseEnabled"] == "true" {
 		return ErrInvalidParameterValue
 	}
 	return nil
@@ -270,6 +336,13 @@ func validatePermissionLabel(label string) error {
 	return nil
 }
 
+// ValidatePermissionLabel applies the store permission-label rules (length
+// and character set) so callers outside the store package share a single
+// definition.
+func ValidatePermissionLabel(label string) error {
+	return validatePermissionLabel(label)
+}
+
 func validateAWSAccountIDs(ids []string) error {
 	if len(ids) == 0 || len(ids) > maxPermissionAccounts {
 		return ErrInvalidParameterValue
@@ -286,12 +359,12 @@ func validateSQSActionList(actions []string) error {
 	if len(actions) == 0 {
 		return ErrInvalidParameterValue
 	}
-	if len(actions) > maxActionsPerStatement {
+	if len(actions) > MaxActionsPerStatement {
 		return ErrOverLimit
 	}
 	seen := make(map[string]bool, len(actions))
 	for _, a := range actions {
-		if !validSQSActions[a] {
+		if !sqsActionNameRegex.MatchString(a) {
 			return ErrInvalidParameterValue
 		}
 		if seen[a] {

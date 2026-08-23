@@ -12,7 +12,7 @@ type SQSStoreInterface interface {
 	GetQueueByName(queueName string) (*Queue, error)
 	UpdateQueue(queue *Queue) error
 	DeleteQueue(queueURL string) error
-	ListQueues(opts common.ListOptions) (*common.ListResult[Queue], error)
+	ListQueues(opts common.ListOptions, queueNamePrefix string) (*common.ListResult[Queue], error)
 	SetQueueAttributes(queueURL string, attributes map[string]string) error
 	AddPermission(queueURL, label string, awsAccountIDs []string, actions []string) error
 	RemovePermission(queueURL, label string) error
@@ -23,6 +23,10 @@ type SQSStoreInterface interface {
 	GetMessageCounts(queueURL string) (visible, notVisible, delayed int32)
 
 	SendMessage(queueURL string, message *Message) (*Message, error)
+	// ReceiveMessage receives messages; a negative waitTimeSeconds means
+	// "unset" and selects the queue's ReceiveMessageWaitTimeSeconds, and a
+	// positive effective wait long-polls until messages arrive or the
+	// deadline expires.
 	ReceiveMessage(queueURL string, maxNumberOfMessages int32, visibilityTimeoutPtr *int32, waitTimeSeconds int32, receiveRequestAttemptId string) ([]*Message, error)
 	DeleteMessage(queueURL, receiptHandle string) error
 	ChangeMessageVisibility(queueURL, receiptHandle string, visibilityTimeout int32) error

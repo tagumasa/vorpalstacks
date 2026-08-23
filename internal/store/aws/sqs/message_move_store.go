@@ -321,7 +321,7 @@ func (s *SQSStore) findSourceQueueForDLQ(dlqURL string) string {
 		return ""
 	}
 
-	result, err := s.ListQueues(common.ListOptions{MaxItems: 1000})
+	result, err := s.ListQueues(common.ListOptions{MaxItems: MaxListResults}, "")
 	if err != nil {
 		return ""
 	}

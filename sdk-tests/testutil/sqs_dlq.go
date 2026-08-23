@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -43,6 +44,174 @@ func (r *TestRunner) runSQSDLQTests(ctx context.Context, client *sqs.Client) []T
 		}
 		if len(dlqResp.QueueUrls) != 0 {
 			return fmt.Errorf("expected empty queue URLs for new DLQ, got %d", len(dlqResp.QueueUrls))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ListDeadLetterSourceQueues_NonEmpty", func() error {
+		// The SDK parses the response member as lowercase "queueUrls"; a
+		// PascalCase key would silently yield an empty list.
+		dlqName := fmt.Sprintf("DLQSrc-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(dlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dlq: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dlqName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+
+		dlqUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(dlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("get dlq url: %v", err)
+		}
+		dlqAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       dlqUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dlq arn: %v", err)
+		}
+		dlqArn := dlqAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		srcName := fmt.Sprintf("SrcListing-%d", time.Now().UnixNano())
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(srcName),
+			Attributes: map[string]string{
+				"RedrivePolicy": fmt.Sprintf(`{"deadLetterTargetArn":"%s","maxReceiveCount":"3"}`, dlqArn),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(srcName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName: aws.String(srcName),
+		})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+
+		dlqResp, err := client.ListDeadLetterSourceQueues(ctx, &sqs.ListDeadLetterSourceQueuesInput{
+			QueueUrl: dlqUrlResp.QueueUrl,
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, u := range dlqResp.QueueUrls {
+			if u == *srcUrlResp.QueueUrl {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected source queue URL %s in ListDeadLetterSourceQueues result, got %v", *srcUrlResp.QueueUrl, dlqResp.QueueUrls)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "DLQ_ReceiveReturnsSourceArn", func() error {
+		// A message moved to a dead-letter queue must carry the
+		// DeadLetterQueueSourceArn system attribute naming the source queue.
+		dlqName := fmt.Sprintf("DLQArn-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(dlqName),
+		})
+		if err != nil {
+			return fmt.Errorf("create dlq: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dlqName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+		dlqUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dlqName)})
+		if err != nil {
+			return fmt.Errorf("get dlq url: %v", err)
+		}
+		dlqAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       dlqUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dlq arn: %v", err)
+		}
+		dlqArn := dlqAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		srcName := fmt.Sprintf("SrcArn-%d", time.Now().UnixNano())
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			QueueName: aws.String(srcName),
+			Attributes: map[string]string{
+				"RedrivePolicy":     fmt.Sprintf(`{"deadLetterTargetArn":"%s","maxReceiveCount":"1"}`, dlqArn),
+				"VisibilityTimeout": "0",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		defer func() {
+			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(srcName)})
+			if urlResp.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			}
+		}()
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(srcName)})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+		srcAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       srcUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get src arn: %v", err)
+		}
+		srcArn := srcAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		_, err = client.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:    srcUrlResp.QueueUrl,
+			MessageBody: aws.String("message that will be redriven"),
+		})
+		if err != nil {
+			return fmt.Errorf("send: %v", err)
+		}
+
+		// First receive delivers the message (ReceiveCount=1).
+		if _, err = client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: srcUrlResp.QueueUrl}); err != nil {
+			return fmt.Errorf("receive 1: %v", err)
+		}
+		time.Sleep(100 * time.Millisecond)
+		// Second receive exceeds maxReceiveCount=1 and moves it to the DLQ.
+		if _, err = client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: srcUrlResp.QueueUrl}); err != nil {
+			return fmt.Errorf("receive 2: %v", err)
+		}
+
+		dlqRecv, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:                    dlqUrlResp.QueueUrl,
+			MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+		})
+		if err != nil {
+			return fmt.Errorf("receive from dlq: %v", err)
+		}
+		if len(dlqRecv.Messages) != 1 {
+			return fmt.Errorf("expected 1 message in DLQ, got %d", len(dlqRecv.Messages))
+		}
+		got := dlqRecv.Messages[0].Attributes["DeadLetterQueueSourceArn"]
+		if got != srcArn {
+			return fmt.Errorf("expected DeadLetterQueueSourceArn %q, got %q", srcArn, got)
 		}
 		return nil
 	}))
@@ -278,6 +447,86 @@ func (r *TestRunner) runSQSDLQTests(ctx context.Context, client *sqs.Client) []T
 		return nil
 	}))
 
+	results = append(results, r.RunTest("sqs", "CancelMessageMoveTask_UnknownHandle_ResourceNotFound", func() error {
+		_, err := client.CancelMessageMoveTask(ctx, &sqs.CancelMessageMoveTaskInput{
+			TaskHandle: aws.String("nonexistent-task-handle"),
+		})
+		if err == nil {
+			return fmt.Errorf("unknown TaskHandle must fail with ResourceNotFoundException")
+		}
+		if !strings.Contains(err.Error(), "ResourceNotFound") {
+			return fmt.Errorf("expected ResourceNotFoundException, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("sqs", "ListMessageMoveTasks_UnsetRate_Omitted", func() error {
+		srcDlqName := fmt.Sprintf("UnrateDLQ-%d", time.Now().UnixNano())
+		destQueueName := fmt.Sprintf("UnrateDest-%d", time.Now().UnixNano())
+		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(srcDlqName)})
+		if err != nil {
+			return fmt.Errorf("create src: %v", err)
+		}
+		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(destQueueName)})
+		if err != nil {
+			return fmt.Errorf("create dest: %v", err)
+		}
+		defer func() {
+			for _, name := range []string{srcDlqName, destQueueName} {
+				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+				if urlResp.QueueUrl != nil {
+					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+				}
+			}
+		}()
+		srcUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(srcDlqName)})
+		if err != nil {
+			return fmt.Errorf("get src url: %v", err)
+		}
+		srcAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       srcUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get src arn: %v", err)
+		}
+		srcArn := srcAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+		destUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(destQueueName)})
+		if err != nil {
+			return fmt.Errorf("get dest url: %v", err)
+		}
+		destAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl:       destUrlResp.QueueUrl,
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+		})
+		if err != nil {
+			return fmt.Errorf("get dest arn: %v", err)
+		}
+		destArn := destAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
+
+		_, err = client.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+			SourceArn:      aws.String(srcArn),
+			DestinationArn: aws.String(destArn),
+			// No MaxNumberOfMessagesPerSecond: system-optimised rate.
+		})
+		if err != nil {
+			return fmt.Errorf("start task: %v", err)
+		}
+
+		listResp, err := client.ListMessageMoveTasks(ctx, &sqs.ListMessageMoveTasksInput{
+			SourceArn: aws.String(srcArn),
+		})
+		if err != nil {
+			return fmt.Errorf("list tasks: %v", err)
+		}
+		for _, task := range listResp.Results {
+			if task.MaxNumberOfMessagesPerSecond != nil {
+				return fmt.Errorf("unset move rate reported as fixed rate %d", *task.MaxNumberOfMessagesPerSecond)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sqs", "DLQ_MaxReceiveCount_DeliveredExactlyN", func() error {
 		// Verify that a message is delivered exactly maxReceiveCount times
 		// before being moved to the DLQ (not maxReceiveCount-1).
@@ -315,11 +564,13 @@ func (r *TestRunner) runSQSDLQTests(ctx context.Context, client *sqs.Client) []T
 
 		srcName := fmt.Sprintf("SrcRecv-%d", time.Now().UnixNano())
 		redrivePolicy := fmt.Sprintf(`{"deadLetterTargetArn":"%s","maxReceiveCount":"2"}`, dlqArn)
+		// Zero visibility lets each receive redeliver immediately, so the
+		// receive-count progression needs no sleeps between receives.
 		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(srcName),
 			Attributes: map[string]string{
 				"RedrivePolicy":     redrivePolicy,
-				"VisibilityTimeout": "1",
+				"VisibilityTimeout": "0",
 			},
 		})
 		if err != nil {
@@ -361,8 +612,6 @@ func (r *TestRunner) runSQSDLQTests(ctx context.Context, client *sqs.Client) []T
 			return fmt.Errorf("receive 1: expected 1 message, got %d", len(recv1.Messages))
 		}
 
-		time.Sleep(2 * time.Second)
-
 		// 2nd receive — should STILL succeed (count=2, 2>2 is false)
 		recv2, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(srcURL),
@@ -376,13 +625,13 @@ func (r *TestRunner) runSQSDLQTests(ctx context.Context, client *sqs.Client) []T
 			return fmt.Errorf("receive 2: expected 1 message (maxReceiveCount=2), got %d — off-by-one bug", len(recv2.Messages))
 		}
 
-		time.Sleep(2 * time.Second)
-
-		// 3rd receive — source should be empty (count=3, 3>2 is true, moved to DLQ)
+		// 3rd receive — source should be empty (count=3, 3>2 is true, moved
+		// to the DLQ synchronously inside the receive scan; the short wait
+		// proves the message does not come back).
 		recv3, err := client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(srcURL),
 			MaxNumberOfMessages: 1,
-			WaitTimeSeconds:     2,
+			WaitTimeSeconds:     1,
 		})
 		if err != nil {
 			return fmt.Errorf("receive 3: %v", err)

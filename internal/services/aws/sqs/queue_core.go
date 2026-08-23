@@ -105,7 +105,7 @@ func (s *SQSService) createQueueCore(ctx context.Context, store sqsstore.SQSStor
 			if getErr != nil {
 				return nil, convertStoreError(getErr)
 			}
-			if !queuesHaveSameAttributes(queue, existingQueue) {
+			if !requestAttrsMatchExisting(in.Attrs, existingQueue) {
 				return nil, ErrQueueNameExists
 			}
 			return &CreateQueueResult{QueueURL: existingQueue.URL}, nil
@@ -128,37 +128,38 @@ func (s *SQSService) deleteQueueCore(store sqsstore.SQSStoreInterface, in Delete
 }
 
 // listQueuesCore lists queues with optional prefix filtering and pagination.
+// The prefix filter runs inside the store listing so MaxResults counts only
+// matching queues. NextToken is only surfaced when MaxResults was explicitly
+// set ("You must set MaxResults to receive a value for NextToken").
 func (s *SQSService) listQueuesCore(store sqsstore.SQSStoreInterface, in ListQueuesInput) (*ListQueuesResult, error) {
+	if in.MaxResults < 0 || in.MaxResults > sqsstore.MaxListResults {
+		return nil, ErrInvalidParameterValue
+	}
+	maxResultsSet := in.MaxResults > 0
 	maxItems := in.MaxResults
-	if maxItems <= 0 {
-		maxItems = 1000
+	if !maxResultsSet {
+		maxItems = sqsstore.MaxListResults
 	}
 	result, err := store.ListQueues(storecommon.ListOptions{
 		MaxItems: maxItems,
 		Marker:   in.NextToken,
-	})
+	}, in.QueueNamePrefix)
 	if err != nil {
 		return nil, convertStoreError(err)
 	}
 
 	queueURLs := make([]string, 0, len(result.Items))
 	for _, queue := range result.Items {
-		if in.QueueNamePrefix != "" {
-			queueName := queue.Name
-			if queueName == "" {
-				parts := strings.Split(queue.URL, "/")
-				queueName = parts[len(parts)-1]
-			}
-			if !strings.HasPrefix(queueName, in.QueueNamePrefix) {
-				continue
-			}
-		}
 		queueURLs = append(queueURLs, queue.URL)
 	}
 
+	nextToken := ""
+	if maxResultsSet && result.IsTruncated {
+		nextToken = result.NextMarker
+	}
 	return &ListQueuesResult{
 		QueueURLs: queueURLs,
-		NextToken: result.NextMarker,
+		NextToken: nextToken,
 	}, nil
 }
 

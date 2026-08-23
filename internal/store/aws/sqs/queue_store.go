@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	pb "vorpalstacks/internal/pb/storage/storage_sqs"
@@ -45,6 +46,9 @@ func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
 	if s.Exists(queueURL) {
 		return nil, ErrQueueAlreadyExists
 	}
+	if s.deletedRecently(queueURL) {
+		return nil, ErrQueueDeletedRecently
+	}
 
 	now := time.Now().UTC()
 	queue.URL = queueURL
@@ -68,6 +72,16 @@ func (s *SQSStore) CreateQueue(queue *Queue) (*Queue, error) {
 	queue.Attributes["ReceiveMessageWaitTimeSeconds"] = fmt.Sprintf("%d", queue.ReceiveMessageWaitTimeSeconds)
 	queue.Attributes["FifoQueue"] = fmt.Sprintf("%v", queue.FifoQueue)
 	queue.Attributes["ContentBasedDeduplication"] = fmt.Sprintf("%v", queue.ContentBasedDeduplication)
+
+	if err := validateSSEExclusion(queue.Attributes); err != nil {
+		return nil, err
+	}
+	if err := validateHighThroughputFifo(queue.Attributes); err != nil {
+		return nil, err
+	}
+	if err := s.validateRedrivePolicyTarget(queue, queue.RedrivePolicy); err != nil {
+		return nil, err
+	}
 
 	if err := s.BaseStore.PutProto(queueURL, QueueToProto(queue)); err != nil {
 		return nil, err
@@ -157,12 +171,30 @@ func (s *SQSStore) DeleteQueue(queueURL string) error {
 		_ = dedupBucket.Delete(k)
 	}
 
-	return s.BaseStore.Delete(queueURL)
+	if err := s.BaseStore.Delete(queueURL); err != nil {
+		return err
+	}
+	s.recordQueueDeletion(queueURL)
+	return nil
 }
 
-// ListQueues lists queues with the specified pagination options.
-func (s *SQSStore) ListQueues(opts common.ListOptions) (*common.ListResult[Queue], error) {
-	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, nil)
+// ListQueues lists queues with the specified pagination options. When
+// queueNamePrefix is non-empty the filter is applied during iteration so
+// MaxItems counts only matching queues, matching the AWS behaviour of
+// filtering before pagination.
+func (s *SQSStore) ListQueues(opts common.ListOptions, queueNamePrefix string) (*common.ListResult[Queue], error) {
+	var filter func(*pb.Queue) bool
+	if queueNamePrefix != "" {
+		filter = func(q *pb.Queue) bool {
+			name := q.Name
+			if name == "" {
+				parts := strings.Split(q.Url, "/")
+				name = parts[len(parts)-1]
+			}
+			return strings.HasPrefix(name, queueNamePrefix)
+		}
+	}
+	result, err := common.ListProto[*pb.Queue](s.BaseStore, opts, func() *pb.Queue { return &pb.Queue{} }, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +219,12 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 	queue, err := s.GetQueue(queueURL)
 	if err != nil {
 		return fmt.Errorf("getting queue: %w", err)
+	}
+
+	// An empty attribute map is a successful no-op, but the queue must still
+	// resolve so that QueueDoesNotExist is returned for missing queues.
+	if len(attributes) == 0 {
+		return nil
 	}
 
 	if queue.Attributes == nil {
@@ -272,9 +310,7 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 			if err != nil {
 				return fmt.Errorf("invalid ContentBasedDeduplication: %w", ErrInvalidParameterValue)
 			}
-			if val != queue.ContentBasedDeduplication {
-				return ErrInvalidAttributeValue
-			}
+			queue.ContentBasedDeduplication = val
 
 		case "KmsMasterKeyId":
 			if err := validateKmsMasterKeyId(v); err != nil {
@@ -314,6 +350,19 @@ func (s *SQSStore) SetQueueAttributes(queueURL string, attributes map[string]str
 		default:
 		}
 		queue.Attributes[k] = v
+	}
+
+	// Cross-attribute rules are enforced on the merged attribute view so
+	// they also catch the case where one option is already set on the queue
+	// and the request sets the other.
+	if err := validateSSEExclusion(queue.Attributes); err != nil {
+		return err
+	}
+	if err := validateHighThroughputFifo(queue.Attributes); err != nil {
+		return err
+	}
+	if err := s.validateRedrivePolicyTarget(queue, queue.RedrivePolicy); err != nil {
+		return err
 	}
 
 	return s.UpdateQueue(queue)

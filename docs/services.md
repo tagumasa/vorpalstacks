@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-08-23
+**Last Updated**: 2026-08-24
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
-**SDK Tests**: 3,261 passed, 0 failed (3,194 SDK + 50 integration + 17 WebSocket)
+**SDK Tests**: 3,288 passed, 0 failed (3,221 SDK + 50 integration + 17 WebSocket)
 
 ---
 
@@ -38,7 +38,7 @@
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
 | SFN (Step Functions) | Full | |
 | SNS | Broad | SMS sending, email/email-json delivery, and mobile push (application protocol) not supported. Platform application/endpoint CRUD is available but no push delivery. Subscription FilterPolicy and RawMessageDelivery are supported. |
-| SQS | Broad | SSE-KMS encryption not applied (attributes accepted but messages are not encrypted). FIFO advanced attributes (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy) accepted but not enforced. |
+| SQS | Broad | SSE-KMS encryption not applied (attributes accepted but messages are not encrypted). FIFO advanced attributes (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy) accepted but not enforced. Per-account request-rate quotas are not enforced (AWS-account-tied rate limiting is out of scope; the RequestThrottled error shape exists for wire-contract completeness). |
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
 

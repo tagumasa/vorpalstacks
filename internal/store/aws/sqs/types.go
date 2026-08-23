@@ -45,7 +45,9 @@ type RedrivePolicy struct {
 }
 
 // ParseRedrivePolicy parses a RedrivePolicy JSON string, accepting both
-// string and integer formats for maxReceiveCount per AWS convention.
+// string and integer formats for maxReceiveCount per AWS convention. When
+// maxReceiveCount is absent it defaults to DefaultMaxReceiveCount (10 per the
+// AWS SQS API Reference: "Default: 10.").
 func ParseRedrivePolicy(data string) (*RedrivePolicy, error) {
 	var raw struct {
 		DeadLetterTargetARN string          `json:"deadLetterTargetArn"`
@@ -54,7 +56,7 @@ func ParseRedrivePolicy(data string) (*RedrivePolicy, error) {
 	if err := json.Unmarshal([]byte(data), &raw); err != nil {
 		return nil, err
 	}
-	var count int32
+	count := int32(DefaultMaxReceiveCount)
 	if len(raw.MaxReceiveCount) > 0 {
 		trimmed := string(raw.MaxReceiveCount)
 		if trimmed[0] == '"' {

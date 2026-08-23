@@ -28,10 +28,6 @@ const (
 	// goroutines, one per unique event source mapping.
 	defaultESMMaxWorkers = 32
 
-	// defaultSQSWaitTimeSeconds is the SQS ReceiveMessage WaitTimeSeconds
-	// parameter. Using long polling (20s) reduces empty responses and cost.
-	defaultSQSWaitTimeSeconds = int32(20)
-
 	// maxSQSBatchSize is the maximum number of SQS messages that can be
 	// delivered to a Lambda function in a single invocation batch.
 	maxSQSBatchSize = int32(10000)
@@ -1189,9 +1185,15 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		perCallMax = batchSize
 	}
 
-	waitTime := defaultSQSWaitTimeSeconds
-	if mapping.MaximumBatchingWindowInSeconds > 0 && mapping.MaximumBatchingWindowInSeconds < waitTime {
-		waitTime = mapping.MaximumBatchingWindowInSeconds
+	// The receive wait is bounded to one poll interval: the poll cycle runs
+	// synchronously (pollAll waits for every mapping to finish), so a
+	// receive that long-polls longer than the interval would stall the
+	// whole cycle and delay every other mapping's poll. Long polling lives
+	// in the SQS store; the poller only needs each cycle to stay
+	// responsive, and the batching window still governs record gathering.
+	sqsReceiveWaitSeconds := int32(p.interval / time.Second)
+	if sqsReceiveWaitSeconds < 1 {
+		sqsReceiveWaitSeconds = 1
 	}
 
 	var allMessages []eventbus.ReceivedSQSMessage
@@ -1202,7 +1204,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 			fetchCount = remaining
 		}
 
-		msgs, err := p.bus.SQSInvoker().ReceiveMessage(ctx, region, queueURL, fetchCount, nil, waitTime)
+		msgs, err := p.bus.SQSInvoker().ReceiveMessage(ctx, region, queueURL, fetchCount, nil, sqsReceiveWaitSeconds)
 		if err != nil {
 			p.log("sqs receive failed", "queue", queueName, "mapping", mapping.UUID, "error", err)
 			break

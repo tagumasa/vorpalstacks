@@ -9,6 +9,10 @@ var (
 	// already exists.
 	ErrQueueAlreadyExists = errors.New("queue already exists")
 
+	// ErrQueueDeletedRecently is returned when a queue is recreated with the
+	// same name within the 60-second prohibition window after deletion.
+	ErrQueueDeletedRecently = errors.New("queue deleted recently")
+
 	// ErrQueueNotFound is returned when the specified queue does not exist.
 	ErrQueueNotFound = errors.New("queue does not exist")
 
@@ -91,6 +95,10 @@ var (
 	// ErrInvalidAttributeValue is returned when an attribute value is invalid
 	// or cannot be modified after queue creation.
 	ErrInvalidAttributeValue = errors.New("invalid attribute value")
+
+	// ErrMessageNotInflight is returned when a receipt handle refers to a
+	// message whose visibility timeout has expired.
+	ErrMessageNotInflight = errors.New("message not in flight")
 
 	// ErrBatchRequestTooLong is returned when a batch request payload exceeds
 	// the maximum allowed total payload size (MaxMaximumMessageSize).

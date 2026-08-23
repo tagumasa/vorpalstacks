@@ -36,7 +36,7 @@ func TestSQSErrors(t *testing.T) {
 		assert.Equal(t, 400, ErrEmptyBatchRequest.GetHTTPStatusCode())
 
 		assert.Equal(t, "ReceiptHandleIsInvalid: The receipt handle provided is not valid.", ErrReceiptHandleIsInvalid.Error())
-		assert.Equal(t, 400, ErrReceiptHandleIsInvalid.GetHTTPStatusCode())
+		assert.Equal(t, 404, ErrReceiptHandleIsInvalid.GetHTTPStatusCode())
 
 		assert.Equal(t, "InvalidAttributeName: The attribute name is invalid.", ErrInvalidAttributeName.Error())
 		assert.Equal(t, 400, ErrInvalidAttributeName.GetHTTPStatusCode())
