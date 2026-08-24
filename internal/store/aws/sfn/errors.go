@@ -66,4 +66,9 @@ var (
 
 	// ErrMapRunNotFound is returned when the specified map run does not exist.
 	ErrMapRunNotFound = errors.New("map run not found")
+
+	// ErrStateMachineVersionInUse is returned when deleting a state
+	// machine version that an alias routing configuration still points
+	// at.
+	ErrStateMachineVersionInUse = errors.New("state machine version is referenced by an alias")
 )

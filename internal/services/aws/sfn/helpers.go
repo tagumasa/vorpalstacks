@@ -93,9 +93,6 @@ func executionToResponse(exec *sfnstore.Execution) map[string]interface{} {
 	if exec.MapRunArn != "" {
 		response["mapRunArn"] = exec.MapRunArn
 	}
-	if exec.ItemCount != 0 {
-		response["itemCount"] = exec.ItemCount
-	}
 	if exec.RedriveCount != 0 {
 		response["redriveCount"] = exec.RedriveCount
 	}
@@ -107,45 +104,6 @@ func executionToResponse(exec *sfnstore.Execution) map[string]interface{} {
 		if reason != "" {
 			response["redriveStatusReason"] = reason
 		}
-	}
-
-	return response
-}
-
-func stateMachineToResponse(sm *sfnstore.StateMachine) map[string]interface{} {
-	response := map[string]interface{}{
-		"stateMachineArn": sm.StateMachineArn,
-		"name":            sm.Name,
-		"type":            sm.Type,
-		"creationDate":    sm.CreationDate.Unix(),
-	}
-
-	if sm.Definition != "" {
-		response["definition"] = sm.Definition
-	}
-	if sm.RoleArn != "" {
-		response["roleArn"] = sm.RoleArn
-	}
-	if sm.Status != "" {
-		response["status"] = sm.Status
-	}
-	if !sm.UpdateDate.IsZero() {
-		response["updateDate"] = sm.UpdateDate.Unix()
-	}
-	if sm.RevisionId != "" {
-		response["revisionId"] = sm.RevisionId
-	}
-	if sm.Label != "" {
-		response["label"] = sm.Label
-	}
-	if sm.LoggingConfiguration != nil {
-		response["loggingConfiguration"] = sm.LoggingConfiguration
-	}
-	if sm.EncryptionConfiguration != nil {
-		response["encryptionConfiguration"] = sm.EncryptionConfiguration
-	}
-	if sm.TracingConfiguration != nil {
-		response["tracingConfiguration"] = sm.TracingConfiguration
 	}
 
 	return response

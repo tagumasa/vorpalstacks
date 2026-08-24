@@ -2,58 +2,9 @@ package sfn
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 )
-
-func validateDefinitionJSONataFields(definition string) error {
-	var def map[string]interface{}
-	if err := json.Unmarshal([]byte(definition), &def); err != nil {
-		return nil
-	}
-
-	topQL, _ := def["QueryLanguage"].(string)
-	if topQL == "" {
-		topQL = "JSONPath"
-	}
-
-	states, ok := def["States"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-
-	for stateName, stateData := range states {
-		stateMap, ok := stateData.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		stateType, _ := stateMap["Type"].(string)
-		stateQL, _ := stateMap["QueryLanguage"].(string)
-		if stateQL == "" {
-			stateQL = topQL
-		}
-
-		if stateQL == "JSONata" {
-			jsonPathOnlyFields := getJSONPathOnlyFields(stateType, stateMap)
-			if len(jsonPathOnlyFields) > 0 {
-				return NewInvalidDefinitionException(fmt.Sprintf(
-					"State '%s' uses JSONata QueryLanguage but contains JSONPath-only field(s): %s",
-					stateName, strings.Join(jsonPathOnlyFields, ", ")))
-			}
-		} else {
-			jsonataOnlyFields := getJSONataOnlyFields(stateType, stateMap)
-			if len(jsonataOnlyFields) > 0 {
-				return NewInvalidDefinitionException(fmt.Sprintf(
-					"State '%s' uses JSONPath QueryLanguage but contains JSONata-only field(s): %s",
-					stateName, strings.Join(jsonataOnlyFields, ", ")))
-			}
-		}
-	}
-
-	return nil
-}
 
 func getJSONPathOnlyFields(stateType string, stateMap map[string]interface{}) []string {
 	var forbidden []string

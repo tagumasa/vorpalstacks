@@ -38,6 +38,120 @@ const (
 	// MaxTagsPerResource is the hard tagging quota: a maximum of fifty tags
 	// per resource, not modifiable.
 	MaxTagsPerResource = tagutil.MaxTagsPerResource
+
+	// MaxArnLength is the Smithy Arn shape ceiling @length(1, 256) shared by
+	// stateMachineArn, roleArn, executionArn and their qualified variants.
+	MaxArnLength = 256
+
+	// MaxExecutionDataBytes is the Smithy SensitiveData shape ceiling
+	// @length(0, 262144): the UTF-8 byte bound for StartExecution input,
+	// StartSyncExecution input and SendTaskSuccess output. It is also the
+	// payload size limit the intrinsic-functions documentation places on
+	// array arguments to States.ArrayPartition and States.ArrayContains.
+	MaxExecutionDataBytes = 262144
+
+	// MaxIntrinsicStringChars is the intrinsic-functions documentation bound
+	// on the data string argument of States.Base64Encode,
+	// States.Base64Decode and States.Hash: 10,000 characters.
+	MaxIntrinsicStringChars = 10000
+
+	// MaxIntrinsicNesting is the intrinsic-functions documentation bound on
+	// nesting: "You can nest up to 10 intrinsic functions within a field".
+	MaxIntrinsicNesting = 10
+
+	// MaxArrayRangeElements is the intrinsic-functions documentation bound on
+	// States.ArrayRange: "The new array can contain up to 1000 elements".
+	MaxArrayRangeElements = 1000
+
+	// MaxErrorLength is the Smithy SensitiveError shape ceiling
+	// @length(0, 256): the bound for StopExecution and SendTaskFailure
+	// error strings.
+	MaxErrorLength = 256
+
+	// MaxCauseLength is the Smithy SensitiveCause shape ceiling
+	// @length(0, 32768): the bound for StopExecution and SendTaskFailure
+	// cause strings.
+	MaxCauseLength = 32768
+
+	// MaxDefinitionLength is the Smithy Definition shape ceiling
+	// @length(1, 1048576): the bound for CreateStateMachine and
+	// UpdateStateMachine definitions.
+	MaxDefinitionLength = 1048576
+
+	// MaxTaskTokenLength is the Smithy TaskToken shape ceiling
+	// @length(1, 2048).
+	MaxTaskTokenLength = 2048
+
+	// MaxTraceHeaderLength is the Smithy TraceHeader shape ceiling
+	// @length(0, 256) with the @pattern(^\\p{ASCII}*$) ASCII-only profile.
+	MaxTraceHeaderLength = 256
+
+	// MaxVersionDescriptionLength is the versionDescription ceiling
+	// @length(0, 256) on PublishStateMachineVersion and UpdateStateMachine.
+	MaxVersionDescriptionLength = 256
+
+	// MaxAliasesPerStateMachine is the alias quota per state machine
+	// (AWS documentation on state machine aliases).
+	MaxAliasesPerStateMachine = 100
+
+	// MaxVersionsPerStateMachine is the version quota per state machine
+	// (PublishStateMachineVersion documentation).
+	MaxVersionsPerStateMachine = 1000
+
+	// MaxRoutingConfigEntries is the number of versions an alias routing
+	// configuration may point at (AWS documentation on state machine
+	// aliases).
+	MaxRoutingConfigEntries = 2
+
+	// RedriveWindowDays bounds the redrivable period: executions may be
+	// redriven within fourteen days of completing (RedriveExecution
+	// documentation).
+	RedriveWindowDays = 14
+
+	// MaxRedriveEventHistory is the event-history ceiling for redrive
+	// eligibility: the execution history must hold fewer than 24,999 events
+	// to accommodate the ExecutionRedriven event and at least one more
+	// event (RedriveExecution documentation).
+	MaxRedriveEventHistory = 24999
+
+	// MaxItemReaderItems is the ItemReader MaxItems ceiling: "You can
+	// specify a limit of up to 100,000,000 after which the Distributed Map
+	// stops reading items" (ItemReader documentation).
+	MaxItemReaderItems = 100000000
+
+	// MaxCSVHeaderBytes is the CSV header size ceiling for text delimited
+	// ItemReader datasets: "Step Functions supports headers of up to 10 KiB
+	// for text delimited files" (ItemReader documentation).
+	MaxCSVHeaderBytes = 10240
+
+	// MaxMapLabelLength is the Distributed Map Label field ceiling: labels
+	// "can't exceed 40 characters in length" (Distributed Map state
+	// documentation).
+	MaxMapLabelLength = 40
+
+	// MaxItemReaderFileBytes is the ItemReader single-file ceiling:
+	// "Step Functions supports 10 GB as the maximum size of an individual
+	// file in S3" (ItemReader documentation).
+	MaxItemReaderFileBytes = 10 * 1024 * 1024 * 1024
+
+	// MaxStateNameLength is the state-name ceiling from the Amazon States
+	// Language specification: "its length MUST BE less than or equal to 80
+	// Unicode characters".
+	MaxStateNameLength = 80
+
+	// MaxRetryIntervalSeconds is the Retrier IntervalSeconds ceiling:
+	// "IntervalSeconds has a maximum value of 99,999,999" (error handling
+	// documentation).
+	MaxRetryIntervalSeconds = 99999999
+
+	// MaxRetryAttempts is the Retrier MaxAttempts ceiling: "MaxAttempts
+	// has a maximum value of 99,999,999" (error handling documentation).
+	MaxRetryAttempts = 99999999
+
+	// MaxRetryDelaySeconds is the exclusive Retrier MaxDelaySeconds upper
+	// bound: "You must specify a value greater than 0 and less than
+	// 31622401 for MaxDelaySeconds" (error handling documentation).
+	MaxRetryDelaySeconds = 31622401
 )
 
 // StateMachine represents an AWS Step Functions state machine definition and metadata.
@@ -343,6 +457,11 @@ type StateMachineDefinition struct {
 	TimeoutSeconds int32                  `json:"TimeoutSeconds,omitempty"`
 	Version        string                 `json:"Version,omitempty"`
 	QueryLanguage  string                 `json:"QueryLanguage,omitempty"`
+	// ProcessorConfig carries the ItemProcessor processing-mode settings
+	// (Mode INLINE or DISTRIBUTED plus ExecutionType). It only carries
+	// meaning on definitions used as a Map ItemProcessor; the top-level
+	// machine definition never sets it.
+	ProcessorConfig *ProcessorConfig `json:"ProcessorConfig,omitempty"`
 }
 
 // State defines the common interface for all state machine state types.
@@ -377,6 +496,8 @@ type PassState struct {
 	Comment        string                 `json:"Comment,omitempty"`
 	Input          *InputOutput           `json:"Input,omitempty"`
 	Output         *InputOutput           `json:"Output,omitempty"`
+	InputPath      string                 `json:"InputPath,omitempty"`
+	OutputPath     string                 `json:"OutputPath,omitempty"`
 	OutputRaw      json.RawMessage        `json:"-"`
 	Result         interface{}            `json:"Result,omitempty"`
 	ResultPath     string                 `json:"ResultPath,omitempty"`
@@ -397,10 +518,20 @@ func (s *PassState) GetNext() string { return s.Next }
 func (s *PassState) GetEnd() bool { return s.End }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *PassState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *PassState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *PassState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *PassState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetResultSelector returns the result selector applied to the state output.
 func (s *PassState) GetResultSelector() *ResultSelector { return s.ResultSelector }
@@ -411,26 +542,30 @@ func (s *PassState) GetQueryLanguage() string { return s.QueryLanguage }
 // TaskState represents a Task state that executes a unit of work, such as calling an
 // activity or a Lambda function.
 type TaskState struct {
-	Name             string                 `json:"-"`
-	Type             string                 `json:"Type"`
-	Next             string                 `json:"Next,omitempty"`
-	End              bool                   `json:"End,omitempty"`
-	Comment          string                 `json:"Comment,omitempty"`
-	Input            *InputOutput           `json:"Input,omitempty"`
-	Output           *InputOutput           `json:"Output,omitempty"`
-	OutputRaw        json.RawMessage        `json:"-"`
-	Resource         string                 `json:"Resource"`
-	Parameters       *Parameters            `json:"Parameters,omitempty"`
-	ResultPath       string                 `json:"ResultPath,omitempty"`
-	ResultSelector   *ResultSelector        `json:"ResultSelector,omitempty"`
-	Retry            []*RetryPolicy         `json:"Retry,omitempty"`
-	Catch            []*CatchPolicy         `json:"Catch,omitempty"`
-	TimeoutSeconds   interface{}            `json:"TimeoutSeconds,omitempty"`
-	HeartbeatSeconds interface{}            `json:"HeartbeatSeconds,omitempty"`
-	QueryLanguage    string                 `json:"QueryLanguage,omitempty"`
-	Arguments        interface{}            `json:"Arguments,omitempty"`
-	Assign           map[string]interface{} `json:"Assign,omitempty"`
-	JSONataOutput    interface{}            `json:"-"`
+	Name                 string                 `json:"-"`
+	Type                 string                 `json:"Type"`
+	Next                 string                 `json:"Next,omitempty"`
+	End                  bool                   `json:"End,omitempty"`
+	Comment              string                 `json:"Comment,omitempty"`
+	Input                *InputOutput           `json:"Input,omitempty"`
+	Output               *InputOutput           `json:"Output,omitempty"`
+	InputPath            string                 `json:"InputPath,omitempty"`
+	OutputPath           string                 `json:"OutputPath,omitempty"`
+	OutputRaw            json.RawMessage        `json:"-"`
+	Resource             string                 `json:"Resource"`
+	Parameters           *Parameters            `json:"Parameters,omitempty"`
+	ResultPath           string                 `json:"ResultPath,omitempty"`
+	ResultSelector       *ResultSelector        `json:"ResultSelector,omitempty"`
+	Retry                []*RetryPolicy         `json:"Retry,omitempty"`
+	Catch                []*CatchPolicy         `json:"Catch,omitempty"`
+	TimeoutSeconds       interface{}            `json:"TimeoutSeconds,omitempty"`
+	HeartbeatSeconds     interface{}            `json:"HeartbeatSeconds,omitempty"`
+	TimeoutSecondsPath   string                 `json:"TimeoutSecondsPath,omitempty"`
+	HeartbeatSecondsPath string                 `json:"HeartbeatSecondsPath,omitempty"`
+	QueryLanguage        string                 `json:"QueryLanguage,omitempty"`
+	Arguments            interface{}            `json:"Arguments,omitempty"`
+	Assign               map[string]interface{} `json:"Assign,omitempty"`
+	JSONataOutput        interface{}            `json:"-"`
 }
 
 // GetType returns the state type identifier (e.g. "Task").
@@ -443,10 +578,20 @@ func (s *TaskState) GetNext() string { return s.Next }
 func (s *TaskState) GetEnd() bool { return s.End }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *TaskState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *TaskState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *TaskState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *TaskState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetResultSelector returns the result selector applied to the state output.
 func (s *TaskState) GetResultSelector() *ResultSelector { return s.ResultSelector }
@@ -495,6 +640,8 @@ type ChoiceState struct {
 	Comment       string        `json:"Comment,omitempty"`
 	Input         *InputOutput  `json:"Input,omitempty"`
 	Output        *InputOutput  `json:"Output,omitempty"`
+	InputPath     string        `json:"InputPath,omitempty"`
+	OutputPath    string        `json:"OutputPath,omitempty"`
 	Choices       []*ChoiceRule `json:"Choices"`
 	Default       string        `json:"Default,omitempty"`
 	QueryLanguage string        `json:"QueryLanguage,omitempty"`
@@ -510,10 +657,20 @@ func (s *ChoiceState) GetNext() string { return "" }
 func (s *ChoiceState) GetEnd() bool { return false }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *ChoiceState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *ChoiceState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *ChoiceState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *ChoiceState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetQueryLanguage returns the query language used by this state.
 func (s *ChoiceState) GetQueryLanguage() string { return s.QueryLanguage }
@@ -528,6 +685,8 @@ type WaitState struct {
 	Comment       string                 `json:"Comment,omitempty"`
 	Input         *InputOutput           `json:"Input,omitempty"`
 	Output        *InputOutput           `json:"Output,omitempty"`
+	InputPath     string                 `json:"InputPath,omitempty"`
+	OutputPath    string                 `json:"OutputPath,omitempty"`
 	Seconds       interface{}            `json:"Seconds,omitempty"`
 	TimestampPath string                 `json:"TimestampPath,omitempty"`
 	SecondsPath   string                 `json:"SecondsPath,omitempty"`
@@ -546,10 +705,20 @@ func (s *WaitState) GetNext() string { return s.Next }
 func (s *WaitState) GetEnd() bool { return s.End }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *WaitState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *WaitState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *WaitState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *WaitState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetQueryLanguage returns the query language used by this state.
 func (s *WaitState) GetQueryLanguage() string { return s.QueryLanguage }
@@ -574,22 +743,26 @@ func (s *WaitState) GetSeconds() int32 {
 // ParallelState represents a Parallel state that executes multiple branches
 // concurrently.
 type ParallelState struct {
-	Name          string                    `json:"-"`
-	Type          string                    `json:"Type"`
-	Next          string                    `json:"Next,omitempty"`
-	End           bool                      `json:"End,omitempty"`
-	Comment       string                    `json:"Comment,omitempty"`
-	Input         *InputOutput              `json:"Input,omitempty"`
-	Output        *InputOutput              `json:"Output,omitempty"`
-	OutputRaw     json.RawMessage           `json:"-"`
-	Branches      []*StateMachineDefinition `json:"Branches"`
-	ResultPath    string                    `json:"ResultPath,omitempty"`
-	Retry         []*RetryPolicy            `json:"Retry,omitempty"`
-	Catch         []*CatchPolicy            `json:"Catch,omitempty"`
-	QueryLanguage string                    `json:"QueryLanguage,omitempty"`
-	Arguments     interface{}               `json:"Arguments,omitempty"`
-	Assign        map[string]interface{}    `json:"Assign,omitempty"`
-	JSONataOutput interface{}               `json:"-"`
+	Name           string                    `json:"-"`
+	Type           string                    `json:"Type"`
+	Next           string                    `json:"Next,omitempty"`
+	End            bool                      `json:"End,omitempty"`
+	Comment        string                    `json:"Comment,omitempty"`
+	Input          *InputOutput              `json:"Input,omitempty"`
+	Output         *InputOutput              `json:"Output,omitempty"`
+	InputPath      string                    `json:"InputPath,omitempty"`
+	OutputPath     string                    `json:"OutputPath,omitempty"`
+	OutputRaw      json.RawMessage           `json:"-"`
+	Branches       []*StateMachineDefinition `json:"Branches"`
+	Parameters     *Parameters               `json:"Parameters,omitempty"`
+	ResultPath     string                    `json:"ResultPath,omitempty"`
+	ResultSelector *ResultSelector           `json:"ResultSelector,omitempty"`
+	Retry          []*RetryPolicy            `json:"Retry,omitempty"`
+	Catch          []*CatchPolicy            `json:"Catch,omitempty"`
+	QueryLanguage  string                    `json:"QueryLanguage,omitempty"`
+	Arguments      interface{}               `json:"Arguments,omitempty"`
+	Assign         map[string]interface{}    `json:"Assign,omitempty"`
+	JSONataOutput  interface{}               `json:"-"`
 }
 
 // GetType returns the state type identifier (e.g. "Parallel").
@@ -602,37 +775,131 @@ func (s *ParallelState) GetNext() string { return s.Next }
 func (s *ParallelState) GetEnd() bool { return s.End }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *ParallelState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *ParallelState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *ParallelState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *ParallelState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetQueryLanguage returns the query language used by this state.
 func (s *ParallelState) GetQueryLanguage() string { return s.QueryLanguage }
 
+// GetResultSelector returns the result selector applied to the combined
+// branch output array before ResultPath.
+func (s *ParallelState) GetResultSelector() *ResultSelector { return s.ResultSelector }
+
 // MapState represents a Map state that processes a collection of items by applying a
 // sub-state machine to each.
 type MapState struct {
-	Name           string                  `json:"-"`
-	Type           string                  `json:"Type"`
-	Next           string                  `json:"Next,omitempty"`
-	End            bool                    `json:"End,omitempty"`
-	Comment        string                  `json:"Comment,omitempty"`
-	Input          *InputOutput            `json:"Input,omitempty"`
-	Output         *InputOutput            `json:"Output,omitempty"`
-	OutputRaw      json.RawMessage         `json:"-"`
-	Iterator       *StateMachineDefinition `json:"Iterator,omitempty"`
-	ItemProcessor  *StateMachineDefinition `json:"ItemProcessor,omitempty"`
-	ItemsPath      string                  `json:"ItemsPath,omitempty"`
-	MaxConcurrency int32                   `json:"MaxConcurrency,omitempty"`
-	ResultPath     string                  `json:"ResultPath,omitempty"`
-	Retry          []*RetryPolicy          `json:"Retry,omitempty"`
-	Catch          []*CatchPolicy          `json:"Catch,omitempty"`
-	QueryLanguage  string                  `json:"QueryLanguage,omitempty"`
-	Items          interface{}             `json:"Items,omitempty"`
-	ItemSelector   interface{}             `json:"ItemSelector,omitempty"`
-	Assign         map[string]interface{}  `json:"Assign,omitempty"`
-	JSONataOutput  interface{}             `json:"-"`
+	Name                           string                  `json:"-"`
+	Type                           string                  `json:"Type"`
+	Next                           string                  `json:"Next,omitempty"`
+	End                            bool                    `json:"End,omitempty"`
+	Comment                        string                  `json:"Comment,omitempty"`
+	Input                          *InputOutput            `json:"Input,omitempty"`
+	Output                         *InputOutput            `json:"Output,omitempty"`
+	InputPath                      string                  `json:"InputPath,omitempty"`
+	OutputPath                     string                  `json:"OutputPath,omitempty"`
+	OutputRaw                      json.RawMessage         `json:"-"`
+	Iterator                       *StateMachineDefinition `json:"Iterator,omitempty"`
+	ItemProcessor                  *StateMachineDefinition `json:"ItemProcessor,omitempty"`
+	ItemsPath                      string                  `json:"ItemsPath,omitempty"`
+	MaxConcurrency                 int32                   `json:"MaxConcurrency,omitempty"`
+	MaxConcurrencyPath             string                  `json:"MaxConcurrencyPath,omitempty"`
+	Parameters                     *Parameters             `json:"Parameters,omitempty"`
+	ResultPath                     string                  `json:"ResultPath,omitempty"`
+	ResultSelector                 *ResultSelector         `json:"ResultSelector,omitempty"`
+	Retry                          []*RetryPolicy          `json:"Retry,omitempty"`
+	Catch                          []*CatchPolicy          `json:"Catch,omitempty"`
+	QueryLanguage                  string                  `json:"QueryLanguage,omitempty"`
+	Items                          interface{}             `json:"Items,omitempty"`
+	ItemSelector                   interface{}             `json:"ItemSelector,omitempty"`
+	Assign                         map[string]interface{}  `json:"Assign,omitempty"`
+	Label                          string                  `json:"Label,omitempty"`
+	ItemReader                     *ItemReaderConfig       `json:"ItemReader,omitempty"`
+	ItemBatcher                    *ItemBatcherConfig      `json:"ItemBatcher,omitempty"`
+	ResultWriter                   *ResultWriterConfig     `json:"ResultWriter,omitempty"`
+	ToleratedFailureCount          *int64                  `json:"ToleratedFailureCount,omitempty"`
+	ToleratedFailureCountPath      string                  `json:"ToleratedFailureCountPath,omitempty"`
+	ToleratedFailurePercentage     *float64                `json:"ToleratedFailurePercentage,omitempty"`
+	ToleratedFailurePercentagePath string                  `json:"ToleratedFailurePercentagePath,omitempty"`
+	JSONataOutput                  interface{}             `json:"-"`
+}
+
+// ProcessorConfig is the ItemProcessor processing-mode configuration of a
+// Map state: Mode INLINE or DISTRIBUTED, plus the child execution type
+// required when the mode is DISTRIBUTED (Distributed Map state
+// documentation).
+type ProcessorConfig struct {
+	Mode          string `json:"Mode,omitempty"`
+	ExecutionType string `json:"ExecutionType,omitempty"`
+}
+
+// ItemReaderConfig is the Distributed Map ItemReader: the dataset source
+// and its parsing configuration. Parameters carries the JSONPath argument
+// object (Bucket, Key, Prefix, VersionId, ExpectedBucketOwner); Arguments
+// is the JSONata equivalent (ItemReader documentation).
+type ItemReaderConfig struct {
+	Resource     string                  `json:"Resource"`
+	Parameters   json.RawMessage         `json:"Parameters,omitempty"`
+	Arguments    json.RawMessage         `json:"Arguments,omitempty"`
+	ReaderConfig *ItemReaderReaderConfig `json:"ReaderConfig,omitempty"`
+}
+
+// ItemReaderReaderConfig is the ReaderConfig member of an ItemReader: the
+// dataset format and limits applied while reading items.
+type ItemReaderReaderConfig struct {
+	InputType         string   `json:"InputType,omitempty"`
+	CSVHeaderLocation string   `json:"CSVHeaderLocation,omitempty"`
+	CSVHeaders        []string `json:"CSVHeaders,omitempty"`
+	CSVDelimiter      string   `json:"CSVDelimiter,omitempty"`
+	MaxItems          *int64   `json:"MaxItems,omitempty"`
+	MaxItemsPath      string   `json:"MaxItemsPath,omitempty"`
+	ItemsPointer      string   `json:"ItemsPointer,omitempty"`
+	Transformation    string   `json:"Transformation,omitempty"`
+	ManifestType      string   `json:"ManifestType,omitempty"`
+}
+
+// ItemBatcherConfig is the Map ItemBatcher: the batch sizing and fixed
+// input applied when a Map state groups items into the Items array each
+// child workflow execution receives. The per-batch byte cap shares the
+// 256 KiB child-execution input bound, and an unspecified cap defaults to
+// it (ItemBatcher documentation). MaxItemsPerBatch is an interface so a
+// JSONata state can carry an expression string instead of a literal count.
+type ItemBatcherConfig struct {
+	MaxItemsPerBatch          interface{} `json:"MaxItemsPerBatch,omitempty"`
+	MaxItemsPerBatchPath      string      `json:"MaxItemsPerBatchPath,omitempty"`
+	MaxInputBytesPerBatch     *int64      `json:"MaxInputBytesPerBatch,omitempty"`
+	MaxInputBytesPerBatchPath string      `json:"MaxInputBytesPerBatchPath,omitempty"`
+	BatchInput                interface{} `json:"BatchInput,omitempty"`
+	BatchInputPath            string      `json:"BatchInputPath,omitempty"`
+}
+
+// ResultWriterConfig is the Distributed Map ResultWriter: the S3 export
+// destination and the output formatting options. At least WriterConfig
+// alone, or Resource with Parameters, must be present (ResultWriter
+// documentation).
+type ResultWriterConfig struct {
+	Resource     string                    `json:"Resource,omitempty"`
+	Parameters   json.RawMessage           `json:"Parameters,omitempty"`
+	Arguments    json.RawMessage           `json:"Arguments,omitempty"`
+	WriterConfig *ResultWriterWriterConfig `json:"WriterConfig,omitempty"`
+}
+
+// ResultWriterWriterConfig is the WriterConfig member of a ResultWriter:
+// the result transformation and the exported file format.
+type ResultWriterWriterConfig struct {
+	Transformation string `json:"Transformation,omitempty"`
+	OutputType     string `json:"OutputType,omitempty"`
 }
 
 // GetType returns the state type identifier (e.g. "Map").
@@ -645,13 +912,27 @@ func (s *MapState) GetNext() string { return s.Next }
 func (s *MapState) GetEnd() bool { return s.End }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *MapState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *MapState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *MapState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *MapState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetQueryLanguage returns the query language used by this state.
 func (s *MapState) GetQueryLanguage() string { return s.QueryLanguage }
+
+// GetResultSelector returns the result selector applied to the Map result
+// array before ResultPath.
+func (s *MapState) GetResultSelector() *ResultSelector { return s.ResultSelector }
 
 // GetIterator returns the sub-state machine definition used to process each item,
 // preferring the Iterator field and falling back to ItemProcessor.
@@ -668,7 +949,9 @@ type FailState struct {
 	Type          string      `json:"Type"`
 	Comment       string      `json:"Comment,omitempty"`
 	Cause         interface{} `json:"Cause,omitempty"`
-	Error         string      `json:"Error,omitempty"`
+	Error         interface{} `json:"Error,omitempty"`
+	ErrorPath     string      `json:"ErrorPath,omitempty"`
+	CausePath     string      `json:"CausePath,omitempty"`
 	QueryLanguage string      `json:"QueryLanguage,omitempty"`
 }
 
@@ -697,6 +980,19 @@ func (s *FailState) GetCause() string {
 	}
 }
 
+// GetError returns the failure error name as a string.
+func (s *FailState) GetError() string {
+	if s.Error == nil {
+		return ""
+	}
+	switch v := s.Error.(type) {
+	case string:
+		return v
+	default:
+		return ""
+	}
+}
+
 // SucceedState represents a Succeed state that stops the execution successfully.
 type SucceedState struct {
 	Name          string          `json:"-"`
@@ -704,6 +1000,8 @@ type SucceedState struct {
 	Comment       string          `json:"Comment,omitempty"`
 	Input         *InputOutput    `json:"Input,omitempty"`
 	Output        *InputOutput    `json:"Output,omitempty"`
+	InputPath     string          `json:"InputPath,omitempty"`
+	OutputPath    string          `json:"OutputPath,omitempty"`
 	OutputRaw     json.RawMessage `json:"-"`
 	QueryLanguage string          `json:"QueryLanguage,omitempty"`
 	JSONataOutput interface{}     `json:"-"`
@@ -719,10 +1017,20 @@ func (s *SucceedState) GetNext() string { return "" }
 func (s *SucceedState) GetEnd() bool { return true }
 
 // GetInputPath returns the input path filter applied to the state input.
-func (s *SucceedState) GetInputPath() string { return getInputPathFromInputOutput(s.Input) }
+func (s *SucceedState) GetInputPath() string {
+	if s.InputPath != "" {
+		return s.InputPath
+	}
+	return getInputPathFromInputOutput(s.Input)
+}
 
 // GetOutputPath returns the output path filter applied to the state output.
-func (s *SucceedState) GetOutputPath() string { return getOutputPathFromInputOutput(s.Output) }
+func (s *SucceedState) GetOutputPath() string {
+	if s.OutputPath != "" {
+		return s.OutputPath
+	}
+	return getOutputPathFromInputOutput(s.Output)
+}
 
 // GetQueryLanguage returns the query language used by this state.
 func (s *SucceedState) GetQueryLanguage() string { return s.QueryLanguage }

@@ -135,9 +135,12 @@ func (b *StepFunctionsBuilder) Activity(name string) string {
 	return b.Build("states", "activity:"+name)
 }
 
-// StateMachineAlias constructs an ARN for a Step Functions state machine alias.
-func (b *StepFunctionsBuilder) StateMachineAlias(name string) string {
-	return b.Build("states", "stateMachineAlias:"+name)
+// StateMachineAlias constructs an ARN for a Step Functions state machine
+// alias. The alias ARN is the state machine ARN and the alias name joined
+// by a colon, so the state machine name is part of the alias namespace:
+// stateMachine:<smName>:<aliasName>.
+func (b *StepFunctionsBuilder) StateMachineAlias(smName, aliasName string) string {
+	return b.Build("states", "stateMachine:"+smName+":"+aliasName)
 }
 
 // ParseStateMachineName extracts the state machine name from a Step Functions ARN.

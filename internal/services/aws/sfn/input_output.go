@@ -39,6 +39,33 @@ func (e *Executor) applyOutputPath(output string, outputPath string) string {
 	return e.applyInputPath(output, outputPath)
 }
 
+// resolvePayloadTemplateValue resolves the value of a ".$"-suffixed payload
+// template key: an intrinsic invocation evaluates against the state input,
+// otherwise the value is a context-object or input JSONPath. found is false
+// only when a plain path selects no value, which the payload builders keep
+// as a silent key omission. Callers classify failures as States.Runtime with
+// their field name in the cause.
+func (e *Executor) resolvePayloadTemplateValue(taskToken, value string, data interface{}) (interface{}, bool, error) {
+	if looksLikeIntrinsic(value) {
+		resolved, err := e.evaluateIntrinsic(taskToken, value, data, 1)
+		if err != nil {
+			return nil, false, err
+		}
+		return resolved, true, nil
+	}
+	if strings.HasPrefix(value, "$$.") {
+		ctxVal, ctxErr := e.getContextValue(taskToken, value)
+		if ctxErr != nil {
+			return nil, false, ctxErr
+		}
+		return ctxVal, true, nil
+	}
+	if resolved, exists := getJSONPathValueAny(data, value); exists {
+		return resolved, true, nil
+	}
+	return nil, false, nil
+}
+
 // applyParameters applies a Parameters block to the state input. taskToken
 // is the token minted for the current activity-task attempt so
 // $$.Task.Token resolves to the exact token the worker must return; callers
@@ -65,13 +92,11 @@ func (e *Executor) applyParameters(taskToken string, input string, params *sfnst
 		if strings.HasSuffix(key, ".$") {
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
-				if strings.HasPrefix(jsonPath, "$$.") {
-					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
-					if ctxErr != nil {
-						return "", newJSONPathEvalError("Parameters", ctxErr)
-					}
-					result[cleanKey] = ctxVal
-				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
+				resolved, found, evalErr := e.resolvePayloadTemplateValue(taskToken, jsonPath, dataMap)
+				if evalErr != nil {
+					return "", newJSONPathEvalError("Parameters", evalErr)
+				}
+				if found {
 					result[cleanKey] = resolved
 				}
 			}
@@ -91,18 +116,19 @@ func (e *Executor) applyParameters(taskToken string, input string, params *sfnst
 	return string(resultJSON), nil
 }
 
-func (e *Executor) processParameterValue(taskToken string, value interface{}, inputData map[string]interface{}) (interface{}, error) {
+func (e *Executor) processParameterValue(taskToken string, value interface{}, inputData interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
 		if strings.HasSuffix(v, ".$") {
 			jsonPath := strings.TrimSuffix(v, ".$")
-			if strings.HasPrefix(jsonPath, "$$.") {
-				return e.getContextValue(taskToken, jsonPath)
+			resolved, found, evalErr := e.resolvePayloadTemplateValue(taskToken, jsonPath, inputData)
+			if evalErr != nil {
+				return nil, evalErr
 			}
-			if val, exists := getJSONPathValueRaw(inputData, jsonPath); exists {
-				return val, nil
+			if !found {
+				return nil, nil
 			}
-			return nil, nil
+			return resolved, nil
 		}
 		return v, nil
 	case map[string]interface{}:
@@ -113,13 +139,11 @@ func (e *Executor) processParameterValue(taskToken string, value interface{}, in
 				if !ok {
 					continue
 				}
-				if strings.HasPrefix(jsonPath, "$$.") {
-					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
-					if ctxErr != nil {
-						return nil, ctxErr
-					}
-					result[strings.TrimSuffix(key, ".$")] = ctxVal
-				} else if resolved, exists := getJSONPathValueRaw(inputData, jsonPath); exists {
+				resolved, found, evalErr := e.resolvePayloadTemplateValue(taskToken, jsonPath, inputData)
+				if evalErr != nil {
+					return nil, evalErr
+				}
+				if found {
 					result[strings.TrimSuffix(key, ".$")] = resolved
 				}
 			} else {
@@ -205,28 +229,21 @@ func (e *Executor) applyResultSelector(result string, selector *sfnstore.ResultS
 		return result, nil
 	}
 
-	dataMap, ok := resultData.(map[string]interface{})
-	if !ok {
-		return result, nil
-	}
-
 	output := make(map[string]interface{})
 	for key, value := range selector.Fields {
 		if strings.HasSuffix(key, ".$") {
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
-				if strings.HasPrefix(jsonPath, "$$.") {
-					ctxVal, ctxErr := e.getContextValue(taskToken, jsonPath)
-					if ctxErr != nil {
-						return "", newJSONPathEvalError("ResultSelector", ctxErr)
-					}
-					output[cleanKey] = ctxVal
-				} else if resolved, exists := getJSONPathValueRaw(dataMap, jsonPath); exists {
+				resolved, found, evalErr := e.resolvePayloadTemplateValue(taskToken, jsonPath, resultData)
+				if evalErr != nil {
+					return "", newJSONPathEvalError("ResultSelector", evalErr)
+				}
+				if found {
 					output[cleanKey] = resolved
 				}
 			}
 		} else {
-			processedValue, procErr := e.processParameterValue(taskToken, value, dataMap)
+			processedValue, procErr := e.processParameterValue(taskToken, value, resultData)
 			if procErr != nil {
 				return "", newJSONPathEvalError("ResultSelector", procErr)
 			}
@@ -342,13 +359,11 @@ func (e *Executor) applyItemSelectorJSONPath(selector interface{}, itemValue int
 		if strings.HasSuffix(key, ".$") {
 			cleanKey := strings.TrimSuffix(key, ".$")
 			if jsonPath, ok := value.(string); ok {
-				if strings.HasPrefix(jsonPath, "$$.") {
-					ctxVal, ctxErr := e.getContextValue("", jsonPath)
-					if ctxErr != nil {
-						return nil, newJSONPathEvalError("ItemSelector", ctxErr)
-					}
-					output[cleanKey] = ctxVal
-				} else if resolved, exists := getJSONPathValueRaw(itemMap, jsonPath); exists {
+				resolved, found, evalErr := e.resolvePayloadTemplateValue("", jsonPath, itemMap)
+				if evalErr != nil {
+					return nil, newJSONPathEvalError("ItemSelector", evalErr)
+				}
+				if found {
 					output[cleanKey] = resolved
 				}
 			}

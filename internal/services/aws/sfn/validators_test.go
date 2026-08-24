@@ -1,6 +1,7 @@
 package sfn
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -29,11 +30,45 @@ func TestValidateArnRequiredUnicodeLengths(t *testing.T) {
 		t.Error("257-character CJK role ARN accepted")
 	}
 	if err := validateRoleArnOptional(strings.Repeat(cjk, 257)); err == nil {
-		t.Error("257-character CJK optional role ARN accepted")
+		t.Error("257-character optional role ARN accepted")
 	}
 	if err := validateRoleArnOptional(""); err != nil {
 		t.Errorf("empty optional role ARN rejected: %v", err)
 	}
+}
+
+func TestValidateResourceNameRejectsDocumentedInvalidRunes(t *testing.T) {
+	// The name contract lists the invalid character U+10FFFF separately
+	// from the noncharacters U+FFFE-FFFF.
+	if err := validateResourceName("bad\U0010FFFFname"); err == nil {
+		t.Error("U+10FFFF accepted in a resource name")
+	}
+	if err := validateResourceName("\U0010FFFF"); err == nil {
+		t.Error("U+10FFFF-only resource name accepted")
+	}
+	if err := validateResourceName("bad\uffffname"); err == nil {
+		t.Error("U+FFFF accepted in a resource name")
+	}
+	if err := validateResourceName("\U0001D11E-legal"); err != nil {
+		t.Errorf("musical symbol (a supplementary-plane letter) rejected: %v", err)
+	}
+}
+
+func TestListExecutionsRejectsRedriveFilterWithStateMachineArn(t *testing.T) {
+	svc := &StepFunctionService{}
+	store, smArn, _, _ := newAliasTestStore(t)
+
+	_, err := svc.listExecutionsCore(context.Background(), store, ListExecutionsInput{
+		StateMachineArn: smArn,
+		RedriveFilter:   "REDRIVEN",
+	})
+	requireAWSCode(t, err, "ValidationException")
+
+	_, err = svc.listExecutionsCore(context.Background(), store, ListExecutionsInput{
+		StateMachineArn: smArn,
+		RedriveFilter:   "NOT_REDRIVEN",
+	})
+	requireAWSCode(t, err, "ValidationException")
 }
 
 // TestValidateWaitStates pins the Wait-state field contract at definition
@@ -41,7 +76,10 @@ func TestValidateArnRequiredUnicodeLengths(t *testing.T) {
 // timestamps, and integer Seconds within the documented range.
 func TestValidateWaitStates(t *testing.T) {
 	waitDefinition := func(state string) string {
-		return `{"StartAt":"W","States":{"W":` + state + `}}`
+		// The structural validator requires a terminal state, so every
+		// wrapped Wait state carries End unless the case supplies its own
+		// transition shape.
+		return `{"StartAt":"W","States":{"W":` + strings.TrimSuffix(state, "}") + `,"End":true}}}`
 	}
 
 	tests := []struct {
@@ -73,7 +111,7 @@ func TestValidateWaitStates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateWaitStates(tt.definition)
+			err := validateDefinitionStructure(tt.definition, "STANDARD")
 			if tt.wantErr && err == nil {
 				t.Errorf("definition accepted: %s", tt.definition)
 			}
@@ -89,7 +127,7 @@ func TestValidateWaitStates(t *testing.T) {
 // accepted by presence (their values are only checkable at run time).
 func TestValidateWaitStatesJSONata(t *testing.T) {
 	jsonataWait := func(state string) string {
-		return `{"QueryLanguage":"JSONata","StartAt":"W","States":{"W":` + state + `}}`
+		return `{"QueryLanguage":"JSONata","StartAt":"W","States":{"W":` + strings.TrimSuffix(state, "}") + `,"End":true}}}`
 	}
 
 	tests := []struct {
@@ -110,7 +148,7 @@ func TestValidateWaitStatesJSONata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateWaitStates(tt.definition)
+			err := validateDefinitionStructure(tt.definition, "STANDARD")
 			if tt.wantErr && err == nil {
 				t.Errorf("definition accepted: %s", tt.definition)
 			}

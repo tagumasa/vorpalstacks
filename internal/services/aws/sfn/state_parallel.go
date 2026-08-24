@@ -19,6 +19,16 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 
 	processedInput := e.applyInputPath(execCtx.Input, state.GetInputPath())
 
+	if !isJSONata && state.Parameters != nil {
+		// A Parallel Parameters payload template transforms the state
+		// input once; every branch receives the transformed value.
+		applied, evalErr := e.applyParameters("", processedInput, state.Parameters)
+		if evalErr != nil {
+			return "", "", evalErr
+		}
+		processedInput = applied
+	}
+
 	if isJSONata && state.Arguments != nil {
 		var inputData interface{}
 		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
@@ -182,6 +192,15 @@ func (e *Executor) executeParallel(ctx context.Context, execCtx *ExecutionContex
 			output = string(outputJSON)
 		}
 	} else {
+		if state.ResultSelector != nil {
+			// The selector receives the combined branch output array as
+			// its data, before ResultPath folds it into the state input.
+			selected, selErr := e.applyResultSelector(output, state.ResultSelector, "")
+			if selErr != nil {
+				return "", "", selErr
+			}
+			output = selected
+		}
 		if state.ResultPath != "" {
 			output = e.applyResultPath(processedInput, output, state.ResultPath)
 		}

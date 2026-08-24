@@ -141,4 +141,52 @@ func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix stri
 	return keys, nil
 }
 
+// ListObjectEntries implements the eventbus.S3Invoker interface. It follows
+// the same pagination and safety-cap rules as ListObjects but returns the
+// full metadata records the ListObjectsV2 item shape exposes (Step Functions
+// Distributed Map ItemReader datasets).
+func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]eventbus.S3ObjectEntry, error) {
+	objs := s.s3Store.Objects(region)
+
+	collect := func(listResult *s3store.ObjectListResult) []eventbus.S3ObjectEntry {
+		entries := make([]eventbus.S3ObjectEntry, 0, len(listResult.Objects))
+		for _, o := range listResult.Objects {
+			entries = append(entries, eventbus.S3ObjectEntry{
+				Key:          o.Key,
+				ETag:         o.ETag,
+				LastModified: o.LastModified.Unix(),
+				Size:         o.Size,
+				StorageClass: string(o.StorageClass),
+			})
+		}
+		return entries
+	}
+
+	if maxKeys <= 0 {
+		var all []eventbus.S3ObjectEntry
+		marker := ""
+		for {
+			result, err := objs.List(bucket, prefix, "", marker, 1000)
+			if err != nil {
+				return nil, fmt.Errorf("s3 ListObjectEntries %s/%s: %w", bucket, prefix, err)
+			}
+			all = append(all, collect(result)...)
+			if len(all) >= maxListAllKeys {
+				return nil, fmt.Errorf("s3 ListObjectEntries %s/%s: exceeded safety cap of %d keys", bucket, prefix, maxListAllKeys)
+			}
+			if !result.IsTruncated {
+				break
+			}
+			marker = result.NextMarker
+		}
+		return all, nil
+	}
+
+	result, err := objs.List(bucket, prefix, "", "", maxKeys)
+	if err != nil {
+		return nil, fmt.Errorf("s3 ListObjectEntries %s/%s: %w", bucket, prefix, err)
+	}
+	return collect(result), nil
+}
+
 var _ eventbus.S3Invoker = (*S3Service)(nil)

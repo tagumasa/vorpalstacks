@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -67,6 +68,26 @@ func (e *Executor) executeTask(ctx context.Context, execCtx *ExecutionContext, s
 
 	timeoutSeconds := state.GetTimeoutSeconds()
 	heartbeatSeconds := state.GetHeartbeatSeconds()
+
+	if !isJSONata {
+		// TimeoutSecondsPath and HeartbeatSecondsPath are reference
+		// paths selecting positive integers from the state input; each
+		// excludes its literal form.
+		if state.TimeoutSecondsPath != "" {
+			resolved, err := resolveTaskSecondsPath(processedInput, state.TimeoutSecondsPath, "TimeoutSecondsPath")
+			if err != nil {
+				return "", "", err
+			}
+			timeoutSeconds = resolved
+		}
+		if state.HeartbeatSecondsPath != "" {
+			resolved, err := resolveTaskSecondsPath(processedInput, state.HeartbeatSecondsPath, "HeartbeatSecondsPath")
+			if err != nil {
+				return "", "", err
+			}
+			heartbeatSeconds = resolved
+		}
+	}
 
 	if isJSONata {
 		var inputData interface{}
@@ -382,4 +403,27 @@ func (e *Executor) executeTaskJSONataCatch(ctx context.Context, execCtx *Executi
 
 	errorJSON, _ := json.Marshal(errorOutput)
 	return string(errorJSON), catchPolicy.Next, nil
+}
+
+// resolveTaskSecondsPath resolves a TimeoutSecondsPath or
+// HeartbeatSecondsPath reference path against the state input; the
+// selected field must hold a positive integer.
+func resolveTaskSecondsPath(processedInput, path, field string) (int32, *ExecutionError) {
+	var data interface{}
+	if err := json.Unmarshal([]byte(processedInput), &data); err != nil {
+		return 0, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON for " + field}
+	}
+	inputMap, ok := data.(map[string]interface{})
+	if !ok {
+		return 0, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: field + " requires object input"}
+	}
+	value, err := getJSONPathValue(inputMap, path)
+	if err != nil {
+		return 0, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: field + " failed to resolve: " + err.Error()}
+	}
+	number, ok := value.(float64)
+	if !ok || number != math.Trunc(number) || number < 1 || number > math.MaxInt32 {
+		return 0, &ExecutionError{ErrorCode: "States.InvalidInput", Cause: field + " must resolve to a positive integer"}
+	}
+	return int32(number), nil
 }

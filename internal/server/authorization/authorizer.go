@@ -192,12 +192,44 @@ func (a *Authorizer) Authorize(
 
 	switch decision.Effect {
 	case policy.DecisionEffectAllow:
+		// Parameter-conditional actions: a request whose parameters
+		// escalate its privilege must also be allowed the escalation
+		// action. TestState with revealSecrets set additionally
+		// requires states:RevealSecrets.
+		for _, action := range conditionalExtraActions(parsedReq, serviceName) {
+			extraCtx := *evalCtx
+			extraCtx.Action = action
+			extraDecision := a.policyEvaluator.Evaluate(&extraCtx, policies)
+			if extraDecision.Effect != policy.DecisionEffectAllow {
+				logs.Info("Conditional action denied",
+					logs.String("action", action),
+					logs.String("user", user.UserName),
+					logs.String("reason", extraDecision.Reason))
+				return false, nil
+			}
+		}
 		return true, nil
 	case policy.DecisionEffectDeny:
 		return false, nil
 	default:
 		return false, nil
 	}
+}
+
+// conditionalExtraActions returns the additional IAM actions a request
+// requires because of its parameters. TestState documents that setting
+// revealSecrets to true requires the caller to hold the
+// states:RevealSecrets action: "Without this permission, Step Functions
+// throws an access denied error."
+func conditionalExtraActions(parsedReq *request.ParsedRequest, serviceName string) []string {
+	if serviceName != "states" || parsedReq == nil || parsedReq.Operation != "TestState" {
+		return nil
+	}
+	reveal, ok := parsedReq.Parameters["revealSecrets"].(bool)
+	if !ok || !reveal {
+		return nil
+	}
+	return []string{"states:RevealSecrets"}
 }
 
 func (a *Authorizer) getEffectivePolicies(ctx context.Context, userName string) ([]*policy.Document, error) {

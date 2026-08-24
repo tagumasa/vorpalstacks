@@ -273,6 +273,12 @@ type S3Invoker interface {
 	GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error)
 	PutObject(ctx context.Context, region, bucket, key string, data []byte, contentType string) error
 	ListObjects(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]string, error)
+	// ListObjectEntries lists object metadata under a prefix, mirroring the
+	// ListObjectsV2 item shape Step Functions exposes to Distributed Map
+	// ItemReaders (Etag, Key, LastModified, Size, StorageClass). Consumers
+	// that need the full metadata records call this instead of ListObjects,
+	// which returns keys only.
+	ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]S3ObjectEntry, error)
 	// BucketExists reports whether the named bucket exists in the region.
 	// Consumers use it to distinguish a missing source bucket from an
 	// empty one, which listing alone cannot do.
@@ -286,6 +292,17 @@ type S3Invoker interface {
 	// payloads after use, mirroring AWS services that delete uploaded
 	// import files once the job completes.
 	DeleteObject(ctx context.Context, region, bucket, key string) error
+}
+
+// S3ObjectEntry is one object's ListObjectsV2 metadata as surfaced to
+// cross-service consumers (the Step Functions ItemReader listObjectsV2
+// dataset item shape).
+type S3ObjectEntry struct {
+	Key          string
+	ETag         string
+	LastModified int64
+	Size         int64
+	StorageClass string
 }
 
 // WAFInvoker provides WAF WebACL association operations for cross-service

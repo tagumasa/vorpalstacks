@@ -208,10 +208,14 @@ func TestMapBranchesGetDistinctTaskTokens(t *testing.T) {
 		StartAt: "DoWork",
 		States: map[string]interface{}{
 			"DoWork": map[string]interface{}{
-				"Type":           "Task",
-				"Resource":       tokenTestActivityARN,
-				"End":            true,
-				"TimeoutSeconds": 10,
+				"Type":     "Task",
+				"Resource": tokenTestActivityARN,
+				"End":      true,
+				// A generous task timeout: this deadline only needs to
+				// outlive the polling window, and a tight value races
+				// with executor goroutine wake-ups when the package runs
+				// under load.
+				"TimeoutSeconds": 30,
 				"Parameters": map[string]interface{}{
 					"token.$": "$$.Task.Token",
 				},
@@ -232,7 +236,10 @@ func TestMapBranchesGetDistinctTaskTokens(t *testing.T) {
 		done <- execErr
 	}()
 
-	workerCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	// The deadlines below are hang detectors, not latency assertions:
+	// generous bounds keep them from racing with executor goroutine
+	// wake-ups when the package runs under garbage-collection pressure.
+	workerCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	first, err := store.GetActivityTask(workerCtx, tokenTestActivityARN, "worker-1")
@@ -272,7 +279,7 @@ func TestMapBranchesGetDistinctTaskTokens(t *testing.T) {
 		if execErr != nil {
 			t.Fatalf("executeMap failed: %v", execErr)
 		}
-	case <-time.After(20 * time.Second):
+	case <-time.After(60 * time.Second):
 		t.Fatal("executeMap did not return after both branches completed")
 	}
 }

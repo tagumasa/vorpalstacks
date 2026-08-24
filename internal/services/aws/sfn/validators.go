@@ -3,10 +3,10 @@ package sfn
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -50,14 +50,70 @@ var validTerminalStatuses = map[string]bool{
 // Validators
 // ---------------------------------------------------------------------------
 
-// validateResourceName validates a state machine or activity name against the
-// Smithy Name shape: @length(min=1, max=80).
+// forbiddenNameRunes mirrors the documented name contract shared by state
+// machines, executions and activities: a name must not contain white
+// space, brackets, wildcard characters, or the listed special characters.
+var forbiddenNameRunes = "<>{}[]?*\"#%\\^|~`$&,;:/"
+
+// isForbiddenNameRune reports whether a rune is excluded from resource
+// names: the documented special characters, white space, the control
+// ranges U+0000-001F and U+007F-009F, the noncharacters U+FFFE-FFFF, the
+// surrogate range U+D800-DFFF and the invalid character U+10FFFF (listed
+// separately from the noncharacters).
+func isForbiddenNameRune(r rune) bool {
+	if unicode.IsSpace(r) {
+		return true
+	}
+	if strings.ContainsRune(forbiddenNameRunes, r) {
+		return true
+	}
+	if r <= 0x001F || (r >= 0x007F && r <= 0x009F) {
+		return true
+	}
+	if r >= 0xFFFE && r <= 0xFFFF {
+		return true
+	}
+	if r >= 0xD800 && r <= 0xDFFF {
+		return true
+	}
+	if r == unicode.MaxRune {
+		return true
+	}
+	return false
+}
+
+// validateResourceName validates a state machine or activity name against
+// the Smithy Name shape: @length(min=1, max=80) plus the documented
+// forbidden-character contract.
 func validateResourceName(name string) error {
 	if name == "" {
 		return NewInvalidName("name is required")
 	}
 	if len(name) > sfnstore.MaxResourceNameLength {
 		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
+	}
+	if err := validateNameCharacters(name); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateExecutionName validates the optional StartExecution /
+// StartSyncExecution name against the same Name shape and
+// forbidden-character contract.
+func validateExecutionName(name string) error {
+	if len(name) > sfnstore.MaxResourceNameLength {
+		return NewInvalidName(fmt.Sprintf("name must be 1-80 characters, got %d", len(name)))
+	}
+	return validateNameCharacters(name)
+}
+
+// validateNameCharacters rejects names carrying any forbidden rune.
+func validateNameCharacters(name string) error {
+	for _, r := range name {
+		if isForbiddenNameRune(r) {
+			return NewInvalidName(fmt.Sprintf("name must not contain white space, brackets, wildcard or special characters (found %q)", r))
+		}
 	}
 	return nil
 }
@@ -165,11 +221,15 @@ func validateSeverity(severity string) (string, error) {
 	return severity, nil
 }
 
-// validateDefinitionJSON validates that a state machine definition string is
-// non-empty and valid JSON.
+// validateDefinitionJSON validates that a state machine definition string
+// is non-empty, valid JSON, and within the Definition shape's one-mebibyte
+// bound (@length(1, 1048576)).
 func validateDefinitionJSON(definition string) error {
 	if definition == "" {
 		return NewInvalidDefinitionException("State Machine definition is required")
+	}
+	if len(definition) > sfnstore.MaxDefinitionLength {
+		return NewInvalidDefinitionException(fmt.Sprintf("State Machine definition must be at most %d bytes, got %d", sfnstore.MaxDefinitionLength, len(definition)))
 	}
 	if !json.Valid([]byte(definition)) {
 		return NewInvalidDefinitionException("State Machine definition is not valid JSON")
@@ -197,139 +257,6 @@ func parseWaitTimestamp(value string) (time.Time, bool) {
 	}
 	// AWS truncates wait timestamps to whole seconds.
 	return t, true
-}
-
-// waitStateDiagnostics inspects every Wait state of a definition and
-// returns an ERROR diagnostic for each field-contract violation: a JSON
-// Path Wait must specify exactly one of Seconds, Timestamp, SecondsPath,
-// or TimestampPath; a JSONata Wait exactly one of Seconds or Timestamp.
-// Timestamp literals must conform to the strict RFC3339 profile and
-// Seconds literals must be integers in [0, MaxWaitSeconds]. Expressions
-// in JSONata states are accepted by presence — their values are only
-// checkable at run time.
-func waitStateDiagnostics(definition string) []map[string]string {
-	var skeleton struct {
-		QueryLanguage string                     `json:"QueryLanguage"`
-		States        map[string]json.RawMessage `json:"States"`
-	}
-	if err := json.Unmarshal([]byte(definition), &skeleton); err != nil || skeleton.States == nil {
-		return nil
-	}
-
-	diagnostics := []map[string]string{}
-	add := func(state, message string) {
-		diagnostics = append(diagnostics, map[string]string{
-			"severity": "ERROR",
-			"code":     "InvalidDefinition",
-			"message":  "SCHEMA_VALIDATION_FAILED: " + message + " at /States/" + state,
-		})
-	}
-
-	for name, raw := range skeleton.States {
-		var state struct {
-			QueryLanguage string       `json:"QueryLanguage"`
-			Type          string       `json:"Type"`
-			Seconds       *interface{} `json:"Seconds"`
-			Timestamp     *interface{} `json:"Timestamp"`
-			SecondsPath   *interface{} `json:"SecondsPath"`
-			TimestampPath *interface{} `json:"TimestampPath"`
-		}
-		if err := json.Unmarshal(raw, &state); err != nil {
-			continue // malformed members surface through the JSONata and runtime checks
-		}
-		if state.Type != "Wait" {
-			continue
-		}
-
-		queryLanguage := state.QueryLanguage
-		if queryLanguage == "" {
-			queryLanguage = skeleton.QueryLanguage
-		}
-		jsonata := queryLanguage == "JSONata"
-
-		if jsonata && state.SecondsPath != nil {
-			add(name, "Wait state SecondsPath is only supported in JSONPath states")
-			continue
-		}
-		if jsonata && state.TimestampPath != nil {
-			add(name, "Wait state TimestampPath is only supported in JSONPath states")
-			continue
-		}
-
-		present := 0
-		if state.Seconds != nil {
-			present++
-		}
-		if state.Timestamp != nil {
-			present++
-		}
-		if !jsonata {
-			if state.SecondsPath != nil {
-				present++
-			}
-			if state.TimestampPath != nil {
-				present++
-			}
-		}
-		if present != 1 {
-			if jsonata {
-				add(name, "Wait state must specify exactly one of Seconds or Timestamp")
-			} else {
-				add(name, "Wait state must specify exactly one of Seconds, Timestamp, SecondsPath, or TimestampPath")
-			}
-			continue
-		}
-
-		if state.Timestamp != nil {
-			value, ok := (*state.Timestamp).(string)
-			if !ok {
-				add(name, "Wait state Timestamp must be a string")
-				continue
-			}
-			if jsonata && IsExpression(value) {
-				continue // the expression's result is only checkable at run time
-			}
-			if _, ok := parseWaitTimestamp(value); !ok {
-				add(name, fmt.Sprintf("Wait state Timestamp %q must conform to the RFC3339 profile of ISO 8601 with an uppercase T and an uppercase Z or numeric offset, for example \"2024-03-14T01:59:00Z\"", value))
-			}
-			continue
-		}
-
-		if state.Seconds != nil {
-			if value, ok := (*state.Seconds).(string); ok && jsonata && IsExpression(value) {
-				continue // the expression's result is only checkable at run time
-			}
-			value, ok := (*state.Seconds).(float64)
-			if !ok || value != math.Trunc(value) || value < 0 || value > sfnstore.MaxWaitSeconds {
-				add(name, fmt.Sprintf("Wait state Seconds must be an integer value from 0 to %d", sfnstore.MaxWaitSeconds))
-			}
-			continue
-		}
-
-		// Remaining JSONPath cases: the path fields must be non-empty strings.
-		for _, field := range []struct {
-			name  string
-			value *interface{}
-		}{{"SecondsPath", state.SecondsPath}, {"TimestampPath", state.TimestampPath}} {
-			if field.value == nil {
-				continue
-			}
-			if value, ok := (*field.value).(string); !ok || value == "" {
-				add(name, "Wait state "+field.name+" must be a non-empty path string")
-			}
-		}
-	}
-	return diagnostics
-}
-
-// validateWaitStates rejects a definition whose Wait states violate the
-// field contract with the creation-time InvalidDefinitionException shape.
-func validateWaitStates(definition string) error {
-	diagnostics := waitStateDiagnostics(definition)
-	if len(diagnostics) == 0 {
-		return nil
-	}
-	return NewInvalidDefinitionException(diagnostics[0]["message"])
 }
 
 // validateRoutingConfiguration validates the routing configuration of a state
@@ -374,8 +301,8 @@ func validateArnRequired(arn, paramName string) error {
 	if arn == "" {
 		return NewInvalidArnException(fmt.Sprintf("%s is required", paramName))
 	}
-	if n := utf8.RuneCountInString(arn); n > 256 {
-		return NewInvalidArnException(fmt.Sprintf("%s must be 1-256 characters, got %d", paramName, n))
+	if n := utf8.RuneCountInString(arn); n > sfnstore.MaxArnLength {
+		return NewInvalidArnException(fmt.Sprintf("%s must be 1-%d characters, got %d", paramName, sfnstore.MaxArnLength, n))
 	}
 	return nil
 }
@@ -387,8 +314,8 @@ func validateRoleArnRequired(roleArn string) error {
 	if roleArn == "" {
 		return NewMissingRequiredParameter("roleArn is a required parameter")
 	}
-	if n := utf8.RuneCountInString(roleArn); n > 256 {
-		return NewInvalidArnException(fmt.Sprintf("roleArn must be 1-256 characters, got %d", n))
+	if n := utf8.RuneCountInString(roleArn); n > sfnstore.MaxArnLength {
+		return NewInvalidArnException(fmt.Sprintf("roleArn must be 1-%d characters, got %d", sfnstore.MaxArnLength, n))
 	}
 	return nil
 }
@@ -400,8 +327,8 @@ func validateRoleArnOptional(roleArn string) error {
 	if roleArn == "" {
 		return nil
 	}
-	if n := utf8.RuneCountInString(roleArn); n > 256 {
-		return NewInvalidArnException(fmt.Sprintf("roleArn must be 1-256 characters, got %d", n))
+	if n := utf8.RuneCountInString(roleArn); n > sfnstore.MaxArnLength {
+		return NewInvalidArnException(fmt.Sprintf("roleArn must be 1-%d characters, got %d", sfnstore.MaxArnLength, n))
 	}
 	return nil
 }

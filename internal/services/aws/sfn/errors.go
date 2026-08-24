@@ -151,3 +151,75 @@ func NewTooManyTags(message string) *awserrors.AWSError {
 func NewMissingRequiredParameter(message string) *awserrors.AWSError {
 	return awserrors.NewAWSError("MissingRequiredParameter", message, http.StatusBadRequest)
 }
+
+// NewInvalidExecutionInput creates a new InvalidExecutionInput error
+// (StartExecution, StartSyncExecution): the provided JSON input data is
+// not valid.
+func NewInvalidExecutionInput(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidExecutionInput", message, http.StatusBadRequest)
+}
+
+// NewInvalidOutput creates a new InvalidOutput error (SendTaskSuccess):
+// the provided JSON output data is not valid.
+func NewInvalidOutput(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidOutput", message, http.StatusBadRequest)
+}
+
+// NewActivityLimitExceeded creates a new ActivityLimitExceeded error
+// (CreateActivity): the maximum number of activities has been reached.
+func NewActivityLimitExceeded(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ActivityLimitExceeded", message, http.StatusBadRequest)
+}
+
+// NewActivityWorkerLimitExceeded creates a new ActivityWorkerLimitExceeded
+// error (GetActivityTask): the maximum number of activity workers has been
+// reached.
+func NewActivityWorkerLimitExceeded(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ActivityWorkerLimitExceeded", message, http.StatusBadRequest)
+}
+
+// NewExecutionLimitExceeded creates a new ExecutionLimitExceeded error
+// (StartExecution, RedriveExecution): the maximum number of running
+// executions has been reached.
+func NewExecutionLimitExceeded(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ExecutionLimitExceeded", message, http.StatusBadRequest)
+}
+
+// NewStateMachineLimitExceeded creates a new StateMachineLimitExceeded
+// error (CreateStateMachine): the maximum number of state machines has
+// been reached.
+func NewStateMachineLimitExceeded(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("StateMachineLimitExceeded", message, http.StatusBadRequest)
+}
+
+// NewStateMachineDeleting creates a new StateMachineDeleting error: the
+// specified state machine is being deleted.
+func NewStateMachineDeleting(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("StateMachineDeleting", message, http.StatusBadRequest)
+}
+
+// NewKmsAccessDeniedException creates a new KmsAccessDeniedException: the
+// KMS key policy or API caller lacks the required permissions.
+func NewKmsAccessDeniedException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("KmsAccessDeniedException", message, http.StatusBadRequest)
+}
+
+// NewKmsInvalidStateException creates a new KmsInvalidStateException: the
+// KMS key is not in a valid state, for example Disabled or Deleted.
+func NewKmsInvalidStateException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("KmsInvalidStateException", message, http.StatusBadRequest)
+}
+
+// NewKmsThrottlingException creates a new KmsThrottlingException: KMS
+// returned ThrottlingException for a call made on behalf of the caller.
+func NewKmsThrottlingException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("KmsThrottlingException", message, http.StatusBadRequest)
+}
+
+// NewServiceQuotaExceededException creates a new
+// ServiceQuotaExceededException error. The Smithy model attaches
+// @httpError(402) to this shape, unlike the default 400 of the other
+// client errors.
+func NewServiceQuotaExceededException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ServiceQuotaExceededException", message, http.StatusPaymentRequired)
+}

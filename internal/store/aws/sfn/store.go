@@ -4,6 +4,7 @@ package sfn
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -326,6 +327,33 @@ func (s *StepFunctionStore) UpdateExecution(ctx context.Context, exec *Execution
 	return s.executionsStore.Put(exec.ExecutionArn, exec)
 }
 
+// executionMatches reports whether an execution passes the ListExecutions
+// filters: state machine, status, map run and redrive state.
+func executionMatches(e *Execution, stateMachineArn, statusFilter, mapRunArn, redriveFilter string) bool {
+	if stateMachineArn != "" && e.StateMachineArn != stateMachineArn {
+		return false
+	}
+	if statusFilter != "" && e.Status != statusFilter {
+		return false
+	}
+	if mapRunArn != "" && e.MapRunArn != mapRunArn {
+		return false
+	}
+	if redriveFilter != "" {
+		switch redriveFilter {
+		case "REDRIVEN":
+			if e.RedriveCount == 0 {
+				return false
+			}
+		case "NOT_REDRIVEN":
+			if e.RedriveCount != 0 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // ListExecutions returns a paginated list of executions for a state machine.
 func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn string, statusFilter string, mapRunArn string, redriveFilter string, limit int32, nextToken string) (*ExecutionListResult, error) {
 	opts := common.ListOptions{
@@ -334,28 +362,7 @@ func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn 
 	}
 
 	result, err := common.List[Execution](s.executionsStore, opts, func(e *Execution) bool {
-		if stateMachineArn != "" && e.StateMachineArn != stateMachineArn {
-			return false
-		}
-		if statusFilter != "" && e.Status != statusFilter {
-			return false
-		}
-		if mapRunArn != "" && e.MapRunArn != mapRunArn {
-			return false
-		}
-		if redriveFilter != "" {
-			switch redriveFilter {
-			case "REDRIVEN":
-				if e.RedriveCount == 0 {
-					return false
-				}
-			case "NOT_REDRIVEN":
-				if e.RedriveCount != 0 {
-					return false
-				}
-			}
-		}
-		return true
+		return executionMatches(e, stateMachineArn, statusFilter, mapRunArn, redriveFilter)
 	})
 	if err != nil {
 		return nil, err
@@ -365,6 +372,28 @@ func (s *StepFunctionStore) ListExecutions(ctx context.Context, stateMachineArn 
 		Executions: result.Items,
 		NextToken:  result.NextMarker,
 	}, nil
+}
+
+// ListAllExecutions returns every execution matching the filters without
+// pagination. The ListExecutions contract orders results by time rather
+// than storage key ("Results are sorted by time, with the most recent
+// execution first"), so the service layer fetches the full match set
+// before sorting and paging it.
+func (s *StepFunctionStore) ListAllExecutions(ctx context.Context, stateMachineArn, statusFilter, mapRunArn, redriveFilter string) ([]*Execution, error) {
+	return common.ListMatching[Execution](s.executionsStore, "", func(e *Execution) bool {
+		return executionMatches(e, stateMachineArn, statusFilter, mapRunArn, redriveFilter)
+	})
+}
+
+// CountExecutionHistory returns the number of history events recorded for
+// an execution. Redrive eligibility requires fewer than 24,999 events so
+// the ExecutionRedriven event and at least one more event still fit.
+func (s *StepFunctionStore) CountExecutionHistory(ctx context.Context, executionArn string) (int, error) {
+	events, err := common.ListMatching[ExecutionHistoryEvent](s.executionHistoryStore, executionArn+":", nil)
+	if err != nil {
+		return 0, err
+	}
+	return len(events), nil
 }
 
 // AddExecutionHistoryEvent adds a history event to an execution's event log.
@@ -730,6 +759,15 @@ func (s *StepFunctionStore) markTaskTimedOut(taskToken string) {
 	_ = s.tasksStore.Put(taskToken, &task)
 }
 
+// getActivityTaskRecord reads an activity task record by its token.
+func (s *StepFunctionStore) getActivityTaskRecord(taskToken string) (*ActivityTask, error) {
+	var task ActivityTask
+	if err := s.tasksStore.Get(taskToken, &task); err != nil {
+		return nil, ErrTaskNotFound
+	}
+	return &task, nil
+}
+
 func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken string, timeout time.Duration, heartbeatTimeout time.Duration) (*ActivityTaskResult, error) {
 	s.pendingTasksMu.Lock()
 	ch := make(chan *ActivityTaskResult, 1)
@@ -741,6 +779,23 @@ func (s *StepFunctionStore) WaitForTaskResult(ctx context.Context, taskToken str
 		delete(s.pendingTasks, taskToken)
 		s.pendingTasksMu.Unlock()
 	}()
+
+	// A worker may complete the task before this channel is registered —
+	// the completion notify only reaches a registered waiter. Re-checking
+	// the persisted status after registration closes that window: any
+	// completion that landed earlier is visible here, and any later
+	// completion finds the registered channel. Without this check a
+	// fast completion sleeps the executor until the task timeout.
+	if task, err := s.getActivityTaskRecord(taskToken); err == nil {
+		switch task.Status {
+		case "SUCCEEDED":
+			return &ActivityTaskResult{TaskToken: taskToken, Output: task.Output}, nil
+		case "FAILED":
+			return &ActivityTaskResult{TaskToken: taskToken, Error: fmt.Errorf("%s: %s", task.Error, task.Cause)}, nil
+		case "TIMED_OUT":
+			return nil, ErrTaskTimeout
+		}
+	}
 
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
@@ -862,10 +917,8 @@ func (s *StepFunctionStore) buildVersionARN(smArn string, version int64) string 
 }
 
 func (s *StepFunctionStore) buildAliasARN(smArn, aliasName string) string {
-	_, _, region, account, _ := svcarn.SplitARN(smArn)
-	if region != "" && account != "" {
-		return svcarn.NewARNBuilder(account, region).StepFunctions().StateMachineAlias(aliasName)
-	}
+	// The alias ARN extends the state machine ARN with the alias name, so
+	// alias names are namespaced per state machine rather than per account.
 	return smArn + ":" + aliasName
 }
 
@@ -894,11 +947,20 @@ func (s *StepFunctionStore) recoverVersionCounter(smArn string) {
 	s.versionCountersMu.Unlock()
 }
 
-// PublishStateMachineVersion publishes a new version of an existing state machine.
+// PublishStateMachineVersion publishes the state machine's current
+// revision as a version. Publishing is idempotent per revision: when a
+// version of the current revision already exists it is returned instead of
+// publishing a duplicate.
 func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smArn string, description string) (*StateMachineVersion, error) {
 	sm, err := s.GetStateMachine(ctx, smArn)
 	if err != nil {
 		return nil, ErrStateMachineNotFound
+	}
+
+	if existing, err := s.FindVersionByRevision(smArn, sm.RevisionId); err == nil {
+		return existing, nil
+	} else if !errors.Is(err, ErrStateMachineVersionNotFound) {
+		return nil, err
 	}
 
 	s.versionCountersMu.Lock()
@@ -919,6 +981,7 @@ func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smAr
 		Description:            description,
 		CreationDate:           time.Now().UTC(),
 		Definition:             sm.Definition,
+		RevisionId:             sm.RevisionId,
 	}
 
 	if err := s.versionsStore.Put(versionArn, v); err != nil {
@@ -926,6 +989,39 @@ func (s *StepFunctionStore) PublishStateMachineVersion(ctx context.Context, smAr
 	}
 
 	return v, nil
+}
+
+// FindVersionByRevision returns the version published for the given state
+// machine revision, or ErrStateMachineVersionNotFound when the revision has
+// never been published. When several records claim the same revision the
+// highest version number wins, keeping the result deterministic.
+func (s *StepFunctionStore) FindVersionByRevision(smArn, revisionId string) (*StateMachineVersion, error) {
+	versions, err := common.ListMatching[StateMachineVersion](s.versionsStore, smArn+":", func(v *StateMachineVersion) bool {
+		return v.RevisionId == revisionId
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(versions) == 0 {
+		return nil, ErrStateMachineVersionNotFound
+	}
+	newest := versions[0]
+	for _, v := range versions[1:] {
+		if v.Version > newest.Version {
+			newest = v
+		}
+	}
+	return newest, nil
+}
+
+// CountStateMachineVersions returns the number of published versions of a
+// state machine; the quota is one thousand versions per state machine.
+func (s *StepFunctionStore) CountStateMachineVersions(smArn string) (int, error) {
+	versions, err := common.ListMatching[StateMachineVersion](s.versionsStore, smArn+":", nil)
+	if err != nil {
+		return 0, err
+	}
+	return len(versions), nil
 }
 
 // GetStateMachineVersion retrieves a state machine version by its ARN.
@@ -937,10 +1033,32 @@ func (s *StepFunctionStore) GetStateMachineVersion(ctx context.Context, arn stri
 	return &v, nil
 }
 
+// GetStateMachineVersionByNumber retrieves a version of a state machine by
+// its sequential version number.
+func (s *StepFunctionStore) GetStateMachineVersionByNumber(ctx context.Context, smArn string, version int64) (*StateMachineVersion, error) {
+	return s.GetStateMachineVersion(ctx, s.buildVersionARN(smArn, version))
+}
+
 // DeleteStateMachineVersion removes a state machine version from the store.
+// A version an alias routing configuration still points at cannot be
+// deleted; the caller maps the sentinel to ConflictException.
 func (s *StepFunctionStore) DeleteStateMachineVersion(ctx context.Context, arn string) error {
 	if !s.versionsStore.Exists(arn) {
 		return ErrStateMachineVersionNotFound
+	}
+	aliases, err := common.ListMatching[StateMachineAlias](s.aliasesStore, "", func(a *StateMachineAlias) bool {
+		for _, rc := range a.RoutingConfiguration {
+			if rc.StateMachineVersionArn == arn {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		return err
+	}
+	if len(aliases) > 0 {
+		return ErrStateMachineVersionInUse
 	}
 	return s.versionsStore.Delete(arn)
 }
@@ -996,6 +1114,12 @@ func (s *StepFunctionStore) GetStateMachineAlias(ctx context.Context, arn string
 	return &alias, nil
 }
 
+// GetStateMachineAliasByName retrieves a state machine alias by its state
+// machine ARN and alias name.
+func (s *StepFunctionStore) GetStateMachineAliasByName(ctx context.Context, smArn, name string) (*StateMachineAlias, error) {
+	return s.GetStateMachineAlias(ctx, s.buildAliasARN(smArn, name))
+}
+
 // UpdateStateMachineAlias updates an existing state machine alias.
 func (s *StepFunctionStore) UpdateStateMachineAlias(ctx context.Context, alias *StateMachineAlias) error {
 	if !s.aliasesStore.Exists(alias.StateMachineAliasArn) {
@@ -1031,6 +1155,18 @@ func (s *StepFunctionStore) ListStateMachineAliases(ctx context.Context, smArn s
 		Aliases:   result.Items,
 		NextToken: result.NextMarker,
 	}, nil
+}
+
+// CountStateMachineAliases returns the number of aliases defined for a
+// state machine; the quota is one hundred aliases per state machine.
+func (s *StepFunctionStore) CountStateMachineAliases(smArn string) (int, error) {
+	aliases, err := common.ListMatching[StateMachineAlias](s.aliasesStore, "", func(a *StateMachineAlias) bool {
+		return a.StateMachineArn == smArn
+	})
+	if err != nil {
+		return 0, err
+	}
+	return len(aliases), nil
 }
 
 func (s *StepFunctionStore) nextMapRunSeq() int64 {

@@ -50,7 +50,7 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "GetActivity", func() error {
+	results = append(results, r.RunTest("stepfunctions", "DescribeActivity_IdempotentRead", func() error {
 		resp, err := tc.client.DescribeActivity(tc.ctx, &sfn.DescribeActivityInput{
 			ActivityArn: aws.String(activityARN),
 		})
@@ -58,7 +58,7 @@ func (r *TestRunner) runSFNActivityTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		if resp.ActivityArn == nil || *resp.ActivityArn != activityARN {
-			return fmt.Errorf("activity ARN mismatch via GetActivity")
+			return fmt.Errorf("activity ARN mismatch on repeated describe")
 		}
 		return nil
 	}))

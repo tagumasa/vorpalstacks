@@ -122,6 +122,10 @@ func (r *TestRunner) RunStepFunctionsTests() []TestResult {
 	results = append(results, r.runSFNAdvancedTests(tc)...)
 	results = append(results, r.runSFNEdgeTests(tc)...)
 	results = append(results, r.runSFNWaitTests(tc)...)
+	results = append(results, r.runSFNContractTests(tc)...)
+	results = append(results, r.runSFNItemReaderTests(tc)...)
+	results = append(results, r.runSFNMapFeatureTests(tc)...)
+	results = append(results, r.runSFNIntrinsicTests(tc)...)
 
 	return results
 }

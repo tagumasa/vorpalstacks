@@ -69,7 +69,7 @@ func (e *Executor) ExecuteStateMachine(ctx context.Context, execution *sfnstore.
 		e.currentStateMachine = sm
 	}
 
-	definition, states, err := e.parseDefinition(ctx, execution.StateMachineArn)
+	definition, states, err := e.parseDefinitionForExecution(ctx, execution)
 	if err != nil {
 		execution.Status = "FAILED"
 		execution.Error = "InvalidDefinition"
@@ -146,7 +146,7 @@ func (e *Executor) ExecuteStateMachineFromState(ctx context.Context, execution *
 		e.currentStateMachine = sm
 	}
 
-	definition, states, err := e.parseDefinition(ctx, execution.StateMachineArn)
+	definition, states, err := e.parseDefinitionForExecution(ctx, execution)
 	if err != nil {
 		execution.Status = "FAILED"
 		execution.Error = "InvalidDefinition"
@@ -324,6 +324,31 @@ type ExecutionContext struct {
 	// while a token actually backs it. Map and Parallel branches each own
 	// their ExecutionContext, so concurrent branches never share a token.
 	TaskToken string
+	// MapItemReaderData substitutes the ItemReader's raw source bytes for
+	// this execution. TestState populates it from the stateConfiguration
+	// mapItemReaderData member; normal executions leave it empty so the
+	// reader fetches from S3.
+	MapItemReaderData string
+	// The After* members feed the TestState inspectionData shape: they
+	// record the intermediate data-processing results of the state under
+	// test (afterInputPath, afterParameters, afterResultSelector,
+	// afterResultPath, afterItemsPath, afterItemBatcher) alongside the Map
+	// runtime settings TestState reports (maxConcurrency, tolerated
+	// failure).
+	AfterInputPath           *string
+	AfterParameters          *string
+	AfterResultSelector      *string
+	AfterResultPath          *string
+	AfterItemsPath           *string
+	AfterItemBatcher         *string
+	MaxConcurrencyValue      *int32
+	ToleratedFailureCountVal *int64
+	ToleratedFailurePctVal   *float64
+	// SuppliedContext, when set, replaces the derived context object for
+	// the run. TestState injects the caller's context parameter through
+	// it so states under test resolve $$.Context against the supplied
+	// object instead of the synthetic one.
+	SuppliedContext map[string]interface{}
 }
 
 func (ctx *ExecutionContext) nextEventId() int64 {
@@ -465,6 +490,13 @@ func (e *Executor) logHistoryEvent(ctx context.Context, execution *sfnstore.Exec
 }
 
 func (e *Executor) buildContextObject(execCtx *ExecutionContext) map[string]interface{} {
+	// A supplied context object replaces the derived one entirely: the
+	// TestState context parameter represents the exact Context object for
+	// the state under test.
+	if execCtx.SuppliedContext != nil {
+		return execCtx.SuppliedContext
+	}
+
 	ctx := map[string]interface{}{}
 
 	if execCtx.Execution != nil {

@@ -69,6 +69,15 @@ func (r *TestRunner) runSFNVersionTests(tc *sfnTestContext) []TestResult {
 
 	var secondVersionARN string
 	results = append(results, r.RunTest("stepfunctions", "PublishStateMachineVersion_Second", func() error {
+		// Publishing is idempotent per revision, so a second version
+		// requires a state machine update first; republishing an
+		// unchanged revision returns its existing version.
+		if _, err := tc.client.UpdateStateMachine(tc.ctx, &sfn.UpdateStateMachineInput{
+			StateMachineArn: aws.String(verSMARN),
+			Definition:      aws.String(`{"Comment":"v3","StartAt":"B","States":{"B":{"Type":"Pass","Result":"hello","End":true}}}`),
+		}); err != nil {
+			return fmt.Errorf("update before republish: %v", err)
+		}
 		resp, err := tc.client.PublishStateMachineVersion(tc.ctx, &sfn.PublishStateMachineVersionInput{
 			StateMachineArn: aws.String(verSMARN),
 			Description:     aws.String("test version 2"),

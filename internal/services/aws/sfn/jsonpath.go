@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +35,49 @@ func getJSONPathValueRaw(data map[string]interface{}, path string) (interface{},
 				return nil, false
 			}
 		} else {
+			return nil, false
+		}
+	}
+
+	return current, true
+}
+
+// getJSONPathValueAny resolves a dotted JSONPath against any root value:
+// object members by name and array elements by bare or bracketed numeric
+// segment ($.0, $.[0], $.results.[1].total). Payload templates whose data is
+// an array — the Parallel and Map combined result, a Task result that is an
+// array — need the numeric form; object roots behave exactly like
+// getJSONPathValueRaw.
+func getJSONPathValueAny(data interface{}, path string) (interface{}, bool) {
+	if path == "" || path == "$" {
+		return data, true
+	}
+
+	path = strings.TrimPrefix(path, "$.")
+	parts := strings.Split(path, ".")
+	current := data
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		key := part
+		if strings.HasPrefix(key, "[") && strings.HasSuffix(key, "]") {
+			key = key[1 : len(key)-1]
+		}
+		switch node := current.(type) {
+		case map[string]interface{}:
+			value, exists := node[key]
+			if !exists {
+				return nil, false
+			}
+			current = value
+		case []interface{}:
+			index, err := strconv.Atoi(key)
+			if err != nil || index < 0 || index >= len(node) {
+				return nil, false
+			}
+			current = node[index]
+		default:
 			return nil, false
 		}
 	}
@@ -196,14 +240,46 @@ func (e *Executor) parseDefinition(ctx context.Context, stateMachineArn string) 
 	if err != nil {
 		return nil, nil, err
 	}
+	return parseDefinitionJSON(sm.Definition)
+}
 
-	var definition sfnstore.StateMachineDefinition
-	if err := json.Unmarshal([]byte(sm.Definition), &definition); err != nil {
+// definitionForExecution returns the definition text the execution must
+// run: the pinned version snapshot when the execution was started with a
+// version or alias ARN, the live state machine definition otherwise. The
+// empty string reports that no definition could be resolved.
+func (e *Executor) definitionForExecution(ctx context.Context, execution *sfnstore.Execution) string {
+	if execution.StateMachineVersionArn != "" {
+		if version, err := e.store.GetStateMachineVersion(ctx, execution.StateMachineVersionArn); err == nil {
+			return version.Definition
+		}
+	}
+	if sm, err := e.store.GetStateMachine(ctx, execution.StateMachineArn); err == nil {
+		return sm.Definition
+	}
+	return ""
+}
+
+// parseDefinitionForExecution parses the definition the execution must
+// run — the pinned version snapshot when the execution is version
+// qualified, the live state machine definition otherwise.
+func (e *Executor) parseDefinitionForExecution(ctx context.Context, execution *sfnstore.Execution) (*sfnstore.StateMachineDefinition, map[string]sfnstore.State, error) {
+	definition := e.definitionForExecution(ctx, execution)
+	if definition == "" {
+		return nil, nil, fmt.Errorf("no definition found for state machine %s", execution.StateMachineArn)
+	}
+	return parseDefinitionJSON(definition)
+}
+
+// parseDefinitionJSON parses a state machine definition string into the
+// definition struct and its typed states.
+func parseDefinitionJSON(definition string) (*sfnstore.StateMachineDefinition, map[string]sfnstore.State, error) {
+	var def sfnstore.StateMachineDefinition
+	if err := json.Unmarshal([]byte(definition), &def); err != nil {
 		return nil, nil, fmt.Errorf("failed to parse state machine definition: %w", err)
 	}
 
 	states := make(map[string]sfnstore.State)
-	for name, stateData := range definition.States {
+	for name, stateData := range def.States {
 		stateMap, ok := stateData.(map[string]interface{})
 		if !ok {
 			return nil, nil, fmt.Errorf("invalid state format for %s", name)
@@ -252,7 +328,7 @@ func (e *Executor) parseDefinition(ctx context.Context, stateMachineArn string) 
 		states[name] = state
 	}
 
-	return &definition, states, nil
+	return &def, states, nil
 }
 
 func resolveOutputRaw(state sfnstore.State, stateMap map[string]interface{}) error {

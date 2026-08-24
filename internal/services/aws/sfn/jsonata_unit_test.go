@@ -77,7 +77,7 @@ func TestEvaluateAssign(t *testing.T) {
 func TestValidateDefinitionJSONataFields(t *testing.T) {
 	t.Run("JSONPath-only fields in JSONata state rejected", func(t *testing.T) {
 		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Pass", "InputPath": "$"}}}`
-		err := validateDefinitionJSONataFields(def)
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err == nil {
 			t.Fatal("expected error for InputPath in JSONata state")
 		}
@@ -85,7 +85,7 @@ func TestValidateDefinitionJSONataFields(t *testing.T) {
 
 	t.Run("JSONata-only fields in JSONPath state rejected", func(t *testing.T) {
 		def := `{"States": {"A": {"Type": "Task", "Arguments": {"x": 1}}}}`
-		err := validateDefinitionJSONataFields(def)
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err == nil {
 			t.Fatal("expected error for Arguments in JSONPath state")
 		}
@@ -93,7 +93,7 @@ func TestValidateDefinitionJSONataFields(t *testing.T) {
 
 	t.Run("JSONata Items in JSONPath Map rejected", func(t *testing.T) {
 		def := `{"States": {"A": {"Type": "Map", "Items": "{% $states.input %}"}}}`
-		err := validateDefinitionJSONataFields(def)
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err == nil {
 			t.Fatal("expected error for Items in JSONPath Map state")
 		}
@@ -101,31 +101,31 @@ func TestValidateDefinitionJSONataFields(t *testing.T) {
 
 	t.Run("JSONata Condition in JSONPath Choice rejected", func(t *testing.T) {
 		def := `{"States": {"A": {"Type": "Choice", "Choices": [{"Condition": "{% true %}"}]}}}`
-		err := validateDefinitionJSONataFields(def)
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err == nil {
 			t.Fatal("expected error for Condition in JSONPath Choice state")
 		}
 	})
 
 	t.Run("valid JSONata definition passes", func(t *testing.T) {
-		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Pass", "Output": "{% $states.input %}"}}}`
-		err := validateDefinitionJSONataFields(def)
+		def := `{"QueryLanguage": "JSONata", "StartAt": "A", "States": {"A": {"Type": "Pass", "Output": "{% $states.input %}", "End": true}}}`
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("valid JSONPath definition passes", func(t *testing.T) {
-		def := `{"States": {"A": {"Type": "Pass", "InputPath": "$", "Result": "hello"}}}`
-		err := validateDefinitionJSONataFields(def)
+		def := `{"StartAt": "A", "States": {"A": {"Type": "Pass", "InputPath": "$", "Result": "hello", "End": true}}}`
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("mixed mode: JSONata state in JSONPath machine", func(t *testing.T) {
-		def := `{"States": {"A": {"Type": "Pass", "InputPath": "$"}, "B": {"Type": "Pass", "QueryLanguage": "JSONata", "Output": "{% $states.input %}"}}}`
-		err := validateDefinitionJSONataFields(def)
+		def := `{"StartAt": "A", "States": {"A": {"Type": "Pass", "InputPath": "$", "Next": "B"}, "B": {"Type": "Pass", "QueryLanguage": "JSONata", "Output": "{% $states.input %}", "End": true}}}`
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -133,7 +133,7 @@ func TestValidateDefinitionJSONataFields(t *testing.T) {
 
 	t.Run("mixed mode: JSONPath state in JSONata machine rejected", func(t *testing.T) {
 		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Pass", "InputPath": "$"}}}`
-		err := validateDefinitionJSONataFields(def)
+		err := validateDefinitionStructure(def, "STANDARD")
 		if err == nil {
 			t.Fatal("expected error for InputPath in JSONata-default machine")
 		}
@@ -162,7 +162,7 @@ func TestValidateDefinitionJSONataFields(t *testing.T) {
 		for _, tt := range tests {
 			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
-				err := validateDefinitionJSONataFields(tt.def)
+				err := validateDefinitionStructure(tt.def, "STANDARD")
 				if err == nil {
 					t.Fatal("expected error")
 				}
@@ -245,7 +245,7 @@ func TestExtractVariableReferences(t *testing.T) {
 	})
 
 	t.Run("no variable references", func(t *testing.T) {
-		def := `{"QueryLanguage": "JSONata", "States": {"A": {"Type": "Pass", "Output": "{% $states.input %}"}}}`
+		def := `{"QueryLanguage": "JSONata", "StartAt": "A", "States": {"A": {"Type": "Pass", "Output": "{% $states.input %}", "End": true}}}`
 		refs := extractVariableReferences(def)
 		if len(refs["A"]) != 0 {
 			t.Fatalf("expected no refs, got %v", refs)

@@ -401,29 +401,84 @@ func (e *Executor) executeWaitJSONata(ctx context.Context, execCtx *ExecutionCon
 }
 
 func (e *Executor) executeFail(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.FailState) error {
+	errorName := state.GetError()
 	cause := state.GetCause()
-	if IsJSONataState(state, execCtx.QueryLanguage) && state.Cause != nil {
-		if s, ok := state.Cause.(string); ok && IsExpression(s) {
-			var inputData interface{}
-			if execCtx.Input != "" {
-				if err := json.Unmarshal([]byte(execCtx.Input), &inputData); err != nil {
-					return e.newQueryEvalError(ctx, execCtx, "Input", "failed to parse input JSON")
-				}
-			}
+
+	var inputData interface{}
+	ensureInput := func() bool {
+		if inputData != nil || execCtx.Input == "" {
+			return true
+		}
+		return json.Unmarshal([]byte(execCtx.Input), &inputData) == nil
+	}
+
+	if IsJSONataState(state, execCtx.QueryLanguage) {
+		// In JSONata states the Error and Cause members may carry
+		// expressions; both resolve against the state input.
+		if s, ok := state.Error.(string); ok && IsExpression(s) && ensureInput() {
 			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
 			vars := buildVarsMap(statesVar, execCtx.VariableScope)
-			result, err := EvaluateJSONata(ctx, UnwrapExpression(s), nil, vars)
-			if err != nil {
+			if result, err := EvaluateJSONata(ctx, UnwrapExpression(s), nil, vars); err == nil {
+				errorName = stringifyFailValue(result)
+			} else {
+				_ = e.newQueryEvalError(ctx, execCtx, "Error", err.Error())
+				errorName = fmt.Sprintf("QueryEvaluationError: %s", err.Error())
+			}
+		}
+		if s, ok := state.Cause.(string); ok && IsExpression(s) && ensureInput() {
+			statesVar := e.buildStatesVarWithContext(execCtx, inputData, nil, nil)
+			vars := buildVarsMap(statesVar, execCtx.VariableScope)
+			if result, err := EvaluateJSONata(ctx, UnwrapExpression(s), nil, vars); err == nil {
+				cause = stringifyFailValue(result)
+			} else {
 				_ = e.newQueryEvalError(ctx, execCtx, "Cause", err.Error())
 				cause = fmt.Sprintf("QueryEvaluationError: %s", err.Error())
-			} else {
-				switch v := result.(type) {
-				case string:
-					cause = v
-				default:
-					b, _ := json.Marshal(result)
-					cause = string(b)
+			}
+		}
+	} else {
+		// ErrorPath and CausePath are reference paths selecting string
+		// values from the state input, or intrinsic invocations that
+		// return a string; each excludes its literal form.
+		var failInput map[string]interface{}
+		resolveDynamic := func(spec, field string) (string, bool, *ExecutionError) {
+			if looksLikeIntrinsic(spec) {
+				if failInput == nil && execCtx.Input != "" {
+					var data interface{}
+					if err := json.Unmarshal([]byte(execCtx.Input), &data); err == nil {
+						if m, ok := data.(map[string]interface{}); ok {
+							failInput = m
+						}
+					}
 				}
+				resolved, err := e.evaluateIntrinsic("", spec, failInput, 1)
+				if err != nil {
+					return "", false, newJSONPathEvalError(field, err)
+				}
+				s, ok := resolved.(string)
+				if !ok {
+					return "", false, newJSONPathEvalError(field, fmt.Errorf("intrinsic function did not return a string"))
+				}
+				return s, true, nil
+			}
+			resolved, ok := resolveFailPathString(execCtx.Input, spec)
+			return resolved, ok, nil
+		}
+		if state.ErrorPath != "" {
+			resolved, ok, evalErr := resolveDynamic(state.ErrorPath, "ErrorPath")
+			if evalErr != nil {
+				return evalErr
+			}
+			if ok {
+				errorName = resolved
+			}
+		}
+		if state.CausePath != "" {
+			resolved, ok, evalErr := resolveDynamic(state.CausePath, "CausePath")
+			if evalErr != nil {
+				return evalErr
+			}
+			if ok {
+				cause = resolved
 			}
 		}
 	}
@@ -438,12 +493,45 @@ func (e *Executor) executeFail(ctx context.Context, execCtx *ExecutionContext, s
 		FailStateEnteredEventDetails: &sfnstore.FailStateEnteredEventDetails{
 			Input: execCtx.Input,
 			Name:  execCtx.CurrentState,
-			Error: state.Error,
+			Error: errorName,
 			Cause: cause,
 		},
 	})
 
-	return fmt.Errorf("state machine failed: %s - %s", state.Error, cause)
+	return &ExecutionError{ErrorCode: errorName, Cause: cause}
+}
+
+// stringifyFailValue renders a resolved Fail Error or Cause value: strings
+// pass through, anything else renders as its JSON text.
+func stringifyFailValue(value interface{}) string {
+	if s, ok := value.(string); ok {
+		return s
+	}
+	b, _ := json.Marshal(value)
+	return string(b)
+}
+
+// resolveFailPathString resolves a Fail ErrorPath or CausePath reference
+// path against the state input; the documented contract requires the
+// selected field to hold a string.
+func resolveFailPathString(input, path string) (string, bool) {
+	if input == "" {
+		return "", false
+	}
+	var data interface{}
+	if err := json.Unmarshal([]byte(input), &data); err != nil {
+		return "", false
+	}
+	inputMap, ok := data.(map[string]interface{})
+	if !ok {
+		return "", false
+	}
+	value, err := getJSONPathValue(inputMap, path)
+	if err != nil {
+		return "", false
+	}
+	str, ok := value.(string)
+	return str, ok
 }
 
 func (e *Executor) executeSucceed(ctx context.Context, execCtx *ExecutionContext, state *sfnstore.SucceedState) (string, string, error) {

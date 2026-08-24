@@ -34,7 +34,25 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 
 	var itemsArray []interface{}
 
-	if isJSONata {
+	if state.ItemReader != nil {
+		readerItems, rerr := e.readItemReaderItems(ctx, execCtx, state, execCtx.MapItemReaderData)
+		if rerr != nil {
+			// ItemReader failures surface the documented
+			// States.ItemReaderFailed error and pass through the
+			// state's Catch handlers like any other runtime error.
+			if len(state.Catch) > 0 {
+				if catchPolicy := e.findMatchingCatchPolicy(state.Catch, rerr.ErrorCode); catchPolicy != nil {
+					if IsJSONataState(state, execCtx.QueryLanguage) {
+						return e.executeMapJSONataCatch(ctx, execCtx, state, processedInput, rerr.ErrorCode, rerr.Cause, catchPolicy)
+					}
+					catchOutput := e.buildCatchOutput(processedInput, rerr.ErrorCode, rerr.Cause, catchPolicy.ResultPath)
+					return catchOutput, catchPolicy.Next, nil
+				}
+			}
+			return "", "", rerr
+		}
+		itemsArray = readerItems
+	} else if isJSONata {
 		var inputData interface{}
 		if err := json.Unmarshal([]byte(processedInput), &inputData); err != nil {
 			return "", "", &ExecutionError{ErrorCode: "States.InvalidInput", Cause: "failed to parse input JSON"}
@@ -120,11 +138,27 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 	}
 
 	maxConcurrency := int(state.MaxConcurrency)
+	if maxConcurrency <= 0 && state.MaxConcurrencyPath != "" && !isJSONata {
+		// MaxConcurrencyPath is a reference path selecting a
+		// non-negative integer from the state input.
+		resolved, cerr := resolveMapConcurrencyPath(processedInput, state.MaxConcurrencyPath)
+		if cerr != nil {
+			return "", "", cerr
+		}
+		maxConcurrency = resolved
+	}
 	if maxConcurrency <= 0 {
 		maxConcurrency = len(itemsArray)
 	}
 
-	mapRunArn := generateMapRunArn(e.store, e.region, e.accountID, execCtx.Execution.ExecutionArn, execCtx.CurrentState)
+	// A configured Label replaces the state name in the Map Run ARN
+	// (Distributed Map documentation: "For each Map Run, Step Functions
+	// adds the label to the Map Run ARN").
+	mapLabel := execCtx.CurrentState
+	if state.Label != "" {
+		mapLabel = state.Label
+	}
+	mapRunArn := generateMapRunArn(e.store, e.region, e.accountID, execCtx.Execution.ExecutionArn, mapLabel)
 	now := time.Now().UTC()
 	total := int64(len(itemsArray))
 	mapRunRecord := &sfnstore.MapRun{
@@ -175,29 +209,22 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		}
 	}()
 
-	var wg sync.WaitGroup
-	results := make([]string, len(itemsArray))
-	errors := make([]error, len(itemsArray))
-	itemsProcessed := int64(0)
-	itemsFailed := int64(0)
-	var mu sync.Mutex
-
-	for idx, cached := range mapRunRecord.CompletedResults {
-		if idx >= 0 && idx < len(results) {
-			results[idx] = cached
-			itemsProcessed++
-		}
+	// Parameters is the pre-ItemSelector name of the per-item payload
+	// template ("ItemSelector replaces Parameters in a Map state"), so a
+	// definition written against the legacy name feeds the same path.
+	itemSelector := state.ItemSelector
+	if itemSelector == nil && state.Parameters != nil {
+		itemSelector = state.Parameters.Values
 	}
-
 	processedItems := make([]interface{}, len(itemsArray))
-	if state.ItemSelector != nil {
+	if itemSelector != nil {
 		for i, item := range itemsArray {
 			execCtx.MapItemIndex = i
 			execCtx.MapItemValue = item
 			var selected interface{}
 			if isJSONata {
 				// JSONata template failures are query evaluation errors.
-				resolved, err := e.applyItemSelector(ctx, execCtx, state.ItemSelector, item)
+				resolved, err := e.applyItemSelector(ctx, execCtx, itemSelector, item)
 				if err != nil {
 					return "", "", e.newQueryEvalError(ctx, execCtx, "ItemSelector", err.Error())
 				}
@@ -205,7 +232,7 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			} else {
 				// JSONPath context failures are runtime errors; the
 				// classifier lives in applyItemSelectorJSONPath.
-				resolved, evalErr := e.applyItemSelectorJSONPath(state.ItemSelector, item)
+				resolved, evalErr := e.applyItemSelectorJSONPath(itemSelector, item)
 				if evalErr != nil {
 					return "", "", evalErr
 				}
@@ -222,84 +249,152 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		copy(processedItems, itemsArray)
 	}
 
+	// The ItemBatcher groups consecutive items into the work units each
+	// child workflow execution receives; without one every item is its
+	// own unit carrying the item JSON.
+	units, batchErr := e.buildMapWorkUnits(ctx, execCtx, state, processedInput, processedItems, itemsArray)
+	if batchErr != nil {
+		return "", "", batchErr
+	}
+	if state.ItemBatcher != nil && execCtx.AfterItemBatcher == nil {
+		unitInputs := make([]string, len(units))
+		for i, u := range units {
+			unitInputs[i] = u.InputJSON
+		}
+		joined := "[" + strings.Join(unitInputs, ",") + "]"
+		execCtx.AfterItemBatcher = &joined
+	}
+
+	var wg sync.WaitGroup
+	results := make([]string, len(units))
+	errors := make([]error, len(units))
+	itemsProcessed := int64(0)
+	itemsFailed := int64(0)
+	var mu sync.Mutex
+
+	for i, unit := range units {
+		if cached, ok := mapRunRecord.CompletedResults[unit.StartIndex]; ok && cached != "" {
+			results[i] = cached
+			itemsProcessed += int64(unit.ItemCount)
+		}
+	}
+
+	// Distributed mode dispatches every unit as its own child workflow
+	// execution; the collected child identities feed the ResultWriter
+	// export records.
+	distributed := isDistributedMap(state)
+	childMetas := make([]mapChildMeta, len(units))
+
 	sem := make(chan struct{}, maxConcurrency)
 
-	for i := range processedItems {
+	for i := range units {
 		if results[i] != "" {
 			continue
 		}
 		wg.Add(1)
-		go func(idx int, itemValue interface{}, originalItem interface{}) {
+		go func(slot int, unit mapWorkUnit) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
+			var childExec *sfnstore.Execution
+			var childEventId *int64
+
 			defer func() {
 				if r := recover(); r != nil {
-					logs.Error("sfn: panic in map worker", logs.Int("index", idx), logs.Any("panic", r), logs.String("stack", string(debug.Stack())))
+					logs.Error("sfn: panic in map worker", logs.Int("index", unit.StartIndex), logs.Any("panic", r), logs.String("stack", string(debug.Stack())))
 					mu.Lock()
-					errors[idx] = fmt.Errorf("internal panic: %v", r)
-					itemsFailed++
+					errors[slot] = fmt.Errorf("internal panic: %v", r)
+					itemsFailed += int64(unit.ItemCount)
 					mu.Unlock()
+					if childExec != nil {
+						e.finishMapChildExecution(ctx, childExec, childEventId, "", &ExecutionError{ErrorCode: "States.Runtime", Cause: fmt.Sprintf("internal panic: %v", r)})
+					}
 				}
 			}()
 
-			itemJSON, err := json.Marshal(itemValue)
-			if err != nil {
-				mu.Lock()
-				errors[idx] = fmt.Errorf("failed to marshal map item: %w", err)
-				itemsFailed++
-				mu.Unlock()
-				return
-			}
 			iteratorStates, err := e.extractStatesFromDefinition(state.GetIterator())
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
-				errors[idx] = err
-				itemsFailed++
+				errors[slot] = err
+				itemsFailed += int64(unit.ItemCount)
 				return
 			}
+			unitExecution := execCtx.Execution
+			unitEventId := execCtx.EventId
+			if distributed {
+				childExec = e.beginMapChildExecution(ctx, execCtx, state, mapRunArn, unit, slot)
+				if childExec != nil {
+					one := int64(1)
+					childEventId = &one
+					unitExecution = childExec
+					unitEventId = childEventId
+				}
+			}
 			iteratorCtx := &ExecutionContext{
-				Execution:     execCtx.Execution,
+				Execution:     unitExecution,
 				Definition:    state.GetIterator(),
 				CurrentState:  state.GetIterator().StartAt,
-				Input:         string(itemJSON),
+				Input:         unit.InputJSON,
 				Output:        "",
-				EventId:       execCtx.EventId,
+				EventId:       unitEventId,
 				States:        iteratorStates,
 				QueryLanguage: execCtx.QueryLanguage,
 				VariableScope: execCtx.VariableScope.NewChild(),
-				MapItemIndex:  idx,
-				MapItemValue:  originalItem,
+				MapItemIndex:  unit.StartIndex,
+				MapItemValue:  unit.ContextItem,
 			}
 			execErr := e.executeStates(ctx, iteratorCtx)
+			if childExec != nil {
+				var childFailure *ExecutionError
+				if execErr != nil {
+					if stateErr, ok := execErr.(*ExecutionError); ok {
+						childFailure = stateErr
+					} else {
+						childFailure = &ExecutionError{ErrorCode: "States.Runtime", Cause: execErr.Error()}
+					}
+				}
+				e.finishMapChildExecution(ctx, childExec, childEventId, iteratorCtx.Output, childFailure)
+				mu.Lock()
+				childMetas[slot] = mapChildMeta{Arn: childExec.ExecutionArn, Name: childExec.Name, RedriveCount: childExec.RedriveCount}
+				mu.Unlock()
+			}
 			mu.Lock()
 			defer mu.Unlock()
-			errors[idx] = execErr
+			errors[slot] = execErr
 			if execErr == nil {
-				results[idx] = iteratorCtx.Output
-				itemsProcessed++
-				mapRunRecord.CompletedResults[idx] = iteratorCtx.Output
+				results[slot] = iteratorCtx.Output
+				itemsProcessed += int64(unit.ItemCount)
+				mapRunRecord.CompletedResults[unit.StartIndex] = iteratorCtx.Output
 			} else {
-				itemsFailed++
+				itemsFailed += int64(unit.ItemCount)
 			}
-		}(i, processedItems[i], itemsArray[i])
+		}(i, units[i])
 	}
 
 	wg.Wait()
 
 	totalItems := mapRunRecord.ItemCounts.Total
+	// The item counters roll up items while the execution counters roll up
+	// child workflow executions: with an ItemBatcher one unit covers
+	// several items, without one the two are the same population.
+	executionsSucceeded := int64(0)
+	for _, err := range errors {
+		if err == nil {
+			executionsSucceeded++
+		}
+	}
 	mapRunRecord.ItemCounts.Succeeded = itemsProcessed
 	mapRunRecord.ItemCounts.Failed = itemsFailed
 	mapRunRecord.ItemCounts.Running = 0
 	mapRunRecord.ItemCounts.Pending = 0
 	mapRunRecord.ItemCounts.Total = totalItems
-	mapRunRecord.ExecutionCounts.Succeeded = itemsProcessed
-	mapRunRecord.ExecutionCounts.Failed = itemsFailed
+	mapRunRecord.ExecutionCounts.Succeeded = executionsSucceeded
+	mapRunRecord.ExecutionCounts.Failed = int64(len(errors)) - executionsSucceeded
 	mapRunRecord.ExecutionCounts.Running = 0
 	mapRunRecord.ExecutionCounts.Pending = 0
-	mapRunRecord.ExecutionCounts.Total = totalItems
+	mapRunRecord.ExecutionCounts.Total = int64(len(units))
 	if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
 		logs.Warn("failed to update map run after completion", logs.Err(err))
 	}
@@ -312,24 +407,33 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		}
 	}
 
-	if firstError != nil {
+	// Distributed mode applies the tolerated-failure thresholds: a Map Run
+	// fails with States.ExceedToleratedFailureThreshold only when the
+	// failed-item count or percentage exceeds the configured threshold,
+	// and succeeds otherwise with the failed iterations tolerated.
+	tolerated, exceeded := e.evaluateToleratedFailure(execCtx, state, itemsFailed, totalItems)
+	if firstError != nil && !tolerated {
+		failCode := "States.IteratorFailed"
+		if exceeded {
+			failCode = "States.ExceedToleratedFailureThreshold"
+		}
 		mapRunRecord.Status = "FAILED"
 		if err := e.store.UpdateMapRun(ctx, mapRunRecord); err != nil {
 			logs.Warn("failed to update map run to FAILED", logs.Err(err))
 		}
 
 		if len(state.Catch) > 0 {
-			catchPolicy := e.findMatchingCatchPolicy(state.Catch, "States.IteratorFailed")
+			catchPolicy := e.findMatchingCatchPolicy(state.Catch, failCode)
 			if catchPolicy != nil {
 				isJSONataCatch := IsJSONataState(state, execCtx.QueryLanguage)
 				if isJSONataCatch {
-					return e.executeMapJSONataCatch(ctx, execCtx, state, processedInput, "States.IteratorFailed", firstError.Error(), catchPolicy)
+					return e.executeMapJSONataCatch(ctx, execCtx, state, processedInput, failCode, firstError.Error(), catchPolicy)
 				}
-				catchOutput := e.buildCatchOutput(processedInput, "States.IteratorFailed", firstError.Error(), catchPolicy.ResultPath)
+				catchOutput := e.buildCatchOutput(processedInput, failCode, firstError.Error(), catchPolicy.ResultPath)
 				return catchOutput, catchPolicy.Next, nil
 			}
 		}
-		return "", "", &ExecutionError{ErrorCode: "States.IteratorFailed", Cause: firstError.Error()}
+		return "", "", &ExecutionError{ErrorCode: failCode, Cause: firstError.Error()}
 	}
 
 	mapRunRecord.Status = "SUCCEEDED"
@@ -337,7 +441,34 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 		logs.Warn("Failed to update map run status", logs.Err(err))
 	}
 
-	output := fmt.Sprintf(`[%s]`, strings.Join(results, ","))
+	// Failed iterations tolerated by the configured thresholds leave null
+	// placeholders in the assembled result array; a successful iteration
+	// always produces JSON text, so an empty slot marks a failure.
+	rendered := make([]string, len(results))
+	for i, r := range results {
+		if r == "" {
+			rendered[i] = "null"
+		} else {
+			rendered[i] = r
+		}
+	}
+	output := fmt.Sprintf(`[%s]`, strings.Join(rendered, ","))
+
+	// A configured ResultWriter exports the per-unit execution records to
+	// S3 and replaces the raw result with the Map Run ARN plus the export
+	// location, before ResultPath and OutputPath processing. A unit input
+	// is the item JSON or the batched {"Items": [...]} payload.
+	if state.ResultWriter != nil {
+		unitInputs := make([]string, len(units))
+		for i, unit := range units {
+			unitInputs[i] = unit.InputJSON
+		}
+		exported, werr := e.writeMapResultWriter(ctx, execCtx, state, mapRunRecord, rendered, errors, unitInputs, childMetas)
+		if werr != nil {
+			return "", "", werr
+		}
+		output = exported
+	}
 
 	if isJSONata {
 		var inputData interface{}
@@ -378,6 +509,15 @@ func (e *Executor) executeMap(ctx context.Context, execCtx *ExecutionContext, st
 			output = string(outputJSON)
 		}
 	} else {
+		if state.ResultSelector != nil {
+			// The selector receives the Map result array as its data,
+			// before ResultPath folds it into the state input.
+			selected, selErr := e.applyResultSelector(output, state.ResultSelector, "")
+			if selErr != nil {
+				return "", "", selErr
+			}
+			output = selected
+		}
 		if state.ResultPath != "" {
 			output = e.applyResultPath(processedInput, output, state.ResultPath)
 		}

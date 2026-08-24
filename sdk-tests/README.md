@@ -51,11 +51,11 @@ which are separate services in the SDK classification used by
 | SQS | 89 | 100% | ✅ Perfect |
 | SSM | 49 | 100% | ✅ Perfect |
 | STS | 60 | 100% | ✅ Perfect |
-| StepFunctions | 70 | 100% | ✅ Perfect |
+| StepFunctions | 121 | 100% | ✅ Perfect |
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 72 | 100% | ✅ Perfect |
 
-**Overall: 3,288/3,288 tests passing (100%) — 3,221 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-24 on main)
+**Overall: 3,339/3,339 tests passing (100%) — 3,272 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-24 on main after the SFN ASL intrinsic functions and Parallel/Map payload template work)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

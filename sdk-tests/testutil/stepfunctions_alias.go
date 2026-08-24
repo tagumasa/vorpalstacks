@@ -134,36 +134,45 @@ func (r *TestRunner) runSFNAliasTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "CreateStateMachineAlias_Duplicate", func() error {
+	results = append(results, r.RunTest("stepfunctions", "CreateStateMachineAlias_IdempotentRetry", func() error {
 		dupAliasName := fmt.Sprintf("DUP-%d", time.Now().UnixNano())
-		_, err := tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
-			Name: aws.String(dupAliasName),
-			RoutingConfiguration: []types.RoutingConfigurationListItem{
-				{
-					StateMachineVersionArn: aws.String(versionARN),
-					Weight:                 100,
-				},
+		routing := []types.RoutingConfigurationListItem{
+			{
+				StateMachineVersionArn: aws.String(versionARN),
+				Weight:                 100,
 			},
+		}
+		firstResp, err := tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
+			Name:               aws.String(dupAliasName),
+			RoutingConfiguration: routing,
 		})
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
-		_, err = tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
-			Name: aws.String(dupAliasName),
-			RoutingConfiguration: []types.RoutingConfigurationListItem{
-				{
-					StateMachineVersionArn: aws.String(versionARN),
-					Weight:                 100,
-				},
-			},
+		defer tc.client.DeleteStateMachineAlias(tc.ctx, &sfn.DeleteStateMachineAliasInput{
+			StateMachineAliasArn: firstResp.StateMachineAliasArn,
 		})
-		if err == nil {
-			tc.client.DeleteStateMachineAlias(tc.ctx, &sfn.DeleteStateMachineAliasInput{
-				StateMachineAliasArn: aws.String(fmt.Sprintf("arn:aws:states:%s:%s:stateMachineAlias:%s", r.region, r.accountID, dupAliasName)),
-			})
-			return fmt.Errorf("expected error for duplicate alias")
+
+		// An identical retry returns the existing alias, not a conflict.
+		secondResp, err := tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
+			Name:               aws.String(dupAliasName),
+			RoutingConfiguration: routing,
+		})
+		if err != nil {
+			return fmt.Errorf("identical retry must succeed idempotently: %v", err)
 		}
-		return nil
+		if secondResp.StateMachineAliasArn == nil || firstResp.StateMachineAliasArn == nil ||
+			*secondResp.StateMachineAliasArn != *firstResp.StateMachineAliasArn {
+			return fmt.Errorf("retry ARN %v, want the original %v", secondResp.StateMachineAliasArn, firstResp.StateMachineAliasArn)
+		}
+
+		// The same name with a different description stays a conflict.
+		_, err = tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
+			Name:               aws.String(dupAliasName),
+			Description:        aws.String("different parameters"),
+			RoutingConfiguration: routing,
+		})
+		return expectAPIErrorCode(err, "ConflictException")
 	}))
 
 	return results

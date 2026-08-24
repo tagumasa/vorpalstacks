@@ -47,7 +47,7 @@ func (s *StepFunctionService) recoverRegionExecutions(ctx context.Context, regio
 	recovered := 0
 	nextToken := ""
 	for {
-		result, err := store.ListExecutions(ctx, "", "RUNNING", "", "", 1000, nextToken)
+		result, err := store.ListExecutions(ctx, "", "RUNNING", "", "", sfnstore.MaxPageSize, nextToken)
 		if err != nil {
 			logs.Error("sfn: failed to list running executions for recovery", logs.String("region", region), logs.Err(err))
 			return recovered

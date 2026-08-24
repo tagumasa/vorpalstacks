@@ -207,10 +207,13 @@ func (r *TestRunner) runSFNExecutionTests(tc *sfnTestContext) []TestResult {
 		_, syncRoleARN, syncRoleCleanup := tc.createRoleForSM("SyncRole")
 		defer syncRoleCleanup()
 
+		// StartSyncExecution is not available for STANDARD workflows; the
+		// synchronous start requires an EXPRESS state machine.
 		syncResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
 			Name:       aws.String(syncSMName),
 			Definition: aws.String(passDef),
 			RoleArn:    aws.String(syncRoleARN),
+			Type:       types.StateMachineTypeExpress,
 		})
 		if err != nil {
 			return fmt.Errorf("create: %v", err)

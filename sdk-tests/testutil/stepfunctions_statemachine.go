@@ -63,7 +63,7 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "GetStateMachine", func() error {
+	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachine_TypeField", func() error {
 		resp, err := tc.client.DescribeStateMachine(tc.ctx, &sfn.DescribeStateMachineInput{
 			StateMachineArn: aws.String(smARN),
 		})

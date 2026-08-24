@@ -3,11 +3,7 @@ package sfn
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
-
-	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/handler"
@@ -17,7 +13,6 @@ import (
 	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ExecutorInterface defines the interface for executing state machines.
@@ -69,60 +64,15 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 		return eventbus.HandlerResult{}
 	}
 
-	// IoT rule actions send stateMachineName (per Smithy), not ARN.
-	// Fall back to name-based lookup when ARN is empty.
-	var sm *sfnstore.StateMachine
-	if evt.StateMachineName != "" {
-		sm, err = store.GetStateMachineByName(ctx, evt.StateMachineName)
-	} else {
-		sm, err = store.GetStateMachine(ctx, evt.StateMachineArn)
-	}
-	if err != nil {
-		logs.Error("sfn: failed to get state machine for start execution event",
+	// The bus start path runs the same validation, ARN resolution and
+	// launch logic as the HTTP StartExecution handler; IoT rule actions
+	// send stateMachineName (per Smithy), which the Core resolves.
+	if err := s.startExecutionForBusCore(ctx, store, evt.StateMachineArn, evt.StateMachineName, evt.Input); err != nil {
+		logs.Error("sfn: failed to start execution from bus event",
 			logs.String("arn", evt.StateMachineArn),
 			logs.String("name", evt.StateMachineName),
 			logs.Err(err))
-		return eventbus.HandlerResult{}
 	}
-
-	name := fmt.Sprintf("bus-%s", uuid.New().String())
-	executionArn := arnutil.NewARNBuilder(s.accountID, region).StepFunctions().Execution(arnutil.ExtractStateMachineNameFromARN(sm.StateMachineArn), name)
-
-	exec := sfnstore.NewExecution(sm.StateMachineArn, name, evt.Input, "")
-	exec.ExecutionArn = executionArn
-
-	if err := store.CreateExecution(ctx, exec); err != nil {
-		logs.Error("sfn: failed to create execution from bus event",
-			logs.String("executionArn", executionArn),
-			logs.Err(err))
-		return eventbus.HandlerResult{}
-	}
-
-	executor := NewExecutorWithStores(store, s.bus, s.accountID, region)
-	execCtx, cancel := context.WithCancel(context.Background())
-	store.RegisterExecution(executionArn, cancel)
-	s.asyncWg.Add(1)
-	go func() {
-		defer s.asyncWg.Done()
-		defer store.UnregisterExecution(executionArn)
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("sfn: panic in bus-triggered execution", logs.String("arn", executionArn), logs.Any("panic", r))
-				exec.Status = "FAILED"
-				exec.Error = "States.InternalError"
-				exec.StopDate = time.Now().UTC()
-				_ = store.UpdateExecution(context.Background(), exec)
-			}
-		}()
-		if err := executor.ExecuteStateMachine(execCtx, exec); err != nil {
-			logs.Error("sfn: bus-triggered execution failed", logs.String("arn", executionArn), logs.Err(err))
-		}
-	}()
-
-	logs.Debug("sfn: started execution from bus event",
-		logs.String("executionArn", executionArn),
-		logs.String("stateMachineArn", evt.StateMachineArn))
-
 	return eventbus.HandlerResult{}
 }
 
@@ -163,7 +113,6 @@ func (s *StepFunctionService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("states", "CreateStateMachine", s.CreateStateMachine)
 	d.RegisterHandlerForService("states", "DeleteStateMachine", s.DeleteStateMachine)
 	d.RegisterHandlerForService("states", "DescribeStateMachine", s.DescribeStateMachine)
-	d.RegisterHandlerForService("states", "GetStateMachine", s.GetStateMachine)
 	d.RegisterHandlerForService("states", "ListStateMachines", s.ListStateMachines)
 	d.RegisterHandlerForService("states", "UpdateStateMachine", s.UpdateStateMachine)
 
@@ -181,7 +130,6 @@ func (s *StepFunctionService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("states", "CreateActivity", s.CreateActivity)
 	d.RegisterHandlerForService("states", "DeleteActivity", s.DeleteActivity)
 	d.RegisterHandlerForService("states", "DescribeActivity", s.DescribeActivity)
-	d.RegisterHandlerForService("states", "GetActivity", s.GetActivity)
 	d.RegisterHandlerForService("states", "ListActivities", s.ListActivities)
 
 	d.RegisterHandlerForService("states", "GetActivityTask", s.GetActivityTask)
