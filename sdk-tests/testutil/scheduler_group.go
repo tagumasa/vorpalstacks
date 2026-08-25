@@ -399,5 +399,17 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 
 	defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
 
+	results = append(results, tc.runner.RunTest("scheduler", "ListScheduleGroups_MaxResultsOutOfRange", func() error {
+		for _, maxResults := range []int32{0, 101} {
+			_, err := tc.client.ListScheduleGroups(tc.ctx, &scheduler.ListScheduleGroupsInput{
+				MaxResults: aws.Int32(maxResults),
+			})
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("MaxResults=%d: %v", maxResults, err)
+			}
+		}
+		return nil
+	}))
+
 	return results
 }

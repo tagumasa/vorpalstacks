@@ -50,6 +50,80 @@ func TestValidateScheduleFields_NamePattern(t *testing.T) {
 	}
 }
 
+func TestValidateScheduleFields_TargetRoleArnPattern(t *testing.T) {
+	tests := []struct {
+		roleArn string
+		wantErr bool
+	}{
+		{"arn:aws:iam::123456789012:role/x", false},
+		{"arn:aws:iam::123456789012:role/path/x", false},
+		{"arn:aws-cn:iam::123456789012:role/x", false},
+		{"arn:aws:iam::123456789012:role/", true},           // empty role name
+		{"arn:aws:iam::12345678901:role/x", true},           // 11-digit account
+		{"arn:aws:iam::1234567890123:role/x", true},         // 13-digit account
+		{"arn:aws:iam::abc:role/x", true},                   // non-digit account
+		{"arn:aws:iam:us-east-1:123456789012:role/x", true}, // non-empty region
+		{"arn:awz:iam::123456789012:role/x", true},          // partition outside the aws family
+		{"arn:aws-us-gov:iam::123456789012:role/x", true},   // two dash segments: outside the model's partition alternation
+		{"arn:aws:lambda::123456789012:role/x", true},       // not the iam service
+		{"arn:aws:iam::123456789012:role/bad name", true},   // character outside [\w+=,.@/-]
+	}
+	for _, tt := range tests {
+		t.Run(tt.roleArn, func(t *testing.T) {
+			target := validTarget()
+			target.RoleArn = tt.roleArn
+			spec := &ScheduleSpec{
+				Name:               "valid-name",
+				ScheduleExpression: "rate(1 minute)",
+				Target:             target,
+				FlexibleTimeWindow: validFTW(),
+			}
+			_, err := validateScheduleFields(spec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateScheduleFields() RoleArn %q error = %v, wantErr %v", tt.roleArn, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateScheduleFields_TargetArnLength(t *testing.T) {
+	sqsPrefix := "arn:aws:sqs:us-east-1:123456789012:queue/"
+	maxArn := sqsPrefix + strings.Repeat("q", MaxTargetArnLength-len(sqsPrefix))
+	tooLongArn := sqsPrefix + strings.Repeat("q", MaxTargetArnLength-len(sqsPrefix)+1)
+	rolePrefix := "arn:aws:iam::123456789012:role/"
+	maxRole := rolePrefix + strings.Repeat("r", MaxTargetArnLength-len(rolePrefix))
+	tooLongRole := rolePrefix + strings.Repeat("r", MaxTargetArnLength-len(rolePrefix)+1)
+
+	tests := []struct {
+		name    string
+		arn     string
+		roleArn string
+		wantErr bool
+	}{
+		{"arn at maximum", maxArn, "arn:aws:iam::123456789012:role/x", false},
+		{"arn over maximum", tooLongArn, "arn:aws:iam::123456789012:role/x", true},
+		{"role arn at maximum", "arn:aws:sqs:us-east-1:123456789012:my-queue", maxRole, false},
+		{"role arn over maximum", "arn:aws:sqs:us-east-1:123456789012:my-queue", tooLongRole, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target := validTarget()
+			target.Arn = tt.arn
+			target.RoleArn = tt.roleArn
+			spec := &ScheduleSpec{
+				Name:               "valid-name",
+				ScheduleExpression: "rate(1 minute)",
+				Target:             target,
+				FlexibleTimeWindow: validFTW(),
+			}
+			_, err := validateScheduleFields(spec)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateScheduleFields() %s error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestValidateScheduleFields_CronFieldCount(t *testing.T) {
 	tests := []struct {
 		expr    string
@@ -378,18 +452,31 @@ func TestClientTokenStore_LookupOrClaim(t *testing.T) {
 		t.Fatalf("expected arn:schedule-1, got %s", entry1.ResourceArn)
 	}
 
-	// Second call with same token returns the existing entry.
-	entry2, created2 := store.LookupOrClaim("token-1", "arn:schedule-2", "schedule")
+	// A replay of the same request (same scope) returns the existing entry.
+	entry2, created2 := store.LookupOrClaim("token-1", "arn:schedule-1", "schedule")
 	if created2 {
-		t.Fatal("second call should NOT claim (token already exists)")
+		t.Fatal("replay of the same scope should NOT claim (token already exists)")
 	}
 	if entry2.ResourceArn != "arn:schedule-1" {
 		t.Fatalf("expected original arn:schedule-1, got %s", entry2.ResourceArn)
 	}
 
-	// Different token claims separately.
-	_, created3 := store.LookupOrClaim("token-2", "arn:schedule-3", "schedule")
+	// The same token on another resource is a different request and claims
+	// separately instead of replaying the first request's outcome.
+	_, created3 := store.LookupOrClaim("token-1", "arn:schedule-2", "schedule")
 	if !created3 {
+		t.Fatal("same token on another resource should claim")
+	}
+
+	// The same token under another operation is also a different request.
+	_, created4 := store.LookupOrClaim("token-1", "arn:schedule-1", "schedule-update")
+	if !created4 {
+		t.Fatal("same token under another operation should claim")
+	}
+
+	// Different token claims separately.
+	_, created5 := store.LookupOrClaim("token-2", "arn:schedule-3", "schedule")
+	if !created5 {
 		t.Fatal("different token should claim")
 	}
 }
@@ -401,10 +488,18 @@ func TestClientTokenStore_Release(t *testing.T) {
 	defer store.Stop()
 
 	store.LookupOrClaim("token-release", "arn:original", "schedule")
-	store.Release("token-release")
 
-	// After release, same token should claim again.
-	_, created := store.LookupOrClaim("token-release", "arn:new", "schedule")
+	// Releasing a different scope must not touch the original claim.
+	store.Release("token-release", "arn:other", "schedule")
+	_, stillHeld := store.LookupOrClaim("token-release", "arn:original", "schedule")
+	if stillHeld {
+		t.Fatal("original claim should still be held after a foreign-scope release")
+	}
+
+	store.Release("token-release", "arn:original", "schedule")
+
+	// After release, same scope should claim again.
+	_, created := store.LookupOrClaim("token-release", "arn:original", "schedule")
 	if !created {
 		t.Fatal("token should be claimable after Release")
 	}

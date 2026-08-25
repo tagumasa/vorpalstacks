@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"strconv"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -55,13 +54,9 @@ func (s *SchedulerService) GetScheduleGroup(ctx context.Context, reqCtx *request
 
 // ListScheduleGroups lists schedule groups in EventBridge Scheduler.
 func (s *SchedulerService) ListScheduleGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	var maxResults int32
-	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
-		parsed, err := strconv.Atoi(mr)
-		if err != nil {
-			return nil, ErrValidation
-		}
-		maxResults = int32(parsed)
+	maxResults, err := parseMaxResultsParam(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := s.listScheduleGroupsCore(ctx, reqCtx, &ListScheduleGroupsInput{

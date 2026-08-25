@@ -62,11 +62,12 @@ type ScheduleGroupSummary struct {
 	LastModificationDate *time.Time
 }
 
-// ListScheduleGroupsInput carries the ListScheduleGroups request. A zero
-// MaxResults means the parameter was absent and is defaulted by the Core.
+// ListScheduleGroupsInput carries the ListScheduleGroups request. MaxResults
+// is nil when the member was absent; the Core applies the default page size.
 type ListScheduleGroupsInput struct {
 	NamePrefix string
-	MaxResults int32
+	// MaxResults is nil when the member was absent from the request.
+	MaxResults *int32
 	NextToken  string
 }
 
@@ -97,11 +98,12 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 	group := &schedulerstore.ScheduleGroup{Name: in.Name}
 
 	tokenClaimed := false
+	var expectedArn string
 	if in.ClientToken != "" {
 		if err := validateClientToken(in.ClientToken); err != nil {
 			return nil, err
 		}
-		expectedArn := store.BuildScheduleGroupARN(in.Name)
+		expectedArn = store.BuildScheduleGroupARN(in.Name)
 		if entry, created := store.ClientTokens().LookupOrClaim(in.ClientToken, expectedArn, "schedule-group"); !created {
 			return &CreateScheduleGroupResult{ScheduleGroupArn: entry.ResourceArn}, nil
 		}
@@ -110,7 +112,7 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 
 	if err := store.CreateScheduleGroup(ctx, group); err != nil {
 		if tokenClaimed {
-			store.ClientTokens().Release(in.ClientToken)
+			store.ClientTokens().Release(in.ClientToken, expectedArn, "schedule-group")
 		}
 		if err == schedulerstore.ErrScheduleGroupAlreadyExists {
 			return nil, ErrScheduleGroupAlreadyExists
@@ -127,7 +129,7 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 				logs.String("arn", group.ARN),
 				logs.String("error", err.Error()))
 			if tokenClaimed {
-				store.ClientTokens().Release(in.ClientToken)
+				store.ClientTokens().Release(in.ClientToken, expectedArn, "schedule-group")
 			}
 			// Roll the group back: mark deleting and purge immediately
 			// (the group was just created and has no member schedules).
@@ -145,8 +147,10 @@ func (s *SchedulerService) createScheduleGroupCore(ctx context.Context, reqCtx *
 // remains in a DELETING state until all of its schedules are deleted); the
 // engine's sweep deletes the member schedules and then purges the group.
 func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, in *DeleteScheduleGroupInput) error {
-	if in.Name == "" {
-		return ErrValidation
+	// The ScheduleGroupName shape (pattern + length, which also rejects an
+	// empty name) is validated before any resource lookup.
+	if err := validateScheduleGroupName(in.Name); err != nil {
+		return err
 	}
 	// The default group cannot be deleted (User Guide: "You can't delete,
 	// or edit, the default group").
@@ -185,8 +189,10 @@ func (s *SchedulerService) deleteScheduleGroupCore(ctx context.Context, reqCtx *
 
 // getScheduleGroupCore validates and retrieves a schedule group.
 func (s *SchedulerService) getScheduleGroupCore(ctx context.Context, reqCtx *request.RequestContext, in *GetScheduleGroupInput) (*GetScheduleGroupResult, error) {
-	if in.Name == "" {
-		return nil, ErrValidation
+	// The ScheduleGroupName shape (pattern + length, which also rejects an
+	// empty name) is validated before any resource lookup.
+	if err := validateScheduleGroupName(in.Name); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -212,14 +218,19 @@ func (s *SchedulerService) getScheduleGroupCore(ctx context.Context, reqCtx *req
 	}, nil
 }
 
-// listScheduleGroupsCore validates the paging parameters and lists schedule
-// groups. A zero MaxResults is defaulted to the model's page default.
+// listScheduleGroupsCore validates the filter and paging parameters and
+// lists schedule groups. An absent MaxResults is defaulted to the model's
+// page default; an explicitly invalid value is rejected.
 func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, reqCtx *request.RequestContext, in *ListScheduleGroupsInput) (*ListScheduleGroupsResult, error) {
-	if in.MaxResults == 0 {
-		in.MaxResults = DefaultListMaxResults
+	maxResults, err := resolveListMaxResults(in.MaxResults)
+	if err != nil {
+		return nil, err
 	}
-	if in.MaxResults < 1 || in.MaxResults > MaxListMaxResults {
-		return nil, ErrValidation
+	if err := validateListNamePrefix(in.NamePrefix); err != nil {
+		return nil, err
+	}
+	if err := validateNextToken(in.NextToken); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -227,7 +238,7 @@ func (s *SchedulerService) listScheduleGroupsCore(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	result, err := store.ListScheduleGroups(ctx, in.NamePrefix, in.MaxResults, in.NextToken)
+	result, err := store.ListScheduleGroups(ctx, in.NamePrefix, maxResults, in.NextToken)
 	if err != nil {
 		logs.Debug("Failed to list schedule groups", logs.String("error", err.Error()))
 		return nil, ErrInternalServer

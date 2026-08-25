@@ -51,10 +51,21 @@ func GetServiceFromARN(arn string) string {
 }
 
 // IsValidRoleARN returns true if the ARN represents a valid IAM role.
+// Every IAM role ARN carries a 12-digit account ID (IAM is a global
+// service, so the account identifies the owner); an account that is not
+// twelve digits cannot identify a real role.
 func IsValidRoleARN(arn string) bool {
 	parsed, err := ParseARN(arn)
 	if err != nil {
 		return false
+	}
+	if len(parsed.AccountID) != 12 {
+		return false
+	}
+	for _, r := range parsed.AccountID {
+		if r < '0' || r > '9' {
+			return false
+		}
 	}
 	return parsed.Service == "iam" && parsed.RoleName != ""
 }

@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -39,19 +38,11 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	maxResults := req.Msg.GetMaxresults()
-	if maxResults <= 0 {
-		maxResults = 50
-	}
-	if maxResults > 100 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("max-results must be between 1 and 100"))
-	}
-
 	result, err := h.service.listSchedulesCore(ctx, store, &ListSchedulesInput{
 		GroupName:  req.Msg.Groupname,
 		NamePrefix: req.Msg.Nameprefix,
 		State:      req.Msg.State,
-		MaxResults: maxResults,
+		MaxResults: req.Msg.Maxresults,
 		NextToken:  req.Msg.Nexttoken,
 	})
 	if err != nil {
@@ -128,23 +119,14 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 
 // DeleteSchedule deletes a schedule via the admin console.
 func (h *AdminHandler) DeleteSchedule(ctx context.Context, req *connect.Request[pb.DeleteScheduleInput]) (*connect.Response[pb.DeleteScheduleOutput], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
-
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	groupName := req.Msg.Groupname
-	if groupName == "" {
-		groupName = "default"
-	}
-
 	if err := h.service.deleteScheduleCore(ctx, store, &DeleteScheduleInput{
 		Name:      req.Msg.Name,
-		GroupName: groupName,
+		GroupName: req.Msg.Groupname,
 	}); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

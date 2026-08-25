@@ -24,9 +24,10 @@ type ClientTokenEntry struct {
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
-// ClientTokenStore provides idempotency token deduplication for
-// CreateSchedule and CreateScheduleGroup operations. Entries are persisted
-// to Pebble so that idempotency survives server restarts.
+// ClientTokenStore provides idempotency token deduplication for the
+// schedule create, update and delete operations. Entries are keyed by the
+// operation, the resource ARN and the token, and persisted to Pebble so
+// that idempotency survives server restarts.
 type ClientTokenStore struct {
 	mu     sync.Mutex
 	store  *common.BaseStore
@@ -63,14 +64,23 @@ func (s *ClientTokenStore) loadExisting() {
 	})
 }
 
-// LookupOrClaim checks if a ClientToken already maps to a resource.
-// If found (and not expired), returns the existing entry and false.
-// If not found, claims the token and persists it to Pebble.
+// clientTokenKey scopes an idempotency claim to one operation on one
+// resource. A token reused by a different request (another operation, or
+// the same operation on another resource) claims a separate key instead of
+// replaying the first request's outcome.
+func clientTokenKey(resourceType, resourceArn, token string) string {
+	return tokenKeyPrefix + resourceType + ":" + resourceArn + ":" + token
+}
+
+// LookupOrClaim checks if a ClientToken already maps to a resource within
+// the same operation and resource scope. If found (and not expired), returns
+// the existing entry and false. If not found, claims the token and persists
+// it to Pebble.
 func (s *ClientTokenStore) LookupOrClaim(token, resourceArn, resourceType string) (*ClientTokenEntry, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	key := tokenKeyPrefix + token
+	key := clientTokenKey(resourceType, resourceArn, token)
 
 	// Check Pebble for existing entry.
 	data, err := s.store.GetRaw(key)
@@ -100,11 +110,12 @@ func (s *ClientTokenStore) LookupOrClaim(token, resourceArn, resourceType string
 }
 
 // Release removes a ClientToken entry from Pebble. Used to roll back a
-// claim when resource creation fails after the token was claimed.
-func (s *ClientTokenStore) Release(token string) {
+// claim when resource creation fails after the token was claimed. The scope
+// arguments must match the LookupOrClaim call that claimed the token.
+func (s *ClientTokenStore) Release(token, resourceArn, resourceType string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_ = s.store.Delete(tokenKeyPrefix + token)
+	_ = s.store.Delete(clientTokenKey(resourceType, resourceArn, token))
 }
 
 // cleanupLoop periodically removes expired entries from Pebble.

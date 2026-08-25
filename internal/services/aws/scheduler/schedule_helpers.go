@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
@@ -20,11 +22,26 @@ func parseTarget(params map[string]interface{}) (*schedulerstore.Target, error) 
 		return nil, ErrInvalidTarget
 	}
 
+	// Arn and RoleArn are required members of the Target shape; their
+	// absence is rejected by validateTarget in the Core validation path.
 	target := parseTargetFromMap(rawMap)
-	if target.Arn == "" || target.RoleArn == "" {
-		return nil, ErrInvalidTarget
-	}
 	return &target, nil
+}
+
+// parseMaxResultsParam reads an optional integer MaxResults member. It only
+// converts the wire text; the range check lives in the Core validation path
+// (resolveListMaxResults).
+func parseMaxResultsParam(params map[string]interface{}) (*int32, error) {
+	raw := request.GetStringParam(params, "MaxResults")
+	if raw == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.Atoi(raw)
+	if err != nil {
+		return nil, ErrValidation
+	}
+	v := int32(parsed)
+	return &v, nil
 }
 
 func coerceToMap(v interface{}) (map[string]interface{}, error) {

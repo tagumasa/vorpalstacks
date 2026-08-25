@@ -29,6 +29,11 @@ type UpdateScheduleInput struct {
 	Spec         *ScheduleSpec
 	Region       string
 	IAMValidator *iam.IAMValidator
+	// ClientToken preserves the wire member's idempotency semantics
+	// (@length(1,64), @pattern): an invalid token is rejected, and a
+	// replayed token returns the first application's ARN without
+	// re-applying the full-override mutation.
+	ClientToken string
 }
 
 // UpdateScheduleResult holds the output of a successful schedule update.
@@ -40,6 +45,11 @@ type UpdateScheduleResult struct {
 type DeleteScheduleInput struct {
 	Name      string
 	GroupName string
+	// ClientToken preserves the wire member's idempotency semantics
+	// (@length(1,64), @pattern): an invalid token is rejected, and a
+	// replayed token reports the deletion as already applied instead of
+	// surfacing not-found for the removed schedule.
+	ClientToken string
 }
 
 // GetScheduleInput is the transport-agnostic input for retrieving a schedule.
@@ -53,7 +63,9 @@ type ListSchedulesInput struct {
 	GroupName  string
 	NamePrefix string
 	State      string
-	MaxResults int32
+	// MaxResults is nil when the member was absent from the request; the
+	// Core applies the default page size in that case.
+	MaxResults *int32
 	NextToken  string
 }
 
@@ -61,6 +73,31 @@ type ListSchedulesInput struct {
 type ListSchedulesResult struct {
 	Schedules []schedulerstore.ScheduleSummary
 	NextToken string
+}
+
+// resolveScheduleGroup applies the documented default-group semantics:
+// "If you omit this value, EventBridge Scheduler assumes the group is
+// associated to the default group." (GroupName, UpdateSchedule API
+// reference), and validates the ScheduleGroupName shape.
+func resolveScheduleGroup(groupName string) (string, error) {
+	if groupName == "" {
+		return "default", nil
+	}
+	if err := validateScheduleGroupName(groupName); err != nil {
+		return "", err
+	}
+	return groupName, nil
+}
+
+// resolveScheduleIdentifier validates the schedule identifier pair: the
+// Name shape (@length(1,64), @pattern) plus the group resolution above.
+// Every read/update/delete path resolves through here so a malformed
+// identifier is a ValidationException, never a resource lookup.
+func resolveScheduleIdentifier(name, groupName string) (string, error) {
+	if name == "" || !namePattern.MatchString(name) {
+		return "", ErrValidation
+	}
+	return resolveScheduleGroup(groupName)
 }
 
 // createScheduleCore is the single entry point for schedule creation shared
@@ -89,18 +126,19 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 		return nil, err
 	}
 
-	groupName := in.Spec.GroupName
-	if groupName == "" {
-		groupName = "default"
+	groupName, err := resolveScheduleGroup(in.Spec.GroupName)
+	if err != nil {
+		return nil, err
 	}
 
 	clientToken := in.ClientToken
 	tokenClaimed := false
+	var expectedArn string
 	if clientToken != "" {
 		if err := validateClientToken(clientToken); err != nil {
 			return nil, err
 		}
-		expectedArn := store.BuildScheduleARN(groupName, in.Spec.Name)
+		expectedArn = store.BuildScheduleARN(groupName, in.Spec.Name)
 		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule"); !created {
 			return &CreateScheduleResult{ScheduleArn: entry.ResourceArn}, nil
 		}
@@ -110,7 +148,7 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 	if groupName != "default" {
 		if _, err := store.GetScheduleGroup(ctx, groupName); err != nil {
 			if tokenClaimed {
-				store.ClientTokens().Release(clientToken)
+				store.ClientTokens().Release(clientToken, expectedArn, "schedule")
 			}
 			if err == schedulerstore.ErrScheduleGroupNotFound {
 				return nil, ErrScheduleGroupNotFound
@@ -136,7 +174,7 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 
 	if err := store.CreateSchedule(ctx, schedule); err != nil {
 		if tokenClaimed {
-			store.ClientTokens().Release(clientToken)
+			store.ClientTokens().Release(clientToken, expectedArn, "schedule")
 		}
 		if err == schedulerstore.ErrScheduleAlreadyExists {
 			return nil, ErrScheduleAlreadyExists
@@ -151,9 +189,15 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 // by the HTTP API and the admin gRPC handler. UpdateSchedule is a PUT
 // operation: all fields from the request replace the existing values.
 func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *UpdateScheduleInput) (*UpdateScheduleResult, error) {
-	// Existence first so a missing schedule reports not-found ahead of any
-	// input validation, matching the historical error precedence.
-	if _, err := store.GetSchedule(ctx, in.Spec.GroupName, in.Spec.Name); err != nil {
+	// Malformed identifiers are ValidationException on AWS, so the pair is
+	// resolved and validated before the existence probe; for a well-formed
+	// identifier a missing schedule still reports not-found ahead of the
+	// remaining input validation (historical error precedence).
+	groupName, err := resolveScheduleIdentifier(in.Spec.Name, in.Spec.GroupName)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := store.GetSchedule(ctx, groupName, in.Spec.Name); err != nil {
 		if err == schedulerstore.ErrScheduleNotFound {
 			return nil, ErrScheduleNotFound
 		}
@@ -181,11 +225,29 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 		return nil, err
 	}
 
+	// The idempotency token is claimed only after every validation passes;
+	// a replay returns the first application's ARN without re-applying the
+	// full-override mutation (so a replay does not re-stamp the record's
+	// modification date).
+	clientToken := in.ClientToken
+	tokenClaimed := false
+	var expectedArn string
+	if clientToken != "" {
+		if err := validateClientToken(clientToken); err != nil {
+			return nil, err
+		}
+		expectedArn = store.BuildScheduleARN(groupName, in.Spec.Name)
+		if entry, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule-update"); !created {
+			return &UpdateScheduleResult{ScheduleArn: entry.ResourceArn}, nil
+		}
+		tokenClaimed = true
+	}
+
 	// The user's fields are applied through the store-level atomic mutation
 	// so a concurrent engine write (completion or firing markers) can never
 	// be lost to this update's read-modify-write cycle.
 	var scheduleARN string
-	err = store.MutateSchedule(ctx, in.Spec.GroupName, in.Spec.Name, func(existing *schedulerstore.Schedule) error {
+	err = store.MutateSchedule(ctx, groupName, in.Spec.Name, func(existing *schedulerstore.Schedule) error {
 		// Captured before the assignments: re-lifecycling a completed
 		// schedule and changing the expression both start a new firing
 		// lifecycle and must reset the delivered-boundary marker.
@@ -218,6 +280,9 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 		return nil
 	})
 	if err != nil {
+		if tokenClaimed {
+			store.ClientTokens().Release(clientToken, expectedArn, "schedule-update")
+		}
 		if err == schedulerstore.ErrScheduleNotFound {
 			return nil, ErrScheduleNotFound
 		}
@@ -229,7 +294,29 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 
 // deleteScheduleCore is the single entry point for schedule deletion.
 func (s *SchedulerService) deleteScheduleCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *DeleteScheduleInput) error {
-	if err := store.DeleteSchedule(ctx, in.GroupName, in.Name); err != nil {
+	groupName, err := resolveScheduleIdentifier(in.Name, in.GroupName)
+	if err != nil {
+		return err
+	}
+	// A replayed idempotency token reports the first deletion's outcome;
+	// an unrecoverable failure releases the claim so a retry re-executes.
+	clientToken := in.ClientToken
+	tokenClaimed := false
+	var expectedArn string
+	if clientToken != "" {
+		if err := validateClientToken(clientToken); err != nil {
+			return err
+		}
+		expectedArn = store.BuildScheduleARN(groupName, in.Name)
+		if _, created := store.ClientTokens().LookupOrClaim(clientToken, expectedArn, "schedule-delete"); !created {
+			return nil
+		}
+		tokenClaimed = true
+	}
+	if err := store.DeleteSchedule(ctx, groupName, in.Name); err != nil {
+		if tokenClaimed {
+			store.ClientTokens().Release(clientToken, expectedArn, "schedule-delete")
+		}
 		if err == schedulerstore.ErrScheduleNotFound {
 			return ErrScheduleNotFound
 		}
@@ -240,7 +327,11 @@ func (s *SchedulerService) deleteScheduleCore(ctx context.Context, store *schedu
 
 // getScheduleCore is the single entry point for retrieving a schedule.
 func (s *SchedulerService) getScheduleCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *GetScheduleInput) (*schedulerstore.Schedule, error) {
-	schedule, err := store.GetSchedule(ctx, in.GroupName, in.Name)
+	groupName, err := resolveScheduleIdentifier(in.Name, in.GroupName)
+	if err != nil {
+		return nil, err
+	}
+	schedule, err := store.GetSchedule(ctx, groupName, in.Name)
 	if err != nil {
 		if err == schedulerstore.ErrScheduleNotFound {
 			return nil, ErrScheduleNotFound
@@ -252,7 +343,36 @@ func (s *SchedulerService) getScheduleCore(ctx context.Context, store *scheduler
 
 // listSchedulesCore is the single entry point for listing schedules.
 func (s *SchedulerService) listSchedulesCore(ctx context.Context, store *schedulerstore.SchedulerStore, in *ListSchedulesInput) (*ListSchedulesResult, error) {
-	result, err := store.ListSchedules(ctx, in.GroupName, in.NamePrefix, schedulerstore.ScheduleState(in.State), in.MaxResults, in.NextToken)
+	if err := validateListStateFilter(in.State); err != nil {
+		return nil, err
+	}
+	if err := validateListNamePrefix(in.NamePrefix); err != nil {
+		return nil, err
+	}
+	if err := validateNextToken(in.NextToken); err != nil {
+		return nil, err
+	}
+	maxResults, err := resolveListMaxResults(in.MaxResults)
+	if err != nil {
+		return nil, err
+	}
+	// A scoped listing must reference an existing group: the model defines
+	// ResourceNotFoundException on ListSchedules — the group-filtered
+	// operation — while the unfiltered ListScheduleGroups defines no such
+	// error, so the group filter is the resource this operation references.
+	if in.GroupName != "" {
+		if err := validateScheduleGroupName(in.GroupName); err != nil {
+			return nil, err
+		}
+		if _, err := store.GetScheduleGroup(ctx, in.GroupName); err != nil {
+			if err == schedulerstore.ErrScheduleGroupNotFound {
+				return nil, ErrScheduleGroupNotFound
+			}
+			return nil, ErrInternalServer
+		}
+	}
+
+	result, err := store.ListSchedules(ctx, in.GroupName, in.NamePrefix, schedulerstore.ScheduleState(in.State), maxResults, in.NextToken)
 	if err != nil {
 		return nil, ErrInternalServer
 	}

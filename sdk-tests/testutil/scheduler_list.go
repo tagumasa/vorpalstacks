@@ -194,5 +194,37 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_NonExistentGroup", func() error {
+		_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+			GroupName: aws.String("no-such-group-xyz"),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_MaxResultsOutOfRange", func() error {
+		for _, maxResults := range []int32{0, 101} {
+			_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+				MaxResults: aws.Int32(maxResults),
+			})
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("MaxResults=%d: %v", maxResults, err)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_InvalidStateFilter", func() error {
+		_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+			State: types.ScheduleState("BOGUS"),
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	return results
 }

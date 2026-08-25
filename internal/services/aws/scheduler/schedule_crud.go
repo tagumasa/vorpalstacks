@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"strconv"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -10,22 +9,19 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string, err error) {
+// getScheduleNameAndGroup extracts the raw identifier pair from the wire.
+// Required-member rejection, the Name/GroupName patterns, and the
+// default-group resolution live in the Core (resolveScheduleIdentifier).
+func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string) {
 	name = request.GetStringParam(params, "Name")
 	if name == "" {
 		name = request.GetStringParam(params, "name")
-	}
-	if name == "" {
-		return "", "", ErrValidation
 	}
 	groupName = request.GetStringParam(params, "GroupName")
 	if groupName == "" {
 		groupName = request.GetStringParam(params, "groupName")
 	}
-	if groupName == "" {
-		groupName = "default"
-	}
-	return name, groupName, nil
+	return name, groupName
 }
 
 // getListGroupName extracts the GroupName filter for ListSchedules. An
@@ -93,9 +89,10 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 
 // DeleteSchedule deletes a schedule from EventBridge Scheduler.
 func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
-	if err != nil {
-		return nil, err
+	name, groupName := getScheduleNameAndGroup(req.Parameters)
+	clientToken := request.GetStringParam(req.Parameters, "ClientToken")
+	if clientToken == "" {
+		clientToken = request.GetStringParam(req.Parameters, "clientToken")
 	}
 
 	store, err := s.store(reqCtx)
@@ -104,8 +101,9 @@ func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.R
 	}
 
 	if err := s.deleteScheduleCore(ctx, store, &DeleteScheduleInput{
-		Name:      name,
-		GroupName: groupName,
+		Name:        name,
+		GroupName:   groupName,
+		ClientToken: clientToken,
 	}); err != nil {
 		return nil, err
 	}
@@ -115,10 +113,7 @@ func (s *SchedulerService) DeleteSchedule(ctx context.Context, reqCtx *request.R
 
 // GetSchedule retrieves a schedule from EventBridge Scheduler.
 func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
+	name, groupName := getScheduleNameAndGroup(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -138,10 +133,7 @@ func (s *SchedulerService) GetSchedule(ctx context.Context, reqCtx *request.Requ
 
 // UpdateSchedule updates an existing schedule in EventBridge Scheduler.
 func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name, groupName, err := getScheduleNameAndGroup(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
+	name, groupName := getScheduleNameAndGroup(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -177,6 +169,7 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 		Spec:         spec,
 		Region:       reqCtx.GetRegion(),
 		IAMValidator: reqCtx.GetIAMValidator(),
+		ClientToken:  request.GetStringParam(req.Parameters, "ClientToken"),
 	})
 	if err != nil {
 		return nil, err
@@ -193,16 +186,9 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
 	stateFilter := request.GetStringParam(req.Parameters, "State")
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := int32(DefaultListMaxResults)
-	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
-		parsed, err := strconv.Atoi(mr)
-		if err != nil {
-			return nil, ErrValidation
-		}
-		if parsed < 1 || parsed > MaxListMaxResults {
-			return nil, ErrValidation
-		}
-		maxResults = int32(parsed)
+	maxResults, err := parseMaxResultsParam(req.Parameters)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)

@@ -42,6 +42,13 @@ const (
 	// MaxResults @range(1, 100) on both list operations.
 	DefaultListMaxResults = 100
 	MaxListMaxResults     = 100
+	// NextToken @length(1, 2048) on both list operations.
+	maxNextTokenLength = 2048
+	// Target.Input documented maximum: "The maximum size of the Input
+	// field is 256 KB." (Target, AWS API reference).
+	MaxTargetInputBytes = 256 * 1024
+	// Target.Arn / Target.RoleArn @length(1, 1600).
+	MaxTargetArnLength = 1600
 	// TaskCount @range(1, 10).
 	MaxEcsTaskCount = 10
 	// CapacityProviderStrategy @length(max 6).
@@ -177,6 +184,12 @@ var (
 	sourceJSONPathRe  = regexp.MustCompile(`^\$(\.[\w_-]+(\[(\d+|\*)\])*)*$`)
 )
 
+// Target.RoleArn @pattern from the service model, applied verbatim: an IAM
+// role ARN (service iam, role/ resource) in the aws partition family, with
+// an empty region, a 12-digit account, and a non-empty role path/name
+// limited to [\w+=,.@/-].
+var targetRoleArnPattern = regexp.MustCompile(`^arn:aws(-[a-z]+)?:iam::\d{12}:role/[\w+=,.@/-]+$`)
+
 // ScheduleSpec is the common input structure for schedule creation and
 // update, used by both the HTTP API and the admin console to guarantee
 // identical validation through the shared validation layer.
@@ -216,6 +229,57 @@ func validateClientToken(token string) error {
 			(c >= '0' && c <= '9') || c == '-' || c == '_') {
 			return awserrors.NewValidationException("ClientToken contains invalid characters; allowed: alphanumeric, hyphen, underscore")
 		}
+	}
+	return nil
+}
+
+// validateScheduleGroupName checks the ScheduleGroupName shape constraints
+// (@length(1,64), @pattern ^[0-9a-zA-Z-_.]+$). The charset and bounds equal
+// the Name shape's, so the single namePattern definition serves both.
+func validateScheduleGroupName(name string) error {
+	if !namePattern.MatchString(name) {
+		return ErrValidation
+	}
+	return nil
+}
+
+// resolveListMaxResults applies MaxResults @range(1,100); a nil value means
+// the member was absent and takes the default page size. The pointer form
+// keeps an explicitly-passed zero distinguishable from an omitted member.
+func resolveListMaxResults(maxResults *int32) (int32, error) {
+	if maxResults == nil {
+		return DefaultListMaxResults, nil
+	}
+	if *maxResults < 1 || *maxResults > MaxListMaxResults {
+		return 0, ErrValidation
+	}
+	return *maxResults, nil
+}
+
+// validateListStateFilter checks the ListSchedules State filter enum
+// (ENABLED | DISABLED); an empty value means no filtering.
+func validateListStateFilter(state string) error {
+	if state != "" && state != "ENABLED" && state != "DISABLED" {
+		return ErrValidation
+	}
+	return nil
+}
+
+// validateListNamePrefix checks the NamePrefix / ScheduleGroupNamePrefix
+// shape constraints (@length(1,64), @pattern ^[0-9a-zA-Z-_.]+$); an empty
+// value means no filtering.
+func validateListNamePrefix(prefix string) error {
+	if prefix != "" && !namePattern.MatchString(prefix) {
+		return ErrValidation
+	}
+	return nil
+}
+
+// validateNextToken checks the NextToken @length(1,2048) bound; an empty
+// value simply starts a new traversal.
+func validateNextToken(token string) error {
+	if len(token) > maxNextTokenLength {
+		return ErrValidation
 	}
 	return nil
 }
@@ -344,6 +408,12 @@ func validateTarget(target *schedulerstore.Target) error {
 	if err != nil {
 		return ErrInvalidTarget
 	}
+	// Target.Arn @length(1, 1600); the minimum is covered by the empty
+	// check above.
+	if len(target.Arn) > MaxTargetArnLength {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"Target.Arn must be at most %d characters", MaxTargetArnLength))
+	}
 
 	// Reject targets pointing to services we cannot deliver to.
 	if err := validateTargetService(parsedArn.Service); err != nil {
@@ -353,8 +423,24 @@ func validateTarget(target *schedulerstore.Target) error {
 	if target.RoleArn == "" {
 		return ErrInvalidTarget
 	}
-	if _, err := svcarn.ParseARN(target.RoleArn); err != nil {
+	// RoleArn must satisfy the RoleArn @pattern (see targetRoleArnPattern):
+	// a full IAM role ARN, not merely an iam-service ARN with a role/
+	// resource prefix.
+	if !targetRoleArnPattern.MatchString(target.RoleArn) {
 		return ErrInvalidTarget
+	}
+	// RoleArn @length(1, 1600), shared with Target.Arn.
+	if len(target.RoleArn) > MaxTargetArnLength {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"Target.RoleArn must be at most %d characters", MaxTargetArnLength))
+	}
+
+	// Target.Input carries a documented 256 KB maximum; the shape's
+	// @length(min 1) is not enforceable here because the DTO string cannot
+	// distinguish an omitted member from an explicitly empty one.
+	if len(target.Input) > MaxTargetInputBytes {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"Target.Input must be at most %d bytes", MaxTargetInputBytes))
 	}
 
 	// DeadLetterConfig ARN must be SQS only (AWS spec).

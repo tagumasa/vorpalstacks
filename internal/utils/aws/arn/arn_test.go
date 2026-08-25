@@ -289,6 +289,21 @@ func TestIsValidRoleARN(t *testing.T) {
 			arn:  "not-an-arn",
 			want: false,
 		},
+		{
+			name: "invalid - 11-digit account",
+			arn:  "arn:aws:iam::12345678901:role/MyRole",
+			want: false,
+		},
+		{
+			name: "invalid - non-digit account",
+			arn:  "arn:aws:iam::abc:role/MyRole",
+			want: false,
+		},
+		{
+			name: "invalid - empty account",
+			arn:  "arn:aws:iam:::role/MyRole",
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
