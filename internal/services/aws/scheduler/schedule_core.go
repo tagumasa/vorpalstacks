@@ -85,6 +85,10 @@ func (s *SchedulerService) createScheduleCore(ctx context.Context, store *schedu
 		return nil, err
 	}
 
+	if err := s.validateKmsKey(ctx, in.Region, in.Spec.KmsKeyArn); err != nil {
+		return nil, err
+	}
+
 	groupName := in.Spec.GroupName
 	if groupName == "" {
 		groupName = "default"
@@ -170,6 +174,10 @@ func (s *SchedulerService) updateScheduleCore(ctx context.Context, store *schedu
 	}
 
 	if err := s.validateVpcConfig(ctx, in.Region, target); err != nil {
+		return nil, err
+	}
+
+	if err := s.validateKmsKey(ctx, in.Region, in.Spec.KmsKeyArn); err != nil {
 		return nil, err
 	}
 

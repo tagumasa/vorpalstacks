@@ -21,7 +21,14 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx co
 			qe.Status.CompletionDateTime = time.Now().UTC()
 			st, _ := s.store(reqCtx)
 			if st != nil {
-				_ = st.queryExecutionStore.UpdateQueryExecution(qe)
+				// The panic may strike while the execution is still QUEUED
+				// or already RUNNING; either way a terminal state recorded
+				// in between (a stop request) must survive.
+				if _, err := st.queryExecutionStore.CompleteQueryExecution(qe,
+					athenastore.QueryExecutionStateRunning, athenastore.QueryExecutionStateQueued); err != nil {
+					logs.Error("Failed to record query execution failure after panic",
+						logs.String("id", qe.QueryExecutionId), logs.Err(err))
+				}
 			}
 		}
 	}()
@@ -45,28 +52,33 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx co
 		logs.Error("Failed to get store in executeQueryAsync", logs.Err(err))
 		return
 	}
-	// Check if StopQueryExecution already cancelled the query while it
-	// was in QUEUED state (before this goroutine reached RUNNING).
-	current, err := st.queryExecutionStore.GetQueryExecution(qe.QueryExecutionId)
+	// Transition QUEUED -> RUNNING atomically: if StopQueryExecution
+	// already cancelled the query, the transition fails and the worker
+	// must not overwrite the cancelled state with RUNNING.
+	_, transitioned, err := st.queryExecutionStore.TransitionQueryExecutionState(
+		qe.QueryExecutionId, athenastore.QueryExecutionStateRunning, athenastore.QueryExecutionStateQueued)
 	if err != nil {
-		logs.Error("Failed to re-read query execution before RUNNING transition", logs.String("id", qe.QueryExecutionId), logs.Err(err))
-	} else if current.Status.State == athenastore.QueryExecutionStateCancelled {
+		logs.Error("Failed to transition query execution to RUNNING", logs.String("id", qe.QueryExecutionId), logs.Err(err))
 		return
 	}
-
+	if !transitioned {
+		// Cancelled (or otherwise finished) while queued; the caller's
+		// cancel request already decided the final state.
+		return
+	}
 	qe.Status.State = athenastore.QueryExecutionStateRunning
 	qe.Status.StateChangeReason = ""
-	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
-		logs.Error("Failed to update query execution to RUNNING", logs.String("id", qe.QueryExecutionId), logs.Err(err))
-	}
 
 	if strings.Contains(qe.Query, "/* SLOW */") {
 		select {
 		case <-ctx.Done():
 			qe.Status.State = athenastore.QueryExecutionStateCancelled
 			qe.Status.CompletionDateTime = time.Now().UTC()
-			if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+			completed, err := st.queryExecutionStore.CompleteQueryExecution(qe, athenastore.QueryExecutionStateRunning)
+			if err != nil {
 				logs.Error("Failed to update query execution to CANCELLED", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+			} else if !completed {
+				logs.Debug("Query execution terminal state already recorded", logs.String("id", qe.QueryExecutionId))
 			}
 			return
 		case <-time.After(200 * time.Millisecond):
@@ -82,8 +94,11 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx co
 			TotalExecutionTimeInMillis: time.Since(startTime).Milliseconds(),
 			ResultReuseInformation:     &athenastore.ResultReuseInformation{ReusedPreviousResult: false},
 		}
-		if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+		completed, err := st.queryExecutionStore.CompleteQueryExecution(qe, athenastore.QueryExecutionStateRunning)
+		if err != nil {
 			logs.Error("Failed to update query execution to CANCELLED after context cancellation", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+		} else if !completed {
+			logs.Debug("Query execution terminal state already recorded", logs.String("id", qe.QueryExecutionId))
 		}
 		return
 	}
@@ -149,8 +164,14 @@ func (s *AthenaService) executeQueryAsync(reqCtx *request.RequestContext, ctx co
 		ResultReuseInformation:        &athenastore.ResultReuseInformation{ReusedPreviousResult: false},
 	}
 
-	if err := st.queryExecutionStore.UpdateQueryExecution(qe); err != nil {
+	completed, err := st.queryExecutionStore.CompleteQueryExecution(qe, athenastore.QueryExecutionStateRunning)
+	if err != nil {
 		logs.Error("Failed to update query execution final state", logs.String("id", qe.QueryExecutionId), logs.Err(err))
+	} else if !completed {
+		// A stop request recorded CANCELLED while the query was finishing;
+		// the caller already observed the cancellation, so the worker's
+		// terminal state is dropped.
+		logs.Debug("Query execution terminal state already recorded", logs.String("id", qe.QueryExecutionId))
 	}
 }
 

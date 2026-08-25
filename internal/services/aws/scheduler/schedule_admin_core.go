@@ -62,7 +62,10 @@ func (s *SchedulerService) createScheduleFromAdmin(ctx context.Context, store *s
 // protoFTWToStore converts a protobuf FlexibleTimeWindow to the store type.
 func protoFTWToStore(pbFTW *pb.FlexibleTimeWindow) *schedulerstore.FlexibleTimeWindow {
 	if pbFTW == nil {
-		return &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
+		// FlexibleTimeWindow is a required member; nil flows through so
+		// validateScheduleFields rejects the request instead of silently
+		// defaulting the Mode.
+		return nil
 	}
 	ftw := &schedulerstore.FlexibleTimeWindow{
 		Mode: schedulerstore.FlexibleTimeWindowMode(pbFTW.Mode),

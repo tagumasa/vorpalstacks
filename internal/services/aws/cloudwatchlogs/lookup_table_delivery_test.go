@@ -62,6 +62,10 @@ func (f *fakeKMSInvoker) KeyExists(_ context.Context, keyID string) bool {
 	return f.keys[keyID]
 }
 
+func (f *fakeKMSInvoker) SymmetricEncryptionKeyExists(ctx context.Context, keyID string) bool {
+	return f.KeyExists(ctx, keyID)
+}
+
 func newDeliveryTestService(keyIDs ...string) *LogsService {
 	return &LogsService{accountID: "000000000000", kms: newFakeKMSInvoker(keyIDs...)}
 }

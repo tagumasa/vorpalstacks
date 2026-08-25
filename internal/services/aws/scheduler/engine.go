@@ -159,16 +159,9 @@ func (e *Engine) ensureDefaultGroups() {
 
 	regions := e.storageManager.GetActiveRegions()
 	for _, region := range regions {
-		storage, err := e.storageManager.GetStorage(region)
-		if err != nil {
-			logs.Debug("Failed to get storage for region",
-				logs.String("region", region),
-				logs.String("error", err.Error()))
+		store := e.storeForRegion(region)
+		if store == nil {
 			continue
-		}
-		store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
-		if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
-			store = actual.(*schedulerstore.SchedulerStore)
 		}
 		if err := store.EnsureDefaultGroup(e.ctx); err != nil {
 			logs.Warn("Failed to ensure default schedule group",
@@ -208,20 +201,17 @@ func (e *Engine) checkSchedules() {
 	allActiveKeys := make(map[string]bool)
 
 	for _, region := range regions {
-		storage, err := e.storageManager.GetStorage(region)
-		if err != nil {
-			logs.Debug("Failed to get storage for region", logs.String("region", region), logs.String("error", err.Error()))
+		store := e.storeForRegion(region)
+		if store == nil {
 			continue
-		}
-		store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
-		if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
-			store = actual.(*schedulerstore.SchedulerStore)
 		}
 		schedules, err := store.GetAllEnabledSchedules(e.ctx)
 		if err != nil {
 			logs.Debug("Failed to get enabled schedules", logs.String("region", region), logs.String("error", err.Error()))
 			continue
 		}
+
+		e.processDeletingGroups(e.ctx, store)
 
 		now := time.Now().UTC()
 
@@ -326,7 +316,7 @@ func (e *Engine) dueBoundary(schedule *schedulerstore.Schedule, now time.Time) (
 		}
 	}
 
-	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(schedule.ScheduleExpression, nowLocal, schedule.CreationDate, schedule.StartDate)
+	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(schedule.ScheduleExpression, nowLocal, schedule.CreationDate, schedule.StartDate, scheduleexpr.RateFiresAtAnchor)
 	if !elapsed {
 		return time.Time{}, false
 	}
@@ -373,6 +363,31 @@ func (e *Engine) dueBoundary(schedule *schedulerstore.Schedule, now time.Time) (
 	// the pending boundary once instead of silently skipping it, and the
 	// dedup checks above cap each boundary at one fire.
 	return boundary, true
+}
+
+// processDeletingGroups completes the cascade deletion of schedule groups
+// in the DELETING state: delete all member schedules, then purge the group
+// record and its tags. A failure retries on the next sweep, which makes the
+// cascade restart-safe.
+func (e *Engine) processDeletingGroups(ctx context.Context, store *schedulerstore.SchedulerStore) {
+	groups, err := store.ListDeletingScheduleGroups(ctx)
+	if err != nil {
+		logs.Debug("Failed to list deleting schedule groups", logs.String("error", err.Error()))
+		return
+	}
+	for _, group := range groups {
+		if err := store.DeleteSchedulesInGroup(ctx, group.Name); err != nil {
+			logs.Warn("Failed to delete schedules in deleting group, will retry",
+				logs.String("group", group.Name),
+				logs.Err(err))
+			continue
+		}
+		if err := store.PurgeDeletedScheduleGroup(ctx, group.Name); err != nil {
+			logs.Warn("Failed to purge deleting schedule group, will retry",
+				logs.String("group", group.Name),
+				logs.Err(err))
+		}
+	}
 }
 
 // shouldExecute reports whether the schedule should fire at this evaluation.
@@ -459,15 +474,30 @@ func (e *Engine) getStoreForSchedule(schedule *schedulerstore.Schedule) *schedul
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
+	return e.storeForRegion(region)
+}
+
+// storeForRegion returns the cached per-region SchedulerStore, creating it
+// on first use. The losing instance of a creation race is closed: every
+// SchedulerStore starts a ClientTokenStore cleanup goroutine that would
+// otherwise leak.
+func (e *Engine) storeForRegion(region string) *schedulerstore.SchedulerStore {
+	if e.storageManager == nil {
+		return nil
+	}
 	if cached, ok := e.stores.Load(region); ok {
 		return cached.(*schedulerstore.SchedulerStore)
 	}
 	storage, err := e.storageManager.GetStorage(region)
 	if err != nil {
+		logs.Debug("Failed to get storage for region",
+			logs.String("region", region),
+			logs.String("error", err.Error()))
 		return nil
 	}
 	store := schedulerstore.NewSchedulerStore(storage, e.accountID, region)
 	if actual, loaded := e.stores.LoadOrStore(region, store); loaded {
+		store.Close()
 		return actual.(*schedulerstore.SchedulerStore)
 	}
 	return store
@@ -585,8 +615,6 @@ func (e *Engine) deliverToTarget(ctx context.Context, schedule *schedulerstore.S
 		return e.startStepFunctionExecution(ctx, schedule, target)
 	case "events":
 		return e.sendToEventBridge(ctx, schedule, target)
-	case "logs":
-		return e.sendToCloudWatchLogs(ctx, schedule, target)
 	case "ecs":
 		// ECS is an AWS templated target. The ECS service is not yet
 		// available on this platform, so delivery fails and the schedule
@@ -608,17 +636,17 @@ func (e *Engine) deliverToTarget(ctx context.Context, schedule *schedulerstore.S
 }
 
 // retryDefaults returns the effective MaximumRetryAttempts and
-// MaximumEventAgeInSeconds for a target, applying AWS defaults when the
-// RetryPolicy is nil or individual fields are unset.
-// Defaults: 185 retries, 86400 seconds (24 hours).
+// MaximumEventAgeInSeconds for a target, applying the model's maximum
+// values as defaults when the RetryPolicy is nil or individual fields are
+// unset.
 func retryDefaults(target *schedulerstore.Target) (maxRetries int, maxAgeSeconds int) {
-	maxRetries = 185
-	maxAgeSeconds = 86400
+	maxRetries = MaxRetryPolicyAttempts
+	maxAgeSeconds = MaxRetryPolicyEventAgeSeconds
 	if target.RetryPolicy != nil {
 		if target.RetryPolicy.MaximumRetryAttempts != nil && *target.RetryPolicy.MaximumRetryAttempts >= 0 {
 			maxRetries = *target.RetryPolicy.MaximumRetryAttempts
 		}
-		if target.RetryPolicy.MaximumEventAgeInSeconds != nil && *target.RetryPolicy.MaximumEventAgeInSeconds >= 60 {
+		if target.RetryPolicy.MaximumEventAgeInSeconds != nil && *target.RetryPolicy.MaximumEventAgeInSeconds >= MinRetryPolicyEventAgeSeconds {
 			maxAgeSeconds = *target.RetryPolicy.MaximumEventAgeInSeconds
 		}
 	}
@@ -903,6 +931,17 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 	}
 
 	dlqArn := target.DeadLetterConfig.Arn
+
+	// The bus-less direct-delivery path cannot reach the SQS invoker
+	// either; without this guard the invoker lookup below would
+	// dereference a nil bus.
+	if e.bus == nil {
+		logs.Error("Scheduler engine has no event bus for DLQ delivery",
+			logs.String("schedule", schedule.Name),
+			logs.String("dlqArn", dlqArn))
+		return
+	}
+
 	message := scheduleInput(target, schedule.Name)
 
 	logs.Warn("Routing failed schedule delivery to DLQ",
@@ -1080,55 +1119,6 @@ func (e *Engine) publishToSNS(ctx context.Context, schedule *schedulerstore.Sche
 	return nil
 }
 
-func (e *Engine) sendToCloudWatchLogs(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) error {
-	if e.bus == nil {
-		logs.Debug("event bus not configured, skipping CloudWatch Logs delivery",
-			logs.String("schedule", schedule.Name))
-		return fmt.Errorf("event bus not configured")
-	}
-
-	logGroup := svcarn.ExtractLogGroupNameFromARN(target.Arn)
-	if logGroup == "" {
-		logs.Debug("Failed to extract log group from CloudWatch Logs ARN",
-			logs.String("schedule", schedule.Name),
-			logs.String("arn", target.Arn))
-		return fmt.Errorf("invalid CloudWatch Logs ARN: %s", target.Arn)
-	}
-
-	_, _, region, _, resource := svcarn.SplitARN(target.Arn)
-	var logStream string
-	if idx := strings.LastIndex(resource, ":log-stream:"); idx != -1 {
-		logStream = resource[idx+12:]
-	} else {
-		logStream = fmt.Sprintf("scheduler-%s", schedule.Name)
-	}
-
-	message := scheduleInput(target, schedule.Name)
-
-	evt := &eventbus.CloudWatchLogsPutEvent{
-		LogGroup:  logGroup,
-		LogStream: logStream,
-		LogEvents: []eventbus.LogEntry{
-			{Timestamp: time.Now().UnixMilli(), Message: message},
-		},
-	}
-	evt.Region = region
-	evt.AccountID = e.accountID
-
-	if err := e.bus.Publish(ctx, evt); err != nil {
-		logs.Debug("Failed to deliver schedule to CloudWatch Logs",
-			logs.String("schedule", schedule.Name),
-			logs.String("logGroup", logGroup),
-			logs.String("error", err.Error()))
-		return err
-	}
-
-	logs.Debug("Schedule delivered to CloudWatch Logs",
-		logs.String("schedule", schedule.Name),
-		logs.String("logGroup", logGroup))
-	return nil
-}
-
 func (e *Engine) sendToKinesis(ctx context.Context, schedule *schedulerstore.Schedule, target *schedulerstore.Target) error {
 	if e.bus == nil {
 		logs.Debug("event bus not configured for Kinesis delivery", logs.String("schedule", schedule.Name))
@@ -1209,7 +1199,16 @@ func (e *Engine) startStepFunctionExecution(ctx context.Context, schedule *sched
 	evt.Region = smRegion
 	evt.AccountID = e.accountID
 
-	if err := e.bus.Publish(ctx, evt); err != nil {
+	// PublishSync so the execution-start failure propagates back and the
+	// schedule's retry policy and dead-letter routing apply to it, exactly
+	// as they already do for the invoker-based deliveries. The bus
+	// contract reports a handler failure in HandlerResult.Error with a
+	// nil error, so both must be folded into the returned error.
+	result, err := e.bus.PublishSync(ctx, evt)
+	if err == nil {
+		err = result.Error
+	}
+	if err != nil {
 		logs.Debug("Failed to start Step Functions execution from schedule",
 			logs.String("schedule", schedule.Name),
 			logs.String("stateMachineArn", target.Arn),
@@ -1255,7 +1254,16 @@ func (e *Engine) sendToEventBridge(ctx context.Context, schedule *schedulerstore
 	evt.Region = ebRegion
 	evt.AccountID = e.accountID
 
-	if err := e.bus.Publish(ctx, evt); err != nil {
+	// PublishSync so the PutEvents failure propagates back and the
+	// schedule's retry policy and dead-letter routing apply to it, exactly
+	// as they already do for the invoker-based deliveries. The bus
+	// contract reports a handler failure in HandlerResult.Error with a
+	// nil error, so both must be folded into the returned error.
+	result, err := e.bus.PublishSync(ctx, evt)
+	if err == nil {
+		err = result.Error
+	}
+	if err != nil {
 		logs.Debug("Failed to deliver schedule to EventBridge",
 			logs.String("schedule", schedule.Name),
 			logs.String("eventBus", eventBusName),

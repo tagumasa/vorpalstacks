@@ -9,6 +9,7 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/scheduleexpr"
+	tagutil "vorpalstacks/internal/common/tags"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -22,6 +23,50 @@ const (
 	maxPlatformVersionLength  = 64  // PlatformVersion
 	maxEcsGroupLength         = 255 // Group
 	maxReferenceIdLength      = 1024
+)
+
+// AWS specification limit values shared by the validators, the engine, and
+// the operation handlers. Each value is declared exactly once here and every
+// other site references these names; the Smithy shape carrying the trait is
+// noted per constant.
+const (
+	// RetryPolicy.MaximumEventAgeInSeconds @range(60, 86400).
+	MinRetryPolicyEventAgeSeconds = 60
+	MaxRetryPolicyEventAgeSeconds = 86400
+	// RetryPolicy.MaximumRetryAttempts @range(0, 185).
+	MaxRetryPolicyAttempts = 185
+	// FlexibleTimeWindow.MaximumWindowInMinutes @range(1, 1440).
+	MaxFlexibleWindowMinutes = 1440
+	// TagList @length(0, 200): tags per schedule group.
+	MaxTagsPerResource = 200
+	// MaxResults @range(1, 100) on both list operations.
+	DefaultListMaxResults = 100
+	MaxListMaxResults     = 100
+	// TaskCount @range(1, 10).
+	MaxEcsTaskCount = 10
+	// CapacityProviderStrategy @length(max 6).
+	MaxCapacityProviderStrategyItems = 6
+	// PlacementConstraints @length(max 10).
+	MaxPlacementConstraintItems = 10
+	// PlacementStrategies @length(max 5).
+	MaxPlacementStrategyItems = 5
+	// CapacityProvider @length(1, 255).
+	MinCapacityProviderLength   = 1
+	MaxCapacityProviderLength   = 255
+	MaxCapacityProviderWeight   = 1000   // CapacityProviderStrategyItemWeight @range(0, 1000)
+	MaxCapacityProviderBase     = 100000 // CapacityProviderStrategyItemBase @range(0, 100000)
+	MinSubnetsPerTask           = 1      // Subnets @length(1, 16)
+	MaxSubnetsPerTask           = 16
+	MinSecurityGroupsPerTask    = 1 // SecurityGroups @length(1, 5)
+	MaxSecurityGroupsPerTask    = 5
+	MaxSubnetIdLength           = 1000 // Subnet @length(1, 1000)
+	MaxSecurityGroupIdLength    = 1000 // SecurityGroup @length(1, 1000)
+	MaxMessageGroupIdLength     = 128  // MessageGroupId @length(1, 128)
+	MaxDetailTypeLength         = 128  // DetailType @length(1, 128)
+	MaxSourceLength             = 256  // Source @length(1, 256)
+	MaxTargetPartitionKeyLength = 256  // TargetPartitionKey @length(1, 256)
+	maxTagKeyLength             = 128  // TagKey @length(1, 128)
+	maxTagValueLength           = 256  // TagValue @length(1, 256)
 )
 
 // namePattern matches the AWS Scheduler Name/GroupName constraint:
@@ -51,7 +96,10 @@ var dateLayouts = []string{
 //
 // Currently supported (delivery implemented):
 //
-//	lambda, sqs, sns, kinesis, states (Step Functions), events (EventBridge), logs (CloudWatch Logs)
+//	lambda, sqs, sns, kinesis, states (Step Functions), events (EventBridge)
+//
+// CloudWatch Logs is NOT a templated target in AWS and must not be
+// accepted here.
 //
 // Accepted with stub delivery (accepted at validation, delivery fails until
 // the backing service is implemented on this platform, mirroring the
@@ -76,7 +124,6 @@ var supportedTargetServices = map[string]bool{
 	"kinesis":  true,
 	"states":   true,
 	"events":   true,
-	"logs":     true,
 	"ecs":      true,
 	"firehose": true,
 }
@@ -91,6 +138,28 @@ var validEcsLaunchTypes = map[string]bool{
 // validPropagateTags lists the Smithy enum values for EcsParameters.PropagateTags.
 var validPropagateTags = map[string]bool{
 	"TASK_DEFINITION": true,
+}
+
+// validPlacementConstraintTypes lists the Smithy enum values for
+// PlacementConstraint.type.
+var validPlacementConstraintTypes = map[string]bool{
+	"distinctInstance": true,
+	"memberOf":         true,
+}
+
+// validPlacementStrategyTypes lists the Smithy enum values for
+// PlacementStrategy.type.
+var validPlacementStrategyTypes = map[string]bool{
+	"random":  true,
+	"spread":  true,
+	"binpack": true,
+}
+
+// validAssignPublicIp lists the Smithy enum values for
+// AwsVpcConfiguration.AssignPublicIp.
+var validAssignPublicIp = map[string]bool{
+	"ENABLED":  true,
+	"DISABLED": true,
 }
 
 // EventBridge Source field Smithy pattern decomposition.
@@ -184,10 +253,14 @@ func validateScheduleFields(spec *ScheduleSpec) (*ValidatedSchedule, error) {
 		return nil, err
 	}
 
-	if spec.FlexibleTimeWindow != nil {
-		if err := validateFlexibleTimeWindow(spec.FlexibleTimeWindow); err != nil {
-			return nil, err
-		}
+	// FlexibleTimeWindow is a required member of CreateScheduleInput and
+	// UpdateScheduleInput, and Mode is a required member of the
+	// FlexibleTimeWindow shape; both absences are rejected here.
+	if spec.FlexibleTimeWindow == nil {
+		return nil, awserrors.NewValidationException("FlexibleTimeWindow is required")
+	}
+	if err := validateFlexibleTimeWindow(spec.FlexibleTimeWindow); err != nil {
+		return nil, err
 	}
 
 	result := &ValidatedSchedule{
@@ -295,14 +368,18 @@ func validateTarget(target *schedulerstore.Target) error {
 	if target.RetryPolicy != nil {
 		if target.RetryPolicy.MaximumEventAgeInSeconds != nil {
 			v := *target.RetryPolicy.MaximumEventAgeInSeconds
-			if v < 60 || v > 86400 {
-				return awserrors.NewValidationException("RetryPolicy.MaximumEventAgeInSeconds must be between 60 and 86400")
+			if v < MinRetryPolicyEventAgeSeconds || v > MaxRetryPolicyEventAgeSeconds {
+				return awserrors.NewValidationException(fmt.Sprintf(
+					"RetryPolicy.MaximumEventAgeInSeconds must be between %d and %d",
+					MinRetryPolicyEventAgeSeconds, MaxRetryPolicyEventAgeSeconds))
 			}
 		}
 		if target.RetryPolicy.MaximumRetryAttempts != nil {
 			v := *target.RetryPolicy.MaximumRetryAttempts
-			if v < 0 || v > 185 {
-				return awserrors.NewValidationException("RetryPolicy.MaximumRetryAttempts must be between 0 and 185")
+			if v < 0 || v > MaxRetryPolicyAttempts {
+				return awserrors.NewValidationException(fmt.Sprintf(
+					"RetryPolicy.MaximumRetryAttempts must be between 0 and %d",
+					MaxRetryPolicyAttempts))
 			}
 		}
 	}
@@ -325,8 +402,9 @@ func validateTarget(target *schedulerstore.Target) error {
 		}
 	}
 	if target.KinesisParameters != nil {
-		if l := len(target.KinesisParameters.PartitionKey); l < 1 || l > 256 {
-			return awserrors.NewValidationException("KinesisParameters.PartitionKey must be 1-256 characters")
+		if l := len(target.KinesisParameters.PartitionKey); l < 1 || l > MaxTargetPartitionKeyLength {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"KinesisParameters.PartitionKey must be 1-%d characters", MaxTargetPartitionKeyLength))
 		}
 	}
 	if target.SqsParameters != nil {
@@ -344,7 +422,7 @@ func validateTarget(target *schedulerstore.Target) error {
 func validateTargetService(service string) error {
 	if !supportedTargetServices[service] {
 		return awserrors.NewValidationException(
-			fmt.Sprintf("unsupported target service %q; supported services: lambda, sqs, sns, kinesis, states, events, logs, ecs, firehose", service),
+			fmt.Sprintf("unsupported target service %q; supported services: lambda, sqs, sns, kinesis, states, events, ecs, firehose", service),
 		)
 	}
 	return nil
@@ -393,9 +471,9 @@ func validateSubParametersForService(service string, target *schedulerstore.Targ
 // validateSqsParameters validates SqsParameters per Smithy traits.
 // MessageGroupId: length [1, 128].
 func validateSqsParameters(sqs *schedulerstore.SqsParameters) error {
-	if l := len(sqs.MessageGroupId); l < 1 || l > 128 {
-		return awserrors.NewValidationException(
-			"SqsParameters.MessageGroupId must be 1-128 characters")
+	if l := len(sqs.MessageGroupId); l < 1 || l > MaxMessageGroupIdLength {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"SqsParameters.MessageGroupId must be 1-%d characters", MaxMessageGroupIdLength))
 	}
 	return nil
 }
@@ -411,8 +489,9 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 	}
 	if ecs.TaskCount != nil {
 		v := *ecs.TaskCount
-		if v < 1 || v > 10 {
-			return awserrors.NewValidationException("EcsParameters.TaskCount must be between 1 and 10")
+		if v < 1 || v > MaxEcsTaskCount {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.TaskCount must be between 1 and %d", MaxEcsTaskCount))
 		}
 	}
 	if ecs.LaunchType != "" && !validEcsLaunchTypes[ecs.LaunchType] {
@@ -420,14 +499,17 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 			fmt.Sprintf("EcsParameters.LaunchType must be one of EC2, FARGATE, EXTERNAL; got %q", ecs.LaunchType),
 		)
 	}
-	if len(ecs.CapacityProviderStrategy) > 6 {
-		return awserrors.NewValidationException("EcsParameters.CapacityProviderStrategy must have at most 6 items")
+	if len(ecs.CapacityProviderStrategy) > MaxCapacityProviderStrategyItems {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"EcsParameters.CapacityProviderStrategy must have at most %d items", MaxCapacityProviderStrategyItems))
 	}
-	if len(ecs.PlacementConstraints) > 10 {
-		return awserrors.NewValidationException("EcsParameters.PlacementConstraints must have at most 10 items")
+	if len(ecs.PlacementConstraints) > MaxPlacementConstraintItems {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"EcsParameters.PlacementConstraints must have at most %d items", MaxPlacementConstraintItems))
 	}
-	if len(ecs.PlacementStrategy) > 5 {
-		return awserrors.NewValidationException("EcsParameters.PlacementStrategy must have at most 5 items")
+	if len(ecs.PlacementStrategy) > MaxPlacementStrategyItems {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"EcsParameters.PlacementStrategy must have at most %d items", MaxPlacementStrategyItems))
 	}
 	// PlatformVersion / Group / ReferenceId carry pattern-less @length
 	// traits, so lengths count Unicode characters.
@@ -445,6 +527,79 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 			fmt.Sprintf("EcsParameters.PropagateTags must be TASK_DEFINITION; got %q", ecs.PropagateTags),
 		)
 	}
+	// CapacityProviderStrategyItem: capacityProvider is required with
+	// length 1-255; weight and base are bounded ranges.
+	for i, item := range ecs.CapacityProviderStrategy {
+		if l := len(item.CapacityProvider); l < MinCapacityProviderLength || l > MaxCapacityProviderLength {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.CapacityProviderStrategy[%d].capacityProvider must be %d-%d characters",
+				i, MinCapacityProviderLength, MaxCapacityProviderLength))
+		}
+		if item.Weight != nil && (*item.Weight < 0 || *item.Weight > MaxCapacityProviderWeight) {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.CapacityProviderStrategy[%d].weight must be between 0 and %d",
+				i, MaxCapacityProviderWeight))
+		}
+		if item.Base != nil && (*item.Base < 0 || *item.Base > MaxCapacityProviderBase) {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.CapacityProviderStrategy[%d].base must be between 0 and %d",
+				i, MaxCapacityProviderBase))
+		}
+	}
+	for i, pc := range ecs.PlacementConstraints {
+		if pc.Type != "" && !validPlacementConstraintTypes[pc.Type] {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.PlacementConstraints[%d].type must be one of distinctInstance, memberOf; got %q",
+				i, pc.Type))
+		}
+	}
+	for i, ps := range ecs.PlacementStrategy {
+		if ps.Type != "" && !validPlacementStrategyTypes[ps.Type] {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.PlacementStrategy[%d].type must be one of random, spread, binpack; got %q",
+				i, ps.Type))
+		}
+	}
+	if ecs.NetworkConfiguration != nil && ecs.NetworkConfiguration.AwsVpcConfiguration != nil {
+		vpc := ecs.NetworkConfiguration.AwsVpcConfiguration
+		if l := len(vpc.Subnets); l < MinSubnetsPerTask || l > MaxSubnetsPerTask {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.NetworkConfiguration.awsvpcConfiguration.subnets must contain %d-%d subnets, got %d",
+				MinSubnetsPerTask, MaxSubnetsPerTask, l))
+		}
+		for i, subnet := range vpc.Subnets {
+			if l := len(subnet); l < 1 || l > MaxSubnetIdLength {
+				return awserrors.NewValidationException(fmt.Sprintf(
+					"EcsParameters.NetworkConfiguration.awsvpcConfiguration.subnets[%d] must be 1-%d characters",
+					i, MaxSubnetIdLength))
+			}
+		}
+		// A provided securityGroups list carries at least one entry; the
+		// parse layer keeps an explicitly empty list distinguishable from
+		// an omitted member (the latter means the VPC default group).
+		if vpc.SecurityGroups != nil && len(vpc.SecurityGroups) < MinSecurityGroupsPerTask {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.NetworkConfiguration.awsvpcConfiguration.securityGroups must contain at least %d item when provided",
+				MinSecurityGroupsPerTask))
+		}
+		if len(vpc.SecurityGroups) > MaxSecurityGroupsPerTask {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.NetworkConfiguration.awsvpcConfiguration.securityGroups must contain at most %d items",
+				MaxSecurityGroupsPerTask))
+		}
+		for i, sg := range vpc.SecurityGroups {
+			if l := len(sg); l < 1 || l > MaxSecurityGroupIdLength {
+				return awserrors.NewValidationException(fmt.Sprintf(
+					"EcsParameters.NetworkConfiguration.awsvpcConfiguration.securityGroups[%d] must be 1-%d characters",
+					i, MaxSecurityGroupIdLength))
+			}
+		}
+		if vpc.AssignPublicIp != "" && !validAssignPublicIp[vpc.AssignPublicIp] {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"EcsParameters.NetworkConfiguration.awsvpcConfiguration.assignPublicIp must be ENABLED or DISABLED; got %q",
+				vpc.AssignPublicIp))
+		}
+	}
 	return nil
 }
 
@@ -452,11 +607,13 @@ func validateEcsParameters(ecs *schedulerstore.EcsParameters) error {
 // Smithy traits and AWS documentation. The Source field is checked
 // against the full Smithy pattern (decomposed for RE2 compatibility).
 func validateEventBridgeParameters(eb *schedulerstore.EventBridgeParameters) error {
-	if l := len(eb.DetailType); l < 1 || l > 128 {
-		return awserrors.NewValidationException("EventBridgeParameters.DetailType must be 1-128 characters")
+	if l := len(eb.DetailType); l < 1 || l > MaxDetailTypeLength {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"EventBridgeParameters.DetailType must be 1-%d characters", MaxDetailTypeLength))
 	}
-	if l := len(eb.Source); l < 1 || l > 256 {
-		return awserrors.NewValidationException("EventBridgeParameters.Source must be 1-256 characters")
+	if l := len(eb.Source); l < 1 || l > MaxSourceLength {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"EventBridgeParameters.Source must be 1-%d characters", MaxSourceLength))
 	}
 	// JSONPath alternative (e.g. "$.detail.event").
 	if sourceJSONPathRe.MatchString(eb.Source) {
@@ -475,14 +632,39 @@ func validateEventBridgeParameters(eb *schedulerstore.EventBridgeParameters) err
 	return nil
 }
 
+// ValidateScheduleGroupTags enforces the tag-set constraints shared by the
+// TagResource path and CreateScheduleGroup: at most MaxTagsPerResource tags
+// (TagList @length(0, 200)), each key 1-128 characters (TagKey @length) and
+// each value 1-256 characters (TagValue @length).
+func ValidateScheduleGroupTags(tags []tagutil.Tag) error {
+	if len(tags) > MaxTagsPerResource {
+		return awserrors.NewValidationException(fmt.Sprintf(
+			"Tags must contain at most %d items", MaxTagsPerResource))
+	}
+	for _, t := range tags {
+		if l := len(t.Key); l < 1 || l > maxTagKeyLength {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"tag keys must be 1-%d characters", maxTagKeyLength))
+		}
+		if l := len(t.Value); l < 1 || l > maxTagValueLength {
+			return awserrors.NewValidationException(fmt.Sprintf(
+				"tag values must be 1-%d characters", maxTagValueLength))
+		}
+	}
+	return nil
+}
+
 // validateFlexibleTimeWindow validates the FlexibleTimeWindow Mode enum
 // and the MaximumWindowInMinutes range when Mode is FLEXIBLE.
 func validateFlexibleTimeWindow(ftw *schedulerstore.FlexibleTimeWindow) error {
+	if ftw.Mode == "" {
+		return awserrors.NewValidationException("FlexibleTimeWindow.Mode is required")
+	}
 	if ftw.Mode != schedulerstore.FlexibleTimeWindowModeOff && ftw.Mode != schedulerstore.FlexibleTimeWindowModeFlexible {
 		return ErrInvalidFlexibleTimeWindow
 	}
 	if ftw.Mode == schedulerstore.FlexibleTimeWindowModeFlexible {
-		if ftw.MaximumWindowInMinutes == nil || *ftw.MaximumWindowInMinutes < 1 || *ftw.MaximumWindowInMinutes > 1440 {
+		if ftw.MaximumWindowInMinutes == nil || *ftw.MaximumWindowInMinutes < 1 || *ftw.MaximumWindowInMinutes > MaxFlexibleWindowMinutes {
 			return ErrInvalidFlexibleTimeWindow
 		}
 	}

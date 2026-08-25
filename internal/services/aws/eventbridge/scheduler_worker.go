@@ -156,7 +156,7 @@ func (s *EventsService) fireScheduledRule(ctx context.Context, region string, st
 // the given time. It uses lastFireTimes to ensure each rule fires at most once
 // per evaluation. creationTime anchors rate() period boundaries.
 func shouldFireSchedule(ruleARN, expr string, now, creationTime time.Time) bool {
-	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creationTime, nil)
+	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creationTime, nil, scheduleexpr.RateFiresAfterFirstInterval)
 	if !ok {
 		return false
 	}

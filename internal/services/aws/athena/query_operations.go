@@ -228,10 +228,17 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 		if cancelFn, ok := s.getAndRemoveCancelFunc(queryExecutionId); ok {
 			cancelFn()
 		}
-		queryExecution.Status.State = athenastore.QueryExecutionStateCancelled
-		queryExecution.Status.CompletionDateTime = time.Now().UTC()
-		if err := st.queryExecutionStore.UpdateQueryExecution(queryExecution); err != nil {
+		// Transition atomically so the async worker's QUEUED -> RUNNING
+		// write can never overwrite the cancelled state after this
+		// response returns.
+		cancelled, transitioned, err := st.queryExecutionStore.TransitionQueryExecutionState(
+			queryExecutionId, athenastore.QueryExecutionStateCancelled,
+			athenastore.QueryExecutionStateRunning, athenastore.QueryExecutionStateQueued)
+		if err != nil {
 			return nil, err
+		}
+		if !transitioned && cancelled.Status.State != athenastore.QueryExecutionStateCancelled {
+			return nil, ErrInvalidRequestException
 		}
 	} else if queryExecution.Status.State != athenastore.QueryExecutionStateCancelled {
 		return nil, ErrInvalidRequestException

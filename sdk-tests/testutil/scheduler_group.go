@@ -183,6 +183,8 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		return nil
 	}))
 
+	// Deleting is eventually consistent: the delete is acknowledged
+	// immediately and the group disappears once the cascade completes.
 	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup", func() error {
 		delGroupName := tc.uniqueName("DelGroup")
 		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
@@ -199,16 +201,27 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 			return fmt.Errorf("delete: %v", err)
 		}
 
-		_, err = tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
-			Name: aws.String(delGroupName),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			_, err := tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
+				Name: aws.String(delGroupName),
+			})
+			if err != nil {
+				if err := AssertErrorContains(err, "ResourceNotFoundException"); err == nil {
+					return nil
+				}
+				return fmt.Errorf("get after delete: %v", err)
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("group %q still exists after the cascade window", delGroupName)
+			}
+			time.Sleep(200 * time.Millisecond)
 		}
-		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_NotEmpty", func() error {
+	// Deleting a group cascades: the group goes to DELETING, its schedules
+	// are deleted, and only then does the group disappear.
+	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_CascadesToSchedules", func() error {
 		notEmptyGroup := tc.uniqueName("NotEmptyGrp")
 		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
 			Name: aws.String(notEmptyGroup),
@@ -234,17 +247,58 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 			return fmt.Errorf("create schedule: %v", err)
 		}
 
-		_, err = tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+		if _, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
 			Name: aws.String(notEmptyGroup),
-		})
-		if err := AssertErrorContains(err, "ConflictException"); err != nil {
-			tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName), GroupName: aws.String(notEmptyGroup)})
-			tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(notEmptyGroup)})
-			return err
+		}); err != nil {
+			return fmt.Errorf("delete non-empty group: %v", err)
 		}
 
-		tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName), GroupName: aws.String(notEmptyGroup)})
-		tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(notEmptyGroup)})
+		// The group (and its schedules) disappear once the cascade
+		// completes; the delete is eventually consistent.
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			_, err := tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
+				Name: aws.String(notEmptyGroup),
+			})
+			if err != nil {
+				if err := AssertErrorContains(err, "ResourceNotFoundException"); err == nil {
+					break
+				}
+				return fmt.Errorf("get deleting group: %v", err)
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("group %q still exists after the cascade window", notEmptyGroup)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+
+		_, err = tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{
+			Name:      aws.String(schedName),
+			GroupName: aws.String(notEmptyGroup),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("cascade must delete the member schedule: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_DefaultRejected", func() error {
+		_, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+			Name: aws.String("default"),
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		// The default group must survive the rejected delete.
+		resp, err := tc.client.GetScheduleGroup(tc.ctx, &scheduler.GetScheduleGroupInput{
+			Name: aws.String("default"),
+		})
+		if err != nil {
+			return fmt.Errorf("get default after rejected delete: %v", err)
+		}
+		if resp.State != types.ScheduleGroupStateActive {
+			return fmt.Errorf("default group state = %q, want ACTIVE", resp.State)
+		}
 		return nil
 	}))
 

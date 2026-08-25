@@ -579,6 +579,51 @@ func (s *QueryExecutionStore) UpdateQueryExecution(qe *QueryExecution) error {
 	return s.PutProto(qe.QueryExecutionId, QueryExecutionToProto(qe))
 }
 
+// TransitionQueryExecutionState atomically moves the execution into the
+// next state only while its current state still matches one of the
+// expected states. It returns the updated execution and true on success,
+// or nil and false when another writer (for example StopQueryExecution
+// cancelling the query) won the race — the loser must not overwrite the
+// winner's state.
+func (s *QueryExecutionStore) TransitionQueryExecutionState(id string, next QueryExecutionState, from ...QueryExecutionState) (*QueryExecution, bool, error) {
+	s.crtMu.Lock()
+	defer s.crtMu.Unlock()
+	qe, err := s.GetQueryExecution(id)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, f := range from {
+		if qe.Status.State == f {
+			qe.Status.State = next
+			if err := s.UpdateQueryExecution(qe); err != nil {
+				return nil, false, err
+			}
+			return qe, true, nil
+		}
+	}
+	return qe, false, nil
+}
+
+// CompleteQueryExecution persists a fully populated terminal execution
+// under a from-state check: the write lands only while the stored state
+// is one of the given from states, so a StopQueryExecution cancellation
+// recorded in between can never be overwritten by the worker's terminal
+// write. It reports whether the completion was persisted.
+func (s *QueryExecutionStore) CompleteQueryExecution(qe *QueryExecution, from ...QueryExecutionState) (bool, error) {
+	s.crtMu.Lock()
+	defer s.crtMu.Unlock()
+	current, err := s.GetQueryExecution(qe.QueryExecutionId)
+	if err != nil {
+		return false, err
+	}
+	for _, f := range from {
+		if current.Status.State == f {
+			return true, s.UpdateQueryExecution(qe)
+		}
+	}
+	return false, nil
+}
+
 // DeleteExpiredQueryExecutions removes query executions older than the given threshold.
 // Returns the number of deleted executions and their IDs for cascade cleanup.
 func (s *QueryExecutionStore) DeleteExpiredQueryExecutions(olderThan time.Time) (int, []string, error) {

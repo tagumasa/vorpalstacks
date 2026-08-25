@@ -4,12 +4,10 @@ import (
 	"context"
 	"strconv"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 	"vorpalstacks/internal/utils/timeutils"
-
-	"vorpalstacks/internal/common/pagination"
 )
 
 func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName string, err error) {
@@ -30,6 +28,11 @@ func getScheduleNameAndGroup(params map[string]interface{}) (name, groupName str
 	return name, groupName, nil
 }
 
+// getListGroupName extracts the GroupName filter for ListSchedules. An
+// absent parameter means no group filter: per the ListSchedulesInput
+// member documentation, the group filter only applies "if specified", so
+// an unfiltered list must return schedules from every group (the store
+// treats an empty group name as no prefix filter).
 func getListGroupName(params map[string]interface{}) string {
 	groupName := request.GetStringParam(params, "GroupName")
 	if groupName == "" {
@@ -37,9 +40,6 @@ func getListGroupName(params map[string]interface{}) string {
 	}
 	if groupName == "" {
 		groupName = request.GetStringParam(params, "ScheduleGroup")
-	}
-	if groupName == "" {
-		groupName = "default"
 	}
 	return groupName
 }
@@ -54,9 +54,6 @@ func (s *SchedulerService) CreateSchedule(ctx context.Context, reqCtx *request.R
 	flexibleTimeWindow, err := parseFlexibleTimeWindow(req.Parameters)
 	if err != nil {
 		return nil, err
-	}
-	if flexibleTimeWindow == nil {
-		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
 	}
 
 	spec := &ScheduleSpec{
@@ -160,9 +157,6 @@ func (s *SchedulerService) UpdateSchedule(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	if flexibleTimeWindow == nil {
-		flexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
-	}
 
 	spec := &ScheduleSpec{
 		Name:                       name,
@@ -199,13 +193,13 @@ func (s *SchedulerService) ListSchedules(ctx context.Context, reqCtx *request.Re
 	namePrefix := request.GetStringParam(req.Parameters, "NamePrefix")
 	stateFilter := request.GetStringParam(req.Parameters, "State")
 	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	maxResults := int32(100)
+	maxResults := int32(DefaultListMaxResults)
 	if mr := request.GetStringParam(req.Parameters, "MaxResults"); mr != "" {
 		parsed, err := strconv.Atoi(mr)
 		if err != nil {
 			return nil, ErrValidation
 		}
-		if parsed < 1 || parsed > 100 {
+		if parsed < 1 || parsed > MaxListMaxResults {
 			return nil, ErrValidation
 		}
 		maxResults = int32(parsed)

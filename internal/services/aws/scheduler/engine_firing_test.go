@@ -1,12 +1,35 @@
 package scheduler
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
+
+// TestRouteToDLQNilBusDoesNotPanic pins that the bus-less direct-delivery
+// path (executeSchedule falls back to deliverWithRetry when e.bus is nil)
+// survives routing a permanently failed delivery to the DLQ: routeToDLQ
+// must return instead of dereferencing the nil bus on the SQS invoker
+// lookup.
+func TestRouteToDLQNilBusDoesNotPanic(t *testing.T) {
+	e := &Engine{}
+	sch := &schedulerstore.Schedule{
+		Name:               "dlq-nil-bus",
+		GroupName:          "default",
+		Region:             "us-east-1",
+		ScheduleExpression: "rate(5 minutes)",
+	}
+	target := &schedulerstore.Target{
+		Arn: "arn:aws:lambda:us-east-1:000000000000:function:unreachable",
+		DeadLetterConfig: &schedulerstore.DeadLetterConfig{
+			Arn: "arn:aws:sqs:us-east-1:000000000000:dlq",
+		},
+	}
+	e.routeToDLQ(context.Background(), sch, target, "delivery permanently failed in test")
+}
 
 // TestShouldExecuteNonFlexibleLateBoundary pins that a non-flexible
 // schedule fires a boundary missed by a slow ticker on the next evaluation
@@ -153,7 +176,12 @@ func TestShouldExecuteFlexibleWindowUnchanged(t *testing.T) {
 // TestShouldExecuteRateWaitsFirstInterval pins the AWS rate() contract:
 // the schedule does not fire on the creation boundary — the first
 // invocation happens one full interval after creation.
-func TestShouldExecuteRateWaitsFirstInterval(t *testing.T) {
+// TestShouldExecuteRateFiresOnCreationBoundary pins the rate-schedule first
+// occurrence contract: StartDate (or the creation instant when absent) sets
+// the first occurrence, so the creation boundary itself is due. Without a
+// StartDate the schedule starts invoking its target immediately after
+// creation (EventBridge Scheduler User Guide, "Rate-based schedules").
+func TestShouldExecuteRateFiresOnCreationBoundary(t *testing.T) {
 	e := &Engine{}
 	sch := &schedulerstore.Schedule{
 		Name:               "rate-first",
@@ -162,19 +190,41 @@ func TestShouldExecuteRateWaitsFirstInterval(t *testing.T) {
 		ScheduleExpression: "rate(5 minutes)",
 		CreationDate:       time.Date(2027, 1, 1, 12, 0, 0, 0, time.UTC),
 	}
-	if e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 0, 5, 0, time.UTC)) {
-		t.Error("rate schedule fired on the creation boundary")
+	if e.shouldExecute(sch, time.Date(2027, 1, 1, 11, 59, 59, 0, time.UTC)) {
+		t.Error("rate schedule fired before the creation boundary")
+	}
+	if !e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 0, 5, 0, time.UTC)) {
+		t.Error("rate schedule did not fire on the creation boundary")
 	}
 	if !e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 5, 1, 0, time.UTC)) {
 		t.Error("rate schedule did not fire one interval after creation")
 	}
+
+	// An explicit StartDate is the first occurrence instead.
+	withStart := &schedulerstore.Schedule{
+		Name:               "rate-start",
+		GroupName:          "default",
+		Region:             "us-east-1",
+		ScheduleExpression: "rate(5 minutes)",
+		CreationDate:       time.Date(2027, 1, 1, 12, 0, 0, 0, time.UTC),
+		StartDate:          ptrTime(time.Date(2027, 1, 1, 13, 0, 0, 0, time.UTC)),
+	}
+	if e.shouldExecute(withStart, time.Date(2027, 1, 1, 12, 59, 0, 0, time.UTC)) {
+		t.Error("rate schedule fired before its StartDate")
+	}
+	if !e.shouldExecute(withStart, time.Date(2027, 1, 1, 13, 0, 5, 0, time.UTC)) {
+		t.Error("rate schedule did not fire on its StartDate boundary")
+	}
 }
 
-// TestShouldExecuteFlexibleWaitsFirstInterval pins that the flexible
-// window of the creation boundary never opens: the first window belongs
-// to the first real boundary, one interval after creation.
-func TestShouldExecuteFlexibleWaitsFirstInterval(t *testing.T) {
-	window := 10
+// TestShouldExecuteFlexibleCreationWindowFires pins that the creation
+// boundary's flexible window opens like any other: the creation instant is
+// the first occurrence, so executions inside its window are admitted and
+// executions after it closes are not.
+func TestShouldExecuteFlexibleCreationWindowFires(t *testing.T) {
+	// A window shorter than the interval leaves closed-window gaps
+	// between boundaries, which the second assertion needs.
+	window := 3
 	e := &Engine{}
 	sch := &schedulerstore.Schedule{
 		Name:               "flex-first",
@@ -187,11 +237,11 @@ func TestShouldExecuteFlexibleWaitsFirstInterval(t *testing.T) {
 			MaximumWindowInMinutes: &window,
 		},
 	}
-	if e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 3, 0, 0, time.UTC)) {
-		t.Error("flexible schedule fired inside the creation boundary's window")
+	if !e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 2, 0, 0, time.UTC)) {
+		t.Error("flexible schedule did not fire inside the creation boundary's window")
 	}
-	if !e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 6, 0, 0, time.UTC)) {
-		t.Error("flexible schedule did not fire inside the first real boundary's window")
+	if e.shouldExecute(sch, time.Date(2027, 1, 1, 12, 4, 0, 0, time.UTC)) {
+		t.Error("flexible schedule fired after the creation boundary's window closed")
 	}
 }
 
@@ -398,6 +448,7 @@ func TestCompletedScheduleUpdateRefiresConsistently(t *testing.T) {
 			Arn:     "arn:aws:lambda:us-east-1:000000000000:function:refire-test",
 			RoleArn: "arn:aws:iam::000000000000:role/scheduler-test",
 		},
+		FlexibleTimeWindow: &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff},
 	}}); err != nil {
 		t.Fatalf("updateScheduleCore: %v", err)
 	}
@@ -470,6 +521,7 @@ func TestActiveScheduleUpdateKeepsDeliveredMarker(t *testing.T) {
 			Arn:     "arn:aws:lambda:us-east-1:000000000000:function:refire-test",
 			RoleArn: "arn:aws:iam::000000000000:role/scheduler-test",
 		},
+		FlexibleTimeWindow: &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff},
 	}}); err != nil {
 		t.Fatalf("updateScheduleCore: %v", err)
 	}
@@ -485,3 +537,5 @@ func TestActiveScheduleUpdateKeepsDeliveredMarker(t *testing.T) {
 		t.Error("expression-keeping update re-fired the delivered boundary")
 	}
 }
+
+func ptrTime(t time.Time) *time.Time { return &t }

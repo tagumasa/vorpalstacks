@@ -111,7 +111,7 @@ func (e *ScheduledQueryEngine) run() {
 // PreviousRunTime: a boundary at or before it has already been consumed
 // by an earlier run, in this or a previous process lifetime.
 func (e *ScheduledQueryEngine) shouldFireQuery(dedupKey, expr string, now, creation, previousRun time.Time) (time.Time, bool) {
-	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creation, nil)
+	boundary, ok := scheduleexpr.ElapsedExecutionTime(expr, now, creation, nil, scheduleexpr.RateFiresAfterFirstInterval)
 	if !ok {
 		return time.Time{}, false
 	}

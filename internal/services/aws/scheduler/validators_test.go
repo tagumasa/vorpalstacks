@@ -16,6 +16,10 @@ func validTarget() *schedulerstore.Target {
 	}
 }
 
+func validFTW() *schedulerstore.FlexibleTimeWindow {
+	return &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
+}
+
 func TestValidateScheduleFields_NamePattern(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -36,6 +40,7 @@ func TestValidateScheduleFields_NamePattern(t *testing.T) {
 				Name:               tt.name,
 				ScheduleExpression: "rate(1 minute)",
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 			}
 			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
@@ -64,6 +69,7 @@ func TestValidateScheduleFields_CronFieldCount(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: tt.expr,
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 			}
 			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
@@ -88,6 +94,7 @@ func TestValidateScheduleFields_AtSemanticDate(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: tt.expr,
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 			}
 			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
@@ -114,6 +121,7 @@ func TestValidateScheduleFields_StateEnum(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: "rate(1 minute)",
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 				State:              tt.state,
 			}
 			_, err := validateScheduleFields(spec)
@@ -166,12 +174,12 @@ func TestValidateScheduleFields_RetryPolicyRanges(t *testing.T) {
 		retryAtt *int
 		wantErr  bool
 	}{
-		{"valid", intPtr(60), intPtr(0), false},
-		{"valid-max", intPtr(86400), intPtr(185), false},
-		{"age-below-min", intPtr(59), nil, true},    // below minimum age
-		{"age-above-max", intPtr(86401), nil, true}, // above maximum age
-		{"retry-above-max", nil, intPtr(186), true}, // above maximum retry attempts
-		{"retry-below-min", nil, intPtr(-1), true},  // below minimum retry attempts
+		{"valid", intPtr(MinRetryPolicyEventAgeSeconds), intPtr(0), false},
+		{"valid-max", intPtr(MaxRetryPolicyEventAgeSeconds), intPtr(MaxRetryPolicyAttempts), false},
+		{"age-below-min", intPtr(MinRetryPolicyEventAgeSeconds - 1), nil, true}, // below minimum age
+		{"age-above-max", intPtr(MaxRetryPolicyEventAgeSeconds + 1), nil, true}, // above maximum age
+		{"retry-above-max", nil, intPtr(MaxRetryPolicyAttempts + 1), true},      // above maximum retry attempts
+		{"retry-below-min", nil, intPtr(-1), true},                              // below minimum retry attempts
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -187,6 +195,7 @@ func TestValidateScheduleFields_RetryPolicyRanges(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: "rate(1 minute)",
 				Target:             target,
+				FlexibleTimeWindow: validFTW(),
 			}
 			_, err := validateScheduleFields(spec)
 			if (err != nil) != tt.wantErr {
@@ -201,6 +210,7 @@ func TestValidateScheduleFields_DescriptionLength(t *testing.T) {
 		Name:               "test-schedule",
 		ScheduleExpression: "rate(1 minute)",
 		Target:             validTarget(),
+		FlexibleTimeWindow: validFTW(),
 		Description:        strings.Repeat("a", 512),
 	}
 	if _, err := validateScheduleFields(spec); err != nil {
@@ -229,6 +239,7 @@ func TestValidateScheduleFields_KmsKeyArn(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: "rate(1 minute)",
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 				KmsKeyArn:          tt.arn,
 			}
 			_, err := validateScheduleFields(spec)
@@ -257,6 +268,7 @@ func TestValidateScheduleFields_Timezone(t *testing.T) {
 				Name:                       "test-schedule",
 				ScheduleExpression:         "rate(1 minute)",
 				Target:                     validTarget(),
+				FlexibleTimeWindow:         validFTW(),
 				ScheduleExpressionTimezone: tt.tz,
 			}
 			_, err := validateScheduleFields(spec)
@@ -286,6 +298,7 @@ func TestValidateScheduleFields_StartEndDateOrdering(t *testing.T) {
 				Name:               "test-schedule",
 				ScheduleExpression: "rate(1 minute)",
 				Target:             validTarget(),
+				FlexibleTimeWindow: validFTW(),
 				StartDate:          tt.start,
 				EndDate:            tt.end,
 			}
@@ -305,6 +318,7 @@ func TestValidateScheduleFields_ActionAfterCompletionDefault(t *testing.T) {
 		Name:               "test-schedule",
 		ScheduleExpression: "rate(1 minute)",
 		Target:             validTarget(),
+		FlexibleTimeWindow: validFTW(),
 		// ActionAfterCompletion intentionally omitted
 	}
 	validated, err := validateScheduleFields(spec)
@@ -444,5 +458,95 @@ func TestValidateEcsParametersUnicodeLengths(t *testing.T) {
 	ecs.ReferenceId = strings.Repeat(cjk, 1025)
 	if err := validateEcsParameters(ecs); err == nil {
 		t.Error("1025-character CJK reference id accepted")
+	}
+}
+
+// TestValidateEcsParametersSecurityGroupsMinimum pins that an explicitly
+// provided empty securityGroups list is rejected — the model constrains
+// the provided list to 1-5 entries — while an omitted member (nil)
+// selects the VPC default security group and stays accepted.
+func TestValidateEcsParametersSecurityGroupsMinimum(t *testing.T) {
+	base := func(securityGroups []string) *schedulerstore.EcsParameters {
+		return &schedulerstore.EcsParameters{
+			TaskDefinitionArn: "arn:aws:ecs:us-east-1:123456789012:task-definition/family:1",
+			NetworkConfiguration: &schedulerstore.NetworkConfiguration{
+				AwsVpcConfiguration: &schedulerstore.AwsVpcConfiguration{
+					Subnets:        []string{"subnet-0123456789abcdef0"},
+					SecurityGroups: securityGroups,
+				},
+			},
+		}
+	}
+
+	if err := validateEcsParameters(base(nil)); err != nil {
+		t.Errorf("omitted securityGroups rejected: %v", err)
+	}
+	if err := validateEcsParameters(base([]string{"sg-0123456789abcdef0"})); err != nil {
+		t.Errorf("single security group rejected: %v", err)
+	}
+	if err := validateEcsParameters(base([]string{})); err == nil {
+		t.Error("explicitly empty securityGroups accepted")
+	}
+}
+
+// TestParseAwsVpcConfigurationSecurityGroupsPresence pins that an
+// explicitly empty securityGroups array survives parsing as a non-nil
+// empty list while an omitted member stays nil, so the validator can
+// enforce the model minimum only for provided lists.
+func TestParseAwsVpcConfigurationSecurityGroupsPresence(t *testing.T) {
+	present := parseAwsVpcConfiguration(map[string]interface{}{
+		"subnets":        []interface{}{"subnet-0123456789abcdef0"},
+		"securityGroups": []interface{}{},
+	})
+	if present.SecurityGroups == nil || len(present.SecurityGroups) != 0 {
+		t.Errorf("explicitly empty securityGroups = %#v, want non-nil empty", present.SecurityGroups)
+	}
+
+	absent := parseAwsVpcConfiguration(map[string]interface{}{
+		"subnets": []interface{}{"subnet-0123456789abcdef0"},
+	})
+	if absent.SecurityGroups != nil {
+		t.Errorf("omitted securityGroups = %#v, want nil", absent.SecurityGroups)
+	}
+}
+
+// TestValidateScheduleFields_FlexibleTimeWindowRequired pins that an absent
+// FlexibleTimeWindow (a required member of CreateScheduleInput and
+// UpdateScheduleInput) and an absent Mode (a required member of the
+// FlexibleTimeWindow shape) are rejected as ValidationException instead of
+// silently defaulting to OFF.
+func TestValidateScheduleFields_FlexibleTimeWindowRequired(t *testing.T) {
+	spec := &ScheduleSpec{
+		Name:               "ftw-required",
+		ScheduleExpression: "rate(5 minutes)",
+		Target:             validTarget(),
+	}
+	_, err := validateScheduleFields(spec)
+	if err == nil || !strings.Contains(err.Error(), "FlexibleTimeWindow is required") {
+		t.Errorf("nil FlexibleTimeWindow: got error %v, want 'FlexibleTimeWindow is required'", err)
+	}
+
+	spec.FlexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{}
+	_, err = validateScheduleFields(spec)
+	if err == nil || !strings.Contains(err.Error(), "FlexibleTimeWindow.Mode is required") {
+		t.Errorf("empty Mode: got error %v, want 'FlexibleTimeWindow.Mode is required'", err)
+	}
+
+	spec.FlexibleTimeWindow = &schedulerstore.FlexibleTimeWindow{Mode: schedulerstore.FlexibleTimeWindowModeOff}
+	if _, err = validateScheduleFields(spec); err != nil {
+		t.Errorf("explicit OFF window rejected: %v", err)
+	}
+}
+
+// TestInternalServerErrorShape pins the wire shape of the scheduler's
+// server-fault error: the Smithy model names it InternalServerException
+// (smithy.api#error "server", httpError 500), so SDK clients matching
+// *types.InternalServerException must recognise it.
+func TestInternalServerErrorShape(t *testing.T) {
+	if ErrInternalServer.Code != "InternalServerException" {
+		t.Errorf("error code = %q, want InternalServerException", ErrInternalServer.Code)
+	}
+	if ErrInternalServer.HTTPStatus != 500 {
+		t.Errorf("HTTP status = %d, want 500", ErrInternalServer.HTTPStatus)
 	}
 }

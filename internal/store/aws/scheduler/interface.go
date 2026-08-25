@@ -14,7 +14,10 @@ type SchedulerStoreInterface interface {
 	BuildScheduleARNFromName(name string) string
 	CreateScheduleGroup(ctx context.Context, group *ScheduleGroup) error
 	GetScheduleGroup(ctx context.Context, name string) (*ScheduleGroup, error)
-	DeleteScheduleGroup(ctx context.Context, name string) error
+	MarkScheduleGroupDeleting(ctx context.Context, name string) error
+	ListDeletingScheduleGroups(ctx context.Context) ([]*ScheduleGroup, error)
+	DeleteSchedulesInGroup(ctx context.Context, groupName string) error
+	PurgeDeletedScheduleGroup(ctx context.Context, name string) error
 	ListScheduleGroups(ctx context.Context, namePrefix string, limit int32, nextToken string) (*ScheduleGroupListResult, error)
 	UpdateScheduleGroup(ctx context.Context, group *ScheduleGroup) error
 	CreateSchedule(ctx context.Context, schedule *Schedule) error

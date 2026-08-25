@@ -216,7 +216,49 @@ func parseRateDuration(expr string) (time.Duration, bool) {
 //     to fire). Boundaries older than cronRecoveryHorizon are not
 //     recovered; an evaluation that arrives late fires the pending
 //     boundary instead of skipping it silently.
-func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time) (time.Time, bool) {
+//
+// RateFirstBoundary selects which instant of a rate() expression counts
+// as the first due boundary. The rate() first-occurrence contract is a
+// per-service AWS behaviour, so every consumer states its policy at the
+// call site instead of relying on a shared default.
+type RateFirstBoundary int
+
+const (
+	// RateFiresAfterFirstInterval makes the first execution instant one
+	// full interval after the anchor: "A rate expression starts when you
+	// create the scheduled event rule, and then it runs on a defined
+	// schedule" (EventBridge User Guide, scheduled rules) and rate
+	// expressions "initiate a scheduled query at a regular rate ...
+	// starting from the exact time when the scheduled query is created"
+	// (Timestream Developer Guide, scheduled queries). CloudWatch Logs
+	// scheduled queries document no separate first-run rule.
+	RateFiresAfterFirstInterval RateFirstBoundary = iota
+	// RateFiresAtAnchor makes the anchor itself the first due boundary:
+	// "If you do not provide a StartDate for a rate-based schedule, your
+	// schedule starts invoking the target immediately" (EventBridge
+	// Scheduler User Guide, rate-based schedules).
+	RateFiresAtAnchor
+)
+
+// ElapsedExecutionTime resolves the latest execution instant of an AWS
+// schedule expression that lies at or before the reference time now — the
+// boundary a firing engine owes an invocation for. It reports false when
+// no execution instant has been reached yet; callers pair it with their
+// own once-per-boundary deduplication. A slow sweep fires only the latest
+// elapsed boundary, never the backlog of skipped ones:
+//   - at(...): the fixed timestamp, interpreted in now's location (the
+//     schedule's evaluation timezone), returned once now has reached it.
+//   - rate(...): the anchor (startDate when non-nil, otherwise
+//     creationTime) advanced by the largest whole number of elapsed
+//     periods, subject to the per-service first-boundary policy selected
+//     by the first argument (see RateFirstBoundary).
+//   - cron(...): the latest matching minute at or before now, evaluated
+//     in now's location and never earlier than creationTime (a boundary
+//     that predates the schedule's creation was never this schedule's
+//     to fire). Boundaries older than cronRecoveryHorizon are not
+//     recovered; an evaluation that arrives late fires the pending
+//     boundary instead of skipping it silently.
+func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, startDate *time.Time, first RateFirstBoundary) (time.Time, bool) {
 	if strings.HasPrefix(expr, "at(") {
 		t, ok := parseAtTime(expr)
 		if !ok {
@@ -240,8 +282,15 @@ func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, st
 		if startDate != nil {
 			base = *startDate
 		}
+		// A base instant still in the future is not due; checked
+		// explicitly because integer division truncates a small negative
+		// elapsed time to zero periods. Whether the anchor itself fires
+		// (periods == 0) is the caller's per-service policy.
+		if now.Before(base) {
+			return time.Time{}, false
+		}
 		periods := int(now.Sub(base) / duration)
-		if periods < 1 {
+		if first == RateFiresAfterFirstInterval && periods < 1 {
 			return time.Time{}, false
 		}
 		return base.Add(time.Duration(periods) * duration), true

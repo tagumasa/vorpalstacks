@@ -89,6 +89,72 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_AllGroups", func() error {
+		rn, rARN := tc.createIAMRole()
+		defer tc.deleteIAMRole(rn)
+		groupName := tc.uniqueName("AllGroupsGrp")
+		schedName := tc.uniqueName("AllGroupsSched")
+
+		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("create group: %v", err)
+		}
+		defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+
+		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(schedName),
+			GroupName:          aws.String(groupName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target:             tc.defaultTarget(rARN),
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{
+			Name:      aws.String(schedName),
+			GroupName: aws.String(groupName),
+		})
+
+		// An unfiltered list must include schedules from non-default
+		// groups: GroupName only filters "if specified".
+		resp, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{})
+		if err != nil {
+			return fmt.Errorf("list: %v", err)
+		}
+		found := false
+		for _, s := range resp.Schedules {
+			if s.Name != nil && *s.Name == schedName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("schedule %q in group %q not found in unfiltered list", schedName, groupName)
+		}
+
+		// The explicit group filter still scopes to the named group.
+		filtered, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+			GroupName: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("filtered list: %v", err)
+		}
+		filteredFound := false
+		for _, s := range filtered.Schedules {
+			if s.Name != nil && *s.Name == schedName {
+				filteredFound = true
+				break
+			}
+		}
+		if !filteredFound {
+			return fmt.Errorf("schedule %q not found under its own group filter", schedName)
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_StateFilter", func() error {
 		rn, rARN := tc.createIAMRole()
 		defer tc.deleteIAMRole(rn)

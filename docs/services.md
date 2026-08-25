@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-08-24
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
-**SDK Tests**: 3,339 passed, 0 failed (3,272 SDK + 50 integration + 17 WebSocket)
+**SDK Tests**: 3,353 passed, 0 failed (3,286 SDK + 50 integration + 17 WebSocket)
 
 ---
 
@@ -33,7 +33,7 @@
 | KMS | Full | |
 | Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, or managed runtime updates. AddPermission Principal restricted to a known service-principal allowlist (see `validServicePrincipals` in `validators.go`); unrecognised `*.amazonaws.com` principals are rejected. |
 | S3 | Broad | Not yet implemented (implementation planned): bucket analytics/intelligent-tiering/inventory/metrics configurations (16 ops), object annotations (4 ops), bucket ABAC (2 ops). Out of scope: S3 Express directory buckets/CreateSession/RenameObject (3 ops; directory-bucket substrate not planned), S3 Metadata configurations and metadata-table updates (9 ops; require the S3 Tables service), GetObjectTorrent (peer-to-peer distribution), WriteGetObjectResponse (requires the Object Lambda access-point layer; the Lambda runtime alone does not provide it). Object Lock, CORS, lifecycle, SSE encryption are fully enforced. |
-| Scheduler | Full | Templated targets limited to platform-implemented services (Lambda, SQS, SNS, Kinesis, Step Functions, EventBridge, CloudWatch Logs). ECS and Firehose targets are accepted but fail at delivery until those services exist. SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (services not implemented on this platform). |
+| Scheduler | Full | Templated targets limited to platform-implemented services (Lambda, SQS, SNS, Kinesis, Step Functions, EventBridge). ECS and Firehose targets are accepted but fail at delivery until those services exist. SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (services not implemented on this platform). |
 | Secrets Manager | Full | |
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
 | SFN (Step Functions) | Full | |

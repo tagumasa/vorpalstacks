@@ -28,8 +28,8 @@ var (
 	ErrInvalidState = awserrors.NewValidationException("Invalid state value")
 	// ErrInvalidActionAfterCompletion is returned when the action after completion value is invalid.
 	ErrInvalidActionAfterCompletion = awserrors.NewValidationException("Invalid action after completion value")
-	// ErrScheduleGroupNotEmpty is returned when the schedule group is not empty.
-	ErrScheduleGroupNotEmpty = awserrors.NewConflictException("Schedule group is not empty")
 	// ErrInternalServer is returned when an internal server error occurs.
-	ErrInternalServer = awserrors.NewInternalErrorException("Internal server error")
+	// InternalServerException is the scheduler model's server-fault shape
+	// (smithy.api#error "server", httpError 500).
+	ErrInternalServer = awserrors.NewInternalServerException("Unexpected error encountered while processing the request.")
 )

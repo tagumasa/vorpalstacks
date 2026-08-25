@@ -145,7 +145,7 @@ func (s *SchedulerService) StartEngine() error {
 }
 
 // StopEngine stops the scheduler engine and cleans up per-region store
-// resources (ClientTokenStore background goroutines) (Minor 1).
+// resources (ClientTokenStore background goroutines).
 func (s *SchedulerService) StopEngine() error {
 	var firstErr error
 	if s.engine != nil {

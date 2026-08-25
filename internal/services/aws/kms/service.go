@@ -811,6 +811,23 @@ func (a *kmsBusAdapter) KeyExists(ctx context.Context, keyID string) bool {
 	return a.hsmBackend.KeyExists(a.resolveCanonicalKeyID(keyID))
 }
 
+// SymmetricEncryptionKeyExists reports whether the key exists and is a
+// symmetric encryption key (KeySpec SYMMETRIC_DEFAULT, KeyUsage
+// ENCRYPT_DECRYPT). Consumers such as EventBridge Scheduler validate
+// this key class at configuration time, the way AWS validates it via
+// kms:DescribeKey.
+func (a *kmsBusAdapter) SymmetricEncryptionKeyExists(ctx context.Context, keyID string) bool {
+	stores, err := a.GetStoreForRegion(a.region)
+	if err != nil {
+		return false
+	}
+	key, err := stores.keys.Get(a.resolveCanonicalKeyID(keyID))
+	if err != nil {
+		return false
+	}
+	return key.KeySpec == kmsstore.KeySpecSymmetricDefault && key.KeyUsage == kmsstore.KeyUsageEncryptDecrypt
+}
+
 // KMSBusInvoker returns an eventbus.KMSInvoker backed by this service.
 func (s *KMSService) KMSBusInvoker() eventbus.KMSInvoker {
 	return &kmsBusAdapter{s}

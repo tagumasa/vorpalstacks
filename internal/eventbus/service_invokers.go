@@ -246,6 +246,11 @@ type KMSInvoker interface {
 	GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*KMSDataKeyResult, error)
 	Decrypt(ctx context.Context, keyID string, ciphertext []byte, encryptionContext map[string]string, sourceArn string) ([]byte, error)
 	KeyExists(ctx context.Context, keyID string) bool
+	// SymmetricEncryptionKeyExists reports whether the key exists and is
+	// a symmetric encryption key (KeySpec SYMMETRIC_DEFAULT, KeyUsage
+	// ENCRYPT_DECRYPT) — the key class consumers such as EventBridge
+	// Scheduler validate at configuration time via kms:DescribeKey.
+	SymmetricEncryptionKeyExists(ctx context.Context, keyID string) bool
 }
 
 // KMSDataKeyResult carries the plaintext and encrypted data key returned by

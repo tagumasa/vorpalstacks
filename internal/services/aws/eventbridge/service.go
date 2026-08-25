@@ -247,6 +247,10 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 		logs.Warn("eventbridge: failed to deliver putEvents bus event",
 			logs.String("region", region),
 			logs.String("error", err.Error()))
+		// Synchronous publishers (the Scheduler engine publishes via
+		// PublishSync) rely on the handler error to drive their retry and
+		// dead-letter policy, so the failure must be propagated.
+		return eventbus.HandlerResult{Error: err}
 	}
 
 	return eventbus.HandlerResult{}

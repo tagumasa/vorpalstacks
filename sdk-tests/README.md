@@ -44,7 +44,7 @@ which are separate services in the SDK classification used by
 | RDS Data | 17 | 100% | ✅ Perfect |
 | Route53 | 48 | 100% | ✅ Perfect |
 | S3 | 147 | 100% | ✅ Perfect |
-| Scheduler | 44 | 100% | ✅ Perfect |
+| Scheduler | 58 | 100% | ✅ Perfect |
 | SecretsManager | 44 | 100% | ✅ Perfect |
 | SESv2 | 94 | 100% | ✅ Perfect |
 | SNS | 83 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 72 | 100% | ✅ Perfect |
 
-**Overall: 3,339/3,339 tests passing (100%) — 3,272 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-24 on main after the SFN ASL intrinsic functions and Parallel/Map payload template work)
+**Overall: 3,353/3,353 tests passing (100%) — 3,286 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-25 on main after the audit follow-up round)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

@@ -156,29 +156,77 @@ func (s *SchedulerStore) GetScheduleGroup(ctx context.Context, name string) (*Sc
 //
 // Returns:
 //   - error: An error if deletion fails
-func (s *SchedulerStore) DeleteScheduleGroup(ctx context.Context, name string) error {
+//
+// MarkScheduleGroupDeleting transitions a schedule group to the DELETING
+// state. Deleting a group cascades: per the DeleteScheduleGroup model
+// documentation, the group remains in DELETING until all of its schedules
+// are deleted; the engine's sweep completes the removal.
+func (s *SchedulerStore) MarkScheduleGroupDeleting(ctx context.Context, name string) error {
 	arn := s.buildScheduleGroupARN(name)
-	// The record lock closes the resurrection window against an
-	// UpdateScheduleGroup cycle that read before the delete, and keeps the
-	// emptiness check and the delete in one critical section.
 	scheduleRecordWriteMu.Lock()
 	defer scheduleRecordWriteMu.Unlock()
 	if !s.Exists(arn) {
 		return ErrScheduleGroupNotFound
 	}
+	var group ScheduleGroup
+	if err := s.BaseStore.Get(arn, &group); err != nil {
+		return err
+	}
+	group.State = ScheduleGroupStateDeleting
+	group.LastModificationDate = time.Now().UTC()
+	return s.Put(arn, &group)
+}
 
-	schedules, err := common.ListMatching[Schedule](s.schedulesStore, "", func(sch *Schedule) bool {
-		return s.buildScheduleGroupARN(sch.GroupName) == arn
+// ListDeletingScheduleGroups returns every schedule group currently in the
+// DELETING state (the engine's cascade sweep input).
+func (s *SchedulerStore) ListDeletingScheduleGroups(ctx context.Context) ([]*ScheduleGroup, error) {
+	result, err := common.List[ScheduleGroup](s.BaseStore, common.ListOptions{}, func(g *ScheduleGroup) bool {
+		return g.State == ScheduleGroupStateDeleting
 	})
+	if err != nil {
+		return nil, err
+	}
+	return result.Items, nil
+}
+
+// DeleteSchedulesInGroup deletes every schedule that belongs to the group.
+func (s *SchedulerStore) DeleteSchedulesInGroup(ctx context.Context, groupName string) error {
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
+	schedules, err := common.ListMatching[Schedule](s.schedulesStore, groupName+":", nil)
+	if err != nil {
+		return err
+	}
+	for _, sch := range schedules {
+		key := s.buildScheduleKey(sch.GroupName, sch.Name)
+		if err := s.schedulesStore.Delete(key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// PurgeDeletedScheduleGroup removes the group record and its tags once the
+// group has no member schedules left.
+func (s *SchedulerStore) PurgeDeletedScheduleGroup(ctx context.Context, name string) error {
+	arn := s.buildScheduleGroupARN(name)
+	// The record lock keeps the emptiness check and the delete in one
+	// critical section so a racing CreateSchedule cannot resurrect the
+	// group between the two.
+	scheduleRecordWriteMu.Lock()
+	defer scheduleRecordWriteMu.Unlock()
+	if !s.Exists(arn) {
+		return nil
+	}
+	schedules, err := common.ListMatching[Schedule](s.schedulesStore, name+":", nil)
 	if err != nil {
 		return err
 	}
 	if len(schedules) > 0 {
 		return ErrScheduleGroupNotEmpty
 	}
-
 	// Delete the primary resource first so tag metadata I/O errors never
-	// block resource lifecycle (Minor 4). Tag cleanup is best-effort.
+	// block resource lifecycle. Tag cleanup is best-effort.
 	if err := s.BaseStore.Delete(arn); err != nil {
 		return err
 	}
@@ -244,11 +292,18 @@ func (s *SchedulerStore) ListScheduleGroups(ctx context.Context, namePrefix stri
 // Returns:
 //   - error: An error if update fails
 func (s *SchedulerStore) UpdateScheduleGroup(ctx context.Context, group *ScheduleGroup) error {
-	// The record lock makes this read-modify-write atomic against
-	// DeleteScheduleGroup on the same group record.
+	// The record lock serialises this read-modify-write against
+	// MarkScheduleGroupDeleting on the same group record: an update that
+	// loses the race to the DELETING mark is refused instead of writing
+	// the stale ACTIVE copy back over it (the engine sweep only purges
+	// groups it observes in DELETING).
 	scheduleRecordWriteMu.Lock()
 	defer scheduleRecordWriteMu.Unlock()
-	if !s.Exists(group.ARN) {
+	var stored ScheduleGroup
+	if err := s.BaseStore.Get(group.ARN, &stored); err != nil {
+		return ErrScheduleGroupNotFound
+	}
+	if stored.State == ScheduleGroupStateDeleting {
 		return ErrScheduleGroupNotFound
 	}
 	group.LastModificationDate = time.Now().UTC()
@@ -411,18 +466,12 @@ func (s *SchedulerStore) DeleteSchedule(ctx context.Context, groupName, name str
 		return ErrScheduleNotFound
 	}
 	// Delete the primary resource first so tag metadata I/O errors never
-	// block resource lifecycle (Minor 4). Tag cleanup is best-effort:
+	// block resource lifecycle. Tag cleanup is best-effort:
 	// orphaned tag entries are harmless and can be reaped later.
 	err := s.schedulesStore.Delete(key)
 	scheduleRecordWriteMu.Unlock()
 	if err != nil {
 		return err
-	}
-	arn := s.buildScheduleARN(groupName, name)
-	if err := s.TagStore.Delete(arn); err != nil {
-		logs.Warn("Failed to clean up tags for deleted schedule (orphaned tags may remain)",
-			logs.String("arn", arn),
-			logs.Err(err))
 	}
 	return nil
 }

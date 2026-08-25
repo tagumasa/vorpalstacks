@@ -72,6 +72,10 @@ func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt
 			logs.String("arn", evt.StateMachineArn),
 			logs.String("name", evt.StateMachineName),
 			logs.Err(err))
+		// Synchronous publishers (the Scheduler engine publishes via
+		// PublishSync) rely on the handler error to drive their retry and
+		// dead-letter policy, so the failure must be propagated.
+		return eventbus.HandlerResult{Error: err}
 	}
 	return eventbus.HandlerResult{}
 }

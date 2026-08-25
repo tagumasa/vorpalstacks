@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler"
 	"github.com/aws/aws-sdk-go-v2/service/scheduler/types"
 	"vorpalstacks-sdk-tests/config"
@@ -16,6 +17,7 @@ type schedTestContext struct {
 	runner    *TestRunner
 	client    *scheduler.Client
 	iamClient *iam.Client
+	kmsClient *kms.Client
 	ctx       context.Context
 	region    string
 	accountID string
@@ -42,6 +44,7 @@ func (r *TestRunner) RunSchedulerTests() []TestResult {
 		runner:    r,
 		client:    scheduler.NewFromConfig(cfg),
 		iamClient: iam.NewFromConfig(cfg),
+		kmsClient: kms.NewFromConfig(cfg),
 		ctx:       ctx,
 		region:    r.region,
 		accountID: r.accountID,

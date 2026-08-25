@@ -11,27 +11,24 @@ import (
 func (tc *schedTestContext) runTagTests() []TestResult {
 	var results []TestResult
 
-	rn, rARN := tc.createIAMRole()
-	defer tc.deleteIAMRole(rn)
-	schedName := tc.uniqueName("TagSched")
+	// Only schedule groups carry tags: the TagResourceArn pattern accepts
+	// schedule-group ARNs only, so every tag test targets a group.
+	groupName := tc.uniqueName("TagGroup")
 
-	_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-		Name:               aws.String(schedName),
-		ScheduleExpression: aws.String("rate(30 minutes)"),
-		Target:             tc.defaultTarget(rARN),
-		FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+	groupResp, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
+		Name: aws.String(groupName),
 	})
 	if err != nil {
-		results = append(results, TestResult{Service: "scheduler", TestName: "TagSetup", Status: "FAIL", Error: fmt.Sprintf("create: %v", err)})
+		results = append(results, TestResult{Service: "scheduler", TestName: "TagSetup", Status: "FAIL", Error: fmt.Sprintf("create group: %v", err)})
 		return results
 	}
-	defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+	defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
 
-	scheduleARN := tc.scheduleARN(schedName)
+	scheduleGroupARN := groupResp.ScheduleGroupArn
 
 	results = append(results, tc.runner.RunTest("scheduler", "TagResource", func() error {
 		_, err := tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 			Tags: []types.Tag{
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 				{Key: aws.String("Project"), Value: aws.String("vorpalstacks")},
@@ -42,7 +39,7 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 		}
 
 		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &scheduler.ListTagsForResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 		})
 		if err != nil {
 			return fmt.Errorf("list tags after tag: %v", err)
@@ -71,7 +68,7 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "ListTagsForResource", func() error {
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &scheduler.ListTagsForResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 		})
 		if err != nil {
 			return err
@@ -87,7 +84,7 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "UntagResource", func() error {
 		_, err := tc.client.UntagResource(tc.ctx, &scheduler.UntagResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 			TagKeys:     []string{"Environment"},
 		})
 		if err != nil {
@@ -95,7 +92,7 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 		}
 
 		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &scheduler.ListTagsForResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 		})
 		if err != nil {
 			return fmt.Errorf("list tags after untag: %v", err)
@@ -197,9 +194,99 @@ func (tc *schedTestContext) runTagTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.runner.RunTest("scheduler", "TagResource_TooManyTags", func() error {
+		groupName := tc.uniqueName("TooManyTags")
+		groupResp, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("create group: %v", err)
+		}
+		defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+
+		tooMany := make([]types.Tag, 201)
+		for i := range tooMany {
+			tooMany[i] = types.Tag{Key: aws.String(fmt.Sprintf("k%03d", i)), Value: aws.String("v")}
+		}
+		_, err = tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+			Tags:        tooMany,
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "TagResource_KeyTooLong", func() error {
+		groupName := tc.uniqueName("LongKeyGroup")
+		groupResp, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
+			Name: aws.String(groupName),
+		})
+		if err != nil {
+			return fmt.Errorf("create group: %v", err)
+		}
+		defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+
+		longKey := make([]byte, 129)
+		for i := range longKey {
+			longKey[i] = 'k'
+		}
+		_, err = tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
+			ResourceArn: groupResp.ScheduleGroupArn,
+			Tags:        []types.Tag{{Key: aws.String(string(longKey)), Value: aws.String("v")}},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "TagResource_ScheduleArnRejected", func() error {
+		rn, rARN := tc.createIAMRole()
+		defer tc.deleteIAMRole(rn)
+		schedName := tc.uniqueName("TagSchedArn")
+
+		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
+			Name:               aws.String(schedName),
+			ScheduleExpression: aws.String("rate(30 minutes)"),
+			Target:             tc.defaultTarget(rARN),
+			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+
+		// Schedule ARNs are outside the TagResourceArn pattern: only
+		// schedule groups can be tagged.
+		_, err = tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
+			ResourceArn: aws.String(tc.scheduleARN(schedName)),
+			Tags:        []types.Tag{{Key: aws.String("Invalid"), Value: aws.String("target")}},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("scheduler", "TagResource_InvalidArnCharsRejected", func() error {
+		// The TagResourceArn pattern constrains the group-name portion to
+		// [0-9a-zA-Z-_.]+; a malformed ARN is a validation failure, not
+		// a missing group.
+		_, err := tc.client.TagResource(tc.ctx, &scheduler.TagResourceInput{
+			ResourceArn: aws.String(fmt.Sprintf("arn:aws:scheduler:%s:%s:schedule-group/bad@name!", tc.region, tc.accountID)),
+			Tags:        []types.Tag{{Key: aws.String("Invalid"), Value: aws.String("chars")}},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, tc.runner.RunTest("scheduler", "UntagResource_NonExistentKey", func() error {
 		_, err := tc.client.UntagResource(tc.ctx, &scheduler.UntagResourceInput{
-			ResourceArn: aws.String(scheduleARN),
+			ResourceArn: scheduleGroupARN,
 			TagKeys:     []string{"NonExistentKey"},
 		})
 		if err != nil {

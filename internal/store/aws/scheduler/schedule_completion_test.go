@@ -254,12 +254,22 @@ func TestDeleteScheduleGroupNotResurrectedByUpdate(t *testing.T) {
 		}()
 		go func() {
 			defer wg.Done()
-			_ = store.DeleteScheduleGroup(t.Context(), "victim")
+			_ = store.MarkScheduleGroupDeleting(t.Context(), "victim")
 		}()
 		wg.Wait()
 
-		if _, err := store.GetScheduleGroup(t.Context(), "victim"); err != ErrScheduleGroupNotFound {
-			t.Fatalf("iteration %d: schedule group resurrected after delete (err = %v)", i, err)
+		// The delete path marks the group DELETING and purges it later;
+		// either the group is already gone or it must carry the DELETING
+		// state — a concurrent update can never resurrect it as live.
+		group, err = store.GetScheduleGroup(t.Context(), "victim")
+		if err == nil && group.State != ScheduleGroupStateDeleting {
+			t.Fatalf("iteration %d: schedule group resurrected as %s after delete", i, group.State)
 		}
+		if err != nil && err != ErrScheduleGroupNotFound {
+			t.Fatalf("iteration %d: get after delete: %v", i, err)
+		}
+		// Complete the cascade the engine sweep would perform so the
+		// next iteration creates a fresh group.
+		_ = store.PurgeDeletedScheduleGroup(t.Context(), "victim")
 	}
 }

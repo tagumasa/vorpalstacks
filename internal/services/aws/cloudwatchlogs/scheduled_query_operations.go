@@ -462,7 +462,7 @@ func scheduledQueryDue(sq *logsstore.ScheduledQuery, now time.Time) (time.Time, 
 		return time.Time{}, false
 	}
 	creationTime := time.UnixMilli(sq.CreationTime).UTC()
-	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(sq.ScheduleExpression, now.In(scheduledQueryLocation(sq)), creationTime, nil)
+	boundary, elapsed := scheduleexpr.ElapsedExecutionTime(sq.ScheduleExpression, now.In(scheduledQueryLocation(sq)), creationTime, nil, scheduleexpr.RateFiresAfterFirstInterval)
 	if !elapsed {
 		return time.Time{}, false
 	}

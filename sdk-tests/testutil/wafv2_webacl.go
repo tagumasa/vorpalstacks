@@ -134,24 +134,35 @@ func (r *TestRunner) runWAFv2WebACLTests(tc *wafv2TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("wafv2", "ListWebACLs_ContainsCreated", func() error {
-		resp, err := tc.client.ListWebACLs(tc.ctx, &wafv2.ListWebACLsInput{
-			Scope: tc.scope,
-		})
-		if err != nil {
-			return err
-		}
+		// Traverse every page: during a full regression other suites
+		// create WebACLs in parallel, so the first page alone may not
+		// contain this suite's WebACL.
+		var nextToken *string
 		found := false
-		for _, s := range resp.WebACLs {
-			if s.Id != nil && *s.Id == webACLID {
-				found = true
-				if aws.ToString(s.Name) != webACLName {
-					return fmt.Errorf("WebACL name mismatch")
+		for {
+			resp, err := tc.client.ListWebACLs(tc.ctx, &wafv2.ListWebACLsInput{
+				Scope:      tc.scope,
+				NextMarker: nextToken,
+			})
+			if err != nil {
+				return err
+			}
+			for _, s := range resp.WebACLs {
+				if s.Id != nil && *s.Id == webACLID {
+					found = true
+					if aws.ToString(s.Name) != webACLName {
+						return fmt.Errorf("WebACL name mismatch")
+					}
+					if aws.ToString(s.ARN) == "" {
+						return fmt.Errorf("WebACL ARN is empty")
+					}
+					break
 				}
-				if aws.ToString(s.ARN) == "" {
-					return fmt.Errorf("WebACL ARN is empty")
-				}
+			}
+			if found || resp.NextMarker == nil {
 				break
 			}
+			nextToken = resp.NextMarker
 		}
 		if !found {
 			return fmt.Errorf("WebACL not found in list")

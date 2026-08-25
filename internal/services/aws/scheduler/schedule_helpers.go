@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	schedulerstore "vorpalstacks/internal/store/aws/scheduler"
 )
 
@@ -193,6 +194,11 @@ func parseAwsVpcConfiguration(data map[string]interface{}) *schedulerstore.AwsVp
 		}
 	}
 	if sgs, ok := getSliceField(data, "securityGroups", "SecurityGroups"); ok {
+		// Allocate before appending so an explicitly empty list stays
+		// distinguishable from an omitted member: the model constrains a
+		// provided SecurityGroups list to at least one entry, while an
+		// omitted member selects the VPC default security group.
+		vpc.SecurityGroups = []string{}
 		for _, sg := range sgs {
 			if str, ok := sg.(string); ok {
 				vpc.SecurityGroups = append(vpc.SecurityGroups, str)
@@ -287,12 +293,8 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 		return nil, ErrInvalidFlexibleTimeWindow
 	}
 
-	if ftw.Mode == "" {
-		ftw.Mode = schedulerstore.FlexibleTimeWindowModeOff
-	}
-
-	// Mode enum and MaximumWindowInMinutes range validation is performed
-	// by validateFlexibleTimeWindow in validators.go.
+	// Mode is a required member of the FlexibleTimeWindow shape; an empty
+	// Mode is rejected by validateFlexibleTimeWindow in validators.go.
 
 	return ftw, nil
 }
@@ -300,7 +302,7 @@ func parseFlexibleTimeWindow(params map[string]interface{}) (*schedulerstore.Fle
 // validateVpcConfig validates the AwsVpcConfiguration subnets and security
 // groups against the EC2 service via the event bus. All resources must exist
 // and belong to the same VPC. Accepts region directly so both the HTTP API
-// and admin console paths can call it (Minor 3).
+// and admin console paths can call it.
 func (s *SchedulerService) validateVpcConfig(ctx context.Context, region string, target *schedulerstore.Target) error {
 	if s.engine == nil || s.engine.bus == nil {
 		return nil
@@ -315,20 +317,49 @@ func (s *SchedulerService) validateVpcConfig(ctx context.Context, region string,
 
 	ec2 := s.engine.bus.EC2Invoker()
 	if ec2 == nil {
-		return fmt.Errorf("scheduler: EC2 service not available for VPC configuration validation")
+		return awserrors.NewValidationException("scheduler: EC2 service not available for VPC configuration validation")
 	}
 
 	for _, subnetId := range vpc.Subnets {
 		if _, _, err := ec2.LookupSubnet(ctx, region, subnetId); err != nil {
-			return fmt.Errorf("scheduler: subnet %s not found: %v", subnetId, err)
+			return awserrors.NewValidationException(fmt.Sprintf("scheduler: subnet %s not found: %v", subnetId, err))
 		}
 	}
 
 	for _, sgId := range vpc.SecurityGroups {
 		if _, err := ec2.LookupSecurityGroup(ctx, region, sgId); err != nil {
-			return fmt.Errorf("scheduler: security group %s not found: %v", sgId, err)
+			return awserrors.NewValidationException(fmt.Sprintf("scheduler: security group %s not found: %v", sgId, err))
 		}
 	}
 
+	return nil
+}
+
+// validateKmsKey checks that a customer managed KMS key referenced by
+// KmsKeyArn exists. AWS validates the key when the schedule is created:
+// the Encryption at rest documentation requires kms:DescribeKey on the
+// principal "that calls the EventBridge Scheduler API when creating a
+// schedule" — "Required in order to validate that the key you provide is
+// a symmetric encryption KMS key."
+func (s *SchedulerService) validateKmsKey(ctx context.Context, region, kmsKeyArn string) error {
+	if kmsKeyArn == "" {
+		return nil
+	}
+	if s.engine == nil || s.engine.bus == nil {
+		return nil
+	}
+	kms := s.engine.bus.KMSInvoker()
+	if kms == nil {
+		return nil
+	}
+	if !kms.KeyExists(ctx, kmsKeyArn) {
+		return awserrors.NewValidationException(fmt.Sprintf("scheduler: KMS key %s does not exist", kmsKeyArn))
+	}
+	// AWS validates the key class at schedule creation through
+	// kms:DescribeKey: only a symmetric encryption key may protect a
+	// schedule's data.
+	if !kms.SymmetricEncryptionKeyExists(ctx, kmsKeyArn) {
+		return awserrors.NewValidationException(fmt.Sprintf("scheduler: KMS key %s is not a symmetric encryption KMS key", kmsKeyArn))
+	}
 	return nil
 }
