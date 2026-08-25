@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/smithy-go"
 
 	"vorpalstacks-sdk-tests/config"
 )
@@ -110,11 +109,7 @@ func (r *TestRunner) dynamoDBGlobalTableValidationTests(ctx context.Context, cli
 		if err == nil {
 			return errors.New("expected an error without streaming enabled")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "CreateGlobalTable_RequiresEmptyTable", func() error {
@@ -141,11 +136,7 @@ func (r *TestRunner) dynamoDBGlobalTableValidationTests(ctx context.Context, cli
 		if err == nil {
 			return errors.New("expected an error for a non-empty replica table")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "CreateGlobalTable_DuplicateRegion_Rejected", func() error {
@@ -165,11 +156,7 @@ func (r *TestRunner) dynamoDBGlobalTableValidationTests(ctx context.Context, cli
 		if err == nil {
 			return errors.New("expected an error for a duplicated replica region")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "CreateGlobalTable_SchemaMustMatch", func() error {
@@ -193,11 +180,7 @@ func (r *TestRunner) dynamoDBGlobalTableValidationTests(ctx context.Context, cli
 		if err == nil {
 			return errors.New("expected an error for mismatched key schemas")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "CreateGlobalTable_DuplicateName_Rejected", func() error {

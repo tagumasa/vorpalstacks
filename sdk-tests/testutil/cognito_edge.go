@@ -1,20 +1,19 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 )
 
-func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoidentityprovider.Client) []TestResult {
+func (r *TestRunner) cognitoEdgeCaseTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito", "DescribeUserPool_NonExistent", func() error {
-		_, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+		_, err := tc.client.DescribeUserPool(tc.ctx, &cognitoidentityprovider.DescribeUserPoolInput{
 			UserPoolId: aws.String(fmt.Sprintf("%s_nonexistentpool", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -24,7 +23,7 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteUserPool_NonExistent", func() error {
-		_, err := client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+		_, err := tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 			UserPoolId: aws.String(fmt.Sprintf("%s_nonexistentpool", r.region)),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -34,18 +33,13 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminGetUser_NonExistent", func() error {
-		errPoolName := fmt.Sprintf("err-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(errPoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("err-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: createResp.UserPool.Id,
+		defer cleanupPool()
+		_, err = tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(poolID),
 			Username:   aws.String("nonexistent-user-xyz"),
 		})
 		if err := AssertErrorContains(err, "UserNotFoundException"); err != nil {
@@ -55,45 +49,32 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "CreateUserPool_DuplicateName", func() error {
-		dupPoolName := fmt.Sprintf("dup-pool-%d", time.Now().UnixNano())
-		resp1, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(dupPoolName),
-		})
+		dupPoolName := tc.unique("dup-pool")
+		pool1, cleanup1, err := tc.createUserPool(dupPoolName)
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: resp1.UserPool.Id,
-		})
-		resp2, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(dupPoolName),
-		})
+		defer cleanup1()
+		pool2, cleanup2, err := tc.createUserPool(dupPoolName)
 		if err != nil {
 			return fmt.Errorf("duplicate name should be allowed (unique IDs), got: %v", err)
 		}
-		if resp2.UserPool.Id == nil || *resp2.UserPool.Id == *resp1.UserPool.Id {
+		if pool2 == "" || pool2 == pool1 {
 			return fmt.Errorf("duplicate pool should have different ID")
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: resp2.UserPool.Id,
-		})
+		defer cleanup2()
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminCreateUser_VerifyAttributes", func() error {
-		errPoolName := fmt.Sprintf("attr-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(errPoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("attr-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		attrUser := fmt.Sprintf("attr-user-%d", time.Now().UnixNano())
-		createUserResp, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        createResp.UserPool.Id,
+		defer cleanupPool()
+		attrUser := tc.unique("attr-user")
+		createUserResp, err := tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:        aws.String(poolID),
 			Username:          aws.String(attrUser),
 			TemporaryPassword: aws.String("TempPass123!"),
 			MessageAction:     types.MessageActionTypeSuppress,
@@ -121,19 +102,14 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListUsers_ContainsCreated", func() error {
-		errPoolName := fmt.Sprintf("list-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(errPoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("list-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		listUser := fmt.Sprintf("list-user-%d", time.Now().UnixNano())
-		_, err = client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        createResp.UserPool.Id,
+		defer cleanupPool()
+		listUser := tc.unique("list-user")
+		_, err = tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:        aws.String(poolID),
 			Username:          aws.String(listUser),
 			TemporaryPassword: aws.String("TempPass123!"),
 			MessageAction:     types.MessageActionTypeSuppress,
@@ -141,8 +117,8 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		resp, err := client.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
-			UserPoolId: createResp.UserPool.Id,
+		resp, err := tc.client.ListUsers(tc.ctx, &cognitoidentityprovider.ListUsersInput{
+			UserPoolId: aws.String(poolID),
 		})
 		if err != nil {
 			return err
@@ -161,27 +137,22 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListGroups_ContainsCreated", func() error {
-		errPoolName := fmt.Sprintf("grp-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(errPoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("grp-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		testGroup := fmt.Sprintf("test-grp-%d", time.Now().UnixNano())
-		_, err = client.CreateGroup(ctx, &cognitoidentityprovider.CreateGroupInput{
+		defer cleanupPool()
+		testGroup := tc.unique("test-grp")
+		_, err = tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
 			GroupName:   aws.String(testGroup),
-			UserPoolId:  createResp.UserPool.Id,
+			UserPoolId:  aws.String(poolID),
 			Description: aws.String("Test group description"),
 		})
 		if err != nil {
 			return fmt.Errorf("create group: %v", err)
 		}
-		resp, err := client.ListGroups(ctx, &cognitoidentityprovider.ListGroupsInput{
-			UserPoolId: createResp.UserPool.Id,
+		resp, err := tc.client.ListGroups(tc.ctx, &cognitoidentityprovider.ListGroupsInput{
+			UserPoolId: aws.String(poolID),
 		})
 		if err != nil {
 			return err
@@ -203,19 +174,14 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "GetGroup_NonExistent", func() error {
-		nePoolName := fmt.Sprintf("ge-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(nePoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("ge-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.GetGroup(ctx, &cognitoidentityprovider.GetGroupInput{
+		defer cleanupPool()
+		_, err = tc.client.GetGroup(tc.ctx, &cognitoidentityprovider.GetGroupInput{
 			GroupName:  aws.String("nonexistent-group-xyz"),
-			UserPoolId: createResp.UserPool.Id,
+			UserPoolId: aws.String(poolID),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
@@ -224,18 +190,13 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "DescribeIdentityProvider_NonExistent", func() error {
-		nePoolName := fmt.Sprintf("dip-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(nePoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("dip-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.DescribeIdentityProvider(ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
-			UserPoolId:   createResp.UserPool.Id,
+		defer cleanupPool()
+		_, err = tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(poolID),
 			ProviderName: aws.String("nonexistent-idp-xyz"),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -245,18 +206,13 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "DescribeResourceServer_NonExistent", func() error {
-		nePoolName := fmt.Sprintf("drs-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(nePoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("drs-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.DescribeResourceServer(ctx, &cognitoidentityprovider.DescribeResourceServerInput{
-			UserPoolId: createResp.UserPool.Id,
+		defer cleanupPool()
+		_, err = tc.client.DescribeResourceServer(tc.ctx, &cognitoidentityprovider.DescribeResourceServerInput{
+			UserPoolId: aws.String(poolID),
 			Identifier: aws.String("nonexistent-rs-xyz"),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -266,18 +222,13 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteIdentityProvider_NonExistent", func() error {
-		nePoolName := fmt.Sprintf("dlip-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(nePoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("dlip-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.DeleteIdentityProvider(ctx, &cognitoidentityprovider.DeleteIdentityProviderInput{
-			UserPoolId:   createResp.UserPool.Id,
+		defer cleanupPool()
+		_, err = tc.client.DeleteIdentityProvider(tc.ctx, &cognitoidentityprovider.DeleteIdentityProviderInput{
+			UserPoolId:   aws.String(poolID),
 			ProviderName: aws.String("nonexistent-idp-xyz"),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -287,18 +238,13 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteResourceServer_NonExistent", func() error {
-		nePoolName := fmt.Sprintf("dlrs-pool-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(nePoolName),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("dlrs-pool"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
-		_, err = client.DeleteResourceServer(ctx, &cognitoidentityprovider.DeleteResourceServerInput{
-			UserPoolId: createResp.UserPool.Id,
+		defer cleanupPool()
+		_, err = tc.client.DeleteResourceServer(tc.ctx, &cognitoidentityprovider.DeleteResourceServerInput{
+			UserPoolId: aws.String(poolID),
 			Identifier: aws.String("nonexistent-rs-xyz"),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
@@ -308,52 +254,46 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListUserPools_Pagination", func() error {
-		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
-		var pgPoolIds []string
+		var cleanupPools []func()
+		defer func() {
+			for _, cleanup := range cleanupPools {
+				cleanup()
+			}
+		}()
 		for i := 0; i < 5; i++ {
-			name := fmt.Sprintf("PagPool-%s-%d", pgTs, i)
-			createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-				PoolName: aws.String(name),
-			})
+			_, cleanupPool, err := tc.createUserPool(fmt.Sprintf("PagPool-%s-%d", tc.ts, i))
 			if err != nil {
-				for _, pid := range pgPoolIds {
-					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
-				}
-				return fmt.Errorf("create user pool %s: %v", name, err)
+				return err
 			}
-			if createResp.UserPool == nil || createResp.UserPool.Id == nil {
-				for _, pid := range pgPoolIds {
-					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
-				}
-				return fmt.Errorf("create user pool %s: UserPool.Id is nil", name)
-			}
-			pgPoolIds = append(pgPoolIds, *createResp.UserPool.Id)
+			cleanupPools = append(cleanupPools, cleanupPool)
 		}
+
 		pageCount := 0
-		var nextToken *string
-		for {
-			resp, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{
+		pools, err := paginate(func(next *string) ([]types.UserPoolDescriptionType, *string, error) {
+			pageCount++
+			resp, err := tc.client.ListUserPools(tc.ctx, &cognitoidentityprovider.ListUserPoolsInput{
 				MaxResults: aws.Int32(2),
-				NextToken:  nextToken,
+				NextToken:  next,
 			})
 			if err != nil {
-				for _, pid := range pgPoolIds {
-					client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
-				}
-				return fmt.Errorf("list user pools page: %v", err)
+				return nil, nil, err
 			}
-			pageCount++
-			if resp.NextToken != nil && *resp.NextToken != "" {
-				nextToken = resp.NextToken
-			} else {
-				break
-			}
-		}
-		for _, pid := range pgPoolIds {
-			client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(pid)})
+			return resp.UserPools, resp.NextToken, nil
+		})
+		if err != nil {
+			return fmt.Errorf("list user pools page: %v", err)
 		}
 		if pageCount < 2 {
 			return fmt.Errorf("expected at least 2 pages with MaxResults=2, got %d", pageCount)
+		}
+		sawOwn := 0
+		for _, pool := range pools {
+			if pool.Name != nil && strings.Contains(*pool.Name, "PagPool-"+tc.ts) {
+				sawOwn++
+			}
+		}
+		if sawOwn != 5 {
+			return fmt.Errorf("expected all 5 paginated pools across pages, got %d", sawOwn)
 		}
 		return nil
 	}))
@@ -361,16 +301,16 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 	// MaxResults above the Smithy PoolQueryLimitType maximum of 60 must be
 	// rejected with InvalidParameterException instead of being silently
 	// clamped to the default.
-	results = append(results, r.RunTest("cognitoidp", "ListUserPools_MaxResultsOverLimit_Rejected", func() error {
-		_, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{
+	results = append(results, r.RunTest("cognito", "ListUserPools_MaxResultsOverLimit_Rejected", func() error {
+		_, err := tc.client.ListUserPools(tc.ctx, &cognitoidentityprovider.ListUserPoolsInput{
 			MaxResults: aws.Int32(61),
 		})
 		return AssertErrorContains(err, "InvalidParameterException")
 	}))
 
 	// ListUsers.Limit is QueryLimitType (range 0-60); 61 must be rejected.
-	results = append(results, r.RunTest("cognitoidp", "ListUsers_LimitOverLimit_Rejected", func() error {
-		pools, err := client.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{MaxResults: aws.Int32(1)})
+	results = append(results, r.RunTest("cognito", "ListUsers_LimitOverLimit_Rejected", func() error {
+		pools, err := tc.client.ListUserPools(tc.ctx, &cognitoidentityprovider.ListUserPoolsInput{MaxResults: aws.Int32(1)})
 		if err != nil {
 			return fmt.Errorf("list pools: %v", err)
 		}
@@ -378,7 +318,7 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 		if len(pools.UserPools) > 0 && pools.UserPools[0].Id != nil {
 			poolID = *pools.UserPools[0].Id
 		}
-		_, err = client.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
+		_, err = tc.client.ListUsers(tc.ctx, &cognitoidentityprovider.ListUsersInput{
 			UserPoolId: aws.String(poolID),
 			Limit:      aws.Int32(61),
 		})
@@ -390,12 +330,12 @@ func (r *TestRunner) cognitoEdgeCaseTests(ctx context.Context, client *cognitoid
 
 // cognitoPoolValidationNegativeTests pins the model-derived range and
 // pattern validation on the pool and client creation paths.
-func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, client *cognitoidentityprovider.Client) []TestResult {
+func (r *TestRunner) cognitoPoolValidationNegativeTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidPasswordPolicyMinimumLength", func() error {
-		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("invalid-policy-%d", time.Now().UnixNano())),
+		_, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(tc.unique("invalid-policy")),
 			Policies: &types.UserPoolPolicyType{
 				PasswordPolicy: &types.PasswordPolicyType{
 					MinimumLength: aws.Int32(5),
@@ -409,8 +349,8 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	}))
 
 	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidTemporaryPasswordValidityDays", func() error {
-		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("invalid-days-%d", time.Now().UnixNano())),
+		_, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(tc.unique("invalid-days")),
 			Policies: &types.UserPoolPolicyType{
 				PasswordPolicy: &types.PasswordPolicyType{
 					MinimumLength:                 aws.Int32(8),
@@ -425,8 +365,8 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	}))
 
 	results = append(results, r.RunTest("cognito", "CreateUserPool_InvalidLambdaConfigArn", func() error {
-		_, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("invalid-lambda-%d", time.Now().UnixNano())),
+		_, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(tc.unique("invalid-lambda")),
 			LambdaConfig: &types.LambdaConfigType{
 				PreSignUp: aws.String("not-an-arn"),
 			},
@@ -443,30 +383,28 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	// phone_number_verified. Only custom attribute names carry the
 	// 1-20 character constraint.
 	results = append(results, r.RunTest("cognito", "CreateUserPool_StandardSchemaAttributes", func() error {
-		schemaPoolName := fmt.Sprintf("standard-schema-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(schemaPoolName),
-			Schema: []types.SchemaAttributeType{
-				{
-					Name:              aws.String("email"),
-					AttributeDataType: types.AttributeDataTypeString,
-					Required:          aws.Bool(true),
-				},
-				{
-					Name:              aws.String("phone_number_verified"),
-					AttributeDataType: types.AttributeDataTypeBoolean,
-					Mutable:           aws.Bool(true),
-				},
-			},
-		})
+		schemaPoolName := tc.unique("standard-schema")
+		_, cleanupPool, err := tc.createUserPool(schemaPoolName,
+			func(input *cognitoidentityprovider.CreateUserPoolInput) {
+				input.Schema = []types.SchemaAttributeType{
+					{
+						Name:              aws.String("email"),
+						AttributeDataType: types.AttributeDataTypeString,
+						Required:          aws.Bool(true),
+					},
+					{
+						Name:              aws.String("phone_number_verified"),
+						AttributeDataType: types.AttributeDataTypeBoolean,
+						Mutable:           aws.Bool(true),
+					},
+				}
+			})
 		if err != nil {
 			return fmt.Errorf("standard schema attributes rejected: %v", err)
 		}
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: createResp.UserPool.Id,
-		})
+		defer cleanupPool()
 
-		_, err = client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+		_, err = tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
 			PoolName: aws.String(schemaPoolName + "-custom"),
 			Schema: []types.SchemaAttributeType{
 				{
@@ -482,8 +420,8 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	// SDK-visible, carries the full standard attribute set with the pool's
 	// settings, and prefixes custom attribute names.
 	results = append(results, r.RunTest("cognito", "CreateUserPool_SchemaAttributesPrefixedOutput", func() error {
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("schema-output-%d", time.Now().UnixNano())),
+		createResp, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
+			PoolName: aws.String(tc.unique("schema-output")),
 			Schema: []types.SchemaAttributeType{
 				{Name: aws.String("rank"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
 				{Name: aws.String("email"), AttributeDataType: types.AttributeDataTypeString, Required: aws.Bool(true)},
@@ -496,7 +434,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 			return fmt.Errorf("UserPool missing from create response")
 		}
 		poolID := *createResp.UserPool.Id
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+		defer tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 			UserPoolId: aws.String(poolID),
 		})
 
@@ -528,7 +466,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 			return fmt.Errorf("create response: %v", err)
 		}
 
-		descResp, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+		descResp, err := tc.client.DescribeUserPool(tc.ctx, &cognitoidentityprovider.DescribeUserPoolInput{
 			UserPoolId: aws.String(poolID),
 		})
 		if err != nil {
@@ -544,25 +482,19 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	// cognito:mfa_enabled) plus the pool's custom attribute columns with
 	// the custom: prefix, without duplicating standard attribute names.
 	results = append(results, r.RunTest("cognito", "GetCSVHeader_CustomAttributeColumns", func() error {
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("csv-header-%d", time.Now().UnixNano())),
-			Schema: []types.SchemaAttributeType{
-				{Name: aws.String("rank"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
-				{Name: aws.String("email"), AttributeDataType: types.AttributeDataTypeString, Required: aws.Bool(true)},
-			},
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("csv-header"),
+			func(input *cognitoidentityprovider.CreateUserPoolInput) {
+				input.Schema = []types.SchemaAttributeType{
+					{Name: aws.String("rank"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
+					{Name: aws.String("email"), AttributeDataType: types.AttributeDataTypeString, Required: aws.Bool(true)},
+				}
+			})
 		if err != nil {
 			return fmt.Errorf("create pool with schema: %v", err)
 		}
-		if createResp.UserPool == nil || createResp.UserPool.Id == nil {
-			return fmt.Errorf("UserPool missing from create response")
-		}
-		poolID := *createResp.UserPool.Id
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: aws.String(poolID),
-		})
+		defer cleanupPool()
 
-		resp, err := client.GetCSVHeader(ctx, &cognitoidentityprovider.GetCSVHeaderInput{
+		resp, err := tc.client.GetCSVHeader(tc.ctx, &cognitoidentityprovider.GetCSVHeaderInput{
 			UserPoolId: aws.String(poolID),
 		})
 		if err != nil {
@@ -596,21 +528,13 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	// UpdateUserPool carries no Schema member in the model; an update must
 	// never drop custom attributes added through AddCustomAttributes.
 	results = append(results, r.RunTest("cognito", "UpdateUserPool_PreservesSchemaAttributes", func() error {
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(fmt.Sprintf("schema-preserve-%d", time.Now().UnixNano())),
-		})
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("schema-preserve"))
 		if err != nil {
 			return fmt.Errorf("create pool: %v", err)
 		}
-		if createResp.UserPool == nil || createResp.UserPool.Id == nil {
-			return fmt.Errorf("UserPool missing from create response")
-		}
-		poolID := *createResp.UserPool.Id
-		defer client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: aws.String(poolID),
-		})
+		defer cleanupPool()
 
-		if _, err := client.AddCustomAttributes(ctx, &cognitoidentityprovider.AddCustomAttributesInput{
+		if _, err := tc.client.AddCustomAttributes(tc.ctx, &cognitoidentityprovider.AddCustomAttributesInput{
 			UserPoolId: aws.String(poolID),
 			CustomAttributes: []types.SchemaAttributeType{
 				{Name: aws.String("loyalty"), AttributeDataType: types.AttributeDataTypeString, Mutable: aws.Bool(true)},
@@ -618,7 +542,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 		}); err != nil {
 			return fmt.Errorf("add custom attributes: %v", err)
 		}
-		if _, err := client.UpdateUserPool(ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+		if _, err := tc.client.UpdateUserPool(tc.ctx, &cognitoidentityprovider.UpdateUserPoolInput{
 			UserPoolId: aws.String(poolID),
 			Policies: &types.UserPoolPolicyType{
 				PasswordPolicy: &types.PasswordPolicyType{
@@ -629,7 +553,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 			return fmt.Errorf("update pool: %v", err)
 		}
 
-		descResp, err := client.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+		descResp, err := tc.client.DescribeUserPool(tc.ctx, &cognitoidentityprovider.DescribeUserPoolInput{
 			UserPoolId: aws.String(poolID),
 		})
 		if err != nil {
@@ -646,10 +570,10 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 		return fmt.Errorf("custom:loyalty missing from SchemaAttributes after update")
 	}))
 
-	poolName := fmt.Sprintf("client-validation-%d", time.Now().UnixNano())
+	poolName := tc.unique("client-validation")
 	var poolID string
 	results = append(results, r.RunTest("cognito", "CreateUserPoolClient_InvalidClientName", func() error {
-		createResp, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+		createResp, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
 			PoolName: aws.String(poolName),
 		})
 		if err != nil {
@@ -657,7 +581,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 		}
 		poolID = *createResp.UserPool.Id
 
-		_, err = client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
+		_, err = tc.client.CreateUserPoolClient(tc.ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
 			UserPoolId: aws.String(poolID),
 			ClientName: aws.String("bad:name"),
 		})
@@ -668,7 +592,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 	}))
 	if poolID != "" {
 		results = append(results, r.RunTest("cognito", "UpdateUserPool_InvalidTemporaryPasswordValidityDays", func() error {
-			_, err := client.UpdateUserPool(ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+			_, err := tc.client.UpdateUserPool(tc.ctx, &cognitoidentityprovider.UpdateUserPoolInput{
 				UserPoolId: aws.String(poolID),
 				Policies: &types.UserPoolPolicyType{
 					PasswordPolicy: &types.PasswordPolicyType{
@@ -680,7 +604,7 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(ctx context.Context, cli
 			if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
 				return err
 			}
-			_, _ = client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			_, _ = tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 				UserPoolId: aws.String(poolID),
 			})
 			return nil

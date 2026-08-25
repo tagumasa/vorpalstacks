@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"io"
 	"strings"
 )
 
@@ -30,20 +29,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "GetObject", func() error {
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("test.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "Hello, World!" {
-			return fmt.Errorf("expected body %q, got %q", "Hello, World!", string(body))
+		if gotBody != "Hello, World!" {
+			return fmt.Errorf("expected body %q, got %q", "Hello, World!", gotBody)
 		}
 		if resp.ContentLength == nil || *resp.ContentLength != 13 {
 			return fmt.Errorf("expected ContentLength 13, got %v", resp.ContentLength)
@@ -158,20 +152,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("CopyObject failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("copy-dest.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "copy me" {
-			return fmt.Errorf("expected body %q, got %q", "copy me", string(body))
+		if gotBody != "copy me" {
+			return fmt.Errorf("expected body %q, got %q", "copy me", gotBody)
 		}
 		return nil
 	}))
@@ -198,20 +187,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("CopyObject with REPLACE failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("metadata-dest.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "original content" {
-			return fmt.Errorf("expected body content unchanged with REPLACE, got %q", string(body))
+		if gotBody != "original content" {
+			return fmt.Errorf("expected body content unchanged with REPLACE, got %q", gotBody)
 		}
 		if resp.Metadata["replaced-key"] != "new-value" {
 			return fmt.Errorf("expected metadata replaced-key=new-value, got %v", resp.Metadata["replaced-key"])
@@ -235,20 +219,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("verify.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != content {
-			return fmt.Errorf("expected body %q, got %q", content, string(body))
+		if gotBody != content {
+			return fmt.Errorf("expected body %q, got %q", content, gotBody)
 		}
 		if resp.ContentLength == nil || *resp.ContentLength != int64(len(content)) {
 			return fmt.Errorf("expected ContentLength %d, got %v", len(content), resp.ContentLength)
@@ -275,20 +254,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("PutObject second failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("overwrite.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "second" {
-			return fmt.Errorf("expected body %q, got %q", "second", string(body))
+		if gotBody != "second" {
+			return fmt.Errorf("expected body %q, got %q", "second", gotBody)
 		}
 		return nil
 	}))
@@ -537,24 +511,11 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "ListObjectVersions", func() error {
-		verBucket := s3Bucket(ts, "versions")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(verBucket),
-		})
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "versions"))
 		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		for i := 0; i < 3; i++ {
 			_, err := client.PutObject(ctx, &s3.PutObjectInput{

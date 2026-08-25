@@ -73,20 +73,28 @@ func (r *TestRunner) runSFNEdgeTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_InvalidDefinition", func() error {
-		invalidName := fmt.Sprintf("InvalidSM-%d", time.Now().UnixNano())
-		_, invalidRoleARN, invalidRoleCleanup := tc.createRoleForSM("InvalidRole")
-		defer invalidRoleCleanup()
-		_, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(invalidName),
-			Definition: aws.String("not valid json {{{"),
-			RoleArn:    aws.String(invalidRoleARN),
-		})
-		if err == nil {
-			return fmt.Errorf("server accepted invalid definition, expected InvalidDefinition error")
+	// Malformed definitions are rejected with InvalidDefinition at
+	// creation time; each row exercises a distinct malformation class.
+	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_DefinitionRejections", func() error {
+		rejections := []struct {
+			label      string
+			definition string
+		}{
+			{"MalformedJSON", "not valid json {{{"},
+			{"UnknownStateField", `{"StartAt":"S","States":{"S":{"Type":"Pass","ResultPat":"$.x","End":true}}}`},
+			{"MissingTransitionTarget", `{"StartAt":"A","States":{"A":{"Type":"Pass","Next":"Missing"}}}`},
 		}
-		if err := AssertErrorContains(err, "InvalidDefinition"); err != nil {
-			return err
+		for _, row := range rejections {
+			_, roleARN, roleCleanup := tc.createRoleForSM("InvalidDefRole")
+			defer roleCleanup()
+			_, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
+				Name:       aws.String(fmt.Sprintf("InvalidDef-%s-%d", row.label, time.Now().UnixNano())),
+				Definition: aws.String(row.definition),
+				RoleArn:    aws.String(roleARN),
+			})
+			if cerr := expectAWSErrorCode(err, "InvalidDefinition"); cerr != nil {
+				return fmt.Errorf("%s: %v", row.label, cerr)
+			}
 		}
 		return nil
 	}))

@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -10,13 +9,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/types"
 )
 
-func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cognitoidentity.Client, poolID string) []TestResult {
+func (r *TestRunner) cognitoIdentityRolesTests(tc *cognitoIdentityContext) []TestResult {
 	var results []TestResult
 	acct := r.accountID
 
 	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles", func() error {
-		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		_, err := tc.client.SetIdentityPoolRoles(tc.ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 			Roles: map[string]string{
 				"authenticated":   fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
 				"unauthenticated": fmt.Sprintf("arn:aws:iam::%s:role/unauth-role", acct),
@@ -25,8 +24,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if err != nil {
 			return err
 		}
-		rolesResp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		rolesResp, err := tc.client.GetIdentityPoolRoles(tc.ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return fmt.Errorf("GetIdentityPoolRoles after set: %v", err)
@@ -38,8 +37,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "GetIdentityPoolRoles", func() error {
-		resp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		resp, err := tc.client.GetIdentityPoolRoles(tc.ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return err
@@ -57,8 +56,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles_WithMappings", func() error {
-		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		_, err := tc.client.SetIdentityPoolRoles(tc.ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 			Roles: map[string]string{
 				"authenticated": fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
 			},
@@ -72,8 +71,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if err != nil {
 			return err
 		}
-		resp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		resp, err := tc.client.GetIdentityPoolRoles(tc.ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return err
@@ -90,17 +89,13 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "SetIdentityPoolRoles_RuleMappings", func() error {
-		name := fmt.Sprintf("test-idpool-rules-%s", poolID[len(poolID)-5:])
-		createResp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
-			IdentityPoolName:               aws.String(name),
-			AllowUnauthenticatedIdentities: true,
-		})
+		pid, cleanupPid, err := tc.createIdPool(fmt.Sprintf("test-idpool-rules-%s", tc.poolID[len(tc.poolID)-5:]))
 		if err != nil {
 			return err
 		}
-		pid := *createResp.IdentityPoolId
+		defer cleanupPid()
 
-		_, err = client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+		_, err = tc.client.SetIdentityPoolRoles(tc.ctx, &cognitoidentity.SetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String(pid),
 			Roles: map[string]string{
 				"authenticated": fmt.Sprintf("arn:aws:iam::%s:role/auth", acct),
@@ -126,7 +121,7 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 			return err
 		}
 
-		resp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+		resp, err := tc.client.GetIdentityPoolRoles(tc.ctx, &cognitoidentity.GetIdentityPoolRolesInput{
 			IdentityPoolId: aws.String(pid),
 		})
 		if err != nil {
@@ -146,9 +141,6 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if *rule.Claim != "isAdmin" {
 			return fmt.Errorf("expected claim isAdmin")
 		}
-		client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
-			IdentityPoolId: aws.String(pid),
-		})
 		return nil
 	}))
 
@@ -161,8 +153,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 			"authenticated":   fmt.Sprintf("arn:aws:iam::%s:role/auth-role", acct),
 			"unauthenticated": fmt.Sprintf("arn:aws:iam::%s:role/unauth-role", acct),
 		}
-		_, err := client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		_, err := tc.client.SetIdentityPoolRoles(tc.ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 			Roles:          baseRoles,
 			RoleMappings: map[string]types.RoleMapping{
 				cjkKey: {
@@ -174,8 +166,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 		if err != nil {
 			return fmt.Errorf("set with multibyte mapping key: %v", err)
 		}
-		resp, err := client.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		resp, err := tc.client.GetIdentityPoolRoles(tc.ctx, &cognitoidentity.GetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return err
@@ -184,8 +176,8 @@ func (r *TestRunner) cognitoIdentityRolesTests(ctx context.Context, client *cogn
 			return fmt.Errorf("multibyte role-mapping key not persisted")
 		}
 		// Restore the plain two-role state for later readers.
-		_, err = client.SetIdentityPoolRoles(ctx, &cognitoidentity.SetIdentityPoolRolesInput{
-			IdentityPoolId: aws.String(poolID),
+		_, err = tc.client.SetIdentityPoolRoles(tc.ctx, &cognitoidentity.SetIdentityPoolRolesInput{
+			IdentityPoolId: aws.String(tc.poolID),
 			Roles:          baseRoles,
 		})
 		return err

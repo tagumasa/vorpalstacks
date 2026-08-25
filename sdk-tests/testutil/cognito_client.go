@@ -1,22 +1,20 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 )
 
-func (r *TestRunner) cognitoClientTests(ctx context.Context, client *cognitoidentityprovider.Client, userPoolID string) []TestResult {
+func (r *TestRunner) cognitoClientTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
-	clientName := fmt.Sprintf("test-client-%d", time.Now().UnixNano())
+	clientName := tc.unique("test-client")
 	var clientID string
 	results = append(results, r.RunTest("cognito", "CreateUserPoolClient", func() error {
-		resp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.CreateUserPoolClient(tc.ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			ClientName: aws.String(clientName),
 		})
 		if err != nil {
@@ -40,9 +38,9 @@ func (r *TestRunner) cognitoClientTests(ctx context.Context, client *cognitoiden
 
 	if clientID != "" {
 		results = append(results, r.RunTest("cognito", "DescribeUserPoolClient", func() error {
-			resp, err := client.DescribeUserPoolClient(ctx, &cognitoidentityprovider.DescribeUserPoolClientInput{
+			resp, err := tc.client.DescribeUserPoolClient(tc.ctx, &cognitoidentityprovider.DescribeUserPoolClientInput{
 				ClientId:   aws.String(clientID),
-				UserPoolId: aws.String(userPoolID),
+				UserPoolId: aws.String(tc.userPoolID),
 			})
 			if err != nil {
 				return err
@@ -56,16 +54,16 @@ func (r *TestRunner) cognitoClientTests(ctx context.Context, client *cognitoiden
 			if resp.UserPoolClient.ClientName == nil || *resp.UserPoolClient.ClientName != clientName {
 				return fmt.Errorf("ClientName mismatch: got %v, want %s", resp.UserPoolClient.ClientName, clientName)
 			}
-			if resp.UserPoolClient.UserPoolId == nil || *resp.UserPoolClient.UserPoolId != userPoolID {
-				return fmt.Errorf("UserPoolId mismatch: got %v, want %s", resp.UserPoolClient.UserPoolId, userPoolID)
+			if resp.UserPoolClient.UserPoolId == nil || *resp.UserPoolClient.UserPoolId != tc.userPoolID {
+				return fmt.Errorf("UserPoolId mismatch: got %v, want %s", resp.UserPoolClient.UserPoolId, tc.userPoolID)
 			}
 			return nil
 		}))
 
 		results = append(results, r.RunTest("cognito", "UpdateUserPoolClient", func() error {
-			resp, err := client.UpdateUserPoolClient(ctx, &cognitoidentityprovider.UpdateUserPoolClientInput{
+			resp, err := tc.client.UpdateUserPoolClient(tc.ctx, &cognitoidentityprovider.UpdateUserPoolClientInput{
 				ClientId:   aws.String(clientID),
-				UserPoolId: aws.String(userPoolID),
+				UserPoolId: aws.String(tc.userPoolID),
 				ClientName: aws.String("updated-client"),
 			})
 			if err != nil {
@@ -82,8 +80,8 @@ func (r *TestRunner) cognitoClientTests(ctx context.Context, client *cognitoiden
 	}
 
 	results = append(results, r.RunTest("cognito", "ListUserPoolClients", func() error {
-		resp, err := client.ListUserPoolClients(ctx, &cognitoidentityprovider.ListUserPoolClientsInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.ListUserPoolClients(tc.ctx, &cognitoidentityprovider.ListUserPoolClientsInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			MaxResults: aws.Int32(10),
 		})
 		if err != nil {
@@ -110,16 +108,16 @@ func (r *TestRunner) cognitoClientTests(ctx context.Context, client *cognitoiden
 
 	if clientID != "" {
 		results = append(results, r.RunTest("cognito", "DeleteUserPoolClient", func() error {
-			_, err := client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
+			_, err := tc.client.DeleteUserPoolClient(tc.ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
 				ClientId:   aws.String(clientID),
-				UserPoolId: aws.String(userPoolID),
+				UserPoolId: aws.String(tc.userPoolID),
 			})
 			if err != nil {
 				return err
 			}
-			_, err = client.DescribeUserPoolClient(ctx, &cognitoidentityprovider.DescribeUserPoolClientInput{
+			_, err = tc.client.DescribeUserPoolClient(tc.ctx, &cognitoidentityprovider.DescribeUserPoolClientInput{
 				ClientId:   aws.String(clientID),
-				UserPoolId: aws.String(userPoolID),
+				UserPoolId: aws.String(tc.userPoolID),
 			})
 			if err == nil {
 				return fmt.Errorf("expected error describing deleted client")

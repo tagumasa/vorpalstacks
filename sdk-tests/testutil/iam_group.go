@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
 func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
@@ -46,29 +47,28 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListGroups", func() error {
-		var found bool
-		var marker *string
-		for {
+		groups, err := iamPaginate(func(marker *string) ([]types.Group, *string, error) {
 			resp, err := tc.client.ListGroups(tc.ctx, &iam.ListGroupsInput{Marker: marker})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, g := range resp.Groups {
-				if aws.ToString(g.GroupName) == tc.group {
-					found = true
-					if aws.ToString(g.Arn) == "" {
-						return fmt.Errorf("group arn is empty in list")
-					}
-					break
-				}
-			}
-			if found || !resp.IsTruncated || resp.Marker == nil {
+			return resp.Groups, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		var matched *types.Group
+		for i := range groups {
+			if aws.ToString(groups[i].GroupName) == tc.group {
+				matched = &groups[i]
 				break
 			}
-			marker = resp.Marker
 		}
-		if !found {
+		if matched == nil {
 			return fmt.Errorf("group %s not found in ListGroups", tc.group)
+		}
+		if aws.ToString(matched.Arn) == "" {
+			return fmt.Errorf("group arn is empty in list")
 		}
 		return nil
 	}))

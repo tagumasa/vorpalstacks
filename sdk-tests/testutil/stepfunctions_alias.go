@@ -143,7 +143,7 @@ func (r *TestRunner) runSFNAliasTests(tc *sfnTestContext) []TestResult {
 			},
 		}
 		firstResp, err := tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
-			Name:               aws.String(dupAliasName),
+			Name:                 aws.String(dupAliasName),
 			RoutingConfiguration: routing,
 		})
 		if err != nil {
@@ -155,7 +155,7 @@ func (r *TestRunner) runSFNAliasTests(tc *sfnTestContext) []TestResult {
 
 		// An identical retry returns the existing alias, not a conflict.
 		secondResp, err := tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
-			Name:               aws.String(dupAliasName),
+			Name:                 aws.String(dupAliasName),
 			RoutingConfiguration: routing,
 		})
 		if err != nil {
@@ -168,11 +168,11 @@ func (r *TestRunner) runSFNAliasTests(tc *sfnTestContext) []TestResult {
 
 		// The same name with a different description stays a conflict.
 		_, err = tc.client.CreateStateMachineAlias(tc.ctx, &sfn.CreateStateMachineAliasInput{
-			Name:               aws.String(dupAliasName),
-			Description:        aws.String("different parameters"),
+			Name:                 aws.String(dupAliasName),
+			Description:          aws.String("different parameters"),
 			RoutingConfiguration: routing,
 		})
-		return expectAPIErrorCode(err, "ConflictException")
+		return expectAWSErrorCode(err, "ConflictException")
 	}))
 
 	return results

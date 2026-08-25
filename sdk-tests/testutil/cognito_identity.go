@@ -29,9 +29,15 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 	client := cognitoidentity.NewFromConfig(cfg)
 	ctx := context.Background()
 
-	poolName := fmt.Sprintf("test-idpool-%d", time.Now().UnixNano())
+	tc := &cognitoIdentityContext{
+		r:      r,
+		ctx:    ctx,
+		client: client,
+		ts:     fmt.Sprintf("%d", time.Now().UnixNano()),
+	}
 
-	var poolID string
+	poolName := tc.unique("test-idpool")
+
 	results = append(results, r.RunTest("cognito-identity", "CreateIdentityPool", func() error {
 		resp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
 			IdentityPoolName:               aws.String(poolName),
@@ -49,21 +55,22 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		if !resp.AllowUnauthenticatedIdentities {
 			return fmt.Errorf("expected AllowUnauthenticatedIdentities true")
 		}
-		poolID = *resp.IdentityPoolId
+		tc.poolID = *resp.IdentityPoolId
 		return nil
 	}))
 
-	if poolID != "" {
-		results = append(results, r.cognitoIdentityPoolTests(ctx, client, poolID)...)
-		results = append(results, r.cognitoIdentityRolesTests(ctx, client, poolID)...)
+	if tc.poolID != "" {
+		results = append(results, r.cognitoIdentityPoolTests(tc)...)
+		results = append(results, r.cognitoIdentityRolesTests(tc)...)
 
-		idResults, identityID := r.cognitoIdentityIdTests(ctx, client, poolID)
+		idResults := r.cognitoIdentityIdTests(tc)
 		results = append(results, idResults...)
 
-		results = append(results, r.cognitoIdentityCredentialsTests(ctx, client, poolID, identityID)...)
-		results = append(results, r.cognitoIdentityDeveloperTests(ctx, client, poolID, identityID)...)
-		results = append(results, r.cognitoIdentityTagsTests(ctx, client, poolID)...)
+		results = append(results, r.cognitoIdentityCredentialsTests(tc)...)
+		results = append(results, r.cognitoIdentityDeveloperTests(tc)...)
+		results = append(results, r.cognitoIdentityTagsTests(tc)...)
 
+		poolID := tc.poolID
 		results = append(results, r.RunTest("cognito-identity", "DeleteIdentityPool", func() error {
 			_, err := client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
 				IdentityPoolId: aws.String(poolID),
@@ -81,7 +88,48 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		}))
 	}
 
-	results = append(results, r.cognitoIdentityEdgeTests(ctx, client)...)
+	results = append(results, r.cognitoIdentityEdgeTests(tc)...)
 
 	return results
+}
+
+// cognitoIdentityContext carries the identity-pool suite state: the
+// identity client, the lifecycle pool created by the CreateIdentityPool
+// test (empty in the edge context that owns its pools), the identity ID
+// produced by the GetId stage, and a unique per-suite suffix.
+type cognitoIdentityContext struct {
+	r          *TestRunner
+	ctx        context.Context
+	client     *cognitoidentity.Client
+	poolID     string
+	identityID string
+	ts         string
+}
+
+// unique returns a per-suite unique resource name.
+func (tc *cognitoIdentityContext) unique(prefix string) string {
+	return prefix + "-" + tc.ts
+}
+
+// createIdPool creates a throwaway identity pool with unauthenticated
+// identities allowed by default and returns its ID plus a cleanup
+// closure deleting it.
+func (tc *cognitoIdentityContext) createIdPool(name string, opts ...func(*cognitoidentity.CreateIdentityPoolInput)) (string, func(), error) {
+	input := &cognitoidentity.CreateIdentityPoolInput{
+		IdentityPoolName:               aws.String(name),
+		AllowUnauthenticatedIdentities: true,
+	}
+	for _, opt := range opts {
+		opt(input)
+	}
+	resp, err := tc.client.CreateIdentityPool(tc.ctx, input)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("create identity pool %s: %w", name, err)
+	}
+	poolID := aws.ToString(resp.IdentityPoolId)
+	return poolID, func() {
+		_, _ = tc.client.DeleteIdentityPool(tc.ctx, &cognitoidentity.DeleteIdentityPoolInput{
+			IdentityPoolId: aws.String(poolID),
+		})
+	}, nil
 }

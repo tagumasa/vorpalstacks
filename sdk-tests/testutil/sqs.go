@@ -12,6 +12,39 @@ import (
 	"vorpalstacks-sdk-tests/config"
 )
 
+// createTestQueue creates a throwaway queue for a single test case and
+// returns its URL together with a cleanup function that deletes it. The URL
+// is taken from the CreateQueue response itself; no extra GetQueueUrl
+// round-trip is needed.
+func createTestQueue(ctx context.Context, client *sqs.Client, name string, attributes map[string]string) (*string, func(), error) {
+	resp, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+		QueueName:  aws.String(name),
+		Attributes: attributes,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("create %s: %v", name, err)
+	}
+	if resp.QueueUrl == nil {
+		return nil, nil, fmt.Errorf("CreateQueue returned nil QueueUrl for %s", name)
+	}
+	cleanup := func() {
+		client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: resp.QueueUrl})
+	}
+	return resp.QueueUrl, cleanup, nil
+}
+
+// queueArn fetches the QueueArn attribute of the given queue.
+func queueArn(ctx context.Context, client *sqs.Client, queueURL *string) (string, error) {
+	resp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       queueURL,
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+	})
+	if err != nil {
+		return "", fmt.Errorf("get arn: %v", err)
+	}
+	return resp.Attributes[string(types.QueueAttributeNameQueueArn)], nil
+}
+
 func (r *TestRunner) RunSQSTests() []TestResult {
 	var results []TestResult
 

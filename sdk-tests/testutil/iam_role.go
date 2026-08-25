@@ -67,29 +67,28 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListRoles", func() error {
-		var found bool
-		var marker *string
-		for {
+		roles, err := iamPaginate(func(marker *string) ([]types.Role, *string, error) {
 			resp, err := tc.client.ListRoles(tc.ctx, &iam.ListRolesInput{Marker: marker})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, r := range resp.Roles {
-				if aws.ToString(r.RoleName) == tc.role {
-					found = true
-					if aws.ToString(r.Arn) == "" {
-						return fmt.Errorf("role arn is empty in list")
-					}
-					break
-				}
-			}
-			if found || !resp.IsTruncated || resp.Marker == nil {
+			return resp.Roles, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		var matched *types.Role
+		for i := range roles {
+			if aws.ToString(roles[i].RoleName) == tc.role {
+				matched = &roles[i]
 				break
 			}
-			marker = resp.Marker
 		}
-		if !found {
+		if matched == nil {
 			return fmt.Errorf("role %s not found in ListRoles", tc.role)
+		}
+		if aws.ToString(matched.Arn) == "" {
+			return fmt.Errorf("role arn is empty in list")
 		}
 		return nil
 	}))
@@ -135,17 +134,9 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "UpdateAssumeRolePolicy", func() error {
-		newTrustPolicy := `{
-			"Version": "2012-10-17",
-			"Statement": [{
-				"Effect": "Allow",
-				"Principal": {"Service": "ec2.amazonaws.com"},
-				"Action": "sts:AssumeRole"
-			}]
-		}`
 		_, err := tc.client.UpdateAssumeRolePolicy(tc.ctx, &iam.UpdateAssumeRolePolicyInput{
 			RoleName:       aws.String(tc.role),
-			PolicyDocument: aws.String(newTrustPolicy),
+			PolicyDocument: aws.String(ec2AssumeRolePolicy),
 		})
 		if err != nil {
 			return err

@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/smithy-go"
 )
 
 // dynamoDBInputValidationTests pins input-validation contracts that the
@@ -69,14 +68,7 @@ func (r *TestRunner) dynamoDBInputValidationTests(ctx context.Context, client *d
 		if err == nil {
 			return fmt.Errorf("expected ValidationException for a numeric key on a string table")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected APIError, got %v", err)
-		}
-		if apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got %s", apiErr.ErrorCode())
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "CreateTable_PayPerRequestWithProvisionedThroughput_Rejected", func() error {
@@ -97,14 +89,7 @@ func (r *TestRunner) dynamoDBInputValidationTests(ctx context.Context, client *d
 		if err == nil {
 			return fmt.Errorf("expected ValidationException for ProvisionedThroughput on a PAY_PER_REQUEST table")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected APIError, got %v", err)
-		}
-		if apiErr.ErrorCode() != "ValidationException" {
-			return fmt.Errorf("expected ValidationException, got %s", apiErr.ErrorCode())
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "TableDescription_WarmThroughputEchoedAndOmitted", func() error {

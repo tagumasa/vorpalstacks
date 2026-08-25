@@ -47,28 +47,22 @@ func (r *TestRunner) iamInstanceProfileTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListInstanceProfiles", func() error {
-		var found bool
-		var marker *string
-		for {
+		profiles, err := iamPaginate(func(marker *string) ([]types.InstanceProfile, *string, error) {
 			resp, err := tc.client.ListInstanceProfiles(tc.ctx, &iam.ListInstanceProfilesInput{Marker: marker})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, ip := range resp.InstanceProfiles {
-				if aws.ToString(ip.InstanceProfileName) == tc.profile {
-					found = true
-					break
-				}
-			}
-			if found || !resp.IsTruncated || resp.Marker == nil {
-				break
-			}
-			marker = resp.Marker
+			return resp.InstanceProfiles, resp.Marker, nil
+		})
+		if err != nil {
+			return err
 		}
-		if !found {
-			return fmt.Errorf("instance profile %s not found", tc.profile)
+		for _, ip := range profiles {
+			if aws.ToString(ip.InstanceProfileName) == tc.profile {
+				return nil
+			}
 		}
-		return nil
+		return fmt.Errorf("instance profile %s not found", tc.profile)
 	}))
 
 	results = append(results, r.RunTest("iam", "AddRoleToInstanceProfile", func() error {

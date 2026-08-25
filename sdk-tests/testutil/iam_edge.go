@@ -100,152 +100,147 @@ func (r *TestRunner) iamEdgeTests(tc *iamTestContext) []TestResult {
 func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("iam", "ListUsers_Pagination", func() error {
+	// ListEntities_Pagination pins marker-based traversal across the
+	// three core entity lists. Five entities of each kind are created
+	// and then walked two per page; during a full regression other
+	// services create resources concurrently, so a single page is never
+	// guaranteed to hold everything.
+	results = append(results, r.RunTest("iam", "ListEntities_Pagination", func() error {
 		pgTs := tc.ts
-		var pgUsers []string
-		for i := 0; i < 5; i++ {
-			name := fmt.Sprintf("PagUser-%s-%d", pgTs, i)
-			_, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(name)})
-			if err != nil {
-				return fmt.Errorf("create user %s: %v", name, err)
-			}
-			pgUsers = append(pgUsers, name)
-		}
+		wildcardDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}`
 
-		var allUsers []types.User
-		var marker *string
-		for {
-			resp, err := tc.client.ListUsers(tc.ctx, &iam.ListUsersInput{
-				PathPrefix: aws.String("/"),
-				Marker:     marker,
-				MaxItems:   aws.Int32(2),
-			})
-			if err != nil {
-				for _, name := range pgUsers {
+		cases := []struct {
+			label    string
+			prefix   string
+			create   func(name string) (key string, err error)
+			remove   func(key string)
+			listPage func(marker *string) ([]string, *string, error)
+		}{
+			{
+				label:  "user",
+				prefix: "PagUser",
+				create: func(name string) (string, error) {
+					if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(name)}); err != nil {
+						return "", err
+					}
+					return name, nil
+				},
+				remove: func(name string) {
 					tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(name)})
-				}
-				return fmt.Errorf("list users page: %v", err)
-			}
-			for _, u := range resp.Users {
-				if strings.HasPrefix(aws.ToString(u.UserName), "PagUser-"+pgTs) {
-					allUsers = append(allUsers, u)
-				}
-			}
-			if resp.IsTruncated && resp.Marker != nil {
-				marker = resp.Marker
-			} else {
-				break
-			}
-		}
-
-		for _, name := range pgUsers {
-			tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(name)})
-		}
-
-		if len(allUsers) != 5 {
-			return fmt.Errorf("expected 5 paginated users, got %d", len(allUsers))
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("iam", "ListRoles_Pagination", func() error {
-		pgTs := tc.ts
-		var pgRoles []string
-		for i := 0; i < 5; i++ {
-			name := fmt.Sprintf("PagRole-%s-%d", pgTs, i)
-			_, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-				RoleName:                 aws.String(name),
-				AssumeRolePolicyDocument: aws.String(assumeRolePolicy),
-			})
-			if err != nil {
-				return fmt.Errorf("create role %s: %v", name, err)
-			}
-			pgRoles = append(pgRoles, name)
-		}
-
-		var allRoles []types.Role
-		var marker *string
-		for {
-			resp, err := tc.client.ListRoles(tc.ctx, &iam.ListRolesInput{
-				PathPrefix: aws.String("/"),
-				Marker:     marker,
-				MaxItems:   aws.Int32(2),
-			})
-			if err != nil {
-				for _, name := range pgRoles {
+				},
+				listPage: func(marker *string) ([]string, *string, error) {
+					resp, err := tc.client.ListUsers(tc.ctx, &iam.ListUsersInput{
+						PathPrefix: aws.String("/"),
+						Marker:     marker,
+						MaxItems:   aws.Int32(2),
+					})
+					if err != nil {
+						return nil, nil, err
+					}
+					names := make([]string, 0, len(resp.Users))
+					for _, u := range resp.Users {
+						names = append(names, aws.ToString(u.UserName))
+					}
+					return names, resp.Marker, nil
+				},
+			},
+			{
+				label:  "role",
+				prefix: "PagRole",
+				create: func(name string) (string, error) {
+					if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
+						RoleName:                 aws.String(name),
+						AssumeRolePolicyDocument: aws.String(assumeRolePolicy),
+					}); err != nil {
+						return "", err
+					}
+					return name, nil
+				},
+				remove: func(name string) {
 					tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(name)})
-				}
-				return fmt.Errorf("list roles page: %v", err)
-			}
-			for _, r := range resp.Roles {
-				if strings.HasPrefix(aws.ToString(r.RoleName), "PagRole-"+pgTs) {
-					allRoles = append(allRoles, r)
-				}
-			}
-			if resp.IsTruncated && resp.Marker != nil {
-				marker = resp.Marker
-			} else {
-				break
-			}
-		}
-
-		for _, name := range pgRoles {
-			tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(name)})
-		}
-
-		if len(allRoles) != 5 {
-			return fmt.Errorf("expected 5 paginated roles, got %d", len(allRoles))
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("iam", "ListPolicies_Pagination", func() error {
-		pgTs := tc.ts
-		var pgPolicyArns []string
-		for i := 0; i < 5; i++ {
-			name := fmt.Sprintf("PagPolicy-%s-%d", pgTs, i)
-			resp, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-				PolicyName:     aws.String(name),
-				PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}`),
-			})
-			if err != nil {
-				return fmt.Errorf("create policy %s: %v", name, err)
-			}
-			pgPolicyArns = append(pgPolicyArns, aws.ToString(resp.Policy.Arn))
-		}
-
-		var allPolicies []types.Policy
-		var marker *string
-		for {
-			resp, err := tc.client.ListPolicies(tc.ctx, &iam.ListPoliciesInput{
-				Scope:    types.PolicyScopeTypeLocal,
-				Marker:   marker,
-				MaxItems: aws.Int32(2),
-			})
-			if err != nil {
-				for _, arn := range pgPolicyArns {
+				},
+				listPage: func(marker *string) ([]string, *string, error) {
+					resp, err := tc.client.ListRoles(tc.ctx, &iam.ListRolesInput{
+						PathPrefix: aws.String("/"),
+						Marker:     marker,
+						MaxItems:   aws.Int32(2),
+					})
+					if err != nil {
+						return nil, nil, err
+					}
+					names := make([]string, 0, len(resp.Roles))
+					for _, ro := range resp.Roles {
+						names = append(names, aws.ToString(ro.RoleName))
+					}
+					return names, resp.Marker, nil
+				},
+			},
+			{
+				label:  "policy",
+				prefix: "PagPolicy",
+				create: func(name string) (string, error) {
+					resp, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
+						PolicyName:     aws.String(name),
+						PolicyDocument: aws.String(wildcardDoc),
+					})
+					if err != nil {
+						return "", err
+					}
+					return aws.ToString(resp.Policy.Arn), nil
+				},
+				remove: func(arn string) {
 					tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
-				}
-				return fmt.Errorf("list policies page: %v", err)
-			}
-			for _, p := range resp.Policies {
-				if strings.HasPrefix(aws.ToString(p.PolicyName), "PagPolicy-"+pgTs) {
-					allPolicies = append(allPolicies, p)
-				}
-			}
-			if resp.IsTruncated && resp.Marker != nil {
-				marker = resp.Marker
-			} else {
-				break
-			}
+				},
+				listPage: func(marker *string) ([]string, *string, error) {
+					resp, err := tc.client.ListPolicies(tc.ctx, &iam.ListPoliciesInput{
+						Scope:    types.PolicyScopeTypeLocal,
+						Marker:   marker,
+						MaxItems: aws.Int32(2),
+					})
+					if err != nil {
+						return nil, nil, err
+					}
+					names := make([]string, 0, len(resp.Policies))
+					for _, p := range resp.Policies {
+						names = append(names, aws.ToString(p.PolicyName))
+					}
+					return names, resp.Marker, nil
+				},
+			},
 		}
 
-		for _, arn := range pgPolicyArns {
-			tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
-		}
+		for _, pc := range cases {
+			var created []string
+			for i := 0; i < 5; i++ {
+				name := fmt.Sprintf("%s-%s-%d", pc.prefix, pgTs, i)
+				key, err := pc.create(name)
+				if err != nil {
+					for _, k := range created {
+						pc.remove(k)
+					}
+					return fmt.Errorf("create %s %s: %v", pc.label, name, err)
+				}
+				created = append(created, key)
+			}
 
-		if len(allPolicies) != 5 {
-			return fmt.Errorf("expected 5 paginated policies, got %d", len(allPolicies))
+			collected, err := iamPaginate(pc.listPage)
+
+			for _, k := range created {
+				pc.remove(k)
+			}
+			if err != nil {
+				return fmt.Errorf("list %s pages: %v", pc.label, err)
+			}
+
+			count := 0
+			for _, name := range collected {
+				if strings.HasPrefix(name, pc.prefix+"-"+pgTs) {
+					count++
+				}
+			}
+			if count != 5 {
+				return fmt.Errorf("expected 5 paginated %ss, got %d", pc.label, count)
+			}
 		}
 		return nil
 	}))
@@ -369,108 +364,71 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 	// Deleting a user that has a permissions boundary attached must
 	// decrement the referenced policy's PermissionsBoundaryUsageCount.
 	results = append(results, r.RunTest("iam", "DeleteUser_DecrementsPermissionsBoundaryUsageCount", func() error {
-		policyName := "EdgePBDriftUser-" + tc.ts
-		createOut, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(s3FullAccessPolicy),
-		})
+		pbArn, cleanupPolicy, err := tc.createPolicy("EdgePBDriftUser-"+tc.ts, s3FullAccessPolicy)
 		if err != nil {
 			return fmt.Errorf("setup CreatePolicy failed: %w", err)
 		}
-		policyArn := aws.ToString(createOut.Policy.Arn)
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(policyArn)})
+		defer cleanupPolicy()
 
 		userName := "EdgePBDriftUser-" + tc.ts
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{
-			UserName: aws.String(userName),
-		}); err != nil {
+		cleanupUser, err := tc.createUser(userName)
+		if err != nil {
 			return fmt.Errorf("setup CreateUser failed: %w", err)
 		}
 
-		if _, err := tc.client.PutUserPermissionsBoundary(tc.ctx, &iam.PutUserPermissionsBoundaryInput{
-			UserName:            aws.String(userName),
-			PermissionsBoundary: aws.String(policyArn),
-		}); err != nil {
-			tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(userName)})
-			return fmt.Errorf("PutUserPermissionsBoundary failed: %w", err)
-		}
-
-		// Verify the counter is incremented before deletion.
-		getBefore, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(policyArn)})
-		if err != nil {
-			return fmt.Errorf("GetPolicy (before) failed: %w", err)
-		}
-		if aws.ToInt32(getBefore.Policy.PermissionsBoundaryUsageCount) != 1 {
-			return fmt.Errorf("expected PermissionsBoundaryUsageCount=1 before delete, got %d", aws.ToInt32(getBefore.Policy.PermissionsBoundaryUsageCount))
-		}
-
-		if _, err := tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(userName)}); err != nil {
-			return fmt.Errorf("DeleteUser failed: %w", err)
-		}
-
-		// After deletion the counter must return to 0.
-		getAfter, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(policyArn)})
-		if err != nil {
-			return fmt.Errorf("GetPolicy (after) failed: %w", err)
-		}
-		if aws.ToInt32(getAfter.Policy.PermissionsBoundaryUsageCount) != 0 {
-			return fmt.Errorf("expected PermissionsBoundaryUsageCount=0 after delete, got %d", aws.ToInt32(getAfter.Policy.PermissionsBoundaryUsageCount))
-		}
-		return nil
+		return iamAssertBoundaryUsageDrift(tc, pbArn,
+			func() error {
+				if _, err := tc.client.PutUserPermissionsBoundary(tc.ctx, &iam.PutUserPermissionsBoundaryInput{
+					UserName:            aws.String(userName),
+					PermissionsBoundary: aws.String(pbArn),
+				}); err != nil {
+					cleanupUser()
+					return fmt.Errorf("PutUserPermissionsBoundary failed: %w", err)
+				}
+				return nil
+			},
+			func() error {
+				if _, err := tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(userName)}); err != nil {
+					return fmt.Errorf("DeleteUser failed: %w", err)
+				}
+				return nil
+			},
+		)
 	}))
 
 	// Deleting a role that has a permissions boundary attached must
 	// decrement the referenced policy's PermissionsBoundaryUsageCount.
 	results = append(results, r.RunTest("iam", "DeleteRole_DecrementsPermissionsBoundaryUsageCount", func() error {
-		policyName := "EdgePBDriftRole-" + tc.ts
-		createOut, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(s3FullAccessPolicy),
-		})
+		pbArn, cleanupPolicy, err := tc.createPolicy("EdgePBDriftRole-"+tc.ts, s3FullAccessPolicy)
 		if err != nil {
 			return fmt.Errorf("setup CreatePolicy failed: %w", err)
 		}
-		policyArn := aws.ToString(createOut.Policy.Arn)
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(policyArn)})
+		defer cleanupPolicy()
 
 		roleName := "EdgePBDriftRole-" + tc.ts
-		if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(roleName),
-			AssumeRolePolicyDocument: aws.String(assumeRolePolicy),
-		}); err != nil {
+		cleanupRole, err := tc.createRole(roleName)
+		if err != nil {
 			return fmt.Errorf("setup CreateRole failed: %w", err)
 		}
 
-		if _, err := tc.client.PutRolePermissionsBoundary(tc.ctx, &iam.PutRolePermissionsBoundaryInput{
-			RoleName:            aws.String(roleName),
-			PermissionsBoundary: aws.String(policyArn),
-		}); err != nil {
-			tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
-			return fmt.Errorf("PutRolePermissionsBoundary failed: %w", err)
-		}
-
-		// Verify the counter is incremented before deletion.
-		getBefore, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(policyArn)})
-		if err != nil {
-			return fmt.Errorf("GetPolicy (before) failed: %w", err)
-		}
-		if aws.ToInt32(getBefore.Policy.PermissionsBoundaryUsageCount) != 1 {
-			return fmt.Errorf("expected PermissionsBoundaryUsageCount=1 before delete, got %d", aws.ToInt32(getBefore.Policy.PermissionsBoundaryUsageCount))
-		}
-
-		if _, err := tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)}); err != nil {
-			return fmt.Errorf("DeleteRole failed: %w", err)
-		}
-
-		// After deletion the counter must return to 0.
-		getAfter, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(policyArn)})
-		if err != nil {
-			return fmt.Errorf("GetPolicy (after) failed: %w", err)
-		}
-		if aws.ToInt32(getAfter.Policy.PermissionsBoundaryUsageCount) != 0 {
-			return fmt.Errorf("expected PermissionsBoundaryUsageCount=0 after delete, got %d", aws.ToInt32(getAfter.Policy.PermissionsBoundaryUsageCount))
-		}
-		return nil
+		return iamAssertBoundaryUsageDrift(tc, pbArn,
+			func() error {
+				if _, err := tc.client.PutRolePermissionsBoundary(tc.ctx, &iam.PutRolePermissionsBoundaryInput{
+					RoleName:            aws.String(roleName),
+					PermissionsBoundary: aws.String(pbArn),
+				}); err != nil {
+					cleanupRole()
+					return fmt.Errorf("PutRolePermissionsBoundary failed: %w", err)
+				}
+				return nil
+			},
+			func() error {
+				if _, err := tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)}); err != nil {
+					return fmt.Errorf("DeleteRole failed: %w", err)
+				}
+				return nil
+			},
+		)
 	}))
 
 	// CreateRole with Description exceeding Smithy roleDescriptionType
@@ -517,15 +475,11 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 	// CreateUser with PermissionsBoundary at creation time must set the
 	// boundary in a single API call.
 	results = append(results, r.RunTest("iam", "CreateUser_WithPermissionsBoundary", func() error {
-		policyName := "EdgeCreateUserPB-" + tc.ts
-		createOut, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:Get*","Resource":"*"}]}`),
-		})
+		pbArn, cleanupPolicy, err := tc.createPolicy("EdgeCreateUserPB-"+tc.ts, iamAllowPolicy("s3:Get*"))
 		if err != nil {
 			return fmt.Errorf("CreatePolicy for PB test: %w", err)
 		}
-		pbArn := aws.ToString(createOut.Policy.Arn)
+		defer cleanupPolicy()
 
 		userName := "edge-user-pb-create-" + tc.ts
 		createUserResp, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{
@@ -535,66 +489,79 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("CreateUser with PermissionsBoundary failed: %w", err)
 		}
+		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(userName)})
+
 		if createUserResp.User.PermissionsBoundary == nil {
 			return fmt.Errorf("CreateUser response missing PermissionsBoundary")
 		}
-		if aws.ToString(createUserResp.User.PermissionsBoundary.PermissionsBoundaryArn) != pbArn {
-			return fmt.Errorf("PermissionsBoundary ARN mismatch: got %s, want %s",
-				aws.ToString(createUserResp.User.PermissionsBoundary.PermissionsBoundaryArn), pbArn)
+		if got := aws.ToString(createUserResp.User.PermissionsBoundary.PermissionsBoundaryArn); got != pbArn {
+			return fmt.Errorf("PermissionsBoundary ARN mismatch: got %s, want %s", got, pbArn)
 		}
 
-		// Verify PB usage count was incremented
-		getPolicy, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{
-			PolicyArn: aws.String(pbArn),
-		})
-		if err != nil {
-			return fmt.Errorf("GetPolicy for PB count check: %w", err)
-		}
-		if aws.ToInt32(getPolicy.Policy.PermissionsBoundaryUsageCount) != 1 {
-			return fmt.Errorf("PermissionsBoundaryUsageCount should be 1, got %d",
-				aws.ToInt32(getPolicy.Policy.PermissionsBoundaryUsageCount))
-		}
-
-		// Clean up
-		_, _ = tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(userName)})
-		_, _ = tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(pbArn)})
-		return nil
+		// Verify PB usage count was incremented; the deferred cleanups
+		// remove the user before the policy it bounds.
+		return iamAssertBoundaryUsageCount(tc, "after create-with-boundary", pbArn, 1)
 	}))
 
 	// CreateRole with PermissionsBoundary at creation time
 	results = append(results, r.RunTest("iam", "CreateRole_WithPermissionsBoundary", func() error {
-		policyName := "EdgeCreateRolePB-" + tc.ts
-		createOut, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:Get*","Resource":"*"}]}`),
-		})
+		pbArn, cleanupPolicy, err := tc.createPolicy("EdgeCreateRolePB-"+tc.ts, iamAllowPolicy("s3:Get*"))
 		if err != nil {
 			return fmt.Errorf("CreatePolicy for role PB test: %w", err)
 		}
-		pbArn := aws.ToString(createOut.Policy.Arn)
+		defer cleanupPolicy()
 
 		roleName := "edge-role-pb-create-" + tc.ts
 		createRoleResp, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
 			RoleName:                 aws.String(roleName),
-			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
+			AssumeRolePolicyDocument: aws.String(ec2AssumeRolePolicy),
 			PermissionsBoundary:      aws.String(pbArn),
 		})
 		if err != nil {
 			return fmt.Errorf("CreateRole with PermissionsBoundary failed: %w", err)
 		}
+		defer tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
+
 		if createRoleResp.Role.PermissionsBoundary == nil {
 			return fmt.Errorf("CreateRole response missing PermissionsBoundary")
 		}
-		if aws.ToString(createRoleResp.Role.PermissionsBoundary.PermissionsBoundaryArn) != pbArn {
-			return fmt.Errorf("PermissionsBoundary ARN mismatch: got %s, want %s",
-				aws.ToString(createRoleResp.Role.PermissionsBoundary.PermissionsBoundaryArn), pbArn)
+		if got := aws.ToString(createRoleResp.Role.PermissionsBoundary.PermissionsBoundaryArn); got != pbArn {
+			return fmt.Errorf("PermissionsBoundary ARN mismatch: got %s, want %s", got, pbArn)
 		}
 
-		// Clean up
-		_, _ = tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
-		_, _ = tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(pbArn)})
-		return nil
+		return iamAssertBoundaryUsageCount(tc, "after create-with-boundary", pbArn, 1)
 	}))
 
 	return results
+}
+
+// iamAssertBoundaryUsageCount verifies that the policy's
+// PermissionsBoundaryUsageCount equals want, where what locates the
+// check in failure messages.
+func iamAssertBoundaryUsageCount(tc *iamTestContext, what, pbArn string, want int32) error {
+	getPolicy, err := tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(pbArn)})
+	if err != nil {
+		return fmt.Errorf("GetPolicy (%s) failed: %w", what, err)
+	}
+	if got := aws.ToInt32(getPolicy.Policy.PermissionsBoundaryUsageCount); got != want {
+		return fmt.Errorf("expected PermissionsBoundaryUsageCount=%d %s, got %d", want, what, got)
+	}
+	return nil
+}
+
+// iamAssertBoundaryUsageDrift attaches pbArn to an entity via attach,
+// asserts the referenced policy's usage count is 1, deletes the
+// boundary-bearing entity via removeEntity, and asserts the count
+// returns to 0.
+func iamAssertBoundaryUsageDrift(tc *iamTestContext, pbArn string, attach, removeEntity func() error) error {
+	if err := attach(); err != nil {
+		return err
+	}
+	if err := iamAssertBoundaryUsageCount(tc, "before delete", pbArn, 1); err != nil {
+		return err
+	}
+	if err := removeEntity(); err != nil {
+		return err
+	}
+	return iamAssertBoundaryUsageCount(tc, "after delete", pbArn, 0)
 }

@@ -56,32 +56,31 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListPolicies", func() error {
-		var found bool
-		var marker *string
-		for {
+		policies, err := iamPaginate(func(marker *string) ([]types.Policy, *string, error) {
 			resp, err := tc.client.ListPolicies(tc.ctx, &iam.ListPoliciesInput{
 				Scope:  types.PolicyScopeTypeLocal,
 				Marker: marker,
 			})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, p := range resp.Policies {
-				if aws.ToString(p.PolicyName) == tc.policy {
-					found = true
-					if aws.ToString(p.Arn) != tc.policyArn {
-						return fmt.Errorf("policy arn mismatch in list")
-					}
-					break
-				}
-			}
-			if found || !resp.IsTruncated || resp.Marker == nil {
+			return resp.Policies, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		var matched *types.Policy
+		for i := range policies {
+			if aws.ToString(policies[i].PolicyName) == tc.policy {
+				matched = &policies[i]
 				break
 			}
-			marker = resp.Marker
 		}
-		if !found {
+		if matched == nil {
 			return fmt.Errorf("policy %s not found in ListPolicies", tc.policy)
+		}
+		if aws.ToString(matched.Arn) != tc.policyArn {
+			return fmt.Errorf("policy arn mismatch in list")
 		}
 		return nil
 	}))
@@ -548,7 +547,7 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 
 		resp, err := tc.client.CreatePolicyVersion(tc.ctx, &iam.CreatePolicyVersionInput{
 			PolicyArn:      aws.String(arn),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+			PolicyDocument: aws.String(iamAllowPolicy("s3:GetObject")),
 			SetAsDefault:   false,
 		})
 		if err == nil {
@@ -616,7 +615,7 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 
 		if _, err := tc.client.CreatePolicyVersion(tc.ctx, &iam.CreatePolicyVersionInput{
 			PolicyArn:      aws.String(arn),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+			PolicyDocument: aws.String(iamAllowPolicy("s3:GetObject")),
 			SetAsDefault:   false,
 		}); err == nil || !containsErrorCode(err, "NoSuchEntity") {
 			return fmt.Errorf("CreatePolicyVersion on an unseeded AWS-managed ARN: got %v, want NoSuchEntity", err)
@@ -627,7 +626,7 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 	results = append(results, r.RunTest("iam", "CreatePolicy_DescriptionTooLong", func() error {
 		_, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
 			PolicyName:     aws.String(fmt.Sprintf("LongDesc-%s", tc.ts)),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+			PolicyDocument: aws.String(iamAllowPolicy("s3:GetObject")),
 			Description:    aws.String(strings.Repeat("d", 1001)),
 		})
 		if err == nil {
@@ -641,28 +640,26 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "SimulatePrincipalPolicy", func() error {
 		user := fmt.Sprintf("SimUser-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
-			return err
-		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
-
-		attach, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(fmt.Sprintf("SimPolicy-%s", tc.ts)),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:ListBucket","Resource":"*"}]}`),
-		})
+		cleanupUser, err := tc.createUser(user)
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: attach.Policy.Arn})
+		defer cleanupUser()
+
+		simArn, cleanupSim, err := tc.createPolicy(fmt.Sprintf("SimPolicy-%s", tc.ts), iamAllowPolicy("s3:ListBucket"))
+		if err != nil {
+			return err
+		}
+		defer cleanupSim()
 		if _, err := tc.client.AttachUserPolicy(tc.ctx, &iam.AttachUserPolicyInput{
 			UserName:  aws.String(user),
-			PolicyArn: attach.Policy.Arn,
+			PolicyArn: aws.String(simArn),
 		}); err != nil {
 			return err
 		}
 		defer tc.client.DetachUserPolicy(tc.ctx, &iam.DetachUserPolicyInput{
 			UserName:  aws.String(user),
-			PolicyArn: attach.Policy.Arn,
+			PolicyArn: aws.String(simArn),
 		})
 
 		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
@@ -697,61 +694,52 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(group)})
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 		if _, err := tc.client.AddUserToGroup(tc.ctx, &iam.AddUserToGroupInput{GroupName: aws.String(group), UserName: aws.String(user)}); err != nil {
 			return err
 		}
 		defer tc.client.RemoveUserFromGroup(tc.ctx, &iam.RemoveUserFromGroupInput{GroupName: aws.String(group), UserName: aws.String(user)})
 
-		doc := func(action string) *string {
-			return aws.String(fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":%q,"Resource":"*"}]}`, action))
-		}
-
-		userPol, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(fmt.Sprintf("LPGSA-usr-%s", tc.ts)),
-			PolicyDocument: doc("s3:ListBucket"),
-		})
+		usrPolArn, cleanupUsrPol, err := tc.createPolicy(fmt.Sprintf("LPGSA-usr-%s", tc.ts), iamAllowPolicy("s3:ListBucket"))
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: userPol.Policy.Arn})
+		defer cleanupUsrPol()
 		if _, err := tc.client.AttachUserPolicy(tc.ctx, &iam.AttachUserPolicyInput{
 			UserName:  aws.String(user),
-			PolicyArn: userPol.Policy.Arn,
+			PolicyArn: aws.String(usrPolArn),
 		}); err != nil {
 			return err
 		}
 		defer tc.client.DetachUserPolicy(tc.ctx, &iam.DetachUserPolicyInput{
 			UserName:  aws.String(user),
-			PolicyArn: userPol.Policy.Arn,
+			PolicyArn: aws.String(usrPolArn),
 		})
 
-		grpPol, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(fmt.Sprintf("LPGSA-grp-%s", tc.ts)),
-			PolicyDocument: doc("ec2:*"),
-		})
+		grpPolArn, cleanupGrpPol, err := tc.createPolicy(fmt.Sprintf("LPGSA-grp-%s", tc.ts), iamAllowPolicy("ec2:*"))
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: grpPol.Policy.Arn})
+		defer cleanupGrpPol()
 		if _, err := tc.client.AttachGroupPolicy(tc.ctx, &iam.AttachGroupPolicyInput{
 			GroupName: aws.String(group),
-			PolicyArn: grpPol.Policy.Arn,
+			PolicyArn: aws.String(grpPolArn),
 		}); err != nil {
 			return err
 		}
 		defer tc.client.DetachGroupPolicy(tc.ctx, &iam.DetachGroupPolicyInput{
 			GroupName: aws.String(group),
-			PolicyArn: grpPol.Policy.Arn,
+			PolicyArn: aws.String(grpPolArn),
 		})
 
 		if _, err := tc.client.PutGroupPolicy(tc.ctx, &iam.PutGroupPolicyInput{
 			GroupName:      aws.String(group),
 			PolicyName:     aws.String("lpgsa-group-inline"),
-			PolicyDocument: doc("logs:CreateLogGroup"),
+			PolicyDocument: aws.String(iamAllowPolicy("logs:CreateLogGroup")),
 		}); err != nil {
 			return err
 		}
@@ -763,7 +751,7 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		if _, err := tc.client.PutUserPolicy(tc.ctx, &iam.PutUserPolicyInput{
 			UserName:       aws.String(user),
 			PolicyName:     aws.String("lpgsa-user-inline"),
-			PolicyDocument: doc("iam:ListUsers"),
+			PolicyDocument: aws.String(iamAllowPolicy("iam:ListUsers")),
 		}); err != nil {
 			return err
 		}
@@ -793,12 +781,12 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		}
 
 		s3p := byNS["s3"]
-		if len(s3p) != 1 || aws.ToString(s3p[0].PolicyArn) != aws.ToString(userPol.Policy.Arn) ||
+		if len(s3p) != 1 || aws.ToString(s3p[0].PolicyArn) != usrPolArn ||
 			string(s3p[0].PolicyType) != "MANAGED" || aws.ToString(s3p[0].PolicyName) != fmt.Sprintf("LPGSA-usr-%s", tc.ts) {
 			return fmt.Errorf("s3 namespace entries: %+v", s3p)
 		}
 		ec2p := byNS["ec2"]
-		if len(ec2p) != 1 || aws.ToString(ec2p[0].PolicyArn) != aws.ToString(grpPol.Policy.Arn) || string(ec2p[0].PolicyType) != "MANAGED" {
+		if len(ec2p) != 1 || aws.ToString(ec2p[0].PolicyArn) != grpPolArn || string(ec2p[0].PolicyType) != "MANAGED" {
 			return fmt.Errorf("ec2 namespace entries: %+v", ec2p)
 		}
 		logsp := byNS["logs"]
@@ -822,36 +810,30 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "ListPoliciesGrantingServiceAccess_RoleAndBoundary", func() error {
 		role := fmt.Sprintf("LPGSA-role-%s", tc.ts)
-		createRole, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(role),
-			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
-		})
+		cleanupRole, err := tc.createRole(role)
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(role)})
+		defer cleanupRole()
 
-		rolePol, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(fmt.Sprintf("LPGSA-role-%s", tc.ts)),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sns:Publish","Resource":"*"}]}`),
-		})
+		rolePolArn, cleanupRolePol, err := tc.createPolicy(fmt.Sprintf("LPGSA-role-%s", tc.ts), iamAllowPolicy("sns:Publish"))
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: rolePol.Policy.Arn})
+		defer cleanupRolePol()
 		if _, err := tc.client.AttachRolePolicy(tc.ctx, &iam.AttachRolePolicyInput{
 			RoleName:  aws.String(role),
-			PolicyArn: rolePol.Policy.Arn,
+			PolicyArn: aws.String(rolePolArn),
 		}); err != nil {
 			return err
 		}
 		defer tc.client.DetachRolePolicy(tc.ctx, &iam.DetachRolePolicyInput{
 			RoleName:  aws.String(role),
-			PolicyArn: rolePol.Policy.Arn,
+			PolicyArn: aws.String(rolePolArn),
 		})
 
 		resp, err := tc.client.ListPoliciesGrantingServiceAccess(tc.ctx, &iam.ListPoliciesGrantingServiceAccessInput{
-			Arn:               createRole.Role.Arn,
+			Arn:               aws.String(fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, role)),
 			ServiceNamespaces: []string{"sns"},
 		})
 		if err != nil {
@@ -861,28 +843,26 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 			return fmt.Errorf("role sns entry shape unexpected: %+v", resp.PoliciesGrantingServiceAccess)
 		}
 		roleEntry := resp.PoliciesGrantingServiceAccess[0].Policies[0]
-		if aws.ToString(roleEntry.PolicyArn) != aws.ToString(rolePol.Policy.Arn) || string(roleEntry.PolicyType) != "MANAGED" {
+		if aws.ToString(roleEntry.PolicyArn) != rolePolArn || string(roleEntry.PolicyType) != "MANAGED" {
 			return fmt.Errorf("role sns entry: %+v", roleEntry)
 		}
 
 		// A managed policy attached only as a permissions boundary is not
 		// reported as granting service access.
 		user := fmt.Sprintf("LPGSA-bnd-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
-			return err
-		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
-		bndPol, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(fmt.Sprintf("LPGSA-bnd-%s", tc.ts)),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sqs:SendMessage","Resource":"*"}]}`),
-		})
+		cleanupUser, err := tc.createUser(user)
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: bndPol.Policy.Arn})
+		defer cleanupUser()
+		bndArn, cleanupBnd, err := tc.createPolicy(fmt.Sprintf("LPGSA-bnd-%s", tc.ts), iamAllowPolicy("sqs:SendMessage"))
+		if err != nil {
+			return err
+		}
+		defer cleanupBnd()
 		if _, err := tc.client.PutUserPermissionsBoundary(tc.ctx, &iam.PutUserPermissionsBoundaryInput{
 			UserName:            aws.String(user),
-			PermissionsBoundary: bndPol.Policy.Arn,
+			PermissionsBoundary: aws.String(bndArn),
 		}); err != nil {
 			return err
 		}

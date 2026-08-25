@@ -295,10 +295,11 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 		// Naming a UserName that does not own the certificate must fail
 		// with NoSuchEntity instead of mutating the certificate.
 		other := fmt.Sprintf("SignCert-other-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+		cleanupOther, err := tc.createUser(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		defer cleanupOther()
 
 		_, err = tc.client.UpdateSigningCertificate(tc.ctx, &iam.UpdateSigningCertificateInput{
 			UserName:      aws.String(other),
@@ -336,10 +337,11 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 		// Deleting through a UserName that does not own the certificate
 		// must fail with NoSuchEntity.
 		other := fmt.Sprintf("SignCert-delother-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+		cleanupDelOther, err := tc.createUser(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		defer cleanupDelOther()
 
 		_, err = tc.client.DeleteSigningCertificate(tc.ctx, &iam.DeleteSigningCertificateInput{
 			UserName:      aws.String(other),

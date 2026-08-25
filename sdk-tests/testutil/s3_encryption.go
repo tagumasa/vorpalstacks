@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,6 +16,36 @@ import (
 
 	"vorpalstacks-sdk-tests/config"
 )
+
+// s3CreateTestKMSKey creates a throwaway KMS key for S3 encryption tests and
+// returns its ARN and key ID together with a cleanup closure that schedules
+// the key's deletion with a seven-day pending window.
+func (r *TestRunner) s3CreateTestKMSKey(ctx context.Context, description string) (string, string, func(), error) {
+	kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return "", "", nil, fmt.Errorf("load KMS config: %w", err)
+	}
+	kmsClient := kms.NewFromConfig(kmsCfg)
+
+	createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
+		Description: aws.String(description),
+	})
+	if err != nil {
+		return "", "", nil, fmt.Errorf("CreateKey failed: %w", err)
+	}
+	keyID := aws.ToString(createKeyResp.KeyMetadata.KeyId)
+	keyArn := aws.ToString(createKeyResp.KeyMetadata.Arn)
+	cleanup := func() {
+		kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
+			KeyId:               aws.String(keyID),
+			PendingWindowInDays: aws.Int32(7),
+		})
+	}
+	return keyArn, keyID, cleanup, nil
+}
 
 func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, ts string) []TestResult {
 	var results []TestResult
@@ -45,19 +74,14 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected ServerSideEncryption AES256, got %s", putResp.ServerSideEncryption)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("sse-s3.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.ServerSideEncryption != types.ServerSideEncryptionAes256 {
@@ -113,19 +137,14 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("default-enc.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.ServerSideEncryption != types.ServerSideEncryptionAes256 {
@@ -179,7 +198,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected SSECustomerAlgorithm AES256, got %v", putResp.SSECustomerAlgorithm)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket:               aws.String(bucket),
 			Key:                  aws.String("ssec.txt"),
 			SSECustomerAlgorithm: aws.String("AES256"),
@@ -189,12 +208,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.SSECustomerAlgorithm == nil || *getResp.SSECustomerAlgorithm != "AES256" {
@@ -230,26 +244,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 	}))
 
 	results = append(results, r.RunTest("s3", "SSEKMS_PutGetRoundtrip", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		_, keyID, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 SSE-KMS test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 SSE-KMS test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyID := *createKeyResp.KeyMetadata.KeyId
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               aws.String(keyID),
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "enc-kms")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -275,19 +274,14 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected ServerSideEncryption aws:kms, got %s", putResp.ServerSideEncryption)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("sse-kms.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
@@ -308,26 +302,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 	}))
 
 	results = append(results, r.RunTest("s3", "SSEKMS_BucketDefaultEncryption", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		_, keyID, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 SSE-KMS bucket default test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 SSE-KMS bucket default test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyID := *createKeyResp.KeyMetadata.KeyId
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               aws.String(keyID),
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "enc-kms-default")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -365,19 +344,14 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("PutObject with bucket default KMS encryption failed: %w", err)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("kms-default.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
@@ -387,27 +361,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 	}))
 
 	results = append(results, r.RunTest("s3", "UpdateObjectEncryption_SSES3ToKMS", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		keyArn, _, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption SSE-S3 source test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption SSE-S3 source test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyArn := *createKeyResp.KeyMetadata.Arn
-		keyID := *createKeyResp.KeyMetadata.KeyId
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               aws.String(keyID),
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-sse3")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -475,19 +433,14 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("LastModified not preserved: before %v after %v", headBefore.LastModified, headAfter.LastModified)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("uoe.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		if getResp.ServerSideEncryption != types.ServerSideEncryptionAwsKms {
@@ -500,26 +453,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		// An SSE object written before versioning was enabled has only the
 		// null-version record; encryption updates must resolve it through the
 		// same fallback path as metadata reads instead of reporting NoSuchKey.
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		keyArn, _, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption pre-versioning test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption pre-versioning test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyArn := *createKeyResp.KeyMetadata.Arn
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               createKeyResp.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-prever")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -578,56 +516,30 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected SSEKMSKeyId %s, got %s", keyArn, aws.ToString(head.SSEKMSKeyId))
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("prever.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "UpdateObjectEncryption_KMSRotation", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		keyAArn, _, keyACleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption rotation key A")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		keyA, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption rotation key A"),
-		})
+		defer keyACleanup()
+		keyBArn, _, keyBCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption rotation key B")
 		if err != nil {
-			return fmt.Errorf("CreateKey (A) failed: %w", err)
+			return err
 		}
-		keyAArn := *keyA.KeyMetadata.Arn
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               keyA.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int32(7),
-		})
-		keyB, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption rotation key B"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey (B) failed: %w", err)
-		}
-		keyBArn := *keyB.KeyMetadata.Arn
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               keyB.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyBCleanup()
 
 		bucket := s3Bucket(ts, "uoe-rotate")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -677,45 +589,25 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected SSEKMSKeyId %s after rotation, got %s", keyBArn, aws.ToString(headResp.SSEKMSKeyId))
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("rotate.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		gotBody, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(gotBody) != body {
+		if gotBody != body {
 			return fmt.Errorf("expected body %q, got %q", body, string(gotBody))
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "UpdateObjectEncryption_UnencryptedSource", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		keyArn, _, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption unencrypted-source test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption unencrypted-source test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyArn := *createKeyResp.KeyMetadata.Arn
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               createKeyResp.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-plain")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -747,37 +639,18 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err == nil {
 			return fmt.Errorf("expected error updating unencrypted source object, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "InvalidRequest" {
-			return fmt.Errorf("expected InvalidRequest, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "InvalidRequest"); err != nil {
+			return err
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "UpdateObjectEncryption_NonexistentKey", func() error {
-		kmsCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
+		keyArn, _, keyCleanup, err := r.s3CreateTestKMSKey(ctx, "S3 UpdateObjectEncryption missing-key test key")
 		if err != nil {
-			return fmt.Errorf("load KMS config: %w", err)
+			return err
 		}
-		kmsClient := kms.NewFromConfig(kmsCfg)
-
-		createKeyResp, err := kmsClient.CreateKey(ctx, &kms.CreateKeyInput{
-			Description: aws.String("S3 UpdateObjectEncryption missing-key test key"),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateKey failed: %w", err)
-		}
-		keyArn := *createKeyResp.KeyMetadata.Arn
-		defer kmsClient.ScheduleKeyDeletion(ctx, &kms.ScheduleKeyDeletionInput{
-			KeyId:               createKeyResp.KeyMetadata.KeyId,
-			PendingWindowInDays: aws.Int32(7),
-		})
+		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-missing")
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -800,14 +673,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err == nil {
 			return fmt.Errorf("expected error for nonexistent key, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "NoSuchKey" {
-			return fmt.Errorf("expected NoSuchKey, got %s: %v", apiErr.ErrorCode(), err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "NoSuchKey")
 	}))
 
 	results = append(results, r.RunTest("s3", "GetObject_SSECOnPlainObject", func() error {
@@ -847,12 +713,12 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err == nil {
 			return fmt.Errorf("expected error getting non-SSE-C object with SSE-C parameters, got nil")
 		}
+		if err := expectAWSErrorCode(err, "InvalidRequest"); err != nil {
+			return err
+		}
 		var apiErr smithy.APIError
 		if !errors.As(err, &apiErr) {
 			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "InvalidRequest" {
-			return fmt.Errorf("expected InvalidRequest, got %s: %v", apiErr.ErrorCode(), err)
 		}
 		if !strings.Contains(apiErr.ErrorMessage(), "not applicable to this object") {
 			return fmt.Errorf("expected 'not applicable to this object' message, got: %s", apiErr.ErrorMessage())
@@ -898,14 +764,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err == nil {
 			return fmt.Errorf("expected EncryptionTypeMismatch overwriting SSE-C object without customer key, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "EncryptionTypeMismatch" {
-			return fmt.Errorf("expected EncryptionTypeMismatch, got %s: %v", apiErr.ErrorCode(), err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "EncryptionTypeMismatch")
 	}))
 
 	results = append(results, r.RunTest("s3", "PutObject_EncryptionTypeMismatch_SSECOverwritePlain", func() error {
@@ -946,14 +805,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if err == nil {
 			return fmt.Errorf("expected EncryptionTypeMismatch overwriting plain object with SSE-C parameters, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "EncryptionTypeMismatch" {
-			return fmt.Errorf("expected EncryptionTypeMismatch, got %s: %v", apiErr.ErrorCode(), err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "EncryptionTypeMismatch")
 	}))
 
 	return results

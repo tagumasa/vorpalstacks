@@ -20,20 +20,20 @@ import (
 // upload to the returned URL, the asynchronous row-by-row import with
 // per-line CloudWatch Logs outcomes, password-hash import with immediate
 // sign-in, stopping a running job, and the negative start/stop paths.
-func (r *TestRunner) cognitoImportJobTests(ctx context.Context, client *cognitoidentityprovider.Client) []TestResult {
+func (r *TestRunner) cognitoImportJobTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito", "UserImportJob_ImportFlow", func() error {
-		return r.runUserImportFlowTest(ctx, client)
+		return r.runUserImportFlowTest(tc.ctx, tc.client)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_PasswordHashImport", func() error {
-		return r.runUserImportHashTest(ctx, client)
+		return r.runUserImportHashTest(tc.ctx, tc.client)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_Stop", func() error {
-		return r.runUserImportStopTest(ctx, client)
+		return r.runUserImportStopTest(tc.ctx, tc.client)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_NegativePaths", func() error {
-		return r.runUserImportNegativeTest(ctx, client)
+		return r.runUserImportNegativeTest(tc.ctx, tc.client)
 	}))
 
 	return results

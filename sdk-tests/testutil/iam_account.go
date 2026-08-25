@@ -53,23 +53,18 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		role := fmt.Sprintf("AuthzDetail-Role-%s", tc.ts)
 		profile := fmt.Sprintf("AuthzDetail-Prof-%s", tc.ts)
 		policy := fmt.Sprintf("AuthzDetail-Policy-%s", tc.ts)
-		doc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:ListBucket","Resource":"*"}]}`
+		doc := iamAllowPolicy("s3:ListBucket")
 
 		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
 			return err
 		}
 		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
 
-		policyArn := ""
-		createPolicy, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policy),
-			PolicyDocument: aws.String(doc),
-		})
+		policyArn, cleanupPolicy, err := tc.createPolicy(policy, doc)
 		if err != nil {
 			return err
 		}
-		policyArn = aws.ToString(createPolicy.Policy.Arn)
-		defer tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(policyArn)})
+		defer cleanupPolicy()
 		if _, err := tc.client.CreatePolicyVersion(tc.ctx, &iam.CreatePolicyVersionInput{
 			PolicyArn:      aws.String(policyArn),
 			PolicyDocument: aws.String(doc),
@@ -90,13 +85,11 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 
-		if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(role),
-			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
-		}); err != nil {
+		cleanupRole, err := tc.createRole(role)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(role)})
+		defer cleanupRole()
 		if _, err := tc.client.TagRole(tc.ctx, &iam.TagRoleInput{
 			RoleName: aws.String(role),
 			Tags:     []types.Tag{{Key: aws.String("Purpose"), Value: aws.String("authz-detail")}},
@@ -456,10 +449,11 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "GetServiceLastAccessedDetails", func() error {
 		user := fmt.Sprintf("SLA-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
 
 		gen, err := tc.client.GenerateServiceLastAccessedDetails(tc.ctx, &iam.GenerateServiceLastAccessedDetailsInput{
@@ -498,13 +492,11 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "GetServiceLastAccessedDetailsWithEntities", func() error {
 		role := fmt.Sprintf("SLAEnt-%s", tc.ts)
-		if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(role),
-			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
-		}); err != nil {
+		cleanupRole, err := tc.createRole(role)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(role)})
+		defer cleanupRole()
 		roleArn := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, role)
 
 		gen, err := tc.client.GenerateServiceLastAccessedDetails(tc.ctx, &iam.GenerateServiceLastAccessedDetailsInput{

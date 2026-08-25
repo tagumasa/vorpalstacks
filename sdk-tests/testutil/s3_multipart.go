@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -150,21 +149,16 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 	}))
 
 	results = append(results, r.RunTest("s3", "MultipartUpload_GetObject_VerifyContent", func() error {
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(mpuBucket),
 			Key:    aws.String("multipart-obj.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("reading body failed: %w", err)
-		}
 		expected := strings.Repeat("\x00", 5*1024*1024) + "part two content"
-		if string(body) != expected {
-			return fmt.Errorf("expected body %q, got %q", expected, string(body))
+		if gotBody != expected {
+			return fmt.Errorf("expected body %q, got %q", expected, gotBody)
 		}
 		return nil
 	}))
@@ -172,7 +166,7 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 	// A partNumber read of a multipart-uploaded object serves that part's
 	// bytes as a ranged GET, and reports the part count header.
 	results = append(results, r.RunTest("s3", "GetObject_PartNumber_MultipartObject", func() error {
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket:     aws.String(mpuBucket),
 			Key:        aws.String("multipart-obj.txt"),
 			PartNumber: aws.Int32(2),
@@ -180,13 +174,8 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("GetObject partNumber=2 failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("reading body failed: %w", err)
-		}
-		if string(body) != "part two content" {
-			return fmt.Errorf("expected part two content, got %q", string(body))
+		if gotBody != "part two content" {
+			return fmt.Errorf("expected part two content, got %q", gotBody)
 		}
 		total := int64(5*1024*1024) + int64(len("part two content"))
 		wantRange := fmt.Sprintf("bytes %d-%d/%d", 5*1024*1024, total-1, total)
@@ -224,7 +213,7 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket:     aws.String(mpuBucket),
 			Key:        aws.String(key),
 			PartNumber: aws.Int32(1),
@@ -232,13 +221,8 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("GetObject partNumber=1 failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("reading body failed: %w", err)
-		}
-		if string(body) != "plain body" {
-			return fmt.Errorf("expected whole body, got %q", string(body))
+		if gotBody != "plain body" {
+			return fmt.Errorf("expected whole body, got %q", gotBody)
 		}
 
 		_, err = client.GetObject(ctx, &s3.GetObjectInput{

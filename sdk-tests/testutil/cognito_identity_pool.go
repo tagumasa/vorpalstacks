@@ -1,21 +1,19 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity/types"
 )
 
-func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cognitoidentity.Client, poolID string) []TestResult {
+func (r *TestRunner) cognitoIdentityPoolTests(tc *cognitoIdentityContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito-identity", "DescribeIdentityPool", func() error {
-		resp, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
-			IdentityPoolId: aws.String(poolID),
+		resp, err := tc.client.DescribeIdentityPool(tc.ctx, &cognitoidentity.DescribeIdentityPoolInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return err
@@ -23,15 +21,15 @@ func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cogni
 		if resp.IdentityPoolName == nil || *resp.IdentityPoolName == "" {
 			return fmt.Errorf("IdentityPoolName is nil or empty")
 		}
-		if resp.IdentityPoolId == nil || *resp.IdentityPoolId != poolID {
-			return fmt.Errorf("IdentityPoolId mismatch: got %v, want %s", resp.IdentityPoolId, poolID)
+		if resp.IdentityPoolId == nil || *resp.IdentityPoolId != tc.poolID {
+			return fmt.Errorf("IdentityPoolId mismatch: got %v, want %s", resp.IdentityPoolId, tc.poolID)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "CreateIdentityPool_WithOptions", func() error {
-		name := fmt.Sprintf("test-idpool-opts-%d", time.Now().UnixNano())
-		resp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
+		name := tc.unique("test-idpool-opts")
+		resp, err := tc.client.CreateIdentityPool(tc.ctx, &cognitoidentity.CreateIdentityPoolInput{
 			IdentityPoolName:               aws.String(name),
 			AllowUnauthenticatedIdentities: false,
 			AllowClassicFlow:               aws.Bool(true),
@@ -76,60 +74,59 @@ func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cogni
 		if len(resp.SupportedLoginProviders) != 1 {
 			return fmt.Errorf("expected 1 SupportedLoginProvider")
 		}
-		client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{
+		tc.client.DeleteIdentityPool(tc.ctx, &cognitoidentity.DeleteIdentityPoolInput{
 			IdentityPoolId: resp.IdentityPoolId,
 		})
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "ListIdentityPools", func() error {
-		var found bool
-		var nextToken *string
-		for {
-			resp, err := client.ListIdentityPools(ctx, &cognitoidentity.ListIdentityPoolsInput{
+		pools, err := paginate(func(next *string) ([]types.IdentityPoolShortDescription, *string, error) {
+			resp, err := tc.client.ListIdentityPools(tc.ctx, &cognitoidentity.ListIdentityPoolsInput{
 				MaxResults: aws.Int32(10),
-				NextToken:  nextToken,
+				NextToken:  next,
 			})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, p := range resp.IdentityPools {
-				if p.IdentityPoolId != nil && *p.IdentityPoolId == poolID {
-					found = true
-					if p.IdentityPoolName == nil || *p.IdentityPoolName == "" {
-						return fmt.Errorf("IdentityPoolName is nil or empty in listing")
-					}
+			return resp.IdentityPools, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, p := range pools {
+			if p.IdentityPoolId != nil && *p.IdentityPoolId == tc.poolID {
+				found = true
+				if p.IdentityPoolName == nil || *p.IdentityPoolName == "" {
+					return fmt.Errorf("IdentityPoolName is nil or empty in listing")
 				}
 			}
-			if found || resp.NextToken == nil || *resp.NextToken == "" {
-				break
-			}
-			nextToken = resp.NextToken
 		}
 		if !found {
-			return fmt.Errorf("created pool %s not found in ListIdentityPools", poolID)
+			return fmt.Errorf("created pool %s not found in ListIdentityPools", tc.poolID)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "UpdateIdentityPool", func() error {
-		descResp, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
-			IdentityPoolId: aws.String(poolID),
+		descResp, err := tc.client.DescribeIdentityPool(tc.ctx, &cognitoidentity.DescribeIdentityPoolInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return fmt.Errorf("describe before update: %v", err)
 		}
 		newName := *descResp.IdentityPoolName + "-updated"
-		_, err = client.UpdateIdentityPool(ctx, &cognitoidentity.UpdateIdentityPoolInput{
-			IdentityPoolId:                 aws.String(poolID),
+		_, err = tc.client.UpdateIdentityPool(tc.ctx, &cognitoidentity.UpdateIdentityPoolInput{
+			IdentityPoolId:                 aws.String(tc.poolID),
 			IdentityPoolName:               aws.String(newName),
 			AllowUnauthenticatedIdentities: false,
 		})
 		if err != nil {
 			return err
 		}
-		resp, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
-			IdentityPoolId: aws.String(poolID),
+		resp, err := tc.client.DescribeIdentityPool(tc.ctx, &cognitoidentity.DescribeIdentityPoolInput{
+			IdentityPoolId: aws.String(tc.poolID),
 		})
 		if err != nil {
 			return err
@@ -141,22 +138,20 @@ func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "UpdateIdentityPool_ReplacesTags", func() error {
-		name := fmt.Sprintf("test-tagreplace-%d", time.Now().UnixNano())
-		createResp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
-			IdentityPoolName:               aws.String(name),
-			AllowUnauthenticatedIdentities: true,
-			IdentityPoolTags: map[string]string{
-				"Old1": "v1",
-				"Old2": "v2",
-			},
-		})
+		name := tc.unique("test-tagreplace")
+		tagPoolID, cleanupTagPool, err := tc.createIdPool(name,
+			func(input *cognitoidentity.CreateIdentityPoolInput) {
+				input.IdentityPoolTags = map[string]string{
+					"Old1": "v1",
+					"Old2": "v2",
+				}
+			})
 		if err != nil {
 			return err
 		}
-		tagPoolID := *createResp.IdentityPoolId
-		defer client.DeleteIdentityPool(ctx, &cognitoidentity.DeleteIdentityPoolInput{IdentityPoolId: aws.String(tagPoolID)})
+		defer cleanupTagPool()
 
-		_, err = client.UpdateIdentityPool(ctx, &cognitoidentity.UpdateIdentityPoolInput{
+		_, err = tc.client.UpdateIdentityPool(tc.ctx, &cognitoidentity.UpdateIdentityPoolInput{
 			IdentityPoolId:                 aws.String(tagPoolID),
 			IdentityPoolName:               aws.String(name + "-v2"),
 			AllowUnauthenticatedIdentities: true,
@@ -169,7 +164,7 @@ func (r *TestRunner) cognitoIdentityPoolTests(ctx context.Context, client *cogni
 			return err
 		}
 
-		descResp, err := client.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{
+		descResp, err := tc.client.DescribeIdentityPool(tc.ctx, &cognitoidentity.DescribeIdentityPoolInput{
 			IdentityPoolId: aws.String(tagPoolID),
 		})
 		if err != nil {

@@ -1,21 +1,19 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 )
 
-func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentityprovider.Client, userPoolID string) []TestResult {
+func (r *TestRunner) cognitoIDPTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito", "CreateIdentityProvider", func() error {
-		resp, err := client.CreateIdentityProvider(ctx, &cognitoidentityprovider.CreateIdentityProviderInput{
-			UserPoolId:   aws.String(userPoolID),
+		resp, err := tc.client.CreateIdentityProvider(tc.ctx, &cognitoidentityprovider.CreateIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
 			ProviderName: aws.String("TestProvider"),
 			ProviderType: types.IdentityProviderTypeType("Facebook"),
 			ProviderDetails: map[string]string{
@@ -36,15 +34,15 @@ func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentit
 		if resp.IdentityProvider.ProviderType != types.IdentityProviderTypeTypeFacebook {
 			return fmt.Errorf("ProviderType mismatch: got %v, want Facebook", resp.IdentityProvider.ProviderType)
 		}
-		if resp.IdentityProvider.UserPoolId == nil || *resp.IdentityProvider.UserPoolId != userPoolID {
-			return fmt.Errorf("UserPoolId mismatch: got %v, want %s", resp.IdentityProvider.UserPoolId, userPoolID)
+		if resp.IdentityProvider.UserPoolId == nil || *resp.IdentityProvider.UserPoolId != tc.userPoolID {
+			return fmt.Errorf("UserPoolId mismatch: got %v, want %s", resp.IdentityProvider.UserPoolId, tc.userPoolID)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListIdentityProviders", func() error {
-		resp, err := client.ListIdentityProviders(ctx, &cognitoidentityprovider.ListIdentityProvidersInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.ListIdentityProviders(tc.ctx, &cognitoidentityprovider.ListIdentityProvidersInput{
+			UserPoolId: aws.String(tc.userPoolID),
 		})
 		if err != nil {
 			return err
@@ -69,8 +67,8 @@ func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentit
 	}))
 
 	results = append(results, r.RunTest("cognito", "DescribeIdentityProvider", func() error {
-		resp, err := client.DescribeIdentityProvider(ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
-			UserPoolId:   aws.String(userPoolID),
+		resp, err := tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
 			ProviderName: aws.String("TestProvider"),
 		})
 		if err != nil {
@@ -89,16 +87,16 @@ func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentit
 	}))
 
 	results = append(results, r.RunTest("cognito", "UpdateIdentityProvider", func() error {
-		_, err := client.UpdateIdentityProvider(ctx, &cognitoidentityprovider.UpdateIdentityProviderInput{
-			UserPoolId:      aws.String(userPoolID),
+		_, err := tc.client.UpdateIdentityProvider(tc.ctx, &cognitoidentityprovider.UpdateIdentityProviderInput{
+			UserPoolId:      aws.String(tc.userPoolID),
 			ProviderName:    aws.String("TestProvider"),
 			ProviderDetails: map[string]string{"updated_key": "updated_value"},
 		})
 		if err != nil {
 			return fmt.Errorf("UpdateIdentityProvider failed: %v", err)
 		}
-		descResp, err := client.DescribeIdentityProvider(ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
-			UserPoolId:   aws.String(userPoolID),
+		descResp, err := tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
 			ProviderName: aws.String("TestProvider"),
 		})
 		if err != nil {
@@ -114,9 +112,9 @@ func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentit
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteIdentityProvider", func() error {
-		delProvider := fmt.Sprintf("del-provider-%d", time.Now().UnixNano())
-		_, err := client.CreateIdentityProvider(ctx, &cognitoidentityprovider.CreateIdentityProviderInput{
-			UserPoolId:      aws.String(userPoolID),
+		delProvider := tc.unique("del-provider")
+		_, err := tc.client.CreateIdentityProvider(tc.ctx, &cognitoidentityprovider.CreateIdentityProviderInput{
+			UserPoolId:      aws.String(tc.userPoolID),
 			ProviderName:    aws.String(delProvider),
 			ProviderType:    types.IdentityProviderTypeTypeGoogle,
 			ProviderDetails: map[string]string{"client_id": "test"},
@@ -124,15 +122,15 @@ func (r *TestRunner) cognitoIDPTests(ctx context.Context, client *cognitoidentit
 		if err != nil {
 			return fmt.Errorf("create provider: %v", err)
 		}
-		_, err = client.DeleteIdentityProvider(ctx, &cognitoidentityprovider.DeleteIdentityProviderInput{
-			UserPoolId:   aws.String(userPoolID),
+		_, err = tc.client.DeleteIdentityProvider(tc.ctx, &cognitoidentityprovider.DeleteIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
 			ProviderName: aws.String(delProvider),
 		})
 		if err != nil {
 			return fmt.Errorf("DeleteIdentityProvider failed: %v", err)
 		}
-		_, err = client.DescribeIdentityProvider(ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
-			UserPoolId:   aws.String(userPoolID),
+		_, err = tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
 			ProviderName: aws.String(delProvider),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {

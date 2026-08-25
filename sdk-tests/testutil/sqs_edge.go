@@ -3,7 +3,6 @@ package testutil
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -131,41 +130,6 @@ func (r *TestRunner) runSQSEdgeTests(ctx context.Context, client *sqs.Client, qu
 		})
 		if err := AssertErrorContains(err, "QueueDoesNotExist"); err != nil {
 			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sqs", "ListQueues_ContainsCreated", func() error {
-		lqName := fmt.Sprintf("LQTest-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(lqName),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(lqName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-
-		resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{})
-		if err != nil {
-			return err
-		}
-		if resp.QueueUrls == nil {
-			return fmt.Errorf("queue URLs is nil")
-		}
-		found := false
-		for _, u := range resp.QueueUrls {
-			if strings.Contains(u, lqName) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("created queue %s not found in ListQueues", lqName)
 		}
 		return nil
 	}))

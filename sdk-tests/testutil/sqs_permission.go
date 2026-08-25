@@ -133,28 +133,14 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 	results = append(results, r.RunTest("sqs", "AddPermission_AnyActionName_Accepted", func() error {
 		// The Actions parameter documents "the name of any action or `*`";
 		// names outside any fixed list must be accepted.
-		anyQName := fmt.Sprintf("AnyActionQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(anyQName),
-		})
+		anyQURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("AnyActionQueue-%d", time.Now().UnixNano()), nil)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(anyQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: aws.String(anyQName),
-		})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
-			QueueUrl:      urlResp.QueueUrl,
+			QueueUrl:      anyQURL,
 			Label:         aws.String("AnyActionPerm"),
 			AWSAccountIds: []string{r.accountID},
 			Actions:       []string{"CreateQueue", "ListQueues"},
@@ -166,29 +152,14 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 	}))
 
 	results = append(results, r.RunTest("sqs", "AddPermission", func() error {
-		permQueueName := fmt.Sprintf("PermQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(permQueueName),
-		})
+		permQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("PermQueue-%d", time.Now().UnixNano()), nil)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(permQueueName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: aws.String(permQueueName),
-		})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
-			QueueUrl:      urlResp.QueueUrl,
+			QueueUrl:      permQueueURL,
 			Label:         aws.String("TestPermission"),
 			AWSAccountIds: []string{r.accountID},
 			Actions:       []string{"SendMessage", "ReceiveMessage"},
@@ -197,7 +168,7 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 			return err
 		}
 		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl:       urlResp.QueueUrl,
+			QueueUrl:       permQueueURL,
 			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNamePolicy},
 		})
 		if err != nil {
@@ -214,29 +185,14 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 	}))
 
 	results = append(results, r.RunTest("sqs", "RemovePermission", func() error {
-		permQueueName := fmt.Sprintf("RPermQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(permQueueName),
-		})
+		permQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("RPermQueue-%d", time.Now().UnixNano()), nil)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(permQueueName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: aws.String(permQueueName),
-		})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		_, err = client.AddPermission(ctx, &sqs.AddPermissionInput{
-			QueueUrl:      urlResp.QueueUrl,
+			QueueUrl:      permQueueURL,
 			Label:         aws.String("RemoveTestPerm"),
 			AWSAccountIds: []string{r.accountID},
 			Actions:       []string{"SendMessage"},
@@ -246,14 +202,14 @@ func (r *TestRunner) runSQSPermissionTests(ctx context.Context, client *sqs.Clie
 		}
 
 		_, err = client.RemovePermission(ctx, &sqs.RemovePermissionInput{
-			QueueUrl: urlResp.QueueUrl,
+			QueueUrl: permQueueURL,
 			Label:    aws.String("RemoveTestPerm"),
 		})
 		if err != nil {
 			return err
 		}
 		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl:       urlResp.QueueUrl,
+			QueueUrl:       permQueueURL,
 			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNamePolicy},
 		})
 		if err != nil {

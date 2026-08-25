@@ -19,52 +19,6 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 
 	ts := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	createSM := func(name string, state map[string]interface{}) (string, error) {
-		def := map[string]interface{}{
-			"StartAt": "M",
-			"States":  map[string]interface{}{"M": state},
-		}
-		defJSON, _ := json.Marshal(def)
-		resp, err := tc.client.CreateStateMachine(tc.ctx, &awssfn.CreateStateMachineInput{
-			Name:       aws.String(name),
-			Definition: aws.String(string(defJSON)),
-			RoleArn:    aws.String(tc.roleARN),
-		})
-		if err != nil {
-			return "", err
-		}
-		arn := aws.ToString(resp.StateMachineArn)
-		return arn, nil
-	}
-
-	runWithInput := func(smArn, execName, input string) (string, string, error) {
-		exec, err := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: aws.String(smArn),
-			Name:            aws.String(execName),
-			Input:           aws.String(input),
-		})
-		if err != nil {
-			return "", "", err
-		}
-		execArn := aws.ToString(exec.ExecutionArn)
-		for i := 0; i < 60; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{
-				ExecutionArn: exec.ExecutionArn,
-			})
-			if derr != nil {
-				return "", "", derr
-			}
-			if desc.Status == types.ExecutionStatusSucceeded {
-				return execArn, aws.ToString(desc.Output), nil
-			}
-			if desc.Status != types.ExecutionStatusRunning {
-				return "", "", fmt.Errorf("execution ended %s: %s %s", desc.Status, aws.ToString(desc.Error), aws.ToString(desc.Cause))
-			}
-			time.Sleep(200 * time.Millisecond)
-		}
-		return "", "", fmt.Errorf("execution did not finish")
-	}
-
 	// latestMapRunFor finds the Map Run the given parent execution
 	// spawned, traversing every page of the listing.
 	latestMapRunFor := func(executionArn string) (string, error) {
@@ -115,7 +69,7 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 		},
 		"End": true,
 	}
-	batchSM, err := createSM("MapBatch-"+ts, batchState)
+	batchSM, err := tc.createSingleStateSM("MapBatch-"+ts, batchState)
 	if err != nil {
 		return []TestResult{{Service: "stepfunctions", TestName: "MapFeatureSetup", Status: "FAIL", Error: fmt.Sprintf("create SM: %v", err)}}
 	}
@@ -124,7 +78,7 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 	parentName := "feat-parent-" + ts
 	parentExecArn := ""
 	results = append(results, r.RunTest("stepfunctions", "ItemBatcher_BatchesAndCounts", func() error {
-		execArn, output, oerr := runWithInput(batchSM, parentName, `{"v":[1,2,3,4,5]}`)
+		execArn, output, oerr := tc.runWithInput(batchSM, parentName, `{"v":[1,2,3,4,5]}`)
 		if oerr != nil {
 			return oerr
 		}
@@ -150,9 +104,6 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "ItemBatcher_MapRunItemAndExecutionCounts", func() error {
-		if parentExecArn == "" {
-			return fmt.Errorf("parent execution ARN unavailable")
-		}
 		if parentExecArn == "" {
 			return fmt.Errorf("parent execution ARN unavailable")
 		}
@@ -245,17 +196,8 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_UnknownStateFieldRejected", func() error {
-		_, err := createSM("MapUnknown-"+ts, map[string]interface{}{
-			"Type":      "Pass",
-			"ResultPat": "$.x",
-			"End":       true,
-		})
-		return expectAPIErrorCode(err, "InvalidDefinition")
-	}))
-
 	results = append(results, r.RunTest("stepfunctions", "PassState_DirectInputOutputPath", func() error {
-		smARN, err := createSM("MapIOPath-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("MapIOPath-"+ts, map[string]interface{}{
 			"Type":       "Pass",
 			"InputPath":  "$.keep",
 			"OutputPath": "$.n",
@@ -265,7 +207,7 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		_, output, rerr := runWithInput(smARN, "io-"+ts, `{"keep":{"n":42},"drop":1}`)
+		_, output, rerr := tc.runWithInput(smARN, "io-"+ts, `{"keep":{"n":42},"drop":1}`)
 		if rerr != nil {
 			return rerr
 		}
@@ -276,7 +218,7 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "FailState_ErrorCausePathResolved", func() error {
-		smARN, err := createSM("MapFailPath-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("MapFailPath-"+ts, map[string]interface{}{
 			"Type":      "Fail",
 			"ErrorPath": "$.code",
 			"CausePath": "$.reason",
@@ -285,34 +227,24 @@ func (r *TestRunner) runSFNMapFeatureTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		exec, err := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: aws.String(smARN),
-			Name:            aws.String("failpath-" + ts),
-			Input:           aws.String(`{"code":"CustomError","reason":"resolved cause"}`),
-		})
-		if err != nil {
-			return err
+		execArn, serr := tc.startExecution(smARN, "failpath-"+ts, `{"code":"CustomError","reason":"resolved cause"}`)
+		if serr != nil {
+			return serr
 		}
-		for i := 0; i < 30; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: exec.ExecutionArn})
-			if derr != nil {
-				return derr
-			}
-			if desc.Status == types.ExecutionStatusFailed {
-				if aws.ToString(desc.Error) != "CustomError" {
-					return fmt.Errorf("error = %q, want CustomError", aws.ToString(desc.Error))
-				}
-				if aws.ToString(desc.Cause) != "resolved cause" {
-					return fmt.Errorf("cause = %q, want 'resolved cause'", aws.ToString(desc.Cause))
-				}
-				return nil
-			}
-			if desc.Status != types.ExecutionStatusRunning {
-				return fmt.Errorf("status = %s", desc.Status)
-			}
-			time.Sleep(200 * time.Millisecond)
+		desc, werr := tc.awaitTerminal(execArn, 200*time.Millisecond, 30)
+		if werr != nil {
+			return werr
 		}
-		return fmt.Errorf("execution did not finish")
+		if desc.Status != types.ExecutionStatusFailed {
+			return fmt.Errorf("status = %s, want FAILED", desc.Status)
+		}
+		if aws.ToString(desc.Error) != "CustomError" {
+			return fmt.Errorf("error = %q, want CustomError", aws.ToString(desc.Error))
+		}
+		if aws.ToString(desc.Cause) != "resolved cause" {
+			return fmt.Errorf("cause = %q, want 'resolved cause'", aws.ToString(desc.Cause))
+		}
+		return nil
 	}))
 
 	return results

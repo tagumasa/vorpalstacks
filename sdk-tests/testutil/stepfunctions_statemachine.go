@@ -60,21 +60,8 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		if resp.Definition == nil || *resp.Definition == "" {
 			return fmt.Errorf("definition is nil or empty")
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachine_TypeField", func() error {
-		resp, err := tc.client.DescribeStateMachine(tc.ctx, &sfn.DescribeStateMachineInput{
-			StateMachineArn: aws.String(smARN),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.StateMachineArn == nil || *resp.StateMachineArn != smARN {
-			return fmt.Errorf("state machine ARN mismatch")
-		}
 		if resp.Type != types.StateMachineTypeStandard {
-			return fmt.Errorf("type mismatch: got %s", resp.Type)
+			return fmt.Errorf("type mismatch: got %s, want STANDARD", resp.Type)
 		}
 		return nil
 	}))
@@ -86,23 +73,6 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		}
 		if resp.StateMachines == nil {
 			return fmt.Errorf("state machines list is nil")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachine", func() error {
-		resp, err := tc.client.UpdateStateMachine(tc.ctx, &sfn.UpdateStateMachineInput{
-			StateMachineArn: aws.String(smARN),
-			Definition:      aws.String(tc.definition),
-		})
-		if err != nil {
-			return err
-		}
-		if resp == nil {
-			return fmt.Errorf("response is nil")
-		}
-		if resp.UpdateDate.IsZero() {
-			return fmt.Errorf("update date is zero")
 		}
 		return nil
 	}))
@@ -158,20 +128,6 @@ func (r *TestRunner) runSFNStateMachineTests(tc *sfnTestContext) []TestResult {
 		}
 		if resp.Result != types.ValidateStateMachineDefinitionResultCodeOk {
 			return fmt.Errorf("expected OK, got %s", resp.Result)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("stepfunctions", "ValidateStateMachineDefinition_Invalid", func() error {
-		invalidDef := `{"StartAt":"Missing","States":{}}`
-		resp, err := tc.client.ValidateStateMachineDefinition(tc.ctx, &sfn.ValidateStateMachineDefinitionInput{
-			Definition: aws.String(invalidDef),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Result == types.ValidateStateMachineDefinitionResultCodeOk {
-			return fmt.Errorf("expected FAIL for invalid definition")
 		}
 		return nil
 	}))

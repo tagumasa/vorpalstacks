@@ -1,14 +1,17 @@
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
+	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -79,7 +82,10 @@ func (tc *sfnTestContext) createPassSM(name, comment string) (string, error) {
 			},
 		},
 	}
-	defJSON, _ := json.Marshal(def)
+	defJSON, err := json.Marshal(def)
+	if err != nil {
+		return "", err
+	}
 	resp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
 		Name:       aws.String(name),
 		Definition: aws.String(string(defJSON)),
@@ -97,6 +103,165 @@ func (tc *sfnTestContext) createRoleForSM(name string) (string, string, func()) 
 	IAMCreateRole(tc.iamClient, roleName, tc.trustPolicy)
 	cleanup := func() { IAMDeleteRole(tc.iamClient, roleName) }
 	return roleName, roleARN, cleanup
+}
+
+// rawJSONCall issues a request over the raw JSON-1.0 protocol and returns
+// the HTTP status together with the decoded response body. It is used for
+// operations the SDK client resolves onto sync-prefixed endpoints the
+// local resolver cannot name, and for wire members absent from the typed
+// SDK inputs.
+func (tc *sfnTestContext) rawJSONCall(target string, payload map[string]interface{}) (int, map[string]interface{}, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return 0, nil, err
+	}
+	req, err := http.NewRequestWithContext(tc.ctx, "POST", tc.runner.endpoint, bytes.NewReader(body))
+	if err != nil {
+		return 0, nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-amz-json-1.0")
+	req.Header.Set("X-Amz-Target", target)
+	resp, err := testHTTPClient.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if derr := json.NewDecoder(resp.Body).Decode(&result); derr != nil {
+		return resp.StatusCode, result, derr
+	}
+	return resp.StatusCode, result, nil
+}
+
+// rawTestState invokes the TestState operation over the raw JSON-1.0
+// protocol: the SDK client resolves TestState onto a sync-prefixed
+// endpoint the local resolver cannot name.
+func (tc *sfnTestContext) rawTestState(payload map[string]interface{}) (map[string]interface{}, error) {
+	status, result, err := tc.rawJSONCall("AWSStepFunctions.TestState", payload)
+	if err != nil {
+		return result, err
+	}
+	if status != http.StatusOK {
+		return result, fmt.Errorf("status %d, want 200: %v", status, result)
+	}
+	return result, nil
+}
+
+// awaitTerminal polls DescribeExecution until the execution leaves the
+// RUNNING state and returns the last description.
+func (tc *sfnTestContext) awaitTerminal(executionArn string, interval time.Duration, attempts int) (*sfn.DescribeExecutionOutput, error) {
+	var desc *sfn.DescribeExecutionOutput
+	for i := 0; i < attempts; i++ {
+		out, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
+			ExecutionArn: aws.String(executionArn),
+		})
+		if err != nil {
+			return nil, err
+		}
+		desc = out
+		if desc.Status != types.ExecutionStatusRunning {
+			return desc, nil
+		}
+		time.Sleep(interval)
+	}
+	return desc, fmt.Errorf("execution did not finish")
+}
+
+// startExecution starts an execution with the given input; the name is
+// optional and omitted when empty.
+func (tc *sfnTestContext) startExecution(smArn, execName, input string) (string, error) {
+	in := &sfn.StartExecutionInput{
+		StateMachineArn: aws.String(smArn),
+		Input:           aws.String(input),
+	}
+	if execName != "" {
+		in.Name = aws.String(execName)
+	}
+	resp, err := tc.client.StartExecution(tc.ctx, in)
+	if err != nil {
+		return "", err
+	}
+	return aws.ToString(resp.ExecutionArn), nil
+}
+
+// runWithInput starts an execution and waits for a terminal state. On
+// success it returns the execution ARN and the output payload; any other
+// terminal state is an error carrying the execution Error and Cause.
+func (tc *sfnTestContext) runWithInput(smArn, execName, input string) (string, string, error) {
+	execArn, err := tc.startExecution(smArn, execName, input)
+	if err != nil {
+		return "", "", err
+	}
+	desc, err := tc.awaitTerminal(execArn, 200*time.Millisecond, 60)
+	if err != nil {
+		return execArn, "", err
+	}
+	if desc.Status != types.ExecutionStatusSucceeded {
+		return execArn, "", fmt.Errorf("execution ended %s: %s %s",
+			desc.Status, aws.ToString(desc.Error), aws.ToString(desc.Cause))
+	}
+	return execArn, aws.ToString(desc.Output), nil
+}
+
+// createSingleStateSM creates a standard state machine whose workflow is
+// the single given state.
+func (tc *sfnTestContext) createSingleStateSM(name string, state map[string]interface{}) (string, error) {
+	def, err := json.Marshal(map[string]interface{}{
+		"StartAt": "S",
+		"States":  map[string]interface{}{"S": state},
+	})
+	if err != nil {
+		return "", err
+	}
+	resp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
+		Name:       aws.String(name),
+		Definition: aws.String(string(def)),
+		RoleArn:    aws.String(tc.roleARN),
+	})
+	if err != nil {
+		return "", err
+	}
+	return aws.ToString(resp.StateMachineArn), nil
+}
+
+// firstMapRunFor polls ListMapRuns until the parent execution lists a Map
+// Run and returns its ARN.
+func (tc *sfnTestContext) firstMapRunFor(executionArn string) (string, error) {
+	for i := 0; i < 20; i++ {
+		time.Sleep(100 * time.Millisecond)
+		page, err := tc.client.ListMapRuns(tc.ctx, &sfn.ListMapRunsInput{
+			ExecutionArn: aws.String(executionArn),
+		})
+		if err != nil {
+			return "", err
+		}
+		for _, mr := range page.MapRuns {
+			if mr.MapRunArn != nil && *mr.MapRunArn != "" {
+				return *mr.MapRunArn, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no map runs found after polling")
+}
+
+// createRoleBackedSM creates a dedicated IAM role and a standard state
+// machine over the definition. The returned cleanup deletes both.
+func (tc *sfnTestContext) createRoleBackedSM(namePrefix, definition string) (string, func(), error) {
+	_, roleARN, roleCleanup := tc.createRoleForSM(namePrefix)
+	resp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
+		Name:       aws.String(fmt.Sprintf("%s-%d", namePrefix, time.Now().UnixNano())),
+		Definition: aws.String(definition),
+		RoleArn:    aws.String(roleARN),
+	})
+	if err != nil {
+		roleCleanup()
+		return "", func() {}, err
+	}
+	arn := aws.ToString(resp.StateMachineArn)
+	return arn, func() {
+		tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
+		roleCleanup()
+	}, nil
 }
 
 func (r *TestRunner) RunStepFunctionsTests() []TestResult {

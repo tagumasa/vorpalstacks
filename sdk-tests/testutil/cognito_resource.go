@@ -1,22 +1,20 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 )
 
-func (r *TestRunner) cognitoResourceServerTests(ctx context.Context, client *cognitoidentityprovider.Client, userPoolID string) []TestResult {
+func (r *TestRunner) cognitoResourceServerTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
-	identifier := fmt.Sprintf("resource-%d", time.Now().UnixNano())
+	identifier := tc.unique("resource")
 	results = append(results, r.RunTest("cognito", "CreateResourceServer", func() error {
-		resp, err := client.CreateResourceServer(ctx, &cognitoidentityprovider.CreateResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.CreateResourceServer(tc.ctx, &cognitoidentityprovider.CreateResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(identifier),
 			Name:       aws.String("Test Resource Server"),
 		})
@@ -39,8 +37,8 @@ func (r *TestRunner) cognitoResourceServerTests(ctx context.Context, client *cog
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListResourceServers", func() error {
-		resp, err := client.ListResourceServers(ctx, &cognitoidentityprovider.ListResourceServersInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.ListResourceServers(tc.ctx, &cognitoidentityprovider.ListResourceServersInput{
+			UserPoolId: aws.String(tc.userPoolID),
 		})
 		if err != nil {
 			return err
@@ -62,8 +60,8 @@ func (r *TestRunner) cognitoResourceServerTests(ctx context.Context, client *cog
 	}))
 
 	results = append(results, r.RunTest("cognito", "DescribeResourceServer", func() error {
-		resp, err := client.DescribeResourceServer(ctx, &cognitoidentityprovider.DescribeResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.DescribeResourceServer(tc.ctx, &cognitoidentityprovider.DescribeResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(identifier),
 		})
 		if err != nil {
@@ -82,8 +80,8 @@ func (r *TestRunner) cognitoResourceServerTests(ctx context.Context, client *cog
 	}))
 
 	results = append(results, r.RunTest("cognito", "UpdateResourceServer", func() error {
-		resp, err := client.UpdateResourceServer(ctx, &cognitoidentityprovider.UpdateResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.UpdateResourceServer(tc.ctx, &cognitoidentityprovider.UpdateResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(identifier),
 			Name:       aws.String("Updated Resource Server"),
 			Scopes: []types.ResourceServerScopeType{
@@ -109,24 +107,24 @@ func (r *TestRunner) cognitoResourceServerTests(ctx context.Context, client *cog
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteResourceServer", func() error {
-		delRS := fmt.Sprintf("del-rs-%d", time.Now().UnixNano())
-		_, err := client.CreateResourceServer(ctx, &cognitoidentityprovider.CreateResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		delRS := tc.unique("del-rs")
+		_, err := tc.client.CreateResourceServer(tc.ctx, &cognitoidentityprovider.CreateResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(delRS),
 			Name:       aws.String("Deletable RS"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource server: %v", err)
 		}
-		_, err = client.DeleteResourceServer(ctx, &cognitoidentityprovider.DeleteResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err = tc.client.DeleteResourceServer(tc.ctx, &cognitoidentityprovider.DeleteResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(delRS),
 		})
 		if err != nil {
 			return fmt.Errorf("DeleteResourceServer failed: %v", err)
 		}
-		_, err = client.DescribeResourceServer(ctx, &cognitoidentityprovider.DescribeResourceServerInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err = tc.client.DescribeResourceServer(tc.ctx, &cognitoidentityprovider.DescribeResourceServerInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Identifier: aws.String(delRS),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {

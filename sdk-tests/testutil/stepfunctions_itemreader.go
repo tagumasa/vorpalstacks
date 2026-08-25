@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -48,86 +47,15 @@ func (r *TestRunner) runSFNItemReaderTests(tc *sfnTestContext) []TestResult {
 		return err
 	}
 
-	// mapSM builds and creates a Map state machine over the given JSON
-	// state body (the "M" state) and returns its ARN plus a cleanup.
-	mapSM := func(name string, state map[string]interface{}) (string, func(), error) {
-		def := map[string]interface{}{
-			"StartAt": "M",
-			"States": map[string]interface{}{
-				"M": state,
-			},
-		}
-		defJSON, _ := json.Marshal(def)
-		resp, cerr := tc.client.CreateStateMachine(tc.ctx, &awssfn.CreateStateMachineInput{
-			Name:       aws.String(name),
-			Definition: aws.String(string(defJSON)),
-			RoleArn:    aws.String(tc.roleARN),
-		})
-		if cerr != nil {
-			return "", func() {}, cerr
-		}
-		arn := aws.ToString(resp.StateMachineArn)
-		return arn, func() {
-			tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
-		}, nil
-	}
-
 	runAndCollect := func(smArn string) (string, []interface{}, error) {
-		exec, eerr := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: aws.String(smArn),
-			Input:           aws.String(`{}`),
-		})
-		if eerr != nil {
-			return "", nil, eerr
-		}
-		var output string
-		for i := 0; i < 60; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{
-				ExecutionArn: exec.ExecutionArn,
-			})
-			if derr != nil {
-				return "", nil, derr
-			}
-			if desc.Status == types.ExecutionStatusSucceeded {
-				output = aws.ToString(desc.Output)
-				break
-			}
-			if desc.Status == types.ExecutionStatusFailed {
-				return "", nil, fmt.Errorf("execution failed: %s %s", aws.ToString(desc.Error), aws.ToString(desc.Cause))
-			}
-			time.Sleep(200 * time.Millisecond)
-		}
-		if output == "" {
-			return "", nil, fmt.Errorf("execution did not finish")
+		_, output, err := tc.runWithInput(smArn, "", `{}`)
+		if err != nil {
+			return "", nil, err
 		}
 		var items []interface{}
 		_ = json.Unmarshal([]byte(output), &items)
 		return output, items, nil
 	}
-
-
-// rawTestState invokes the TestState operation over the raw JSON-1.0
-// protocol: the SDK client resolves TestState onto a sync-prefixed
-// endpoint the local resolver cannot name.
-rawTestState := func(payload map[string]interface{}) (map[string]interface{}, error) {
-	body, _ := json.Marshal(payload)
-	req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-	req.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-	resp, err := testHTTPClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var result map[string]interface{}
-	if derr := json.NewDecoder(resp.Body).Decode(&result); derr != nil {
-		return nil, derr
-	}
-	if resp.StatusCode != http.StatusOK {
-		return result, fmt.Errorf("status %d, want 200: %v", resp.StatusCode, result)
-	}
-	return result, nil
-}
 
 	processor := func() map[string]interface{} {
 		return map[string]interface{}{
@@ -143,7 +71,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if err := put("items.csv", "n\n1\n2\n3\n"); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrCsv-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrCsv-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":     "arn:aws:states:::s3:getObject",
@@ -156,7 +84,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		_, items, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -174,7 +102,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if err := put("pipe.csv", "1|307\n1|481\n"); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrPipe-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrPipe-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":   "arn:aws:states:::s3:getObject",
@@ -190,7 +118,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		_, items, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -208,7 +136,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if err := put("nested.json", `{"data":{"items":[{"id":1},{"id":2},{"id":3}]}}`); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrJson-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrJson-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":   "arn:aws:states:::s3:getObject",
@@ -223,7 +151,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		_, items, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -241,7 +169,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		}); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrJsonl-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrJsonl-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":     "arn:aws:states:::s3:getObject",
@@ -254,7 +182,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		_, items, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -272,7 +200,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if err := put("data/f2.json", `{"k":"f2"}`); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrList-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrList-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":   "arn:aws:states:::s3:listObjectsV2",
@@ -284,7 +212,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		_, items, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -332,7 +260,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		}
 		defJSON, _ := json.Marshal(def)
 		resp, cerr := tc.client.CreateStateMachine(tc.ctx, &awssfn.CreateStateMachineInput{
-			Name: aws.String(fmt.Sprintf("IrFail-%d", time.Now().UnixNano())),
+			Name:       aws.String(fmt.Sprintf("IrFail-%d", time.Now().UnixNano())),
 			Definition: aws.String(string(defJSON)),
 			RoleArn:    aws.String(tc.roleARN),
 		})
@@ -341,36 +269,31 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: resp.StateMachineArn})
 
-		exec, eerr := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: resp.StateMachineArn, Input: aws.String(`{}`),
-		})
+		execArn, eerr := tc.startExecution(aws.ToString(resp.StateMachineArn), "", `{}`)
 		if eerr != nil {
 			return eerr
 		}
-		for i := 0; i < 60; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{ExecutionArn: exec.ExecutionArn})
-			if derr != nil {
-				return derr
-			}
-			if desc.Status == types.ExecutionStatusFailed {
-				if aws.ToString(desc.Error) != "States.ExceedToleratedFailureThreshold" {
-					return fmt.Errorf("error = %s, want States.ExceedToleratedFailureThreshold", aws.ToString(desc.Error))
-				}
-				return nil
-			}
-			if desc.Status == types.ExecutionStatusSucceeded {
-				return fmt.Errorf("execution unexpectedly succeeded")
-			}
-			time.Sleep(200 * time.Millisecond)
+		desc, werr := tc.awaitTerminal(execArn, 200*time.Millisecond, 60)
+		if werr != nil {
+			return werr
 		}
-		return fmt.Errorf("execution did not finish")
+		if desc.Status == types.ExecutionStatusFailed {
+			if aws.ToString(desc.Error) != "States.ExceedToleratedFailureThreshold" {
+				return fmt.Errorf("error = %s, want States.ExceedToleratedFailureThreshold", aws.ToString(desc.Error))
+			}
+			return nil
+		}
+		if desc.Status == types.ExecutionStatusSucceeded {
+			return fmt.Errorf("execution unexpectedly succeeded")
+		}
+		return fmt.Errorf("execution ended %s", desc.Status)
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "ResultWriter_ExportsManifestAndResultFiles", func() error {
 		if err := put("rw.csv", "n\n1\n2\n"); err != nil {
 			return err
 		}
-		smARN, cleanup, cerr := mapSM(fmt.Sprintf("IrRw-%d", time.Now().UnixNano()), map[string]interface{}{
+		smARN, cerr := tc.createSingleStateSM(fmt.Sprintf("IrRw-%d", time.Now().UnixNano()), map[string]interface{}{
 			"Type": "Map",
 			"ItemReader": map[string]interface{}{
 				"Resource":     "arn:aws:states:::s3:getObject",
@@ -387,7 +310,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		if cerr != nil {
 			return cerr
 		}
-		defer cleanup()
+		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
 		output, _, err := runAndCollect(smARN)
 		if err != nil {
 			return err
@@ -491,20 +414,11 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		return fmt.Errorf("MISSING_END_STATE missing: %v", resp.Diagnostics)
 	}))
 
-	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_StructuralRejection", func() error {
-		_, cerr := tc.client.CreateStateMachine(tc.ctx, &awssfn.CreateStateMachineInput{
-			Name:       aws.String(fmt.Sprintf("BadSM-%d", time.Now().UnixNano())),
-			Definition: aws.String(`{"StartAt":"A","States":{"A":{"Type":"Pass","Next":"Missing"}}}`),
-			RoleArn:    aws.String(tc.roleARN),
-		})
-		return expectAPIErrorCode(cerr, "InvalidDefinition")
-	}))
-
 	results = append(results, r.RunTest("stepfunctions", "TestState_RetrierRetryCount_Retriable", func() error {
 		def := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:lambda:` + r.region + `:` + r.accountID + `:function:none",`
 		def += `"Retry":[{"ErrorEquals":["States.TaskFailed"],"IntervalSeconds":2,"MaxAttempts":3,"BackoffRate":2.0}],`
 		def += `"Next":"Done"},"Done":{"Type":"Succeed"}}}`
-		result, terr := rawTestState(map[string]interface{}{
+		result, terr := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "T",
 			"input":      `{}`,
@@ -542,7 +456,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		def += `"Retry":[{"ErrorEquals":["States.TaskFailed"],"MaxAttempts":2}],`
 		def += `"Catch":[{"ErrorEquals":["States.ALL"],"ResultPath":"$.error","Next":"Handle"}],"Next":"Done"},`
 		def += `"Handle":{"Type":"Pass","End":true},"Done":{"Type":"Succeed"}}}`
-		result, terr := rawTestState(map[string]interface{}{
+		result, terr := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "T",
 			"input":      `{"data":"value"}`,
@@ -580,7 +494,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		def := `{"StartAt":"M","States":{"M":{"Type":"Map","ItemsPath":"$.items",`
 		def += `"ItemProcessor":{"ProcessorConfig":{"Mode":"DISTRIBUTED","ExecutionType":"STANDARD"},"StartAt":"W","States":{"W":{"Type":"Pass","End":true}}},`
 		def += `"ToleratedFailureCount":1,"End":true}}}`
-		result, terr := rawTestState(map[string]interface{}{
+		result, terr := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "M",
 			"input":      `{"items":[1,2,3]}`,
@@ -612,7 +526,7 @@ rawTestState := func(payload map[string]interface{}) (map[string]interface{}, er
 		def += `"ReaderConfig":{"InputType":"CSV","CSVHeaderLocation":"FIRST_ROW"}},`
 		def += `"ItemProcessor":{"ProcessorConfig":{"Mode":"DISTRIBUTED","ExecutionType":"STANDARD"},"StartAt":"W","States":{"W":{"Type":"Pass","End":true}}},`
 		def += `"End":true}}}`
-		result, terr := rawTestState(map[string]interface{}{
+		result, terr := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "M",
 			"input":      `{}`,

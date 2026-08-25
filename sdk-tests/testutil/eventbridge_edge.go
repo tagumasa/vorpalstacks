@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
-	awsSmithy "github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) runEventBridgeEdgeTests(ctx context.Context, client *eventbridge.Client) []TestResult {
@@ -35,14 +34,7 @@ func (r *TestRunner) runEventBridgeEdgeTests(ctx context.Context, client *eventb
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent event bus")
 		}
-		var apiErr awsSmithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "ResourceNotFoundException" {
-			return fmt.Errorf("expected ResourceNotFoundException, got %s: %v", apiErr.ErrorCode(), err)
-		}
-		return nil
+		return expectAWSErrorCode(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("events", "DescribeRule_NonExistent", func() error {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,20 +34,15 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 			if err != nil {
 				return fmt.Errorf("PutObject key=%q failed: %w", key, err)
 			}
-			resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 				Bucket: aws.String(bucketName),
 				Key:    aws.String(key),
 			})
 			if err != nil {
 				return fmt.Errorf("GetObject key=%q failed: %w", key, err)
 			}
-			defer resp.Body.Close()
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("ReadAll key=%q failed: %w", key, err)
-			}
-			if string(body) != bodies[i] {
-				return fmt.Errorf("key=%q: expected body %q, got %q", key, bodies[i], string(body))
+			if gotBody != bodies[i] {
+				return fmt.Errorf("key=%q: expected body %q, got %q", key, bodies[i], gotBody)
 			}
 		}
 		return nil
@@ -142,20 +136,15 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("CopyObject failed: %w", err)
 		}
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(dstKey),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != content {
-			return fmt.Errorf("expected body %q, got %q", content, string(body))
+		if gotBody != content {
+			return fmt.Errorf("expected body %q, got %q", content, gotBody)
 		}
 		return nil
 	}))
@@ -248,21 +237,16 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("CompleteMultipartUpload failed: %w", err)
 		}
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(key),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		body, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
 		expected := string(part1Body) + part2Body
-		if string(body) != expected {
-			return fmt.Errorf("expected body %q, got %q", expected, string(body))
+		if gotBody != expected {
+			return fmt.Errorf("expected body %q, got %q", expected, gotBody)
 		}
 		return nil
 	}))
@@ -349,20 +333,15 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 			if headResp.ContentType == nil || *headResp.ContentType != tc.contentType {
 				return fmt.Errorf("key=%q: expected ContentType %q, got %v", tc.key, tc.contentType, headResp.ContentType)
 			}
-			getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+			_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 				Bucket: aws.String(bucketName),
 				Key:    aws.String(tc.key),
 			})
 			if err != nil {
 				return fmt.Errorf("GetObject key=%q failed: %w", tc.key, err)
 			}
-			defer getResp.Body.Close()
-			body, err := io.ReadAll(getResp.Body)
-			if err != nil {
-				return fmt.Errorf("ReadAll key=%q failed: %w", tc.key, err)
-			}
-			if string(body) != tc.body {
-				return fmt.Errorf("key=%q: expected body %q, got %q", tc.key, tc.body, string(body))
+			if gotBody != tc.body {
+				return fmt.Errorf("key=%q: expected body %q, got %q", tc.key, tc.body, gotBody)
 			}
 		}
 		return nil

@@ -1,23 +1,21 @@
 package testutil
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
 )
 
-func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidentityprovider.Client, userPoolID string) []TestResult {
+func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
-	username := fmt.Sprintf("user-%d", time.Now().UnixNano())
+	username := tc.unique("user")
 	results = append(results, r.RunTest("cognito", "AdminCreateUser", func() error {
-		resp, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
+		resp, err := tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:        aws.String(tc.userPoolID),
 			Username:          aws.String(username),
 			TemporaryPassword: aws.String("TempPass123!"),
 			MessageAction:     types.MessageActionTypeSuppress,
@@ -38,8 +36,8 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminGetUser", func() error {
-		resp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
@@ -55,8 +53,8 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListUsers", func() error {
-		resp, err := client.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
-			UserPoolId: aws.String(userPoolID),
+		resp, err := tc.client.ListUsers(tc.ctx, &cognitoidentityprovider.ListUsersInput{
+			UserPoolId: aws.String(tc.userPoolID),
 		})
 		if err != nil {
 			return err
@@ -81,15 +79,15 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminDisableUser", func() error {
-		_, err := client.AdminDisableUser(ctx, &cognitoidentityprovider.AdminDisableUserInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err := tc.client.AdminDisableUser(tc.ctx, &cognitoidentityprovider.AdminDisableUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
 			return err
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
@@ -102,15 +100,15 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminEnableUser", func() error {
-		_, err := client.AdminEnableUser(ctx, &cognitoidentityprovider.AdminEnableUserInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err := tc.client.AdminEnableUser(tc.ctx, &cognitoidentityprovider.AdminEnableUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
 			return err
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
@@ -123,22 +121,14 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminUpdateUserAttributes", func() error {
-		attrUser2 := fmt.Sprintf("attr2-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(attrUser2),
-			TemporaryPassword: aws.String("TempPass123!"),
-			MessageAction:     types.MessageActionTypeSuppress,
-		})
+		attrUser2 := tc.unique("attr2-user")
+		cleanupAttrUser2, err := tc.adminCreateUser(attrUser2)
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(attrUser2),
-		})
-		_, err = client.AdminUpdateUserAttributes(ctx, &cognitoidentityprovider.AdminUpdateUserAttributesInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupAttrUser2()
+		_, err = tc.client.AdminUpdateUserAttributes(tc.ctx, &cognitoidentityprovider.AdminUpdateUserAttributesInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(attrUser2),
 			UserAttributes: []types.AttributeType{
 				{Name: aws.String("email"), Value: aws.String("updated@example.com")},
@@ -148,8 +138,8 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("AdminUpdateUserAttributes failed: %v", err)
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(attrUser2),
 		})
 		if err != nil {
@@ -169,9 +159,9 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminDeleteUserAttributes", func() error {
-		daUser := fmt.Sprintf("da-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
+		daUser := tc.unique("da-user")
+		_, err := tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:        aws.String(tc.userPoolID),
 			Username:          aws.String(daUser),
 			TemporaryPassword: aws.String("TempPass123!"),
 			MessageAction:     types.MessageActionTypeSuppress,
@@ -183,20 +173,20 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
+		defer tc.client.AdminDeleteUser(tc.ctx, &cognitoidentityprovider.AdminDeleteUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(daUser),
 		})
-		_, err = client.AdminDeleteUserAttributes(ctx, &cognitoidentityprovider.AdminDeleteUserAttributesInput{
-			UserPoolId:         aws.String(userPoolID),
+		_, err = tc.client.AdminDeleteUserAttributes(tc.ctx, &cognitoidentityprovider.AdminDeleteUserAttributesInput{
+			UserPoolId:         aws.String(tc.userPoolID),
 			Username:           aws.String(daUser),
 			UserAttributeNames: []string{"name"},
 		})
 		if err != nil {
 			return fmt.Errorf("AdminDeleteUserAttributes failed: %v", err)
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(daUser),
 		})
 		if err != nil {
@@ -211,22 +201,14 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminResetUserPassword", func() error {
-		rpUser := fmt.Sprintf("rp-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(rpUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-			MessageAction:     types.MessageActionTypeSuppress,
-		})
+		rpUser := tc.unique("rp-user")
+		cleanupRpUser, err := tc.adminCreateUser(rpUser)
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(rpUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupRpUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(rpUser),
 			Password:   aws.String("PermPass123!"),
 			Permanent:  true,
@@ -234,15 +216,15 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("AdminSetUserPassword failed: %v", err)
 		}
-		_, err = client.AdminResetUserPassword(ctx, &cognitoidentityprovider.AdminResetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err = tc.client.AdminResetUserPassword(tc.ctx, &cognitoidentityprovider.AdminResetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(rpUser),
 		})
 		if err != nil {
 			return fmt.Errorf("AdminResetUserPassword failed: %v", err)
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(rpUser),
 		})
 		if err != nil {
@@ -255,22 +237,14 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminSetUserPassword", func() error {
-		spUser := fmt.Sprintf("sp-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(spUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-			MessageAction:     types.MessageActionTypeSuppress,
-		})
+		spUser := tc.unique("sp-user")
+		cleanupSpUser, err := tc.adminCreateUser(spUser)
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(spUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupSpUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(spUser),
 			Password:   aws.String("NewPermPass123!"),
 			Permanent:  true,
@@ -278,8 +252,8 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("AdminSetUserPassword failed: %v", err)
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(spUser),
 		})
 		if err != nil {
@@ -292,21 +266,13 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "SignUp", func() error {
-		signUpClientName := fmt.Sprintf("signup-client-%d", time.Now().UnixNano())
-		signUpClientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(signUpClientName),
-		})
+		signUpClientID, cleanupSignUpClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("signup-client"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)
 		}
-		signUpClientID := *signUpClientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(signUpClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
-		signUpUser := fmt.Sprintf("signup-user-%d", time.Now().UnixNano())
-		resp, err := client.SignUp(ctx, &cognitoidentityprovider.SignUpInput{
+		defer cleanupSignUpClientID()
+		signUpUser := tc.unique("signup-user")
+		resp, err := tc.client.SignUp(tc.ctx, &cognitoidentityprovider.SignUpInput{
 			ClientId: aws.String(signUpClientID),
 			Username: aws.String(signUpUser),
 			Password: aws.String("SignUpPass123!"),
@@ -327,21 +293,13 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "ConfirmSignUp", func() error {
-		confirmClientName := fmt.Sprintf("confirm-client-%d", time.Now().UnixNano())
-		confirmClientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(confirmClientName),
-		})
+		confirmClientID, cleanupConfirmClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("confirm-client"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)
 		}
-		confirmClientID := *confirmClientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(confirmClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
-		confirmUser := fmt.Sprintf("confirm-user-%d", time.Now().UnixNano())
-		_, err = client.SignUp(ctx, &cognitoidentityprovider.SignUpInput{
+		defer cleanupConfirmClientID()
+		confirmUser := tc.unique("confirm-user")
+		_, err = tc.client.SignUp(tc.ctx, &cognitoidentityprovider.SignUpInput{
 			ClientId: aws.String(confirmClientID),
 			Username: aws.String(confirmUser),
 			Password: aws.String("ConfirmPass123!"),
@@ -349,7 +307,7 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("SignUp failed: %v", err)
 		}
-		_, err = client.ConfirmSignUp(ctx, &cognitoidentityprovider.ConfirmSignUpInput{
+		_, err = tc.client.ConfirmSignUp(tc.ctx, &cognitoidentityprovider.ConfirmSignUpInput{
 			ClientId:         aws.String(confirmClientID),
 			Username:         aws.String(confirmUser),
 			ConfirmationCode: aws.String("123456"),
@@ -357,8 +315,8 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("ConfirmSignUp failed: %v", err)
 		}
-		getResp, err := client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(confirmUser),
 		})
 		if err != nil {
@@ -371,22 +329,14 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminInitiateAuth", func() error {
-		authUser := fmt.Sprintf("auth-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(authUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-			MessageAction:     types.MessageActionTypeSuppress,
-		})
+		authUser := tc.unique("auth-user")
+		cleanupAuthUser, err := tc.adminCreateUser(authUser)
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(authUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupAuthUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(authUser),
 			Password:   aws.String("AuthPass123!"),
 			Permanent:  true,
@@ -394,21 +344,13 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("set password: %v", err)
 		}
-		authClientName := fmt.Sprintf("auth-client-%d", time.Now().UnixNano())
-		authClientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(authClientName),
-		})
+		authClientID, cleanupAuthClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("auth-client"))
 		if err != nil {
 			return fmt.Errorf("create auth client: %v", err)
 		}
-		authClientID := *authClientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(authClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
-		authResp, err := client.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupAuthClientID()
+		authResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			ClientId:   aws.String(authClientID),
 			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
 			AuthParameters: map[string]string{
@@ -432,22 +374,14 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminUserGlobalSignOut", func() error {
-		gsoUser := fmt.Sprintf("gso-user-%d", time.Now().UnixNano())
-		_, err := client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(gsoUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-			MessageAction:     types.MessageActionTypeSuppress,
-		})
+		gsoUser := tc.unique("gso-user")
+		cleanupGsoUser, err := tc.adminCreateUser(gsoUser)
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(gsoUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupGsoUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(gsoUser),
 			Password:   aws.String("GSOPass123!"),
 			Permanent:  true,
@@ -455,21 +389,13 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		if err != nil {
 			return fmt.Errorf("set password: %v", err)
 		}
-		gsoClientName := fmt.Sprintf("gso-client-%d", time.Now().UnixNano())
-		gsoClientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(gsoClientName),
-		})
+		gsoClientID, cleanupGsoClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("gso-client"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)
 		}
-		gsoClientID := *gsoClientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(gsoClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
-		authResp, err := client.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupGsoClientID()
+		authResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			ClientId:   aws.String(gsoClientID),
 			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
 			AuthParameters: map[string]string{
@@ -485,21 +411,21 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 		}
 		accessToken := *authResp.AuthenticationResult.AccessToken
 
-		_, err = client.AdminUserGlobalSignOut(ctx, &cognitoidentityprovider.AdminUserGlobalSignOutInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err = tc.client.AdminUserGlobalSignOut(tc.ctx, &cognitoidentityprovider.AdminUserGlobalSignOutInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(gsoUser),
 		})
 		if err != nil {
 			return fmt.Errorf("AdminUserGlobalSignOut failed: %v", err)
 		}
-		_, err = client.GetUser(ctx, &cognitoidentityprovider.GetUserInput{
+		_, err = tc.client.GetUser(tc.ctx, &cognitoidentityprovider.GetUserInput{
 			AccessToken: aws.String(accessToken),
 		})
 		if err == nil {
 			return fmt.Errorf("expected error using access token after global sign-out")
 		}
-		authResp2, err := client.AdminInitiateAuth(ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
-			UserPoolId: aws.String(userPoolID),
+		authResp2, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			ClientId:   aws.String(gsoClientID),
 			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
 			AuthParameters: map[string]string{
@@ -517,7 +443,7 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "GlobalSignOut", func() error {
-		_, err := client.GlobalSignOut(ctx, &cognitoidentityprovider.GlobalSignOutInput{
+		_, err := tc.client.GlobalSignOut(tc.ctx, &cognitoidentityprovider.GlobalSignOutInput{
 			AccessToken: aws.String("dummy-token"),
 		})
 		if err == nil {
@@ -531,15 +457,15 @@ func (r *TestRunner) cognitoUserTests(ctx context.Context, client *cognitoidenti
 	}))
 
 	results = append(results, r.RunTest("cognito", "AdminDeleteUser", func() error {
-		_, err := client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err := tc.client.AdminDeleteUser(tc.ctx, &cognitoidentityprovider.AdminDeleteUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = client.AdminGetUser(ctx, &cognitoidentityprovider.AdminGetUserInput{
-			UserPoolId: aws.String(userPoolID),
+		_, err = tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(username),
 		})
 		if err == nil {

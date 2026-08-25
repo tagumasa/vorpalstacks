@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go"
 )
 
 func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts string, bucketName string) []TestResult {
@@ -29,7 +28,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String("range-test.txt"),
 			Range:  aws.String("bytes=0-4"),
@@ -37,14 +36,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err != nil {
 			return fmt.Errorf("GetObject with Range failed: %w", err)
 		}
-		defer resp.Body.Close()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "01234" {
-			return fmt.Errorf("expected body %q, got %q", "01234", string(body))
+		if gotBody != "01234" {
+			return fmt.Errorf("expected body %q, got %q", "01234", gotBody)
 		}
 		if resp.ContentRange == nil {
 			return fmt.Errorf("ContentRange is nil")
@@ -97,126 +90,43 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		return nil
 	}))
 
-	results = append(results, r.RunTest("s3", "StorageClass_STANDARD_IA", func() error {
-		content := "standard-ia"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String("sc-ia.txt"),
-			Body:         strings.NewReader(content),
-			StorageClass: types.StorageClassStandardIa,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
+	// Every storage class accepted on PUT must round-trip its class value
+	// through HEAD metadata together with the object content length.
+	results = append(results, r.RunTest("s3", "StorageClass_HeadRoundTrip", func() error {
+		for _, sc := range []struct {
+			name  string
+			class types.StorageClass
+			key   string
+			body  string
+		}{
+			{"STANDARD_IA", types.StorageClassStandardIa, "sc-ia.txt", "standard-ia"},
+			{"GLACIER", types.StorageClassGlacier, "sc-glacier.txt", "glacier"},
+			{"ONEZONE_IA", types.StorageClassOnezoneIa, "sc-1ia.txt", "onezone-ia"},
+			{"INTELLIGENT_TIERING", types.StorageClassIntelligentTiering, "sc-it.txt", "intelligent-tiering"},
+			{"REDUCED_REDUNDANCY", types.StorageClassReducedRedundancy, "sc-rr.txt", "reduced-redundancy"},
+		} {
+			if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+				Bucket:       aws.String(bucketName),
+				Key:          aws.String(sc.key),
+				Body:         strings.NewReader(sc.body),
+				StorageClass: sc.class,
+			}); err != nil {
+				return fmt.Errorf("PutObject %s failed: %w", sc.name, err)
+			}
 
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sc-ia.txt"),
-		})
-		if err != nil {
-			return fmt.Errorf("HeadObject failed: %w", err)
-		}
-		if resp.StorageClass != types.StorageClassStandardIa {
-			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassStandardIa, resp.StorageClass)
-		}
-		if resp.ContentLength == nil || *resp.ContentLength != int64(len(content)) {
-			return fmt.Errorf("expected ContentLength %d, got %v", len(content), resp.ContentLength)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "StorageClass_GLACIER", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String("sc-glacier.txt"),
-			Body:         strings.NewReader("glacier"),
-			StorageClass: types.StorageClassGlacier,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sc-glacier.txt"),
-		})
-		if err != nil {
-			return fmt.Errorf("HeadObject failed: %w", err)
-		}
-		if resp.StorageClass != types.StorageClassGlacier {
-			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassGlacier, resp.StorageClass)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "StorageClass_ONEZONE_IA", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String("sc-1ia.txt"),
-			Body:         strings.NewReader("onezone-ia"),
-			StorageClass: types.StorageClassOnezoneIa,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sc-1ia.txt"),
-		})
-		if err != nil {
-			return fmt.Errorf("HeadObject failed: %w", err)
-		}
-		if resp.StorageClass != types.StorageClassOnezoneIa {
-			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassOnezoneIa, resp.StorageClass)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "StorageClass_INTELLIGENT_TIERING", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String("sc-it.txt"),
-			Body:         strings.NewReader("intelligent-tiering"),
-			StorageClass: types.StorageClassIntelligentTiering,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sc-it.txt"),
-		})
-		if err != nil {
-			return fmt.Errorf("HeadObject failed: %w", err)
-		}
-		if resp.StorageClass != types.StorageClassIntelligentTiering {
-			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassIntelligentTiering, resp.StorageClass)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "StorageClass_REDUCED_REDUNDANCY", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String("sc-rr.txt"),
-			Body:         strings.NewReader("reduced-redundancy"),
-			StorageClass: types.StorageClassReducedRedundancy,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sc-rr.txt"),
-		})
-		if err != nil {
-			return fmt.Errorf("HeadObject failed: %w", err)
-		}
-		if resp.StorageClass != types.StorageClassReducedRedundancy {
-			return fmt.Errorf("expected StorageClass %s, got %s", types.StorageClassReducedRedundancy, resp.StorageClass)
+			resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+				Bucket: aws.String(bucketName),
+				Key:    aws.String(sc.key),
+			})
+			if err != nil {
+				return fmt.Errorf("HeadObject %s failed: %w", sc.name, err)
+			}
+			if resp.StorageClass != sc.class {
+				return fmt.Errorf("%s: expected StorageClass %s, got %s", sc.name, sc.class, resp.StorageClass)
+			}
+			if resp.ContentLength == nil || *resp.ContentLength != int64(len(sc.body)) {
+				return fmt.Errorf("%s: expected ContentLength %d, got %v", sc.name, len(sc.body), resp.ContentLength)
+			}
 		}
 		return nil
 	}))
@@ -333,12 +243,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected InvalidObjectState for archived object, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "InvalidObjectState" {
-			return fmt.Errorf("expected InvalidObjectState, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
+			return err
 		}
 		// The S3 API reference documents InvalidObjectState with HTTP 403.
 		if code := awsHTTPStatus(err); code != http.StatusForbidden {
@@ -379,12 +285,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected ObjectNotInActiveTierError for unrestored source, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "ObjectNotInActiveTierError" {
-			return fmt.Errorf("expected ObjectNotInActiveTierError, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "ObjectNotInActiveTierError"); err != nil {
+			return err
 		}
 		// The S3 API reference documents ObjectNotInActiveTierError with
 		// HTTP 403.
@@ -435,15 +337,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected error restoring STANDARD object, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
 		// Restoring an object that is not archived is rejected with
 		// InvalidObjectState ("Restore is not allowed for the object's
 		// current storage class"), reported with HTTP 403.
-		if apiErr.ErrorCode() != "InvalidObjectState" {
-			return fmt.Errorf("expected InvalidObjectState, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
+			return err
 		}
 		if code := awsHTTPStatus(err); code != http.StatusForbidden {
 			return fmt.Errorf("expected HTTP 403 for InvalidObjectState, got %d", code)
@@ -452,24 +350,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "RestoreObject_SpecificVersion", func() error {
-		verBucket := s3Bucket(ts, "restore-ver")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(verBucket),
-		})
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "restore-ver"))
 		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "versioned-restore.txt"
 		putArchived, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -566,9 +451,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected InvalidObjectState for unrestored archive object, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "InvalidObjectState" {
-			return fmt.Errorf("expected InvalidObjectState for unrestored archive object, got %v", err)
+		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
+			return fmt.Errorf("expected InvalidObjectState for unrestored archive object: %v", err)
 		}
 
 		if _, err := client.RestoreObject(ctx, &s3.RestoreObjectInput{
@@ -581,20 +465,15 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("RestoreObject failed: %w", err)
 		}
 
-		get, err := client.GetObject(ctx, &s3.GetObjectInput{
+		get, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(key),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject after restore failed: %w", err)
 		}
-		defer get.Body.Close()
-		body, err := io.ReadAll(get.Body)
-		if err != nil {
-			return fmt.Errorf("ReadAll failed: %w", err)
-		}
-		if string(body) != "frozen data" {
-			return fmt.Errorf("expected restored content, got %q", body)
+		if gotBody != "frozen data" {
+			return fmt.Errorf("expected restored content, got %q", gotBody)
 		}
 		if get.Restore == nil || !strings.Contains(*get.Restore, `ongoing-request="false"`) {
 			return fmt.Errorf("expected x-amz-restore on GET, got %v", get.Restore)
@@ -651,20 +530,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// Object tagging operations honour the versionId parameter: they read
 	// and write the tag set of the addressed version, not the current one.
 	results = append(results, r.RunTest("s3", "GetObjectTagging_VersionedObject", func() error {
-		verBucket := s3Bucket(ts, "tagging-ver")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "tagging-ver"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "versioned-tagging.txt"
 		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -729,20 +599,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "PutObjectTagging_SpecificVersionOnlyUpdatesThatVersion", func() error {
-		verBucket := s3Bucket(ts, "tagging-put-ver")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "tagging-put-ver"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "versioned-tagging-put.txt"
 		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -786,20 +647,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "DeleteObjectTagging_SpecificVersion", func() error {
-		verBucket := s3Bucket(ts, "tagging-del-ver")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "tagging-del-ver"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "versioned-tagging-del.txt"
 		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -874,20 +726,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// Addressing a version that does not exist is NoSuchVersion, not
 	// NoSuchKey: the key exists, only the requested version is missing.
 	results = append(results, r.RunTest("s3", "GetObject_NonExistentVersion", func() error {
-		verBucket := s3Bucket(ts, "get-nover")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "get-nover"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "nonexistent-version.txt"
 		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -898,7 +741,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		_, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, err = client.GetObject(ctx, &s3.GetObjectInput{
 			Bucket:    aws.String(verBucket),
 			Key:       aws.String(key),
 			VersionId: aws.String("nonexistent-version-id-0000000000000"),
@@ -906,12 +749,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected NoSuchVersion for nonexistent version, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "NoSuchVersion" {
-			return fmt.Errorf("expected NoSuchVersion, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "NoSuchVersion"); err != nil {
+			return err
 		}
 		if code := awsHTTPStatus(err); code != http.StatusNotFound {
 			return fmt.Errorf("expected HTTP 404 for NoSuchVersion, got %d", code)
@@ -920,20 +759,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "HeadObject_NonExistentVersion", func() error {
-		verBucket := s3Bucket(ts, "head-nover")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "head-nover"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "nonexistent-version.txt"
 		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -944,7 +774,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+		_, err = client.HeadObject(ctx, &s3.HeadObjectInput{
 			Bucket:    aws.String(verBucket),
 			Key:       aws.String(key),
 			VersionId: aws.String("nonexistent-version-id-0000000000000"),
@@ -955,12 +785,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		// HEAD error responses carry no body, so the SDK surfaces the
 		// modelled NotFound error for any 404; the HTTP status is the
 		// observable contract here.
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "NotFound" {
-			return fmt.Errorf("expected NotFound, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "NotFound"); err != nil {
+			return err
 		}
 		if code := awsHTTPStatus(err); code != http.StatusNotFound {
 			return fmt.Errorf("expected HTTP 404 for nonexistent version, got %d", code)
@@ -969,20 +795,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	}))
 
 	results = append(results, r.RunTest("s3", "GetObjectTagging_NonExistentVersion", func() error {
-		verBucket := s3Bucket(ts, "tagging-nover")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(verBucket)}); err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "tagging-nover"))
+		if err != nil {
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, verBucket)
-
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(verBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
+		defer verCleanup()
 
 		key := "nonexistent-version.txt"
 		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -993,7 +810,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		_, err := client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
+		_, err = client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
 			Bucket:    aws.String(verBucket),
 			Key:       aws.String(key),
 			VersionId: aws.String("nonexistent-version-id-0000000000000"),
@@ -1001,12 +818,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected NoSuchVersion for nonexistent version, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "NoSuchVersion" {
-			return fmt.Errorf("expected NoSuchVersion, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "NoSuchVersion"); err != nil {
+			return err
 		}
 		if code := awsHTTPStatus(err); code != http.StatusNotFound {
 			return fmt.Errorf("expected HTTP 404 for NoSuchVersion, got %d", code)
@@ -1124,9 +937,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected PreconditionFailed for mismatched copy-source If-Match, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "PreconditionFailed" {
-			return fmt.Errorf("expected PreconditionFailed, got %v", err)
+		if err := expectAWSErrorCode(err, "PreconditionFailed"); err != nil {
+			return fmt.Errorf("expected PreconditionFailed: %v", err)
 		}
 		if code := awsHTTPStatus(err); code != http.StatusPreconditionFailed {
 			return fmt.Errorf("expected HTTP 412 for mismatched copy-source If-Match, got %d", code)
@@ -1216,20 +1028,15 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("CompleteMultipartUpload failed: %w", err)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
 			Bucket: aws.String(upcBucket),
 			Key:    aws.String("upcopy-dst.txt"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
-		body, err := io.ReadAll(getResp.Body)
-		if err != nil {
-			return fmt.Errorf("reading body failed: %w", err)
-		}
-		if string(body) != "23456" {
-			return fmt.Errorf("expected copied range %q, got %q", "23456", string(body))
+		if gotBody != "23456" {
+			return fmt.Errorf("expected copied range %q, got %q", "23456", gotBody)
 		}
 		return nil
 	}))
@@ -1275,12 +1082,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected ObjectNotInActiveTierError for unrestored source, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("expected API error, got: %T: %v", err, err)
-		}
-		if apiErr.ErrorCode() != "ObjectNotInActiveTierError" {
-			return fmt.Errorf("expected ObjectNotInActiveTierError, got %s: %v", apiErr.ErrorCode(), err)
+		if err := expectAWSErrorCode(err, "ObjectNotInActiveTierError"); err != nil {
+			return err
 		}
 		// The S3 API reference documents ObjectNotInActiveTierError with
 		// HTTP 403.

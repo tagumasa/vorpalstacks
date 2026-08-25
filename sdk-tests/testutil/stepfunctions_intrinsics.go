@@ -22,78 +22,8 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 
 	ts := fmt.Sprintf("%d", time.Now().UnixNano())
 
-	createSM := func(name string, state map[string]interface{}) (string, error) {
-		def := map[string]interface{}{
-			"StartAt": "S",
-			"States":  map[string]interface{}{"S": state},
-		}
-		defJSON, _ := json.Marshal(def)
-		resp, err := tc.client.CreateStateMachine(tc.ctx, &awssfn.CreateStateMachineInput{
-			Name:       aws.String(name),
-			Definition: aws.String(string(defJSON)),
-			RoleArn:    aws.String(tc.roleARN),
-		})
-		if err != nil {
-			return "", err
-		}
-		return aws.ToString(resp.StateMachineArn), nil
-	}
-
-	runWithInput := func(smArn, execName, input string) (string, string, error) {
-		exec, err := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: aws.String(smArn),
-			Name:            aws.String(execName),
-			Input:           aws.String(input),
-		})
-		if err != nil {
-			return "", "", err
-		}
-		execArn := aws.ToString(exec.ExecutionArn)
-		for i := 0; i < 60; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{
-				ExecutionArn: exec.ExecutionArn,
-			})
-			if derr != nil {
-				return "", "", derr
-			}
-			if desc.Status == types.ExecutionStatusSucceeded {
-				return execArn, aws.ToString(desc.Output), nil
-			}
-			if desc.Status != types.ExecutionStatusRunning {
-				return "", "", fmt.Errorf("execution ended %s: %s %s", desc.Status, aws.ToString(desc.Error), aws.ToString(desc.Cause))
-			}
-			time.Sleep(200 * time.Millisecond)
-		}
-		return "", "", fmt.Errorf("execution did not finish")
-	}
-
-	waitForStatus := func(smArn, execName, input string) (*types.ExecutionStatus, string, string, error) {
-		exec, err := tc.client.StartExecution(tc.ctx, &awssfn.StartExecutionInput{
-			StateMachineArn: aws.String(smArn),
-			Name:            aws.String(execName),
-			Input:           aws.String(input),
-		})
-		if err != nil {
-			return nil, "", "", err
-		}
-		for i := 0; i < 60; i++ {
-			desc, derr := tc.client.DescribeExecution(tc.ctx, &awssfn.DescribeExecutionInput{
-				ExecutionArn: exec.ExecutionArn,
-			})
-			if derr != nil {
-				return nil, "", "", derr
-			}
-			if desc.Status != types.ExecutionStatusRunning {
-				s := desc.Status
-				return &s, aws.ToString(desc.Error), aws.ToString(desc.Cause), nil
-			}
-			time.Sleep(200 * time.Millisecond)
-		}
-		return nil, "", "", fmt.Errorf("execution did not finish")
-	}
-
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_PassParametersApplied", func() error {
-		smARN, err := createSM("Intrin-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("Intrin-"+ts, map[string]interface{}{
 			"Type": "Pass",
 			"Parameters": map[string]interface{}{
 				"greeting.$":   "States.Format('Hello, my name is {}.', $.name)",
@@ -120,7 +50,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		_, output, rerr := runWithInput(smARN, "intrin-"+ts,
+		_, output, rerr := tc.runWithInput(smARN, "intrin-"+ts,
 			`{"name":"Arnav","Id":123456,"nine":[1,2,3,4,5,6,7,8,9],"dups":[1,2,3,3,3,4],"json1":{"a":1,"keep":true},"json2":{"b":2},"escaped":"{\"foo\": \"bar\"}"}`)
 		if rerr != nil {
 			return rerr
@@ -177,7 +107,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_EncodingHashUUID", func() error {
 		digest := sha256.Sum256([]byte("input data"))
 		wantHash := hex.EncodeToString(digest[:])
-		smARN, err := createSM("IntrinEnc-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("IntrinEnc-"+ts, map[string]interface{}{
 			"Type": "Pass",
 			"Parameters": map[string]interface{}{
 				"encoded.$":    "States.Base64Encode($.plain)",
@@ -193,7 +123,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		_, output, rerr := runWithInput(smARN, "intrinenc-"+ts,
+		_, output, rerr := tc.runWithInput(smARN, "intrinenc-"+ts,
 			`{"plain":"input data","b64":"RGF0YSB0byBlbmNvZGU=","algo":"SHA-256"}`)
 		if rerr != nil {
 			return rerr
@@ -219,7 +149,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_FailErrorCausePathIntrinsic", func() error {
-		smARN, err := createSM("IntrinFail-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("IntrinFail-"+ts, map[string]interface{}{
 			"Type":      "Fail",
 			"ErrorPath": "States.Format('Code-{}', $.n)",
 			"CausePath": "States.Format('failed at {}', $.n)",
@@ -228,24 +158,28 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		status, errName, cause, ferr := waitForStatus(smARN, "intrinfail-"+ts, `{"n":7}`)
+		execArn, serr := tc.startExecution(smARN, "intrinfail-"+ts, `{"n":7}`)
+		if serr != nil {
+			return serr
+		}
+		desc, ferr := tc.awaitTerminal(execArn, 200*time.Millisecond, 60)
 		if ferr != nil {
 			return ferr
 		}
-		if *status != types.ExecutionStatusFailed {
-			return fmt.Errorf("status = %s, want FAILED", *status)
+		if desc.Status != types.ExecutionStatusFailed {
+			return fmt.Errorf("status = %s, want FAILED", desc.Status)
 		}
-		if errName != "Code-7" {
-			return fmt.Errorf("error = %q, want Code-7", errName)
+		if aws.ToString(desc.Error) != "Code-7" {
+			return fmt.Errorf("error = %q, want Code-7", aws.ToString(desc.Error))
 		}
-		if cause != "failed at 7" {
-			return fmt.Errorf("cause = %q, want 'failed at 7'", cause)
+		if aws.ToString(desc.Cause) != "failed at 7" {
+			return fmt.Errorf("cause = %q, want 'failed at 7'", aws.ToString(desc.Cause))
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_InvalidIntrinsicFailsAsRuntime", func() error {
-		smARN, err := createSM("IntrinBad-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("IntrinBad-"+ts, map[string]interface{}{
 			"Type": "Pass",
 			"Parameters": map[string]interface{}{
 				"x.$": "States.ArrayRange(1, 9, 0)",
@@ -256,24 +190,28 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		status, errName, cause, ferr := waitForStatus(smARN, "intrinbad-"+ts, `{}`)
+		execArn, serr := tc.startExecution(smARN, "intrinbad-"+ts, `{}`)
+		if serr != nil {
+			return serr
+		}
+		desc, ferr := tc.awaitTerminal(execArn, 200*time.Millisecond, 60)
 		if ferr != nil {
 			return ferr
 		}
-		if *status != types.ExecutionStatusFailed {
-			return fmt.Errorf("status = %s, want FAILED", *status)
+		if desc.Status != types.ExecutionStatusFailed {
+			return fmt.Errorf("status = %s, want FAILED", desc.Status)
 		}
-		if errName != "States.Runtime" {
-			return fmt.Errorf("error = %q, want States.Runtime", errName)
+		if aws.ToString(desc.Error) != "States.Runtime" {
+			return fmt.Errorf("error = %q, want States.Runtime", aws.ToString(desc.Error))
 		}
-		if cause == "" {
+		if aws.ToString(desc.Cause) == "" {
 			return fmt.Errorf("cause is empty")
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_ParallelParametersResultSelector", func() error {
-		smARN, err := createSM("IntrinPar-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("IntrinPar-"+ts, map[string]interface{}{
 			"Type": "Parallel",
 			"Parameters": map[string]interface{}{
 				"word.$": "States.Format('{}-par', $.w)",
@@ -303,7 +241,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		_, output, rerr := runWithInput(smARN, "intrinpar-"+ts, `{"w":"go"}`)
+		_, output, rerr := tc.runWithInput(smARN, "intrinpar-"+ts, `{"w":"go"}`)
 		if rerr != nil {
 			return rerr
 		}
@@ -328,7 +266,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "Intrinsics_MapLegacyParametersResultSelector", func() error {
-		smARN, err := createSM("IntrinMap-"+ts, map[string]interface{}{
+		smARN, err := tc.createSingleStateSM("IntrinMap-"+ts, map[string]interface{}{
 			"Type":      "Map",
 			"ItemsPath": "$.items",
 			"Parameters": map[string]interface{}{
@@ -352,7 +290,7 @@ func (r *TestRunner) runSFNIntrinsicTests(tc *sfnTestContext) []TestResult {
 			return err
 		}
 		defer tc.client.DeleteStateMachine(tc.ctx, &awssfn.DeleteStateMachineInput{StateMachineArn: aws.String(smARN)})
-		_, output, rerr := runWithInput(smARN, "intrinmap-"+ts,
+		_, output, rerr := tc.runWithInput(smARN, "intrinmap-"+ts,
 			`{"items":[{"value":{"n":1,"tags":["a","b"]}},{"value":{"n":2,"tags":["c"]}}]}`)
 		if rerr != nil {
 			return rerr

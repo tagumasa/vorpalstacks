@@ -37,20 +37,17 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "ListQueues_WithPrefix", func() error {
 		prefix := fmt.Sprintf("PrefixTest-%d", time.Now().UnixNano())
-		client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(prefix + "-alpha"),
-		})
-		client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(prefix + "-beta"),
-		})
-		defer func() {
-			for _, suffix := range []string{"-alpha", "-beta"} {
-				urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(prefix + suffix)})
-				if urlResp.QueueUrl != nil {
-					client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-				}
-			}
-		}()
+		_, cleanupAlpha, err := createTestQueue(ctx, client, prefix+"-alpha", nil)
+		if err != nil {
+			return err
+		}
+		defer cleanupAlpha()
+		_, cleanupBeta, err := createTestQueue(ctx, client, prefix+"-beta", nil)
+		if err != nil {
+			cleanupAlpha()
+			return err
+		}
+		defer cleanupBeta()
 
 		resp, err := client.ListQueues(ctx, &sqs.ListQueuesInput{
 			QueueNamePrefix: aws.String(prefix),
@@ -99,29 +96,14 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 	}))
 
 	results = append(results, r.RunTest("sqs", "SetQueueAttributes_MultipleAttrs", func() error {
-		rtQueueName := fmt.Sprintf("SMAQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(rtQueueName),
-		})
+		smaQueueURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("SMAQueue-%d", time.Now().UnixNano()), nil)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(rtQueueName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: aws.String(rtQueueName),
-		})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		_, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
-			QueueUrl: urlResp.QueueUrl,
+			QueueUrl: smaQueueURL,
 			Attributes: map[string]string{
 				"VisibilityTimeout":      "45",
 				"MaximumMessageSize":     "1024",
@@ -134,7 +116,7 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 		}
 
 		attrResp, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl: urlResp.QueueUrl,
+			QueueUrl: smaQueueURL,
 			AttributeNames: []types.QueueAttributeName{
 				types.QueueAttributeNameVisibilityTimeout,
 				types.QueueAttributeNameMaximumMessageSize,
@@ -208,18 +190,11 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "CreateQueue_DuplicateName", func() error {
 		dupQName := fmt.Sprintf("DupQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(dupQName),
-		})
+		_, cleanup, err := createTestQueue(ctx, client, dupQName, nil)
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dupQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
+		defer cleanup()
 
 		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(dupQName),
@@ -232,19 +207,11 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "CreateQueue_DuplicateName_DifferentAttributes_Rejected", func() error {
 		dupQName := fmt.Sprintf("DupDiffQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName:  aws.String(dupQName),
-			Attributes: map[string]string{"VisibilityTimeout": "35"},
-		})
+		_, cleanup, err := createTestQueue(ctx, client, dupQName, map[string]string{"VisibilityTimeout": "35"})
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(dupQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
+		defer cleanup()
 
 		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName:  aws.String(dupQName),
@@ -263,19 +230,11 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 		// Only attributes the request provides are compared, so recreating a
 		// configured queue by name alone returns the existing queue URL.
 		idemQName := fmt.Sprintf("IdemQueue-%d", time.Now().UnixNano())
-		first, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName:  aws.String(idemQName),
-			Attributes: map[string]string{"VisibilityTimeout": "35"},
-		})
+		firstURL, cleanup, err := createTestQueue(ctx, client, idemQName, map[string]string{"VisibilityTimeout": "35"})
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(idemQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
+		defer cleanup()
 
 		second, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 			QueueName: aws.String(idemQName),
@@ -283,8 +242,8 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 		if err != nil {
 			return fmt.Errorf("recreate without attributes must be idempotent, got: %v", err)
 		}
-		if second.QueueUrl == nil || *second.QueueUrl != *first.QueueUrl {
-			return fmt.Errorf("recreate returned %v, want existing URL %v", second.QueueUrl, first.QueueUrl)
+		if second.QueueUrl == nil || *second.QueueUrl != *firstURL {
+			return fmt.Errorf("recreate returned %v, want existing URL %v", second.QueueUrl, firstURL)
 		}
 		return nil
 	}))
@@ -319,23 +278,15 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "CreateQueue_HighThroughputFifo_MessageGroupScope", func() error {
 		htQName := fmt.Sprintf("HTFifo-%d.fifo", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(htQName),
-			Attributes: map[string]string{
-				"FifoQueue":           "true",
-				"DeduplicationScope":  "messageGroup",
-				"FifoThroughputLimit": "perMessageGroupId",
-			},
+		_, cleanup, err := createTestQueue(ctx, client, htQName, map[string]string{
+			"FifoQueue":           "true",
+			"DeduplicationScope":  "messageGroup",
+			"FifoThroughputLimit": "perMessageGroupId",
 		})
 		if err != nil {
-			return fmt.Errorf("documented high-throughput FIFO attributes rejected: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(htQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
+		defer cleanup()
 
 		badQName := fmt.Sprintf("HTFifoBad-%d.fifo", time.Now().UnixNano())
 		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
@@ -346,9 +297,9 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 			},
 		})
 		if err == nil {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(badQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
+			badURL, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(badQName)})
+			if badURL.QueueUrl != nil {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: badURL.QueueUrl})
 			}
 			return fmt.Errorf("perMessageGroupId without DeduplicationScope=messageGroup must be rejected")
 		}
@@ -356,37 +307,24 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 	}))
 
 	results = append(results, r.RunTest("sqs", "SetQueueAttributes_ContentBasedDeduplication_Toggle", func() error {
-		cbdQName := fmt.Sprintf("CbdFifo-%d.fifo", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName: aws.String(cbdQName),
-			Attributes: map[string]string{
-				"FifoQueue":                 "true",
-				"ContentBasedDeduplication": "true",
-			},
+		cbdQURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("CbdFifo-%d.fifo", time.Now().UnixNano()), map[string]string{
+			"FifoQueue":                 "true",
+			"ContentBasedDeduplication": "true",
 		})
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(cbdQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(cbdQName)})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		if _, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
-			QueueUrl:   urlResp.QueueUrl,
+			QueueUrl:   cbdQURL,
 			Attributes: map[string]string{"ContentBasedDeduplication": "false"},
 		}); err != nil {
 			return fmt.Errorf("toggling ContentBasedDeduplication must succeed: %v", err)
 		}
 
 		attrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl:       urlResp.QueueUrl,
+			QueueUrl:       cbdQURL,
 			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameContentBasedDeduplication},
 		})
 		if err != nil {
@@ -400,27 +338,14 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "SetQueueAttributes_SSE_Exclusion", func() error {
 		// Only one server-side encryption option is supported per queue.
-		sseQName := fmt.Sprintf("SseQueue-%d", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName:  aws.String(sseQName),
-			Attributes: map[string]string{"SqsManagedSseEnabled": "true"},
-		})
+		sseQURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("SseQueue-%d", time.Now().UnixNano()), map[string]string{"SqsManagedSseEnabled": "true"})
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(sseQName)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-		urlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(sseQName)})
-		if err != nil {
-			return fmt.Errorf("get url: %v", err)
-		}
+		defer cleanup()
 
 		_, err = client.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
-			QueueUrl:   urlResp.QueueUrl,
+			QueueUrl:   sseQURL,
 			Attributes: map[string]string{"KmsMasterKeyId": "alias/test-key"},
 		})
 		if err == nil {
@@ -430,32 +355,15 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 	}))
 
 	results = append(results, r.RunTest("sqs", "RedrivePolicy_QueueTypeMismatch_Rejected", func() error {
-		fifoDLQ := fmt.Sprintf("TypeDlqFifo-%d.fifo", time.Now().UnixNano())
-		_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-			QueueName:  aws.String(fifoDLQ),
-			Attributes: map[string]string{"FifoQueue": "true"},
-		})
+		fifoDLQURL, cleanup, err := createTestQueue(ctx, client, fmt.Sprintf("TypeDlqFifo-%d.fifo", time.Now().UnixNano()), map[string]string{"FifoQueue": "true"})
 		if err != nil {
-			return fmt.Errorf("create fifo dlq: %v", err)
+			return err
 		}
-		defer func() {
-			urlResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(fifoDLQ)})
-			if urlResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: urlResp.QueueUrl})
-			}
-		}()
-		dlqUrlResp, err := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(fifoDLQ)})
+		defer cleanup()
+		dlqArn, err := queueArn(ctx, client, fifoDLQURL)
 		if err != nil {
-			return fmt.Errorf("get fifo dlq url: %v", err)
+			return err
 		}
-		dlqAttrs, err := client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-			QueueUrl:       dlqUrlResp.QueueUrl,
-			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
-		})
-		if err != nil {
-			return fmt.Errorf("get fifo dlq arn: %v", err)
-		}
-		dlqArn := dlqAttrs.Attributes[string(types.QueueAttributeNameQueueArn)]
 
 		srcName := fmt.Sprintf("TypeSrcStd-%d", time.Now().UnixNano())
 		_, err = client.CreateQueue(ctx, &sqs.CreateQueueInput{
@@ -506,22 +414,21 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 
 	results = append(results, r.RunTest("sqs", "ListQueues_Pagination", func() error {
 		pgTs := fmt.Sprintf("%d", time.Now().UnixNano())
-		var pgQueues []string
+		var pgQueueURLs []*string
+		defer func() {
+			for _, u := range pgQueueURLs {
+				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: u})
+			}
+		}()
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagQ-%s-%d", pgTs, i)
-			_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+			respCreate, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 				QueueName: aws.String(name),
 			})
 			if err != nil {
-				for _, qn := range pgQueues {
-					uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
-					if uResp.QueueUrl != nil {
-						client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
-					}
-				}
 				return fmt.Errorf("create queue %s: %v", name, err)
 			}
-			pgQueues = append(pgQueues, name)
+			pgQueueURLs = append(pgQueueURLs, respCreate.QueueUrl)
 		}
 
 		var allQueues []string
@@ -532,12 +439,6 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 				NextToken:  nextToken,
 			})
 			if err != nil {
-				for _, qn := range pgQueues {
-					uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
-					if uResp.QueueUrl != nil {
-						client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
-					}
-				}
 				return fmt.Errorf("list queues page: %v", err)
 			}
 			for _, u := range resp.QueueUrls {
@@ -552,12 +453,6 @@ func (r *TestRunner) runSQSQueueTests(ctx context.Context, client *sqs.Client, q
 			}
 		}
 
-		for _, qn := range pgQueues {
-			uResp, _ := client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(qn)})
-			if uResp.QueueUrl != nil {
-				client.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: uResp.QueueUrl})
-			}
-		}
 		if len(allQueues) != 5 {
 			return fmt.Errorf("expected 5 paginated queues, got %d", len(allQueues))
 		}

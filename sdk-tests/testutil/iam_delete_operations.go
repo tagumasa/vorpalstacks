@@ -22,10 +22,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		_, err := tc.client.GetUser(tc.ctx, &iam.GetUserInput{UserName: aws.String(user)})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetUser after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		return iamAssertNoSuchEntity(err, "GetUser after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteGroup_Verified", func() error {
@@ -37,35 +34,25 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		_, err := tc.client.GetGroup(tc.ctx, &iam.GetGroupInput{GroupName: aws.String(group)})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetGroup after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		return iamAssertNoSuchEntity(err, "GetGroup after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteRole_Verified", func() error {
 		role := fmt.Sprintf("DelRole-%s", tc.ts)
-		if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(role),
-			AssumeRolePolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`),
-		}); err != nil {
+		cleanupRole, err := tc.createRole(role)
+		if err != nil {
 			return err
 		}
-		if _, err := tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(role)}); err != nil {
-			return err
-		}
-		_, err := tc.client.GetRole(tc.ctx, &iam.GetRoleInput{RoleName: aws.String(role)})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetRole after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		cleanupRole()
+		_, err = tc.client.GetRole(tc.ctx, &iam.GetRoleInput{RoleName: aws.String(role)})
+		return iamAssertNoSuchEntity(err, "GetRole after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeletePolicy_Verified", func() error {
 		policy := fmt.Sprintf("DelPolicy-%s", tc.ts)
 		created, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
 			PolicyName:     aws.String(policy),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"*"}]}`),
+			PolicyDocument: aws.String(iamAllowPolicy("s3:GetObject")),
 		})
 		if err != nil {
 			return err
@@ -74,10 +61,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		_, err = tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: created.Policy.Arn})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetPolicy after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		return iamAssertNoSuchEntity(err, "GetPolicy after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteAccessKey_Verified", func() error {
@@ -124,10 +108,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 		_, err := tc.client.GetInstanceProfile(tc.ctx, &iam.GetInstanceProfileInput{
 			InstanceProfileName: aws.String(profile),
 		})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetInstanceProfile after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		return iamAssertNoSuchEntity(err, "GetInstanceProfile after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteLoginProfile_Verified", func() error {
@@ -149,10 +130,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		_, err := tc.client.GetLoginProfile(tc.ctx, &iam.GetLoginProfileInput{UserName: aws.String(user)})
-		if err == nil || !containsErrorCode(err, "NoSuchEntity") {
-			return fmt.Errorf("GetLoginProfile after delete: got %v, want NoSuchEntity", err)
-		}
-		return nil
+		return iamAssertNoSuchEntity(err, "GetLoginProfile after delete")
 	}))
 
 	return results

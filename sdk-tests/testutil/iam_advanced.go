@@ -715,14 +715,15 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "ServiceSpecificCredential_Ownership", func() error {
 		other := fmt.Sprintf("SSCOwner-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+		cleanupOther, err := tc.createUser(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		defer cleanupOther()
 
 		// Mutating the credential through a user that does not own it
 		// fails with NoSuchEntity.
-		_, err := tc.client.UpdateServiceSpecificCredential(tc.ctx, &iam.UpdateServiceSpecificCredentialInput{
+		_, err = tc.client.UpdateServiceSpecificCredential(tc.ctx, &iam.UpdateServiceSpecificCredentialInput{
 			UserName:                    aws.String(other),
 			ServiceSpecificCredentialId: aws.String(tc.serviceCredId),
 			Status:                      types.StatusTypeActive,

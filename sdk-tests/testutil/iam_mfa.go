@@ -53,30 +53,22 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListVirtualMFADevices", func() error {
-		var found bool
-		var marker *string
-		for {
-			resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{
-				Marker: marker,
-			})
+		devices, err := iamPaginate(func(marker *string) ([]types.VirtualMFADevice, *string, error) {
+			resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{Marker: marker})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, d := range resp.VirtualMFADevices {
-				if aws.ToString(d.SerialNumber) == tc.virtualMFASerial {
-					found = true
-					break
-				}
-			}
-			if found || !resp.IsTruncated || resp.Marker == nil {
-				break
-			}
-			marker = resp.Marker
+			return resp.VirtualMFADevices, resp.Marker, nil
+		})
+		if err != nil {
+			return err
 		}
-		if !found {
-			return fmt.Errorf("virtual mfa device %s not found", tc.virtualMFASerial)
+		for _, d := range devices {
+			if aws.ToString(d.SerialNumber) == tc.virtualMFASerial {
+				return nil
+			}
 		}
-		return nil
+		return fmt.Errorf("virtual mfa device %s not found", tc.virtualMFASerial)
 	}))
 
 	// MFA device tags
@@ -145,21 +137,20 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		var marker *string
-		for {
+		devices, err := iamPaginate(func(marker *string) ([]types.VirtualMFADevice, *string, error) {
 			resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{Marker: marker})
 			if err != nil {
-				return fmt.Errorf("ListVirtualMFADevices after delete: %w", err)
+				return nil, nil, err
 			}
-			for _, d := range resp.VirtualMFADevices {
-				if aws.ToString(d.SerialNumber) == tc.virtualMFASerial {
-					return fmt.Errorf("MFA device %s still present after delete", tc.virtualMFASerial)
-				}
+			return resp.VirtualMFADevices, resp.Marker, nil
+		})
+		if err != nil {
+			return fmt.Errorf("ListVirtualMFADevices after delete: %w", err)
+		}
+		for _, d := range devices {
+			if aws.ToString(d.SerialNumber) == tc.virtualMFASerial {
+				return fmt.Errorf("MFA device %s still present after delete", tc.virtualMFASerial)
 			}
-			if !resp.IsTruncated || resp.Marker == nil {
-				break
-			}
-			marker = resp.Marker
 		}
 		return nil
 	}))
@@ -220,10 +211,11 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "MFA_DeviceLifecycle", func() error {
 		user := fmt.Sprintf("MFALife-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
 		device, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
 			VirtualMFADeviceName: aws.String(fmt.Sprintf("MFALife-Dev-%s", tc.ts)),

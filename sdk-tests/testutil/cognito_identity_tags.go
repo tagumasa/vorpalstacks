@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -9,12 +8,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
 )
 
-func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cognitoidentity.Client, poolID string) []TestResult {
+func (r *TestRunner) cognitoIdentityTagsTests(tc *cognitoIdentityContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito-identity", "TagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)
-		_, err := client.TagResource(ctx, &cognitoidentity.TagResourceInput{
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)
+		_, err := tc.client.TagResource(tc.ctx, &cognitoidentity.TagResourceInput{
 			ResourceArn: aws.String(arn),
 			Tags: map[string]string{
 				"Environment": "test",
@@ -24,7 +23,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 		if err != nil {
 			return err
 		}
-		listResp, err := client.ListTagsForResource(ctx, &cognitoidentity.ListTagsForResourceInput{
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentity.ListTagsForResourceInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -37,8 +36,8 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "ListTagsForResource", func() error {
-		resp, err := client.ListTagsForResource(ctx, &cognitoidentity.ListTagsForResourceInput{
-			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)),
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentity.ListTagsForResourceInput{
+			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)),
 		})
 		if err != nil {
 			return err
@@ -56,15 +55,15 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "UntagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, poolID, r.accountID)
-		_, err := client.UntagResource(ctx, &cognitoidentity.UntagResourceInput{
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)
+		_, err := tc.client.UntagResource(tc.ctx, &cognitoidentity.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"Team"},
 		})
 		if err != nil {
 			return err
 		}
-		resp, err := client.ListTagsForResource(ctx, &cognitoidentity.ListTagsForResourceInput{
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentity.ListTagsForResourceInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -77,8 +76,8 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "SetPrincipalTagAttributeMap", func() error {
-		_, err := client.SetPrincipalTagAttributeMap(ctx, &cognitoidentity.SetPrincipalTagAttributeMapInput{
-			IdentityPoolId:       aws.String(poolID),
+		_, err := tc.client.SetPrincipalTagAttributeMap(tc.ctx, &cognitoidentity.SetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(tc.poolID),
 			IdentityProviderName: aws.String("graph.facebook.com"),
 			PrincipalTags: map[string]string{
 				"email":    "email",
@@ -89,8 +88,8 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 		if err != nil {
 			return err
 		}
-		resp, err := client.GetPrincipalTagAttributeMap(ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
-			IdentityPoolId:       aws.String(poolID),
+		resp, err := tc.client.GetPrincipalTagAttributeMap(tc.ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(tc.poolID),
 			IdentityProviderName: aws.String("graph.facebook.com"),
 		})
 		if err != nil {
@@ -103,15 +102,15 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "GetPrincipalTagAttributeMap", func() error {
-		resp, err := client.GetPrincipalTagAttributeMap(ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
-			IdentityPoolId:       aws.String(poolID),
+		resp, err := tc.client.GetPrincipalTagAttributeMap(tc.ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(tc.poolID),
 			IdentityProviderName: aws.String("graph.facebook.com"),
 		})
 		if err != nil {
 			return err
 		}
-		if resp.IdentityPoolId == nil || *resp.IdentityPoolId != poolID {
-			return fmt.Errorf("expected pool ID %s", poolID)
+		if resp.IdentityPoolId == nil || *resp.IdentityPoolId != tc.poolID {
+			return fmt.Errorf("expected pool ID %s", tc.poolID)
 		}
 		if resp.PrincipalTags["email"] != "email" {
 			return fmt.Errorf("expected email->email mapping")
@@ -123,8 +122,8 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "GetPrincipalTagAttributeMap_Defaults", func() error {
-		resp, err := client.GetPrincipalTagAttributeMap(ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
-			IdentityPoolId:       aws.String(poolID),
+		resp, err := tc.client.GetPrincipalTagAttributeMap(tc.ctx, &cognitoidentity.GetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(tc.poolID),
 			IdentityProviderName: aws.String("accounts.google.com"),
 		})
 		if err != nil {
@@ -137,8 +136,8 @@ func (r *TestRunner) cognitoIdentityTagsTests(ctx context.Context, client *cogni
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "SetPrincipalTagAttributeMap_PrincipalTagNameTooLong", func() error {
-		_, err := client.SetPrincipalTagAttributeMap(ctx, &cognitoidentity.SetPrincipalTagAttributeMapInput{
-			IdentityPoolId:       aws.String(poolID),
+		_, err := tc.client.SetPrincipalTagAttributeMap(tc.ctx, &cognitoidentity.SetPrincipalTagAttributeMapInput{
+			IdentityPoolId:       aws.String(tc.poolID),
 			IdentityProviderName: aws.String("graph.facebook.com"),
 			PrincipalTags: map[string]string{
 				strings.Repeat("a", 129): "value",

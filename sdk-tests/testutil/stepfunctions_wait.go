@@ -1,14 +1,12 @@
 package testutil
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
-	"github.com/aws/smithy-go"
 )
 
 // runSFNWaitTests pins the Wait-state timestamp semantics: a past
@@ -20,46 +18,23 @@ func (r *TestRunner) runSFNWaitTests(tc *sfnTestContext) []TestResult {
 	var results []TestResult
 
 	waitSM := func(name, definition string) (string, func()) {
-		_, roleARN, roleCleanup := tc.createRoleForSM(name + "Role")
-		resp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(fmt.Sprintf("%s-%d", name, time.Now().UnixNano())),
-			Definition: aws.String(definition),
-			RoleArn:    aws.String(roleARN),
-		})
+		arn, cleanup, err := tc.createRoleBackedSM(name, definition)
 		if err != nil {
-			roleCleanup()
 			return "", func() {}
 		}
-		arn := *resp.StateMachineArn
-		return arn, func() {
-			tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(arn)})
-			roleCleanup()
-		}
+		return arn, cleanup
 	}
 
 	awaitExecution := func(executionARN string, atLeast time.Duration) (types.ExecutionStatus, string, error) {
 		started := time.Now()
-		deadline := time.Now().Add(60 * time.Second)
-		for time.Now().Before(deadline) {
-			resp, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(executionARN),
-			})
-			if err != nil {
-				return "", "", err
-			}
-			if resp.Status != types.ExecutionStatusRunning {
-				errText := ""
-				if resp.Error != nil {
-					errText = *resp.Error
-				}
-				if atLeast > 0 && time.Since(started) < atLeast {
-					return resp.Status, errText, fmt.Errorf("execution finished after %v, before the %v wait elapsed", time.Since(started).Round(time.Millisecond), atLeast)
-				}
-				return resp.Status, errText, nil
-			}
-			time.Sleep(300 * time.Millisecond)
+		desc, err := tc.awaitTerminal(executionARN, 300*time.Millisecond, 200)
+		if err != nil {
+			return "", "", err
 		}
-		return types.ExecutionStatusRunning, "", fmt.Errorf("execution did not finish within 60s")
+		if atLeast > 0 && time.Since(started) < atLeast {
+			return desc.Status, aws.ToString(desc.Error), fmt.Errorf("execution finished after %v, before the %v wait elapsed", time.Since(started).Round(time.Millisecond), atLeast)
+		}
+		return desc.Status, aws.ToString(desc.Error), nil
 	}
 
 	results = append(results, r.RunTest("stepfunctions", "Wait_PastTimestamp_CompletesImmediately", func() error {
@@ -113,14 +88,7 @@ func (r *TestRunner) runSFNWaitTests(tc *sfnTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("definition with an offset-less Timestamp accepted")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) {
-			return fmt.Errorf("error is not an API error: %v", err)
-		}
-		if apiErr.ErrorCode() != "InvalidDefinition" {
-			return fmt.Errorf("error code = %s, want InvalidDefinition", apiErr.ErrorCode())
-		}
-		return nil
+		return expectAWSErrorCode(err, "InvalidDefinition")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "Wait_TimestampPath_InvalidValue_FailsExecution", func() error {

@@ -1,9 +1,6 @@
 package testutil
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awssfn "github.com/aws/aws-sdk-go-v2/service/sfn"
 	"github.com/aws/aws-sdk-go-v2/service/sfn/types"
-	awsSmithy "github.com/aws/smithy-go"
 )
 
 // runSFNContractTests pins the wire contracts re-established by the SFN
@@ -34,7 +30,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			StateMachineArn: aws.String(smARN),
 			Input:           aws.String("{not json"),
 		})
-		return expectAPIErrorCode(err, "InvalidExecutionInput")
+		return expectAWSErrorCode(err, "InvalidExecutionInput")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "StartExecution_NameForbiddenCharacters", func() error {
@@ -42,26 +38,19 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			StateMachineArn: aws.String(smARN),
 			Name:            aws.String("bad name!"),
 		})
-		return expectAPIErrorCode(err, "InvalidName")
+		return expectAWSErrorCode(err, "InvalidName")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "StartSyncExecution_StandardRejected", func() error {
 		// The SDK resolves the synchronous operation onto a sync-prefixed
 		// endpoint, so the rejection is asserted over the raw JSON-1.0
 		// protocol the router serves.
-		body, _ := json.Marshal(map[string]interface{}{"stateMachineArn": smARN})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.StartSyncExecution")
-		resp, err := testHTTPClient.Do(req)
+		status, errBody, err := tc.rawJSONCall("AWSStepFunctions.StartSyncExecution", map[string]interface{}{"stateMachineArn": smARN})
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
-		var errBody map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&errBody)
-		if resp.StatusCode != http.StatusBadRequest {
-			return fmt.Errorf("status %d for STANDARD sync start, want 400: %v", resp.StatusCode, errBody)
+		if status != http.StatusBadRequest {
+			return fmt.Errorf("status %d for STANDARD sync start, want 400: %v", status, errBody)
 		}
 		if errType, _ := errBody["__type"].(string); !strings.HasSuffix(errType, "StateMachineTypeNotSupported") {
 			return fmt.Errorf("error type %q, want StateMachineTypeNotSupported", errType)
@@ -73,14 +62,14 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 		_, err := tc.client.UpdateStateMachine(tc.ctx, &awssfn.UpdateStateMachineInput{
 			StateMachineArn: aws.String(smARN),
 		})
-		return expectAPIErrorCode(err, "MissingRequiredParameter")
+		return expectAWSErrorCode(err, "MissingRequiredParameter")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "ListMapRuns_UnknownExecution", func() error {
 		_, err := tc.client.ListMapRuns(tc.ctx, &awssfn.ListMapRunsInput{
 			ExecutionArn: aws.String("arn:aws:states:" + r.region + ":" + r.accountID + ":execution:no-such-sm:no-such-exec"),
 		})
-		return expectAPIErrorCode(err, "ExecutionDoesNotExist")
+		return expectAWSErrorCode(err, "ExecutionDoesNotExist")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DescribeStateMachine_MetadataOnly", func() error {
@@ -102,7 +91,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			TaskToken: aws.String("no-such-token"),
 			Output:    aws.String("{}"),
 		})
-		return expectAPIErrorCode(err, "TaskDoesNotExist")
+		return expectAWSErrorCode(err, "TaskDoesNotExist")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "SendTaskSuccess_InvalidOutput", func() error {
@@ -110,7 +99,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			TaskToken: aws.String("no-such-token"),
 			Output:    aws.String("{not json"),
 		})
-		return expectAPIErrorCode(err, "InvalidOutput")
+		return expectAWSErrorCode(err, "InvalidOutput")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "CreateActivity_DuplicateName", func() error {
@@ -120,12 +109,12 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 		}
 		defer tc.client.DeleteActivity(tc.ctx, &awssfn.DeleteActivityInput{ActivityArn: aws.String("arn:aws:states:" + r.region + ":" + r.accountID + ":activity:" + name)})
 		_, err := tc.client.CreateActivity(tc.ctx, &awssfn.CreateActivityInput{Name: aws.String(name)})
-		return expectAPIErrorCode(err, "ActivityAlreadyExists")
+		return expectAWSErrorCode(err, "ActivityAlreadyExists")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "CreateActivity_NameForbiddenCharacters", func() error {
 		_, err := tc.client.CreateActivity(tc.ctx, &awssfn.CreateActivityInput{Name: aws.String("bad name!")})
-		return expectAPIErrorCode(err, "InvalidName")
+		return expectAWSErrorCode(err, "InvalidName")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "TagResource_VersionArnRejected", func() error {
@@ -135,7 +124,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			ResourceArn: aws.String(versionArn),
 			Tags:        []types.Tag{{Key: aws.String("k"), Value: aws.String("v")}},
 		})
-		return expectAPIErrorCode(err, "ResourceNotFound")
+		return expectAWSErrorCode(err, "ResourceNotFound")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "AliasARNFormatAndNamespace", func() error {
@@ -201,7 +190,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 		_, delErr := tc.client.DeleteStateMachineVersion(tc.ctx, &awssfn.DeleteStateMachineVersionInput{
 			StateMachineVersionArn: aws.String(v1),
 		})
-		if codeErr := expectAPIErrorCode(delErr, "ConflictException"); codeErr != nil {
+		if codeErr := expectAWSErrorCode(delErr, "ConflictException"); codeErr != nil {
 			return codeErr
 		}
 		return nil
@@ -321,7 +310,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			Definition: aws.String(`{"StartAt":"B","States":{"B":{"Type":"Succeed"}}}`),
 			RoleArn:    aws.String(tc.roleARN),
 		})
-		return expectAPIErrorCode(err, "StateMachineAlreadyExists")
+		return expectAWSErrorCode(err, "StateMachineAlreadyExists")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "CreateStateMachine_NameU10FFFFRejected", func() error {
@@ -330,7 +319,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			Definition: aws.String(`{"StartAt":"A","States":{"A":{"Type":"Pass","End":true}}}`),
 			RoleArn:    aws.String(tc.roleARN),
 		})
-		return expectAPIErrorCode(err, "InvalidName")
+		return expectAWSErrorCode(err, "InvalidName")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachine_IgnoresUnknownTypeAndRevisionId", func() error {
@@ -338,24 +327,17 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 		// ignored like any other unknown member; the request is asserted
 		// over the raw JSON-1.0 protocol because the typed SDK input has
 		// no fields to carry them.
-		body, _ := json.Marshal(map[string]interface{}{
+		status, _, err := tc.rawJSONCall("AWSStepFunctions.UpdateStateMachine", map[string]interface{}{
 			"stateMachineArn": smARN,
 			"roleArn":         tc.roleARN,
 			"type":            "EXPRESS",
 			"revisionId":      "stale-revision",
 		})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.UpdateStateMachine")
-		resp, err := testHTTPClient.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			var errBody map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&errBody)
-			return fmt.Errorf("status %d for update with unknown members, want 200: %v", resp.StatusCode, errBody)
+		if status != http.StatusOK {
+			return fmt.Errorf("status %d for update with unknown members, want 200", status)
 		}
 
 		desc, err := tc.client.DescribeStateMachine(tc.ctx, &awssfn.DescribeStateMachineInput{
@@ -427,7 +409,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			StateMachineArn: aws.String(sm),
 			RevisionId:      aws.String("stale-revision-id"),
 		})
-		return expectAPIErrorCode(err, "ConflictException")
+		return expectAWSErrorCode(err, "ConflictException")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "UpdateStateMachineAlias_RequiresDescriptionOrRouting", func() error {
@@ -461,7 +443,7 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 		_, err = tc.client.UpdateStateMachineAlias(tc.ctx, &awssfn.UpdateStateMachineAliasInput{
 			StateMachineAliasArn: alias.StateMachineAliasArn,
 		})
-		return expectAPIErrorCode(err, "ValidationException")
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "ListExecutions_RedriveFilterWithStateMachineArnRejected", func() error {
@@ -469,32 +451,18 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 			StateMachineArn: aws.String(smARN),
 			RedriveFilter:   types.ExecutionRedriveFilterRedriven,
 		})
-		return expectAPIErrorCode(err, "ValidationException")
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "TestState_InspectionDataCarriesResultMember", func() error {
 		def := `{"StartAt":"F","States":{"F":{"Type":"Fail","Error":"CustomError","Cause":"deliberate"}}}`
-		body, _ := json.Marshal(map[string]interface{}{
+		result, err := tc.rawTestState(map[string]interface{}{
 			"definition":      def,
 			"stateName":       "F",
 			"input":           `{}`,
 			"inspectionLevel": "DEBUG",
 		})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-		resp, err := testHTTPClient.Do(req)
 		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			var errBody map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&errBody)
-			return fmt.Errorf("status %d, want 200: %v", resp.StatusCode, errBody)
-		}
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return err
 		}
 		inspection, ok := result["inspectionData"].(map[string]interface{})
@@ -512,26 +480,12 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "TestState_MockResult", func() error {
 		def := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","Next":"Done"},"Done":{"Type":"Succeed"}}}`
-		body, _ := json.Marshal(map[string]interface{}{
+		result, err := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "T",
 			"mock":       map[string]interface{}{"result": `{"value":42}`},
 		})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-		resp, err := testHTTPClient.Do(req)
 		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			var errBody map[string]interface{}
-			_ = json.NewDecoder(resp.Body).Decode(&errBody)
-			return fmt.Errorf("status %d, want 200: %v", resp.StatusCode, errBody)
-		}
-		var result map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return err
 		}
 		if result["status"] != "SUCCEEDED" {
@@ -548,23 +502,16 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "TestState_MockOnPassRejected", func() error {
 		def := `{"StartAt":"P","States":{"P":{"Type":"Pass","Result":{"a":1},"End":true}}}`
-		body, _ := json.Marshal(map[string]interface{}{
+		status, errBody, err := tc.rawJSONCall("AWSStepFunctions.TestState", map[string]interface{}{
 			"definition": def,
 			"stateName":  "P",
 			"mock":       map[string]interface{}{"result": `{"value":42}`},
 		})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-		resp, err := testHTTPClient.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
-		var errBody map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&errBody)
-		if resp.StatusCode != http.StatusBadRequest {
-			return fmt.Errorf("status %d for a mock on a Pass state, want 400: %v", resp.StatusCode, errBody)
+		if status != http.StatusBadRequest {
+			return fmt.Errorf("status %d for a mock on a Pass state, want 400: %v", status, errBody)
 		}
 		if errType, _ := errBody["__type"].(string); !strings.HasSuffix(errType, "ValidationException") {
 			return fmt.Errorf("error type %q, want ValidationException", errType)
@@ -574,23 +521,16 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "TestState_ContextRequiresMock", func() error {
 		def := `{"StartAt":"T","States":{"T":{"Type":"Task","Resource":"arn:aws:states:::lambda:invoke","End":true}}}`
-		body, _ := json.Marshal(map[string]interface{}{
+		status, errBody, err := tc.rawJSONCall("AWSStepFunctions.TestState", map[string]interface{}{
 			"definition": def,
 			"stateName":  "T",
 			"context":    `{"Execution":{"Name":"x"}}`,
 		})
-		req, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		req.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-		resp, err := testHTTPClient.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
-		var errBody map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&errBody)
-		if resp.StatusCode != http.StatusBadRequest {
-			return fmt.Errorf("status %d for context without a mock, want 400: %v", resp.StatusCode, errBody)
+		if status != http.StatusBadRequest {
+			return fmt.Errorf("status %d for context without a mock, want 400: %v", status, errBody)
 		}
 		if errType, _ := errBody["__type"].(string); !strings.HasSuffix(errType, "ValidationException") {
 			return fmt.Errorf("error type %q, want ValidationException", errType)
@@ -599,20 +539,4 @@ func (r *TestRunner) runSFNContractTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	return results
-}
-
-// expectAPIErrorCode verifies that err is an AWS API error with the given
-// error code, returning nil when it matches.
-func expectAPIErrorCode(err error, code string) error {
-	if err == nil {
-		return fmt.Errorf("expected %s error, got success", code)
-	}
-	var apiErr awsSmithy.APIError
-	if !errors.As(err, &apiErr) {
-		return fmt.Errorf("expected API error %s, got %v", code, err)
-	}
-	if apiErr.ErrorCode() != code {
-		return fmt.Errorf("expected error code %s, got %s (%s)", code, apiErr.ErrorCode(), apiErr.ErrorMessage())
-	}
-	return nil
 }

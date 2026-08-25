@@ -1,16 +1,14 @@
 package testutil
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
+	sfntypes "github.com/aws/aws-sdk-go-v2/service/sfn/types"
 
 	"vorpalstacks-sdk-tests/config"
 )
@@ -18,30 +16,25 @@ import (
 func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 	var results []TestResult
 
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return []TestResult{{Service: "stepfunctions", TestName: "AdvancedSetup", Status: "FAIL", Error: fmt.Sprintf("load config: %v", err)}}
+	}
+	ddbClient := dynamodb.NewFromConfig(cfg)
+
 	results = append(results, r.RunTest("stepfunctions", "TestState_Pass", func() error {
 		def := `{"StartAt":"TestPass","States":{"TestPass":{"Type":"Pass","Result":{"hello":"world"},"End":true}}}`
-		body := map[string]interface{}{
+		result, err := tc.rawTestState(map[string]interface{}{
 			"definition": def,
 			"stateName":  "TestPass",
 			"input":      `{}`,
-		}
-		bodyBytes, _ := json.Marshal(body)
-		testReq, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
-		testReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		testReq.Header.Set("X-Amz-Target", "AWSStepFunctions.TestState")
-
-		testResp, err := testHTTPClient.Do(testReq)
+		})
 		if err != nil {
 			return err
 		}
-		defer testResp.Body.Close()
-		if testResp.StatusCode != 200 {
-			var errBody map[string]interface{}
-			json.NewDecoder(testResp.Body).Decode(&errBody)
-			return fmt.Errorf("status %d: %v", testResp.StatusCode, errBody)
-		}
-		var result map[string]interface{}
-		json.NewDecoder(testResp.Body).Decode(&result)
 		if status, _ := result["status"].(string); status != "SUCCEEDED" {
 			return fmt.Errorf("expected SUCCEEDED, got %s", status)
 		}
@@ -69,58 +62,24 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 	defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(mapSMARN)})
 
 	results = append(results, r.RunTest("stepfunctions", "ListMapRuns", func() error {
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(mapSMARN),
-			Input:           aws.String(`[1,2,3]`),
-		})
+		execArn, err := tc.startExecution(mapSMARN, "", `[1,2,3]`)
 		if err != nil {
 			return fmt.Errorf("start execution: %v", err)
 		}
-
-		var listResp *sfn.ListMapRunsOutput
-		for i := 0; i < 20; i++ {
-			time.Sleep(100 * time.Millisecond)
-			listResp, err = tc.client.ListMapRuns(tc.ctx, &sfn.ListMapRunsInput{
-				ExecutionArn: aws.String(*execResp.ExecutionArn),
-			})
-			if err != nil {
-				return err
-			}
-			if len(listResp.MapRuns) > 0 {
-				break
-			}
-		}
-		if listResp == nil || len(listResp.MapRuns) == 0 {
-			return fmt.Errorf("no map runs found after polling")
+		if _, err := tc.firstMapRunFor(execArn); err != nil {
+			return err
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DescribeMapRun", func() error {
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(mapSMARN),
-			Input:           aws.String(`[1,2,3]`),
-		})
+		execArn, err := tc.startExecution(mapSMARN, "", `[1,2,3]`)
 		if err != nil {
 			return fmt.Errorf("start execution: %v", err)
 		}
-
-		var mapRunARN string
-		for i := 0; i < 20; i++ {
-			time.Sleep(100 * time.Millisecond)
-			listResp, err := tc.client.ListMapRuns(tc.ctx, &sfn.ListMapRunsInput{
-				ExecutionArn: aws.String(*execResp.ExecutionArn),
-			})
-			if err != nil {
-				return err
-			}
-			if len(listResp.MapRuns) > 0 && listResp.MapRuns[0].MapRunArn != nil {
-				mapRunARN = *listResp.MapRuns[0].MapRunArn
-				break
-			}
-		}
-		if mapRunARN == "" {
-			return fmt.Errorf("no map runs found after polling")
+		mapRunARN, err := tc.firstMapRunFor(execArn)
+		if err != nil {
+			return err
 		}
 
 		descResp, err := tc.client.DescribeMapRun(tc.ctx, &sfn.DescribeMapRunInput{
@@ -136,30 +95,13 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "UpdateMapRun", func() error {
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(mapSMARN),
-			Input:           aws.String(`[1,2,3]`),
-		})
+		execArn, err := tc.startExecution(mapSMARN, "", `[1,2,3]`)
 		if err != nil {
 			return fmt.Errorf("start execution: %v", err)
 		}
-
-		var mapRunARN string
-		for i := 0; i < 20; i++ {
-			time.Sleep(100 * time.Millisecond)
-			listResp, err := tc.client.ListMapRuns(tc.ctx, &sfn.ListMapRunsInput{
-				ExecutionArn: aws.String(*execResp.ExecutionArn),
-			})
-			if err != nil {
-				return err
-			}
-			if len(listResp.MapRuns) > 0 && listResp.MapRuns[0].MapRunArn != nil {
-				mapRunARN = *listResp.MapRuns[0].MapRunArn
-				break
-			}
-		}
-		if mapRunARN == "" {
-			return fmt.Errorf("no map runs found after polling")
+		mapRunARN, err := tc.firstMapRunFor(execArn)
+		if err != nil {
+			return err
 		}
 
 		_, err = tc.client.UpdateMapRun(tc.ctx, &sfn.UpdateMapRunInput{
@@ -174,50 +116,26 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "RedriveExecution", func() error {
 		failDef := `{"Comment":"fail then redrive","StartAt":"Fail","States":{"Fail":{"Type":"Fail","Error":"TestError","Cause":"Redrive test"}}}`
-		failSMName := fmt.Sprintf("RedriveSM-%d", time.Now().UnixNano())
-		_, failRoleARN, failRoleCleanup := tc.createRoleForSM("RedriveRole")
-		defer failRoleCleanup()
-
-		failResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(failSMName),
-			Definition: aws.String(failDef),
-			RoleArn:    aws.String(failRoleARN),
-		})
+		failSMARN, cleanup, err := tc.createRoleBackedSM("RedriveSM", failDef)
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		failSMARN := *failResp.StateMachineArn
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(failSMARN)})
+		defer cleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(failSMARN),
-			Input:           aws.String(`{}`),
-		})
+		execArn, err := tc.startExecution(failSMARN, "", `{}`)
 		if err != nil {
 			return fmt.Errorf("start: %v", err)
 		}
-
-		var execStatus string
-		time.Sleep(200 * time.Millisecond)
-		for i := 0; i < 30; i++ {
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: execResp.ExecutionArn,
-			})
-			if err != nil {
-				return fmt.Errorf("describe: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
+		desc, err := tc.awaitTerminal(execArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state before redrive: %v", err)
 		}
-		if execStatus == "RUNNING" || execStatus == "" {
-			return fmt.Errorf("execution status %q after polling, cannot redrive", execStatus)
+		if desc.Status == sfntypes.ExecutionStatusSucceeded || desc.Status == sfntypes.ExecutionStatusAborted {
+			return fmt.Errorf("expected a failed execution before redrive, got %s", desc.Status)
 		}
 
 		redriveResp, err := tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{
-			ExecutionArn: aws.String(*execResp.ExecutionArn),
+			ExecutionArn: aws.String(execArn),
 		})
 		if err != nil {
 			return err
@@ -230,46 +148,23 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "RedriveExecution_MultiStateResume", func() error {
 		multiDef := `{"Comment":"pass then fail","StartAt":"FirstPass","States":{"FirstPass":{"Type":"Pass","Result":{"step":1},"Next":"ThenFail"},"ThenFail":{"Type":"Fail","Error":"TestError","Cause":"Second state fails"}}}`
-		multiSMName := fmt.Sprintf("MultiRedriveSM-%d", time.Now().UnixNano())
-		_, multiRoleARN, multiRoleCleanup := tc.createRoleForSM("MultiRedriveRole")
-		defer multiRoleCleanup()
-
-		multiResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(multiSMName),
-			Definition: aws.String(multiDef),
-			RoleArn:    aws.String(multiRoleARN),
-		})
+		multiSMARN, cleanup, err := tc.createRoleBackedSM("MultiRedriveSM", multiDef)
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		multiSMARN := *multiResp.StateMachineArn
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(multiSMARN)})
+		defer cleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(multiSMARN),
-			Input:           aws.String(`{}`),
-		})
+		originalArn, err := tc.startExecution(multiSMARN, "", `{}`)
 		if err != nil {
 			return fmt.Errorf("start: %v", err)
 		}
-		originalArn := *execResp.ExecutionArn
 
-		var execStatus string
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(originalArn),
-			})
-			if err != nil {
-				return fmt.Errorf("describe: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
+		desc, err := tc.awaitTerminal(originalArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state before redrive: %v", err)
 		}
-		if execStatus != "FAILED" {
-			return fmt.Errorf("expected FAILED before redrive, got %s", execStatus)
+		if desc.Status != sfntypes.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED before redrive, got %s", desc.Status)
 		}
 
 		redriveResp, err := tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{
@@ -313,46 +208,23 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 	results = append(results, r.RunTest("stepfunctions", "RedriveExecution_MapStateResume", func() error {
 		mapFailDef := `{"Comment":"map then fail","StartAt":"Map","States":{"Map":{"Type":"Map","ItemsPath":"$","Iterator":{"StartAt":"Pass","States":{"Pass":{"Type":"Pass","End":true}}},"Next":"Fail"},"Fail":{"Type":"Fail","Error":"PostMapFail","Cause":"Fails after map succeeds"}}}`
-		mapFailSMName := fmt.Sprintf("MapRedriveSM-%d", time.Now().UnixNano())
-		_, mapFailRoleARN, mapFailRoleCleanup := tc.createRoleForSM("MapRedriveRole")
-		defer mapFailRoleCleanup()
-
-		mapFailResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(mapFailSMName),
-			Definition: aws.String(mapFailDef),
-			RoleArn:    aws.String(mapFailRoleARN),
-		})
+		mapFailSMARN, cleanup, err := tc.createRoleBackedSM("MapRedriveSM", mapFailDef)
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		mapFailSMARN := *mapFailResp.StateMachineArn
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(mapFailSMARN)})
+		defer cleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(mapFailSMARN),
-			Input:           aws.String(`[1,2,3]`),
-		})
+		originalArn, err := tc.startExecution(mapFailSMARN, "", `[1,2,3]`)
 		if err != nil {
 			return fmt.Errorf("start: %v", err)
 		}
-		originalArn := *execResp.ExecutionArn
 
-		var execStatus string
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(originalArn),
-			})
-			if err != nil {
-				return fmt.Errorf("describe: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
+		desc, err := tc.awaitTerminal(originalArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state before redrive: %v", err)
 		}
-		if execStatus != "FAILED" {
-			return fmt.Errorf("expected FAILED before redrive, got %s", execStatus)
+		if desc.Status != sfntypes.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED before redrive, got %s", desc.Status)
 		}
 
 		_, err = tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{
@@ -362,67 +234,35 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 			return fmt.Errorf("redrive: %v", err)
 		}
 
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(originalArn),
-			})
-			if err != nil {
-				return fmt.Errorf("describe after redrive: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
+		descAfter, err := tc.awaitTerminal(originalArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state after redrive: %v", err)
 		}
-		if execStatus != "FAILED" {
-			return fmt.Errorf("expected FAILED after redrive, got %s", execStatus)
+		if descAfter.Status != sfntypes.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED after redrive, got %s", descAfter.Status)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "RedriveExecution_ParallelStateResume", func() error {
 		parFailDef := `{"Comment":"parallel then fail","StartAt":"Parallel","States":{"Parallel":{"Type":"Parallel","Branches":[{"StartAt":"Pass1","States":{"Pass1":{"Type":"Pass","End":true}}},{"StartAt":"Pass2","States":{"Pass2":{"Type":"Pass","End":true}}}],"Next":"Fail"},"Fail":{"Type":"Fail","Error":"PostParallelFail","Cause":"Fails after parallel succeeds"}}}`
-		parFailSMName := fmt.Sprintf("ParRedriveSM-%d", time.Now().UnixNano())
-		_, parFailRoleARN, parFailRoleCleanup := tc.createRoleForSM("ParRedriveRole")
-		defer parFailRoleCleanup()
-
-		parFailResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(parFailSMName),
-			Definition: aws.String(parFailDef),
-			RoleArn:    aws.String(parFailRoleARN),
-		})
+		parFailSMARN, cleanup, err := tc.createRoleBackedSM("ParRedriveSM", parFailDef)
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		parFailSMARN := *parFailResp.StateMachineArn
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(parFailSMARN)})
+		defer cleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: aws.String(parFailSMARN),
-			Input:           aws.String(`{}`),
-		})
+		originalArn, err := tc.startExecution(parFailSMARN, "", `{}`)
 		if err != nil {
 			return fmt.Errorf("start: %v", err)
 		}
-		originalArn := *execResp.ExecutionArn
 
-		var execStatus string
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(originalArn),
-			})
-			if err != nil {
-				return fmt.Errorf("describe: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
+		desc, err := tc.awaitTerminal(originalArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state before redrive: %v", err)
 		}
-		if execStatus != "FAILED" {
-			return fmt.Errorf("expected FAILED before redrive, got %s", execStatus)
+		if desc.Status != sfntypes.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED before redrive, got %s", desc.Status)
 		}
 
 		_, err = tc.client.RedriveExecution(tc.ctx, &sfn.RedriveExecutionInput{
@@ -432,45 +272,27 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 			return fmt.Errorf("redrive: %v", err)
 		}
 
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: aws.String(originalArn),
-			})
-			if err != nil {
-				return fmt.Errorf("describe after redrive: %v", err)
-			}
-			execStatus = string(desc.Status)
-			if execStatus != "RUNNING" {
-				break
-			}
+		descAfter, err := tc.awaitTerminal(originalArn, 100*time.Millisecond, 30)
+		if err != nil {
+			return fmt.Errorf("execution did not reach a terminal state after redrive: %v", err)
 		}
-		if execStatus != "FAILED" {
-			return fmt.Errorf("expected FAILED after redrive, got %s", execStatus)
+		if descAfter.Status != sfntypes.ExecutionStatusFailed {
+			return fmt.Errorf("expected FAILED after redrive, got %s", descAfter.Status)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DynamoDBTask_UpdateItem_SetAndRemove", func() error {
-		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
-		if err != nil {
-			return fmt.Errorf("load config: %w", err)
-		}
-		ddbClient := dynamodb.NewFromConfig(cfg)
-
 		tableName := fmt.Sprintf("SFNUpdateItem-%d", time.Now().UnixNano())
-		_, err = ddbClient.CreateTable(tc.ctx, &dynamodb.CreateTableInput{
+		_, err := ddbClient.CreateTable(tc.ctx, &dynamodb.CreateTableInput{
 			TableName: aws.String(tableName),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+			AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
 			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+			KeySchema: []dynamodbtypes.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
 			},
-			BillingMode: types.BillingModePayPerRequest,
+			BillingMode: dynamodbtypes.BillingModePayPerRequest,
 		})
 		if err != nil {
 			return fmt.Errorf("create table: %v", err)
@@ -479,10 +301,10 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 		_, err = ddbClient.PutItem(tc.ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(tableName),
-			Item: map[string]types.AttributeValue{
-				"pk":  &types.AttributeValueMemberS{Value: "item1"},
-				"val": &types.AttributeValueMemberS{Value: "original"},
-				"num": &types.AttributeValueMemberN{Value: "10"},
+			Item: map[string]dynamodbtypes.AttributeValue{
+				"pk":  &dynamodbtypes.AttributeValueMemberS{Value: "item1"},
+				"val": &dynamodbtypes.AttributeValueMemberS{Value: "original"},
+				"num": &dynamodbtypes.AttributeValueMemberN{Value: "10"},
 			},
 		})
 		if err != nil {
@@ -490,46 +312,27 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		}
 
 		updateDef := fmt.Sprintf(`{"StartAt":"Update","States":{"Update":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:updateItem","Parameters":{"TableName":"%s","Key":{"pk":{"S":"item1"}},"UpdateExpression":"SET val=:v REMOVE num","ExpressionAttributeValues":{":v":{"S":"updated"}}},"End":true}}}`, tableName)
-		updateSMName := fmt.Sprintf("SFNUpdSM-%d", time.Now().UnixNano())
-		_, updateRoleARN, updateRoleCleanup := tc.createRoleForSM("SFNUpdRole")
-		defer updateRoleCleanup()
-
-		smResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(updateSMName),
-			Definition: aws.String(updateDef),
-			RoleArn:    aws.String(updateRoleARN),
-		})
-		if err != nil {
-			return fmt.Errorf("create SM: %v", err)
+		updateSMARN, smCleanup, cerr := tc.createRoleBackedSM("SFNUpdSM", updateDef)
+		if cerr != nil {
+			return fmt.Errorf("create SM: %v", cerr)
 		}
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: smResp.StateMachineArn})
+		defer smCleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: smResp.StateMachineArn,
-			Input:           aws.String(`{}`),
-		})
-		if err != nil {
-			return fmt.Errorf("start exec: %v", err)
+		execArn, serr := tc.startExecution(updateSMARN, "", `{}`)
+		if serr != nil {
+			return fmt.Errorf("start exec: %v", serr)
 		}
-
-		var status string
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, _ := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: execResp.ExecutionArn,
-			})
-			status = string(desc.Status)
-			if status != "RUNNING" {
-				break
-			}
+		desc, werr := tc.awaitTerminal(execArn, 100*time.Millisecond, 30)
+		if werr != nil {
+			return werr
 		}
-		if status != "SUCCEEDED" {
-			return fmt.Errorf("expected SUCCEEDED, got %s", status)
+		if desc.Status != sfntypes.ExecutionStatusSucceeded {
+			return fmt.Errorf("expected SUCCEEDED, got %s", desc.Status)
 		}
 
 		getResp, err := ddbClient.GetItem(tc.ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(tableName),
-			Key:       map[string]types.AttributeValue{"pk": &types.AttributeValueMemberS{Value: "item1"}},
+			Key:       map[string]dynamodbtypes.AttributeValue{"pk": &dynamodbtypes.AttributeValueMemberS{Value: "item1"}},
 		})
 		if err != nil {
 			return fmt.Errorf("get item: %v", err)
@@ -539,7 +342,7 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		if !hasVal {
 			return fmt.Errorf("expected 'val' attribute to exist after SET")
 		}
-		if s, ok := valAttr.(*types.AttributeValueMemberS); !ok || s.Value != "updated" {
+		if s, ok := valAttr.(*dynamodbtypes.AttributeValueMemberS); !ok || s.Value != "updated" {
 			return fmt.Errorf("expected val='updated', got %v", valAttr)
 		}
 
@@ -555,25 +358,16 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "DynamoDBTask_UpdateItem_MultiWhitespace", func() error {
-		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
-			Endpoint: r.endpoint,
-			Region:   r.region,
-		})
-		if err != nil {
-			return fmt.Errorf("load config: %w", err)
-		}
-		ddbClient := dynamodb.NewFromConfig(cfg)
-
 		tableName := fmt.Sprintf("SFNMultiWS-%d", time.Now().UnixNano())
-		_, err = ddbClient.CreateTable(tc.ctx, &dynamodb.CreateTableInput{
+		_, err := ddbClient.CreateTable(tc.ctx, &dynamodb.CreateTableInput{
 			TableName: aws.String(tableName),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+			AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
 			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+			KeySchema: []dynamodbtypes.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
 			},
-			BillingMode: types.BillingModePayPerRequest,
+			BillingMode: dynamodbtypes.BillingModePayPerRequest,
 		})
 		if err != nil {
 			return fmt.Errorf("create table: %v", err)
@@ -582,9 +376,9 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 		_, err = ddbClient.PutItem(tc.ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(tableName),
-			Item: map[string]types.AttributeValue{
-				"pk":  &types.AttributeValueMemberS{Value: "ws1"},
-				"old": &types.AttributeValueMemberS{Value: "tobedeleted"},
+			Item: map[string]dynamodbtypes.AttributeValue{
+				"pk":  &dynamodbtypes.AttributeValueMemberS{Value: "ws1"},
+				"old": &dynamodbtypes.AttributeValueMemberS{Value: "tobedeleted"},
 			},
 		})
 		if err != nil {
@@ -595,46 +389,27 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 		namedOld := "old"
 		updateDef := fmt.Sprintf(`{"StartAt":"Update","States":{"Update":{"Type":"Task","Resource":"arn:aws:states:::dynamodb:updateItem","Parameters":{"TableName":"%s","Key":{"pk":{"S":"ws1"}},"UpdateExpression":"%s","ExpressionAttributeValues":{":v":{"S":"set-via-whitespace"}},"ExpressionAttributeNames":{"#old":"%s"}},"End":true}}}`, tableName, updateExpr, namedOld)
 
-		updateSMName := fmt.Sprintf("SFNMultiWSSM-%d", time.Now().UnixNano())
-		_, updateRoleARN, updateRoleCleanup := tc.createRoleForSM("SFNMultiWSRole")
-		defer updateRoleCleanup()
-
-		smResp, err := tc.client.CreateStateMachine(tc.ctx, &sfn.CreateStateMachineInput{
-			Name:       aws.String(updateSMName),
-			Definition: aws.String(updateDef),
-			RoleArn:    aws.String(updateRoleARN),
-		})
-		if err != nil {
-			return fmt.Errorf("create SM: %v", err)
+		updateSMARN, smCleanup, cerr := tc.createRoleBackedSM("SFNMultiWSSM", updateDef)
+		if cerr != nil {
+			return fmt.Errorf("create SM: %v", cerr)
 		}
-		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: smResp.StateMachineArn})
+		defer smCleanup()
 
-		execResp, err := tc.client.StartExecution(tc.ctx, &sfn.StartExecutionInput{
-			StateMachineArn: smResp.StateMachineArn,
-			Input:           aws.String(`{}`),
-		})
-		if err != nil {
-			return fmt.Errorf("start exec: %v", err)
+		execArn, serr := tc.startExecution(updateSMARN, "", `{}`)
+		if serr != nil {
+			return fmt.Errorf("start exec: %v", serr)
 		}
-
-		var status string
-		for i := 0; i < 30; i++ {
-			time.Sleep(100 * time.Millisecond)
-			desc, _ := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: execResp.ExecutionArn,
-			})
-			status = string(desc.Status)
-			if status != "RUNNING" {
-				break
-			}
+		desc, werr := tc.awaitTerminal(execArn, 100*time.Millisecond, 30)
+		if werr != nil {
+			return werr
 		}
-		if status != "SUCCEEDED" {
-			return fmt.Errorf("expected SUCCEEDED, got %s", status)
+		if desc.Status != sfntypes.ExecutionStatusSucceeded {
+			return fmt.Errorf("expected SUCCEEDED, got %s", desc.Status)
 		}
 
 		getResp, err := ddbClient.GetItem(tc.ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(tableName),
-			Key:       map[string]types.AttributeValue{"pk": &types.AttributeValueMemberS{Value: "ws1"}},
+			Key:       map[string]dynamodbtypes.AttributeValue{"pk": &dynamodbtypes.AttributeValueMemberS{Value: "ws1"}},
 		})
 		if err != nil {
 			return fmt.Errorf("get item: %v", err)
@@ -642,7 +417,7 @@ func (r *TestRunner) runSFNAdvancedTests(tc *sfnTestContext) []TestResult {
 
 		if newAttr, hasNew := getResp.Item["new"]; !hasNew {
 			return fmt.Errorf("expected 'new' attribute after SET with multi-whitespace")
-		} else if s, ok := newAttr.(*types.AttributeValueMemberS); !ok || s.Value != "set-via-whitespace" {
+		} else if s, ok := newAttr.(*dynamodbtypes.AttributeValueMemberS); !ok || s.Value != "set-via-whitespace" {
 			return fmt.Errorf("expected new='set-via-whitespace', got %v", newAttr)
 		}
 

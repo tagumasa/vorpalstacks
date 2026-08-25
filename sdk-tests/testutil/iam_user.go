@@ -59,30 +59,22 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "ListUsers", func() error {
-		var allUsers []types.User
-		var marker *string
-		for {
-			resp, err := tc.client.ListUsers(tc.ctx, &iam.ListUsersInput{
-				Marker: marker,
-			})
+		users, err := iamPaginate(func(marker *string) ([]types.User, *string, error) {
+			resp, err := tc.client.ListUsers(tc.ctx, &iam.ListUsersInput{Marker: marker})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, u := range resp.Users {
-				if aws.ToString(u.UserName) == tc.user {
-					allUsers = append(allUsers, u)
-				}
-			}
-			if resp.IsTruncated && resp.Marker != nil {
-				marker = resp.Marker
-			} else {
-				break
+			return resp.Users, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, u := range users {
+			if aws.ToString(u.UserName) == tc.user {
+				return nil
 			}
 		}
-		if len(allUsers) == 0 {
-			return fmt.Errorf("user %s not found in ListUsers", tc.user)
-		}
-		return nil
+		return fmt.Errorf("user %s not found in ListUsers", tc.user)
 	}))
 
 	results = append(results, r.RunTest("iam", "UpdateUser", func() error {
@@ -114,10 +106,11 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 			return fmt.Errorf("invalid NewUserName: got %v, want InvalidInput", err)
 		}
 		other := fmt.Sprintf("UpdateOther-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+		cleanupOther, err := tc.createUser(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		defer cleanupOther()
 		if _, err := tc.client.UpdateUser(tc.ctx, &iam.UpdateUserInput{
 			UserName:    aws.String(newName),
 			NewUserName: aws.String(other),
@@ -277,10 +270,11 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "ChangePassword", func() error {
 		user := fmt.Sprintf("ChangePw-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return fmt.Errorf("CreateUser for ChangePassword: %w", err)
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
 		const oldPass = "Valid!Old1-Pw-2026"
 		const newPass = "Valid!New1-Pw-2026"
@@ -513,12 +507,13 @@ func (r *TestRunner) iamUserTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "CreateLoginProfile_PasswordTooLong", func() error {
 		user := fmt.Sprintf("LongPw-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
-		_, err := tc.client.CreateLoginProfile(tc.ctx, &iam.CreateLoginProfileInput{
+		_, err = tc.client.CreateLoginProfile(tc.ctx, &iam.CreateLoginProfileInput{
 			UserName: aws.String(user),
 			Password: aws.String(strings.Repeat("A1!a", 33)), // 132 characters
 		})

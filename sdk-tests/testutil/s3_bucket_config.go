@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,10 +11,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
-	"github.com/aws/smithy-go"
 
 	"vorpalstacks-sdk-tests/config"
 )
+
+// s3CreateReplicationDest creates an empty destination bucket for a
+// replication test and returns its ARN together with a cleanup closure that
+// empties and deletes it.
+func s3CreateReplicationDest(ctx context.Context, client *s3.Client, name string) (string, func(), error) {
+	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(name),
+	}); err != nil {
+		return "", nil, fmt.Errorf("CreateBucket (replication-dest) failed: %w", err)
+	}
+	return "arn:aws:s3:::" + name, func() { s3CleanupBucket(ctx, client, name) }, nil
+}
 
 func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client, ts string, bucketName string) []TestResult {
 	var results []TestResult
@@ -730,16 +740,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 	}))
 
 	results = append(results, r.RunTest("s3", "PutBucketReplication_GetVerify", func() error {
-		repBucket := s3Bucket(ts, "repl-dest")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(repBucket),
-		})
+		repArn, repCleanup, err := s3CreateReplicationDest(ctx, client, s3Bucket(ts, "repl-dest"))
 		if err != nil {
-			return fmt.Errorf("CreateBucket (replication-dest) failed: %w", err)
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, repBucket)
+		defer repCleanup()
 
-		repArn := "arn:aws:s3:::" + repBucket
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
@@ -793,15 +799,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 	results = append(results, r.RunTest("s3", "Replication_ObjectCopiedToDest", func() error {
 		repBucket := s3Bucket(ts, "repl-copy-dest")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(repBucket),
-		})
+		repArn, repCleanup, err := s3CreateReplicationDest(ctx, client, repBucket)
 		if err != nil {
-			return fmt.Errorf("CreateBucket (replication-copy-dest) failed: %w", err)
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, repBucket)
+		defer repCleanup()
 
-		repArn := "arn:aws:s3:::" + repBucket
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
@@ -854,15 +857,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 	results = append(results, r.RunTest("s3", "Replication_TagFilter", func() error {
 		tagBucket := s3Bucket(ts, "repl-tag-dest")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(tagBucket),
-		})
+		tagArn, tagCleanup, err := s3CreateReplicationDest(ctx, client, tagBucket)
 		if err != nil {
-			return fmt.Errorf("CreateBucket (repl-tag-dest) failed: %w", err)
+			return err
 		}
-		defer s3CleanupBucket(ctx, client, tagBucket)
+		defer tagCleanup()
 
-		tagArn := "arn:aws:s3:::" + tagBucket
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
@@ -938,12 +938,11 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 
 		dmBucket := s3Bucket(ts, "repl-dm-dest")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(dmBucket),
-		})
+		dmArn, dmCleanup, err := s3CreateReplicationDest(ctx, client, dmBucket)
 		if err != nil {
-			return fmt.Errorf("CreateBucket (repl-dm-dest) failed: %w", err)
+			return err
 		}
+		defer dmCleanup()
 
 		// Enable versioning on destination so delete markers are supported.
 		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
@@ -956,7 +955,6 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return fmt.Errorf("PutBucketVersioning (dest) failed: %w", err)
 		}
 
-		dmArn := "arn:aws:s3:::" + dmBucket
 		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
 			Bucket: aws.String(bucketName),
 			ReplicationConfiguration: &types.ReplicationConfiguration{
@@ -1342,9 +1340,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read ACL with enforced ownership, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
-			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
+			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
 		}
 		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
 			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
@@ -1369,8 +1366,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for PutBucketAcl on enforced bucket, got nil")
 		}
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
-			return fmt.Errorf("expected AccessControlListNotSupported from PutBucketAcl, got %v", err)
+		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
+			return fmt.Errorf("expected AccessControlListNotSupported from PutBucketAcl: %v", err)
 		}
 
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
@@ -1389,8 +1386,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for PutObjectAcl on enforced bucket, got nil")
 		}
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
-			return fmt.Errorf("expected AccessControlListNotSupported from PutObjectAcl, got %v", err)
+		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
+			return fmt.Errorf("expected AccessControlListNotSupported from PutObjectAcl: %v", err)
 		}
 		return nil
 	}))
@@ -1418,9 +1415,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read upload ACL, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
-			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
+			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
 		}
 		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
 			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
@@ -1500,9 +1496,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read multipart ACL, got nil")
 		}
-		var apiErr smithy.APIError
-		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "AccessControlListNotSupported" {
-			return fmt.Errorf("expected AccessControlListNotSupported, got %v", err)
+		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
+			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
 		}
 		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
 			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)

@@ -80,6 +80,10 @@ const assumeRolePolicy = `{
 	}]
 }`
 
+// ec2AssumeRolePolicy is the standard EC2 trust policy used whenever a
+// test needs a throwaway role.
+const ec2AssumeRolePolicy = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+
 const s3FullAccessPolicy = `{
 	"Version": "2012-10-17",
 	"Statement": [{
@@ -204,4 +208,67 @@ func containsErrorCode(err error, code string) bool {
 		return true
 	}
 	return strings.Contains(err.Error(), "api error "+code)
+}
+
+// iamAssertNoSuchEntity verifies that err carries NoSuchEntity, as
+// required after a successful delete of the named entity.
+func iamAssertNoSuchEntity(err error, what string) error {
+	if err == nil || !containsErrorCode(err, "NoSuchEntity") {
+		return fmt.Errorf("%s: got %v, want NoSuchEntity", what, err)
+	}
+	return nil
+}
+
+// iamAllowPolicy renders a single-statement allow-all-resources policy
+// document for the given action.
+func iamAllowPolicy(action string) string {
+	return fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":%q,"Resource":"*"}]}`, action)
+}
+
+// iamPaginate walks every page of an IAM list operation, concatenating
+// the page items. Every list-type test must traverse all pages: during a
+// full regression other services create resources concurrently, so a
+// single page is never guaranteed to hold the entity under test.
+func iamPaginate[T any](fetch func(marker *string) ([]T, *string, error)) ([]T, error) {
+	return paginate(fetch)
+}
+
+// createUser creates a throwaway user and returns its cleanup.
+func (tc *iamTestContext) createUser(name string) (func(), error) {
+	if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(name)}); err != nil {
+		return nil, err
+	}
+	return func() {
+		tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(name)})
+	}, nil
+}
+
+// createRole creates a throwaway role carrying the standard EC2 trust
+// policy and returns its cleanup.
+func (tc *iamTestContext) createRole(name string) (func(), error) {
+	if _, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
+		RoleName:                 aws.String(name),
+		AssumeRolePolicyDocument: aws.String(ec2AssumeRolePolicy),
+	}); err != nil {
+		return nil, err
+	}
+	return func() {
+		tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(name)})
+	}, nil
+}
+
+// createPolicy creates a customer-managed policy from doc and returns
+// its ARN plus cleanup.
+func (tc *iamTestContext) createPolicy(name, doc string) (string, func(), error) {
+	resp, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
+		PolicyName:     aws.String(name),
+		PolicyDocument: aws.String(doc),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	arn := aws.ToString(resp.Policy.Arn)
+	return arn, func() {
+		tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
+	}, nil
 }

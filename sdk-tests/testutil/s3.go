@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -48,6 +49,44 @@ func waitForObjectDeleted(ctx context.Context, client *s3.Client, bucket, key st
 		time.Sleep(200 * time.Millisecond)
 	}
 	return false
+}
+
+// s3GetAndRead performs a GetObject call and drains the response body into
+// a string, closing the body before returning so callers cannot leak it.
+// The response is returned alongside the body for callers that make further
+// assertions on metadata fields (ContentLength, StorageClass, Restore, ...).
+func s3GetAndRead(ctx context.Context, client *s3.Client, in *s3.GetObjectInput) (*s3.GetObjectOutput, string, error) {
+	resp, err := client.GetObject(ctx, in)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("ReadAll: %w", err)
+	}
+	return resp, string(body), nil
+}
+
+// s3CreateVersionedBucket creates an empty bucket with versioning enabled
+// and returns its name together with a cleanup closure that empties and
+// deletes it. On a versioning failure the bucket is cleaned up immediately.
+func s3CreateVersionedBucket(ctx context.Context, client *s3.Client, name string) (string, func(), error) {
+	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(name),
+	}); err != nil {
+		return "", nil, fmt.Errorf("CreateBucket %s: %w", name, err)
+	}
+	if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+		Bucket: aws.String(name),
+		VersioningConfiguration: &types.VersioningConfiguration{
+			Status: types.BucketVersioningStatusEnabled,
+		},
+	}); err != nil {
+		s3CleanupBucket(ctx, client, name)
+		return "", nil, fmt.Errorf("PutBucketVersioning %s: %w", name, err)
+	}
+	return name, func() { s3CleanupBucket(ctx, client, name) }, nil
 }
 
 func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {

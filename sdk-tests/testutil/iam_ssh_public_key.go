@@ -46,12 +46,11 @@ func (r *TestRunner) iamSSHPublicKeyTests(tc *iamTestContext) []TestResult {
 
 	newSSHUser := func(suffix string) (string, func()) {
 		user := fmt.Sprintf("SSHKey-%s-%s", suffix, tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanup, err := tc.createUser(user)
+		if err != nil {
 			return "", func() {}
 		}
-		return user, func() {
-			_, _ = tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
-		}
+		return user, cleanup
 	}
 
 	results = append(results, r.RunTest("iam", "UploadSSHPublicKey_Invalid", func() error {

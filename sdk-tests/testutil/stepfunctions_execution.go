@@ -1,10 +1,8 @@
 package testutil
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -140,28 +138,20 @@ func (r *TestRunner) runSFNExecutionTests(tc *sfnTestContext) []TestResult {
 			return fmt.Errorf("start: %v", err)
 		}
 
-		for i := 0; i < 10; i++ {
-			time.Sleep(500 * time.Millisecond)
-			descResp, err := tc.client.DescribeExecution(tc.ctx, &sfn.DescribeExecutionInput{
-				ExecutionArn: startResp.ExecutionArn,
-			})
-			if err != nil {
-				return fmt.Errorf("describe: %v", err)
-			}
-			if descResp.Status == types.ExecutionStatusSucceeded {
-				if descResp.Output == nil {
-					return fmt.Errorf("execution output is nil")
-				}
-				if *descResp.Output != `"hello"` {
-					return fmt.Errorf("expected output %q, got %q", `"hello"`, *descResp.Output)
-				}
-				return nil
-			}
-			if descResp.Status == types.ExecutionStatusFailed || descResp.Status == types.ExecutionStatusAborted {
-				return fmt.Errorf("execution failed with status %s", descResp.Status)
-			}
+		descResp, err := tc.awaitTerminal(aws.ToString(startResp.ExecutionArn), 500*time.Millisecond, 10)
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
 		}
-		return fmt.Errorf("execution did not complete in time")
+		if descResp.Status == types.ExecutionStatusSucceeded {
+			if descResp.Output == nil {
+				return fmt.Errorf("execution output is nil")
+			}
+			if *descResp.Output != `"hello"` {
+				return fmt.Errorf("expected output %q, got %q", `"hello"`, *descResp.Output)
+			}
+			return nil
+		}
+		return fmt.Errorf("execution finished with status %s", descResp.Status)
 	}))
 
 	results = append(results, r.RunTest("stepfunctions", "StopExecution", func() error {
@@ -221,29 +211,18 @@ func (r *TestRunner) runSFNExecutionTests(tc *sfnTestContext) []TestResult {
 		syncSMARN := *syncResp.StateMachineArn
 		defer tc.client.DeleteStateMachine(tc.ctx, &sfn.DeleteStateMachineInput{StateMachineArn: aws.String(syncSMARN)})
 
-		body := map[string]interface{}{
+		status, result, err := tc.rawJSONCall("AWSStepFunctions.StartSyncExecution", map[string]interface{}{
 			"stateMachineArn": syncSMARN,
 			"input":           `{"sync":true}`,
-		}
-		bodyBytes, _ := json.Marshal(body)
-		syncReq, _ := http.NewRequestWithContext(tc.ctx, "POST", r.endpoint, bytes.NewReader(bodyBytes))
-		syncReq.Header.Set("Content-Type", "application/x-amz-json-1.0")
-		syncReq.Header.Set("X-Amz-Target", "AWSStepFunctions.StartSyncExecution")
-
-		httpResp, err := testHTTPClient.Do(syncReq)
+		})
 		if err != nil {
 			return err
 		}
-		defer httpResp.Body.Close()
-		if httpResp.StatusCode != 200 {
-			var errBody map[string]interface{}
-			json.NewDecoder(httpResp.Body).Decode(&errBody)
-			return fmt.Errorf("status %d: %v", httpResp.StatusCode, errBody)
+		if status != 200 {
+			return fmt.Errorf("status %d: %v", status, result)
 		}
-		var result map[string]interface{}
-		json.NewDecoder(httpResp.Body).Decode(&result)
-		if status, _ := result["status"].(string); status != "SUCCEEDED" {
-			return fmt.Errorf("expected SUCCEEDED, got %s", status)
+		if got, _ := result["status"].(string); got != "SUCCEEDED" {
+			return fmt.Errorf("expected SUCCEEDED, got %s", got)
 		}
 		if _, ok := result["executionArn"]; !ok {
 			return fmt.Errorf("executionArn missing from response")

@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -151,42 +150,30 @@ func cognitoSrpHKDF(ikmHex, saltHex string) []byte {
 }
 
 // cognitoSRPTests exercises the USER_SRP_AUTH / PASSWORD_VERIFIER flow.
-func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentityprovider.Client, userPoolID string) []TestResult {
+func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	// Happy path: create a confirmed user with a known permanent password,
 	// then complete the full SRP exchange.
 	results = append(results, r.RunTest("cognito", "InitiateAuth_USER_SRP_AUTH", func() error {
-		srpClientName := fmt.Sprintf("srp-client-%d", time.Now().UnixNano())
-		clientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(srpClientName),
-		})
+		srpClientID, cleanupSrpClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("srp-client"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)
 		}
-		srpClientID := *clientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(srpClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
+		defer cleanupSrpClientID()
 
-		srpUser := fmt.Sprintf("srp-user-%d", time.Now().UnixNano())
+		srpUser := tc.unique("srp-user")
 		srpPassword := "SrpPassword123!"
-		_, err = client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(srpUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-		})
+		cleanupSrpUser, err := tc.adminCreateUser(srpUser,
+			func(input *cognitoidentityprovider.AdminCreateUserInput) {
+				input.MessageAction = ""
+			})
 		if err != nil {
 			return fmt.Errorf("admin create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(srpUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupSrpUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(srpUser),
 			Password:   aws.String(srpPassword),
 			Permanent:  true,
@@ -195,11 +182,11 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 			return fmt.Errorf("admin set user password: %v", err)
 		}
 
-		c, err := newCognitoSrpClient(userPoolID, srpUser, srpPassword)
+		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, srpPassword)
 		if err != nil {
 			return err
 		}
-		initResp, err := client.InitiateAuth(ctx, &cognitoidentityprovider.InitiateAuthInput{
+		initResp, err := tc.client.InitiateAuth(tc.ctx, &cognitoidentityprovider.InitiateAuthInput{
 			AuthFlow: "USER_SRP_AUTH",
 			ClientId: aws.String(srpClientID),
 			AuthParameters: map[string]string{
@@ -222,7 +209,7 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 		if err != nil {
 			return fmt.Errorf("compute password verifier: %v", err)
 		}
-		respResp, err := client.RespondToAuthChallenge(ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+		respResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
 			ChallengeName: "PASSWORD_VERIFIER",
 			ClientId:      aws.String(srpClientID),
 			Session:       initResp.Session,
@@ -244,35 +231,23 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 
 	// Negative test: a client using the wrong password must be rejected.
 	results = append(results, r.RunTest("cognito", "USER_SRP_AUTH_wrong_password_rejected", func() error {
-		srpClientName := fmt.Sprintf("srp-neg-%d", time.Now().UnixNano())
-		clientResp, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
-			UserPoolId: aws.String(userPoolID),
-			ClientName: aws.String(srpClientName),
-		})
+		srpClientID, cleanupSrpClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("srp-neg"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)
 		}
-		srpClientID := *clientResp.UserPoolClient.ClientId
-		defer client.DeleteUserPoolClient(ctx, &cognitoidentityprovider.DeleteUserPoolClientInput{
-			ClientId:   aws.String(srpClientID),
-			UserPoolId: aws.String(userPoolID),
-		})
+		defer cleanupSrpClientID()
 
-		srpUser := fmt.Sprintf("srp-wrong-%d", time.Now().UnixNano())
-		_, err = client.AdminCreateUser(ctx, &cognitoidentityprovider.AdminCreateUserInput{
-			UserPoolId:        aws.String(userPoolID),
-			Username:          aws.String(srpUser),
-			TemporaryPassword: aws.String("TempPass123!"),
-		})
+		srpUser := tc.unique("srp-wrong")
+		cleanupSrpUser, err := tc.adminCreateUser(srpUser,
+			func(input *cognitoidentityprovider.AdminCreateUserInput) {
+				input.MessageAction = ""
+			})
 		if err != nil {
 			return fmt.Errorf("admin create user: %v", err)
 		}
-		defer client.AdminDeleteUser(ctx, &cognitoidentityprovider.AdminDeleteUserInput{
-			UserPoolId: aws.String(userPoolID),
-			Username:   aws.String(srpUser),
-		})
-		_, err = client.AdminSetUserPassword(ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(userPoolID),
+		defer cleanupSrpUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(srpUser),
 			Password:   aws.String("CorrectPassword123!"),
 			Permanent:  true,
@@ -282,11 +257,11 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 		}
 
 		// Client uses the WRONG password.
-		c, err := newCognitoSrpClient(userPoolID, srpUser, "WrongPassword456!")
+		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, "WrongPassword456!")
 		if err != nil {
 			return err
 		}
-		initResp, err := client.InitiateAuth(ctx, &cognitoidentityprovider.InitiateAuthInput{
+		initResp, err := tc.client.InitiateAuth(tc.ctx, &cognitoidentityprovider.InitiateAuthInput{
 			AuthFlow: "USER_SRP_AUTH",
 			ClientId: aws.String(srpClientID),
 			AuthParameters: map[string]string{
@@ -302,7 +277,7 @@ func (r *TestRunner) cognitoSRPTests(ctx context.Context, client *cognitoidentit
 		if err != nil {
 			return err
 		}
-		_, err = client.RespondToAuthChallenge(ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+		_, err = tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
 			ChallengeName: "PASSWORD_VERIFIER",
 			ClientId:      aws.String(srpClientID),
 			Session:       initResp.Session,
