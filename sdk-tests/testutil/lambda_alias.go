@@ -1,58 +1,33 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-func runLambdaAliasTests(
-	r *TestRunner,
-	ctx context.Context,
-	client *lambda.Client,
-	cwlClient *cloudwatchlogs.Client,
-	createIAMRole func(string) error,
-	deleteIAMRole func(string),
-) []TestResult {
+func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	funcName := fmt.Sprintf("AliasFunc-%d", time.Now().UnixNano())
-	roleName := fmt.Sprintf("AliasRole-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
-
-	if err := createIAMRole(roleName); err != nil {
+	funcName := tc.unique("AliasFunc")
+	roleARN, cleanupRole, err := tc.createRole(tc.unique("AliasRole"))
+	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
 			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
 	}
-	defer deleteIAMRole(roleName)
+	defer cleanupRole()
 
-	zipCode, err := zipLambdaCode(lambdaFunctionCode)
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to zip lambda code: %v", err)}}
-	}
-
-	_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
-		FunctionName: aws.String(funcName),
-		Runtime:      types.RuntimeNodejs22x,
-		Role:         aws.String(roleARN),
-		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: zipCode},
-	})
+	_, cleanupFn, err := tc.createFunction(funcName, roleARN, lambdaFunctionCode)
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
 			Error: fmt.Sprintf("Failed to create function: %v", err)}}
 	}
-	defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(funcName)})
-	defer deleteLambdaLogGroup(cwlClient, ctx, funcName)
+	defer cleanupFn()
 
-	results = append(results, r.RunTest("lambda", "PublishVersion", func() error {
-		resp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "PublishVersion", func() error {
+		resp, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(funcName),
 		})
 		if err != nil {
@@ -70,8 +45,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "ListVersionsByFunction", func() error {
-		resp, err := client.ListVersionsByFunction(ctx, &lambda.ListVersionsByFunctionInput{
+	results = append(results, tc.r.RunTest("lambda", "ListVersionsByFunction", func() error {
+		resp, err := tc.client.ListVersionsByFunction(tc.ctx, &lambda.ListVersionsByFunctionInput{
 			FunctionName: aws.String(funcName),
 		})
 		if err != nil {
@@ -93,8 +68,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "CreateAlias", func() error {
-		resp, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "CreateAlias", func() error {
+		resp, err := tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(funcName),
 			Name:            aws.String("live"),
 			FunctionVersion: aws.String("$LATEST"),
@@ -114,8 +89,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "GetAlias", func() error {
-		resp, err := client.GetAlias(ctx, &lambda.GetAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "GetAlias", func() error {
+		resp, err := tc.client.GetAlias(tc.ctx, &lambda.GetAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("live"),
 		})
@@ -131,8 +106,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "UpdateAlias", func() error {
-		resp, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "UpdateAlias", func() error {
+		resp, err := tc.client.UpdateAlias(tc.ctx, &lambda.UpdateAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("live"),
 			Description:  aws.String("Production alias"),
@@ -149,8 +124,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "ListAliases", func() error {
-		resp, err := client.ListAliases(ctx, &lambda.ListAliasesInput{
+	results = append(results, tc.r.RunTest("lambda", "ListAliases", func() error {
+		resp, err := tc.client.ListAliases(tc.ctx, &lambda.ListAliasesInput{
 			FunctionName: aws.String(funcName),
 		})
 		if err != nil {
@@ -175,15 +150,15 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "DeleteAlias", func() error {
-		_, err := client.DeleteAlias(ctx, &lambda.DeleteAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "DeleteAlias", func() error {
+		_, err := tc.client.DeleteAlias(tc.ctx, &lambda.DeleteAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("live"),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = client.GetAlias(ctx, &lambda.GetAliasInput{
+		_, err = tc.client.GetAlias(tc.ctx, &lambda.GetAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("live"),
 		})
@@ -193,32 +168,20 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "PublishVersion_VerifyVersion", func() error {
-		pvFunc := fmt.Sprintf("PvFunc-%d", time.Now().UnixNano())
-		pvRoleName := fmt.Sprintf("PvRole-%d", time.Now().UnixNano())
-		pvRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, pvRoleName)
-		pvCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+	results = append(results, tc.r.RunTest("lambda", "PublishVersion_VerifyVersion", func() error {
+		pvFunc := tc.unique("PvFunc")
+		pvRole, cleanupPvRole, err := tc.createRole(tc.unique("PvRole"))
 		if err != nil {
-			return fmt.Errorf("zip lambda code: %v", err)
-		}
-		if err := createIAMRole(pvRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
-		defer deleteIAMRole(pvRoleName)
-		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
-			FunctionName: aws.String(pvFunc),
-			Runtime:      types.RuntimeNodejs22x,
-			Role:         aws.String(pvRole),
-			Handler:      aws.String("index.handler"),
-			Code:         &types.FunctionCode{ZipFile: pvCode},
-		})
+		defer cleanupPvRole()
+		_, cleanupPvFn, err := tc.createFunction(pvFunc, pvRole, "exports.handler = async () => { return 1; };")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(pvFunc)})
-		defer deleteLambdaLogGroup(cwlClient, ctx, pvFunc)
+		defer cleanupPvFn()
 
-		resp, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+		resp, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(pvFunc),
 		})
 		if err != nil {
@@ -233,32 +196,20 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "CreateAlias_DuplicateName", func() error {
-		caFunc := fmt.Sprintf("CaFunc-%d", time.Now().UnixNano())
-		caRoleName := fmt.Sprintf("CaRole-%d", time.Now().UnixNano())
-		caRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, caRoleName)
-		caCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+	results = append(results, tc.r.RunTest("lambda", "CreateAlias_DuplicateName", func() error {
+		caFunc := tc.unique("CaFunc")
+		caRole, cleanupCaRole, err := tc.createRole(tc.unique("CaRole"))
 		if err != nil {
-			return fmt.Errorf("zip lambda code: %v", err)
-		}
-		if err := createIAMRole(caRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
-		defer deleteIAMRole(caRoleName)
-		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
-			FunctionName: aws.String(caFunc),
-			Runtime:      types.RuntimeNodejs22x,
-			Role:         aws.String(caRole),
-			Handler:      aws.String("index.handler"),
-			Code:         &types.FunctionCode{ZipFile: caCode},
-		})
+		defer cleanupCaRole()
+		_, cleanupCaFn, err := tc.createFunction(caFunc, caRole, "exports.handler = async () => { return 1; };")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(caFunc)})
-		defer deleteLambdaLogGroup(cwlClient, ctx, caFunc)
+		defer cleanupCaFn()
 
-		_, err = client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		_, err = tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(caFunc),
 			Name:            aws.String("prod"),
 			FunctionVersion: aws.String("$LATEST"),
@@ -267,7 +218,7 @@ func runLambdaAliasTests(
 			return fmt.Errorf("first alias: %v", err)
 		}
 
-		_, err = client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		_, err = tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(caFunc),
 			Name:            aws.String("prod"),
 			FunctionVersion: aws.String("$LATEST"),
@@ -278,8 +229,8 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "GetAlias_NonExistent", func() error {
-		_, err := client.GetAlias(ctx, &lambda.GetAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "GetAlias_NonExistent", func() error {
+		_, err := tc.client.GetAlias(tc.ctx, &lambda.GetAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("nonexistent-alias-xyz"),
 		})
@@ -289,44 +240,32 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "AliasQualifier_ReturnsPublishedVersionConfig", func() error {
-		aqFunc := fmt.Sprintf("AqFunc-%d", time.Now().UnixNano())
-		aqRoleName := fmt.Sprintf("AqRole-%d", time.Now().UnixNano())
-		aqRole := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, aqRoleName)
-		aqCode, err := zipLambdaCode("exports.handler = async () => { return 1; };")
+	results = append(results, tc.r.RunTest("lambda", "AliasQualifier_ReturnsPublishedVersionConfig", func() error {
+		aqFunc := tc.unique("AqFunc")
+		aqRole, cleanupAqRole, err := tc.createRole(tc.unique("AqRole"))
 		if err != nil {
-			return fmt.Errorf("zip lambda code: %v", err)
-		}
-		if err := createIAMRole(aqRoleName); err != nil {
 			return fmt.Errorf("create role: %v", err)
 		}
-		defer deleteIAMRole(aqRoleName)
-		_, err = client.CreateFunction(ctx, &lambda.CreateFunctionInput{
-			FunctionName: aws.String(aqFunc),
-			Runtime:      types.RuntimeNodejs22x,
-			Role:         aws.String(aqRole),
-			Handler:      aws.String("index.handler"),
-			Code:         &types.FunctionCode{ZipFile: aqCode},
-		})
+		defer cleanupAqRole()
+		_, cleanupAqFn, err := tc.createFunction(aqFunc, aqRole, "exports.handler = async () => { return 1; };")
 		if err != nil {
 			return fmt.Errorf("create function: %v", err)
 		}
-		defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(aqFunc)})
-		defer deleteLambdaLogGroup(cwlClient, ctx, aqFunc)
+		defer cleanupAqFn()
 
-		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+		if _, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(aqFunc),
 			Description:  aws.String("version one"),
 		}); err != nil {
 			return fmt.Errorf("publish: %v", err)
 		}
-		if _, err := client.UpdateFunctionConfiguration(ctx, &lambda.UpdateFunctionConfigurationInput{
+		if _, err := tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
 			FunctionName: aws.String(aqFunc),
 			MemorySize:   aws.Int32(256),
 		}); err != nil {
 			return fmt.Errorf("update configuration: %v", err)
 		}
-		if _, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		if _, err := tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(aqFunc),
 			Name:            aws.String("stable"),
 			FunctionVersion: aws.String("1"),
@@ -336,7 +275,7 @@ func runLambdaAliasTests(
 
 		// An alias qualifier reports the configuration of the published
 		// version the alias points to, not the mutable $LATEST state.
-		cfg, err := client.GetFunctionConfiguration(ctx, &lambda.GetFunctionConfigurationInput{
+		cfg, err := tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
 			FunctionName: aws.String(aqFunc),
 			Qualifier:    aws.String("stable"),
 		})
@@ -353,7 +292,7 @@ func runLambdaAliasTests(
 			return fmt.Errorf("alias-qualified MemorySize should be the published 128, got %v", cfg.MemorySize)
 		}
 
-		full, err := client.GetFunction(ctx, &lambda.GetFunctionInput{
+		full, err := tc.client.GetFunction(tc.ctx, &lambda.GetFunctionInput{
 			FunctionName: aws.String(aqFunc),
 			Qualifier:    aws.String("stable"),
 		})
@@ -366,15 +305,15 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "CreateAlias_RoutingWeightValidation", func() error {
-		if _, err := client.PublishVersion(ctx, &lambda.PublishVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "CreateAlias_RoutingWeightValidation", func() error {
+		if _, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
 			FunctionName: aws.String(funcName),
 		}); err != nil {
 			return fmt.Errorf("publish: %v", err)
 		}
 
 		// A weight outside [0, 1] is rejected.
-		_, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		_, err := tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(funcName),
 			Name:            aws.String("weighted"),
 			FunctionVersion: aws.String("1"),
@@ -387,7 +326,7 @@ func runLambdaAliasTests(
 		}
 
 		// Routing may only target published versions.
-		_, err = client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		_, err = tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(funcName),
 			Name:            aws.String("weighted"),
 			FunctionVersion: aws.String("1"),
@@ -400,7 +339,7 @@ func runLambdaAliasTests(
 		}
 
 		// A valid routing config is accepted and echoed.
-		resp, err := client.CreateAlias(ctx, &lambda.CreateAliasInput{
+		resp, err := tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
 			FunctionName:    aws.String(funcName),
 			Name:            aws.String("weighted"),
 			FunctionVersion: aws.String("1"),
@@ -417,15 +356,15 @@ func runLambdaAliasTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "UpdateAlias_ClearDescription", func() error {
-		if _, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+	results = append(results, tc.r.RunTest("lambda", "UpdateAlias_ClearDescription", func() error {
+		if _, err := tc.client.UpdateAlias(tc.ctx, &lambda.UpdateAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("weighted"),
 			Description:  aws.String("to be cleared"),
 		}); err != nil {
 			return fmt.Errorf("set description: %v", err)
 		}
-		resp, err := client.UpdateAlias(ctx, &lambda.UpdateAliasInput{
+		resp, err := tc.client.UpdateAlias(tc.ctx, &lambda.UpdateAliasInput{
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("weighted"),
 			Description:  aws.String(""),

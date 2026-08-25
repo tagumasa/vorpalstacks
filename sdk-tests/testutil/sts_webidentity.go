@@ -21,23 +21,11 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil || resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("credentials or access key ID is nil")
+		if err := stsAssertCredentials(resp.Credentials); err != nil {
+			return err
 		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
-		}
-		if resp.AssumedRoleUser == nil || resp.AssumedRoleUser.AssumedRoleId == nil {
-			return fmt.Errorf("assumed role user is nil")
-		}
-		if resp.AssumedRoleUser.Arn == nil || *resp.AssumedRoleUser.Arn == "" {
-			return fmt.Errorf("assumed role user ARN is nil or empty")
+		if err := stsAssertAssumedRoleUser(resp.AssumedRoleUser); err != nil {
+			return err
 		}
 		if resp.SubjectFromWebIdentityToken == nil || *resp.SubjectFromWebIdentityToken == "" {
 			return fmt.Errorf("subject from web identity token is nil or empty")
@@ -60,8 +48,8 @@ func (r *TestRunner) runSTSWebIdentityTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PackedPolicySize == nil || *resp.PackedPolicySize == 0 {
-			return fmt.Errorf("PackedPolicySize should be > 0, got: %v", resp.PackedPolicySize)
+		if err := stsAssertPackedPolicySize(resp.PackedPolicySize); err != nil {
+			return err
 		}
 		return nil
 	}))

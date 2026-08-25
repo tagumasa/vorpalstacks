@@ -11,32 +11,25 @@ import (
 func (r *TestRunner) runSTSDecodeTests(tc *stsTestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("sts", "DecodeAuthorizationMessage_JSON", func() error {
-		originalMsg := `{"ErrorCode":"AccessDenied","Message":"Not authorized"}`
-		encoded := base64.StdEncoding.EncodeToString([]byte(originalMsg))
-		resp, err := tc.client.DecodeAuthorizationMessage(tc.ctx, &sts.DecodeAuthorizationMessageInput{
-			EncodedMessage: aws.String(encoded),
-		})
-		if err != nil {
-			return err
+	results = append(results, r.RunTest("sts", "DecodeAuthorizationMessage_RoundTrip", func() error {
+		cases := []struct {
+			name string
+			msg  string
+		}{
+			{name: "json", msg: `{"ErrorCode":"AccessDenied","Message":"Not authorized"}`},
+			{name: "plaintext", msg: "Plain text error message"},
 		}
-		if resp.DecodedMessage == nil || *resp.DecodedMessage != originalMsg {
-			return fmt.Errorf("decoded message mismatch, got: %v", resp.DecodedMessage)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "DecodeAuthorizationMessage_PlainText", func() error {
-		originalMsg := "Plain text error message"
-		encoded := base64.StdEncoding.EncodeToString([]byte(originalMsg))
-		resp, err := tc.client.DecodeAuthorizationMessage(tc.ctx, &sts.DecodeAuthorizationMessageInput{
-			EncodedMessage: aws.String(encoded),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.DecodedMessage == nil || *resp.DecodedMessage != originalMsg {
-			return fmt.Errorf("decoded message mismatch, got: %v", resp.DecodedMessage)
+		for _, tcase := range cases {
+			encoded := base64.StdEncoding.EncodeToString([]byte(tcase.msg))
+			resp, err := tc.client.DecodeAuthorizationMessage(tc.ctx, &sts.DecodeAuthorizationMessageInput{
+				EncodedMessage: aws.String(encoded),
+			})
+			if err != nil {
+				return fmt.Errorf("%s: %v", tcase.name, err)
+			}
+			if resp.DecodedMessage == nil || *resp.DecodedMessage != tcase.msg {
+				return fmt.Errorf("%s: decoded message mismatch, got: %v", tcase.name, resp.DecodedMessage)
+			}
 		}
 		return nil
 	}))
@@ -89,10 +82,7 @@ func (r *TestRunner) runSTSDecodeTests(tc *stsTestContext) []TestResult {
 		_, err := tc.client.GetAccessKeyInfo(tc.ctx, &sts.GetAccessKeyInfoInput{
 			AccessKeyId: aws.String("AKIAIOSFODNN7EXAMPLE"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent access key, got nil")
-		}
-		return nil
+		return expectAWSErrorCode(err, "InvalidClientTokenId")
 	}))
 
 	results = append(results, r.RunTest("sts", "GetAccessKeyInfo_Invalid", func() error {

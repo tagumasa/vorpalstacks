@@ -1,70 +1,45 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // runLambdaReferenceTests verifies that every FunctionName reference form
 // AWS documents is accepted: bare name, name:qualifier, full ARN (with an
 // optional qualifier suffix), and the partial ARN
 // account-id:function:name (also with an optional qualifier suffix).
-func runLambdaReferenceTests(
-	r *TestRunner,
-	ctx context.Context,
-	client *lambda.Client,
-	cwlClient *cloudwatchlogs.Client,
-	createIAMRole func(string) error,
-	deleteIAMRole func(string),
-) []TestResult {
+func runLambdaReferenceTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	funcName := fmt.Sprintf("RefFunc-%d", time.Now().UnixNano())
-	roleName := fmt.Sprintf("RefRole-%d", time.Now().UnixNano())
-	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", r.accountID, roleName)
-
-	if err := createIAMRole(roleName); err != nil {
+	funcName := tc.unique("RefFunc")
+	roleARN, cleanupRole, err := tc.createRole(tc.unique("RefRole"))
+	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Ref_Setup", Status: "FAIL",
 			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
 	}
-	defer deleteIAMRole(roleName)
+	defer cleanupRole()
 
-	zipCode, err := zipLambdaCode(lambdaFunctionCode)
+	_, cleanupFn, err := tc.createFunction(funcName, roleARN, lambdaFunctionCode)
 	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "Ref_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to zip lambda code: %v", err)}}
-	}
-
-	if _, err := client.CreateFunction(ctx, &lambda.CreateFunctionInput{
-		FunctionName: aws.String(funcName),
-		Runtime:      types.RuntimeNodejs22x,
-		Role:         aws.String(roleARN),
-		Handler:      aws.String("index.handler"),
-		Code:         &types.FunctionCode{ZipFile: zipCode},
-	}); err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Ref_Setup", Status: "FAIL",
 			Error: fmt.Sprintf("Failed to create function: %v", err)}}
 	}
-	defer client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(funcName)})
-	defer deleteLambdaLogGroup(cwlClient, ctx, funcName)
+	defer cleanupFn()
 
-	partialArn := fmt.Sprintf("%s:function:%s", r.accountID, funcName)
+	partialArn := fmt.Sprintf("%s:function:%s", tc.r.accountID, funcName)
 
-	results = append(results, r.RunTest("lambda", "FunctionRef_PartialArn_EventInvokeConfig", func() error {
-		_, err := client.PutFunctionEventInvokeConfig(ctx, &lambda.PutFunctionEventInvokeConfigInput{
+	results = append(results, tc.r.RunTest("lambda", "FunctionRef_PartialArn_EventInvokeConfig", func() error {
+		_, err := tc.client.PutFunctionEventInvokeConfig(tc.ctx, &lambda.PutFunctionEventInvokeConfigInput{
 			FunctionName:         aws.String(partialArn),
 			MaximumRetryAttempts: aws.Int32(1),
 		})
 		if err != nil {
 			return err
 		}
-		resp, err := client.GetFunctionEventInvokeConfig(ctx, &lambda.GetFunctionEventInvokeConfigInput{
+		resp, err := tc.client.GetFunctionEventInvokeConfig(tc.ctx, &lambda.GetFunctionEventInvokeConfigInput{
 			FunctionName: aws.String(partialArn),
 		})
 		if err != nil {
@@ -76,8 +51,8 @@ func runLambdaReferenceTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "FunctionRef_PartialArn_Invoke", func() error {
-		resp, err := client.Invoke(ctx, &lambda.InvokeInput{
+	results = append(results, tc.r.RunTest("lambda", "FunctionRef_PartialArn_Invoke", func() error {
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
 			FunctionName: aws.String(partialArn),
 		})
 		if err != nil {
@@ -94,16 +69,16 @@ func runLambdaReferenceTests(
 
 	// --- Error contract of store-level failures ---
 
-	esmSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:ref-dup-queue", r.region, r.accountID)
+	esmSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:ref-dup-queue", tc.r.region, tc.r.accountID)
 	var esmUUID string
 
-	results = append(results, r.RunTest("lambda", "ErrorMapping_ESM_DuplicateConflict", func() error {
+	results = append(results, tc.r.RunTest("lambda", "ErrorMapping_ESM_DuplicateConflict", func() error {
 		in := &lambda.CreateEventSourceMappingInput{
 			FunctionName:   aws.String(funcName),
 			EventSourceArn: aws.String(esmSourceArn),
 			BatchSize:      aws.Int32(10),
 		}
-		created, err := client.CreateEventSourceMapping(ctx, in)
+		created, err := tc.client.CreateEventSourceMapping(tc.ctx, in)
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
@@ -112,7 +87,7 @@ func runLambdaReferenceTests(
 		}
 		esmUUID = *created.UUID
 
-		_, err = client.CreateEventSourceMapping(ctx, in)
+		_, err = tc.client.CreateEventSourceMapping(tc.ctx, in)
 		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
 			return err
 		}
@@ -120,12 +95,12 @@ func runLambdaReferenceTests(
 	}))
 	defer func() {
 		if esmUUID != "" {
-			_, _ = client.DeleteEventSourceMapping(ctx, &lambda.DeleteEventSourceMappingInput{UUID: aws.String(esmUUID)})
+			_, _ = tc.client.DeleteEventSourceMapping(tc.ctx, &lambda.DeleteEventSourceMappingInput{UUID: aws.String(esmUUID)})
 		}
 	}()
 
-	results = append(results, r.RunTest("lambda", "ErrorMapping_DeleteFunction_BadVersionQualifier", func() error {
-		_, err := client.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
+	results = append(results, tc.r.RunTest("lambda", "ErrorMapping_DeleteFunction_BadVersionQualifier", func() error {
+		_, err := tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{
 			FunctionName: aws.String(funcName),
 			Qualifier:    aws.String("999"),
 		})
@@ -135,8 +110,8 @@ func runLambdaReferenceTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "ErrorMapping_GetFunctionConcurrency_Unset", func() error {
-		_, err := client.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
+	results = append(results, tc.r.RunTest("lambda", "ErrorMapping_GetFunctionConcurrency_Unset", func() error {
+		_, err := tc.client.GetFunctionConcurrency(tc.ctx, &lambda.GetFunctionConcurrencyInput{
 			FunctionName: aws.String(funcName),
 		})
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {

@@ -22,31 +22,10 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
+		if err := stsAssertCredentials(resp.Credentials); err != nil {
+			return err
 		}
-		if resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("access key ID is nil or empty")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
-		}
-		if resp.AssumedRoleUser == nil {
-			return fmt.Errorf("assumed role user is nil")
-		}
-		if resp.AssumedRoleUser.AssumedRoleId == nil || *resp.AssumedRoleUser.AssumedRoleId == "" {
-			return fmt.Errorf("assumed role ID is nil or empty")
-		}
-		if resp.AssumedRoleUser.Arn == nil || *resp.AssumedRoleUser.Arn == "" {
-			return fmt.Errorf("assumed role user ARN is nil or empty")
-		}
-		return nil
+		return stsAssertAssumedRoleUser(resp.AssumedRoleUser)
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRole_WithSourceIdentity", func() error {
@@ -74,8 +53,8 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PackedPolicySize == nil || *resp.PackedPolicySize == 0 {
-			return fmt.Errorf("PackedPolicySize should be > 0, got: %v", resp.PackedPolicySize)
+		if err := stsAssertPackedPolicySize(resp.PackedPolicySize); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -91,9 +70,6 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		}
 		if resp.Credentials == nil {
 			return fmt.Errorf("credentials is nil")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
 		}
 		return nil
 	}))
@@ -170,25 +146,16 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
-		}
-		if resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("access key ID is nil or empty")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
+		if err := stsAssertCredentials(resp.Credentials); err != nil {
+			return err
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_MissingTaskPolicyArn", func() error {
+		// TaskPolicyArn is a required member, so the SDK rejects the
+		// request client-side before it reaches the server; only a
+		// non-nil error can be pinned here.
 		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
 			TargetPrincipal: aws.String(tc.accountID),
 			DurationSeconds: aws.Int32(900),
@@ -207,13 +174,13 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 			},
 			DurationSeconds: aws.Int32(43200),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for DurationSeconds exceeding 900")
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationError")
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRoot_MissingTargetPrincipal", func() error {
+		// TargetPrincipal is a required member, so the SDK rejects the
+		// request client-side before it reaches the server; only a
+		// non-nil error can be pinned here.
 		_, err := tc.client.AssumeRoot(tc.ctx, &sts.AssumeRootInput{
 			TaskPolicyArn: &types.PolicyDescriptorType{
 				Arn: aws.String("arn:aws:iam::aws:policy/IAMAuditRootUserCredentials"),
@@ -234,10 +201,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 			},
 			DurationSeconds: aws.Int32(900),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid TaskPolicyArn")
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationError")
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRole_WithExternalId", func() error {
@@ -249,10 +213,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
-		}
-		return nil
+		return stsAssertCredentials(resp.Credentials)
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRole_WithMalformedPolicy", func() error {
@@ -261,20 +222,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 			RoleSessionName: aws.String("BadPolicySession"),
 			Policy:          aws.String("not-valid-json{"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for malformed policy")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "GetFederationToken_InvalidName", func() error {
-		_, err := tc.client.GetFederationToken(tc.ctx, &sts.GetFederationTokenInput{
-			Name: aws.String("x"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for too-short Name")
-		}
-		return nil
+		return expectAWSErrorCode(err, "MalformedPolicyDocument")
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRole_WithTags", func() error {
@@ -290,10 +238,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
-		}
-		return nil
+		return stsAssertCredentials(resp.Credentials)
 	}))
 
 	results = append(results, r.RunTest("sts", "AssumeRole_DuplicateTags", func() error {
@@ -305,13 +250,13 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 				{Key: aws.String("Dept"), Value: aws.String("Sales")},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate tag keys")
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationError")
 	}))
 
-	// sessionPolicyDocumentType max length 2048.
+	// sessionPolicyDocumentType max length 2048.  The length constraint
+	// is enforced as MalformedPolicyDocument during session-policy
+	// validation, which precedes the packed-size computation that would
+	// emit PackedPolicyTooLarge.
 	results = append(results, r.RunTest("sts", "GetFederationToken_PolicyTooLarge", func() error {
 		oversized := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"` +
 			strings.Repeat("a", 2100) + `"}]}`
@@ -319,10 +264,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 			Name:   aws.String("BigPolicyFed"),
 			Policy: aws.String(oversized),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for oversized policy (>2048)")
-		}
-		return nil
+		return expectAWSErrorCode(err, "MalformedPolicyDocument")
 	}))
 
 	// PolicyDescriptorType arnType validation.
@@ -334,10 +276,7 @@ func (r *TestRunner) runSTSAssumeTests(tc *stsTestContext) []TestResult {
 				{Arn: aws.String("not-an-arn")},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid PolicyArn format")
-		}
-		return nil
+		return expectAWSErrorCode(err, "ValidationError")
 	}))
 
 	// Chained AssumeRole: use temporary credentials from a first

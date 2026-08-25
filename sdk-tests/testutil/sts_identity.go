@@ -34,48 +34,7 @@ func (r *TestRunner) runSTSIdentityTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
-		}
-		if resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("access key ID is nil or empty")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sts", "GetSessionToken_MaxDuration", func() error {
-		// Root user is capped at 3600 seconds by AWS.
-		resp, err := tc.client.GetSessionToken(tc.ctx, &sts.GetSessionTokenInput{
-			DurationSeconds: aws.Int32(3600),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Credentials == nil {
-			return fmt.Errorf("credentials is nil")
-		}
-		if resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("access key ID is nil or empty")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
-		}
-		return nil
+		return stsAssertCredentials(resp.Credentials)
 	}))
 
 	results = append(results, r.RunTest("sts", "GetSessionToken_RootDurationCap", func() error {

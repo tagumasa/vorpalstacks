@@ -1,29 +1,23 @@
 package testutil
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-func runLambdaLayerTests(
-	r *TestRunner,
-	ctx context.Context,
-	client *lambda.Client,
-) []TestResult {
+func runLambdaLayerTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	layerName := fmt.Sprintf("TestLayer-%d", time.Now().UnixNano())
+	layerName := tc.unique("TestLayer")
 	layerZipContent := base64.StdEncoding.EncodeToString([]byte("exports.handler = async (event) => { return 1; };"))
 
-	results = append(results, r.RunTest("lambda", "PublishLayerVersion", func() error {
-		resp, err := client.PublishLayerVersion(ctx, &lambda.PublishLayerVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "PublishLayerVersion", func() error {
+		resp, err := tc.client.PublishLayerVersion(tc.ctx, &lambda.PublishLayerVersionInput{
 			LayerName: aws.String(layerName),
 			Content: &types.LayerVersionContentInput{
 				ZipFile: []byte(layerZipContent),
@@ -45,7 +39,7 @@ func runLambdaLayerTests(
 		}
 		// Two more versions so pagination has multiple pages.
 		for i := 2; i <= 3; i++ {
-			if _, err := client.PublishLayerVersion(ctx, &lambda.PublishLayerVersionInput{
+			if _, err := tc.client.PublishLayerVersion(tc.ctx, &lambda.PublishLayerVersionInput{
 				LayerName: aws.String(layerName),
 				Content:   &types.LayerVersionContentInput{ZipFile: []byte(layerZipContent)},
 			}); err != nil {
@@ -55,8 +49,8 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "ListLayerVersions_Pagination", func() error {
-		first, err := client.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
+	results = append(results, tc.r.RunTest("lambda", "ListLayerVersions_Pagination", func() error {
+		first, err := tc.client.ListLayerVersions(tc.ctx, &lambda.ListLayerVersionsInput{
 			LayerName: aws.String(layerName),
 			MaxItems:  aws.Int32(2),
 		})
@@ -69,7 +63,7 @@ func runLambdaLayerTests(
 		if first.NextMarker == nil || *first.NextMarker == "" {
 			return fmt.Errorf("first page should be truncated with a NextMarker")
 		}
-		second, err := client.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
+		second, err := tc.client.ListLayerVersions(tc.ctx, &lambda.ListLayerVersionsInput{
 			LayerName: aws.String(layerName),
 			Marker:    first.NextMarker,
 		})
@@ -89,8 +83,8 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "GetLayerVersion", func() error {
-		resp, err := client.GetLayerVersion(ctx, &lambda.GetLayerVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "GetLayerVersion", func() error {
+		resp, err := tc.client.GetLayerVersion(tc.ctx, &lambda.GetLayerVersionInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(1),
 		})
@@ -106,10 +100,10 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "ListLayers", func() error {
+	results = append(results, tc.r.RunTest("lambda", "ListLayers", func() error {
 		var nextMarker *string
 		for page := 0; page < 100; page++ {
-			resp, err := client.ListLayers(ctx, &lambda.ListLayersInput{
+			resp, err := tc.client.ListLayers(tc.ctx, &lambda.ListLayersInput{
 				Marker: nextMarker,
 			})
 			if err != nil {
@@ -128,8 +122,8 @@ func runLambdaLayerTests(
 		return fmt.Errorf("layer %s not found in ListLayers", layerName)
 	}))
 
-	results = append(results, r.RunTest("lambda", "ListLayerVersions", func() error {
-		resp, err := client.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
+	results = append(results, tc.r.RunTest("lambda", "ListLayerVersions", func() error {
+		resp, err := tc.client.ListLayerVersions(tc.ctx, &lambda.ListLayerVersionsInput{
 			LayerName: aws.String(layerName),
 		})
 		if err != nil {
@@ -150,15 +144,15 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "DeleteLayerVersion", func() error {
-		_, err := client.DeleteLayerVersion(ctx, &lambda.DeleteLayerVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "DeleteLayerVersion", func() error {
+		_, err := tc.client.DeleteLayerVersion(tc.ctx, &lambda.DeleteLayerVersionInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(1),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = client.GetLayerVersion(ctx, &lambda.GetLayerVersionInput{
+		_, err = tc.client.GetLayerVersion(tc.ctx, &lambda.GetLayerVersionInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(1),
 		})
@@ -168,8 +162,8 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "GetLayerVersion_NonExistent", func() error {
-		_, err := client.GetLayerVersion(ctx, &lambda.GetLayerVersionInput{
+	results = append(results, tc.r.RunTest("lambda", "GetLayerVersion_NonExistent", func() error {
+		_, err := tc.client.GetLayerVersion(tc.ctx, &lambda.GetLayerVersionInput{
 			LayerName:     aws.String("nonexistent-layer-xyz"),
 			VersionNumber: aws.Int64(999),
 		})
@@ -179,9 +173,9 @@ func runLambdaLayerTests(
 		return nil
 	}))
 
-	results = append(results, r.RunTest("lambda", "LayerVersionPermission_OlderVersion", func() error {
+	results = append(results, tc.r.RunTest("lambda", "LayerVersionPermission_OlderVersion", func() error {
 		// Version 3 is the latest; version 2 is an older published version.
-		_, err := client.AddLayerVersionPermission(ctx, &lambda.AddLayerVersionPermissionInput{
+		_, err := tc.client.AddLayerVersionPermission(tc.ctx, &lambda.AddLayerVersionPermissionInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(2),
 			StatementId:   aws.String("cross-account"),
@@ -192,7 +186,7 @@ func runLambdaLayerTests(
 			return fmt.Errorf("add permission on older version: %v", err)
 		}
 
-		policyResp, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
+		policyResp, err := tc.client.GetLayerVersionPolicy(tc.ctx, &lambda.GetLayerVersionPolicyInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(2),
 		})
@@ -205,7 +199,7 @@ func runLambdaLayerTests(
 		if policyResp.RevisionId == nil || *policyResp.RevisionId == "" {
 			return fmt.Errorf("RevisionId is nil or empty")
 		}
-		again, err := client.GetLayerVersionPolicy(ctx, &lambda.GetLayerVersionPolicyInput{
+		again, err := tc.client.GetLayerVersionPolicy(tc.ctx, &lambda.GetLayerVersionPolicyInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(2),
 		})
@@ -216,7 +210,7 @@ func runLambdaLayerTests(
 			return fmt.Errorf("RevisionId should be stable across reads")
 		}
 
-		if _, err := client.RemoveLayerVersionPermission(ctx, &lambda.RemoveLayerVersionPermissionInput{
+		if _, err := tc.client.RemoveLayerVersionPermission(tc.ctx, &lambda.RemoveLayerVersionPermissionInput{
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(2),
 			StatementId:   aws.String("cross-account"),

@@ -6,15 +6,76 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"vorpalstacks-sdk-tests/config"
 )
 
 const lambdaFunctionCode = "exports.handler = async (event) => { return { statusCode: 200, body: 'Hello' }; };"
+
+// lambdaTestContext carries the shared clients and naming seed for the
+// Lambda suite. The per-area run* functions receive it instead of the
+// former six-parameter chain.
+type lambdaTestContext struct {
+	r      *TestRunner
+	ctx    context.Context
+	client *lambda.Client
+	cwl    *cloudwatchlogs.Client
+	iam    *iam.Client
+	ts     string
+}
+
+func (tc *lambdaTestContext) unique(prefix string) string {
+	return prefix + "-" + tc.ts
+}
+
+// createRole creates an IAM role assumable by lambda.amazonaws.com and
+// returns its ARN together with a cleanup function that deletes it.
+func (tc *lambdaTestContext) createRole(name string) (string, func(), error) {
+	trustPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`
+	if err := IAMCreateRole(tc.iam, name, trustPolicy); err != nil {
+		return "", nil, err
+	}
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.r.accountID, name)
+	return roleARN, func() { IAMDeleteRole(tc.iam, name) }, nil
+}
+
+// createFunction zips the given JavaScript handler source into a zip
+// archive and creates the function with the platform-default shape
+// (nodejs22x runtime, "index.handler" entry point), returning the function
+// ARN together with a cleanup function that deletes the function and its
+// log group. Options mutate the request for non-default shapes such as
+// environment variables, memory limits, or alternate runtimes.
+func (tc *lambdaTestContext) createFunction(name, roleARN, handlerSource string, opts ...func(*lambda.CreateFunctionInput)) (string, func(), error) {
+	zipCode, err := zipLambdaCode(handlerSource)
+	if err != nil {
+		return "", nil, fmt.Errorf("zip lambda code: %w", err)
+	}
+	input := &lambda.CreateFunctionInput{
+		FunctionName: aws.String(name),
+		Runtime:      types.RuntimeNodejs22x,
+		Role:         aws.String(roleARN),
+		Handler:      aws.String("index.handler"),
+		Code:         &types.FunctionCode{ZipFile: zipCode},
+	}
+	for _, opt := range opts {
+		opt(input)
+	}
+	resp, err := tc.client.CreateFunction(tc.ctx, input)
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup := func() {
+		tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)})
+		deleteLambdaLogGroup(tc.cwl, tc.ctx, name)
+	}
+	return aws.ToString(resp.FunctionArn), cleanup, nil
+}
 
 // zipLambdaCode wraps raw JavaScript source code into a zip archive
 // with entry name "index.js", matching the handler "index.handler".
@@ -51,27 +112,23 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 		})
 	}
 
-	client := lambda.NewFromConfig(cfg)
-	iamClient := iam.NewFromConfig(cfg)
-	cwlClient := cloudwatchlogs.NewFromConfig(cfg)
-	ctx := context.Background()
-
-	createIAMRole := func(roleName string) error {
-		return IAMCreateRole(iamClient, roleName, `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}`)
+	tc := &lambdaTestContext{
+		r:      r,
+		ctx:    context.Background(),
+		client: lambda.NewFromConfig(cfg),
+		cwl:    cloudwatchlogs.NewFromConfig(cfg),
+		iam:    iam.NewFromConfig(cfg),
+		ts:     fmt.Sprintf("%d", time.Now().UnixNano()),
 	}
 
-	deleteIAMRole := func(roleName string) {
-		IAMDeleteRole(iamClient, roleName)
-	}
-
-	results = append(results, runLambdaFunctionTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaAliasTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaLayerTests(r, ctx, client)...)
-	results = append(results, runLambdaESMTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaESMEngineTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaConfigTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
-	results = append(results, runLambdaPermissionTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole, r.region)...)
-	results = append(results, runLambdaReferenceTests(r, ctx, client, cwlClient, createIAMRole, deleteIAMRole)...)
+	results = append(results, runLambdaFunctionTests(tc)...)
+	results = append(results, runLambdaAliasTests(tc)...)
+	results = append(results, runLambdaLayerTests(tc)...)
+	results = append(results, runLambdaESMTests(tc)...)
+	results = append(results, runLambdaESMEngineTests(tc)...)
+	results = append(results, runLambdaConfigTests(tc)...)
+	results = append(results, runLambdaPermissionTests(tc)...)
+	results = append(results, runLambdaReferenceTests(tc)...)
 
 	return results
 }

@@ -17,17 +17,8 @@ func (r *TestRunner) runSTSFederationTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil || resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("credentials or access key ID is nil")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
+		if err := stsAssertCredentials(resp.Credentials); err != nil {
+			return err
 		}
 		if resp.FederatedUser == nil {
 			return fmt.Errorf("federated user is nil")
@@ -50,8 +41,8 @@ func (r *TestRunner) runSTSFederationTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.PackedPolicySize == nil || *resp.PackedPolicySize == 0 {
-			return fmt.Errorf("PackedPolicySize should be > 0, got: %v", resp.PackedPolicySize)
+		if err := stsAssertPackedPolicySize(resp.PackedPolicySize); err != nil {
+			return err
 		}
 		return nil
 	}))
@@ -71,13 +62,19 @@ func (r *TestRunner) runSTSFederationTests(tc *stsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sts", "GetFederationToken_InvalidName", func() error {
+		// An empty name is rejected outright; a single-character name
+		// fails the userNameType minimum length (2).  Both paths emit
+		// InvalidInput.
 		_, err := tc.client.GetFederationToken(tc.ctx, &sts.GetFederationTokenInput{
 			Name: aws.String(""),
 		})
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidInput"); err != nil {
 			return err
 		}
-		return nil
+		_, err = tc.client.GetFederationToken(tc.ctx, &sts.GetFederationTokenInput{
+			Name: aws.String("x"),
+		})
+		return expectAWSErrorCode(err, "InvalidInput")
 	}))
 
 	results = append(results, r.RunTest("sts", "GetFederationToken_InvalidPolicy", func() error {
@@ -109,17 +106,8 @@ func (r *TestRunner) runSTSFederationTests(tc *stsTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.Credentials == nil || resp.Credentials.AccessKeyId == nil || *resp.Credentials.AccessKeyId == "" {
-			return fmt.Errorf("credentials or access key ID is nil")
-		}
-		if resp.Credentials.SecretAccessKey == nil || *resp.Credentials.SecretAccessKey == "" {
-			return fmt.Errorf("secret access key is nil or empty")
-		}
-		if resp.Credentials.SessionToken == nil || *resp.Credentials.SessionToken == "" {
-			return fmt.Errorf("session token is nil or empty")
-		}
-		if resp.Credentials.Expiration.IsZero() {
-			return fmt.Errorf("expiration is zero")
+		if err := stsAssertCredentials(resp.Credentials); err != nil {
+			return err
 		}
 		if resp.AssumedPrincipal == nil || *resp.AssumedPrincipal == "" {
 			return fmt.Errorf("assumed principal is nil or empty")
