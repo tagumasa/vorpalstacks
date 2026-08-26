@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
+	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 )
 
 // runIoTReadonlyListTests covers List/Describe operations that require no
@@ -19,244 +20,232 @@ func (r *TestRunner) runIoTReadonlyListTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("iot", "List_BillingGroups", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListBillingGroups(tc.ctx, &iot.ListBillingGroupsInput{NextToken: token})
+		groups, err := paginate(func(next *string) ([]iottypes.GroupNameAndArn, *string, error) {
+			out, err := tc.client.ListBillingGroups(tc.ctx, &iot.ListBillingGroupsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, g := range out.BillingGroups {
-				if g.GroupName == nil || *g.GroupName == "" {
-					return fmt.Errorf("ListBillingGroups returned group with empty name")
-				}
+			return out.BillingGroups, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, g := range groups {
+			if g.GroupName == nil || *g.GroupName == "" {
+				return fmt.Errorf("ListBillingGroups returned group with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_ThingGroups", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListThingGroups(tc.ctx, &iot.ListThingGroupsInput{NextToken: token})
+		groups, err := paginate(func(next *string) ([]iottypes.GroupNameAndArn, *string, error) {
+			out, err := tc.client.ListThingGroups(tc.ctx, &iot.ListThingGroupsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, g := range out.ThingGroups {
-				if g.GroupName == nil || *g.GroupName == "" {
-					return fmt.Errorf("ListThingGroups returned group with empty name")
-				}
+			return out.ThingGroups, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, g := range groups {
+			if g.GroupName == nil || *g.GroupName == "" {
+				return fmt.Errorf("ListThingGroups returned group with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_ThingTypes", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListThingTypes(tc.ctx, &iot.ListThingTypesInput{NextToken: token})
+		types, err := paginate(func(next *string) ([]iottypes.ThingTypeDefinition, *string, error) {
+			out, err := tc.client.ListThingTypes(tc.ctx, &iot.ListThingTypesInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, t := range out.ThingTypes {
-				if t.ThingTypeName == nil || *t.ThingTypeName == "" {
-					return fmt.Errorf("ListThingTypes returned type with empty name")
-				}
+			return out.ThingTypes, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range types {
+			if t.ThingTypeName == nil || *t.ThingTypeName == "" {
+				return fmt.Errorf("ListThingTypes returned type with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_Indices", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListIndices(tc.ctx, &iot.ListIndicesInput{NextToken: token})
+		names, err := paginate(func(next *string) ([]string, *string, error) {
+			out, err := tc.client.ListIndices(tc.ctx, &iot.ListIndicesInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, name := range out.IndexNames {
-				if name == "" {
-					return fmt.Errorf("ListIndices returned index with empty name")
-				}
+			return out.IndexNames, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, name := range names {
+			if name == "" {
+				return fmt.Errorf("ListIndices returned index with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_FleetMetrics", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListFleetMetrics(tc.ctx, &iot.ListFleetMetricsInput{NextToken: token})
+		metrics, err := paginate(func(next *string) ([]iottypes.FleetMetricNameAndArn, *string, error) {
+			out, err := tc.client.ListFleetMetrics(tc.ctx, &iot.ListFleetMetricsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, m := range out.FleetMetrics {
-				if m.MetricName == nil || *m.MetricName == "" {
-					return fmt.Errorf("ListFleetMetrics returned metric with empty name")
-				}
+			return out.FleetMetrics, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, m := range metrics {
+			if m.MetricName == nil || *m.MetricName == "" {
+				return fmt.Errorf("ListFleetMetrics returned metric with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_CustomMetrics", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListCustomMetrics(tc.ctx, &iot.ListCustomMetricsInput{NextToken: token})
+		names, err := paginate(func(next *string) ([]string, *string, error) {
+			out, err := tc.client.ListCustomMetrics(tc.ctx, &iot.ListCustomMetricsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, name := range out.MetricNames {
-				if name == "" {
-					return fmt.Errorf("ListCustomMetrics returned metric with empty name")
-				}
+			return out.MetricNames, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, name := range names {
+			if name == "" {
+				return fmt.Errorf("ListCustomMetrics returned metric with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_Dimensions", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListDimensions(tc.ctx, &iot.ListDimensionsInput{NextToken: token})
+		names, err := paginate(func(next *string) ([]string, *string, error) {
+			out, err := tc.client.ListDimensions(tc.ctx, &iot.ListDimensionsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, name := range out.DimensionNames {
-				if name == "" {
-					return fmt.Errorf("ListDimensions returned dimension with empty name")
-				}
+			return out.DimensionNames, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, name := range names {
+			if name == "" {
+				return fmt.Errorf("ListDimensions returned dimension with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_MitigationActions", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListMitigationActions(tc.ctx, &iot.ListMitigationActionsInput{NextToken: token})
+		actions, err := paginate(func(next *string) ([]iottypes.MitigationActionIdentifier, *string, error) {
+			out, err := tc.client.ListMitigationActions(tc.ctx, &iot.ListMitigationActionsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, a := range out.ActionIdentifiers {
-				if a.ActionName == nil || *a.ActionName == "" {
-					return fmt.Errorf("ListMitigationActions returned action with empty name")
-				}
-				if a.ActionArn == nil || *a.ActionArn == "" {
-					return fmt.Errorf("ListMitigationActions returned action with empty ARN")
-				}
+			return out.ActionIdentifiers, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, a := range actions {
+			if a.ActionName == nil || *a.ActionName == "" {
+				return fmt.Errorf("ListMitigationActions returned action with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
+			if a.ActionArn == nil || *a.ActionArn == "" {
+				return fmt.Errorf("ListMitigationActions returned action with empty ARN")
 			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_ScheduledAudits", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListScheduledAudits(tc.ctx, &iot.ListScheduledAuditsInput{NextToken: token})
+		audits, err := paginate(func(next *string) ([]iottypes.ScheduledAuditMetadata, *string, error) {
+			out, err := tc.client.ListScheduledAudits(tc.ctx, &iot.ListScheduledAuditsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, a := range out.ScheduledAudits {
-				if a.ScheduledAuditName == nil || *a.ScheduledAuditName == "" {
-					return fmt.Errorf("ListScheduledAudits returned audit with empty name")
-				}
+			return out.ScheduledAudits, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, a := range audits {
+			if a.ScheduledAuditName == nil || *a.ScheduledAuditName == "" {
+				return fmt.Errorf("ListScheduledAudits returned audit with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_RoleAliases", func() error {
-		var marker *string
-		for {
-			out, err := tc.client.ListRoleAliases(tc.ctx, &iot.ListRoleAliasesInput{Marker: marker})
+		aliases, err := paginate(func(next *string) ([]string, *string, error) {
+			out, err := tc.client.ListRoleAliases(tc.ctx, &iot.ListRoleAliasesInput{Marker: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, alias := range out.RoleAliases {
-				if alias == "" {
-					return fmt.Errorf("ListRoleAliases returned empty role alias")
-				}
+			return out.RoleAliases, out.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, alias := range aliases {
+			if alias == "" {
+				return fmt.Errorf("ListRoleAliases returned empty role alias")
 			}
-			if out.NextMarker == nil || *out.NextMarker == "" {
-				break
-			}
-			marker = out.NextMarker
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_TopicRules", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListTopicRules(tc.ctx, &iot.ListTopicRulesInput{NextToken: token})
+		rules, err := paginate(func(next *string) ([]iottypes.TopicRuleListItem, *string, error) {
+			out, err := tc.client.ListTopicRules(tc.ctx, &iot.ListTopicRulesInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, rule := range out.Rules {
-				if rule.RuleName == nil || *rule.RuleName == "" {
-					return fmt.Errorf("ListTopicRules returned rule with empty name")
-				}
+			return out.Rules, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, rule := range rules {
+			if rule.RuleName == nil || *rule.RuleName == "" {
+				return fmt.Errorf("ListTopicRules returned rule with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_TopicRuleDestinations", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListTopicRuleDestinations(tc.ctx, &iot.ListTopicRuleDestinationsInput{NextToken: token})
+		dests, err := paginate(func(next *string) ([]iottypes.TopicRuleDestinationSummary, *string, error) {
+			out, err := tc.client.ListTopicRuleDestinations(tc.ctx, &iot.ListTopicRuleDestinationsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, d := range out.DestinationSummaries {
-				if d.Status == "" {
-					return fmt.Errorf("ListTopicRuleDestinations returned destination with empty status")
-				}
+			return out.DestinationSummaries, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, d := range dests {
+			if d.Status == "" {
+				return fmt.Errorf("ListTopicRuleDestinations returned destination with empty status")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
@@ -264,134 +253,128 @@ func (r *TestRunner) runIoTReadonlyListTests(tc *iotTestContext) []TestResult {
 	results = append(results, r.RunTest("iot", "List_AuditTasks", func() error {
 		now := time.Now()
 		start := now.Add(-24 * time.Hour)
-		var token *string
-		for {
+		tasks, err := paginate(func(next *string) ([]iottypes.AuditTaskMetadata, *string, error) {
 			out, err := tc.client.ListAuditTasks(tc.ctx, &iot.ListAuditTasksInput{
 				StartTime: &start,
 				EndTime:   &now,
-				NextToken: token,
+				NextToken: next,
 			})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, t := range out.Tasks {
-				if t.TaskId == nil || *t.TaskId == "" {
-					return fmt.Errorf("ListAuditTasks returned task with empty taskId")
-				}
-				if t.TaskStatus == "" {
-					return fmt.Errorf("ListAuditTasks returned task with empty status")
-				}
+			return out.Tasks, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range tasks {
+			if t.TaskId == nil || *t.TaskId == "" {
+				return fmt.Errorf("ListAuditTasks returned task with empty taskId")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
+			if t.TaskStatus == "" {
+				return fmt.Errorf("ListAuditTasks returned task with empty status")
 			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_AuditFindings", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListAuditFindings(tc.ctx, &iot.ListAuditFindingsInput{NextToken: token})
+		findings, err := paginate(func(next *string) ([]iottypes.AuditFinding, *string, error) {
+			out, err := tc.client.ListAuditFindings(tc.ctx, &iot.ListAuditFindingsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, f := range out.Findings {
-				if f.CheckName == nil || *f.CheckName == "" {
-					return fmt.Errorf("ListAuditFindings returned finding with empty checkName")
-				}
-				if f.TaskId == nil || *f.TaskId == "" {
-					return fmt.Errorf("ListAuditFindings returned finding with empty taskId")
-				}
+			return out.Findings, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, f := range findings {
+			if f.CheckName == nil || *f.CheckName == "" {
+				return fmt.Errorf("ListAuditFindings returned finding with empty checkName")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
+			if f.TaskId == nil || *f.TaskId == "" {
+				return fmt.Errorf("ListAuditFindings returned finding with empty taskId")
 			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_AuditSuppressions", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListAuditSuppressions(tc.ctx, &iot.ListAuditSuppressionsInput{NextToken: token})
+		suppressions, err := paginate(func(next *string) ([]iottypes.AuditSuppression, *string, error) {
+			out, err := tc.client.ListAuditSuppressions(tc.ctx, &iot.ListAuditSuppressionsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, s := range out.Suppressions {
-				if s.CheckName == nil || *s.CheckName == "" {
-					return fmt.Errorf("ListAuditSuppressions returned suppression with empty checkName")
-				}
+			return out.Suppressions, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, s := range suppressions {
+			if s.CheckName == nil || *s.CheckName == "" {
+				return fmt.Errorf("ListAuditSuppressions returned suppression with empty checkName")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_OutgoingCertificates", func() error {
-		var marker *string
-		for {
-			out, err := tc.client.ListOutgoingCertificates(tc.ctx, &iot.ListOutgoingCertificatesInput{Marker: marker})
+		certs, err := paginate(func(next *string) ([]iottypes.OutgoingCertificate, *string, error) {
+			out, err := tc.client.ListOutgoingCertificates(tc.ctx, &iot.ListOutgoingCertificatesInput{Marker: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, c := range out.OutgoingCertificates {
-				if c.CertificateId == nil || *c.CertificateId == "" {
-					return fmt.Errorf("ListOutgoingCertificates returned certificate with empty ID")
-				}
-				if c.TransferDate == nil {
-					return fmt.Errorf("ListOutgoingCertificates returned certificate with nil transferDate")
-				}
+			return out.OutgoingCertificates, out.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, c := range certs {
+			if c.CertificateId == nil || *c.CertificateId == "" {
+				return fmt.Errorf("ListOutgoingCertificates returned certificate with empty ID")
 			}
-			if out.NextMarker == nil || *out.NextMarker == "" {
-				break
+			if c.TransferDate == nil {
+				return fmt.Errorf("ListOutgoingCertificates returned certificate with nil transferDate")
 			}
-			marker = out.NextMarker
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_ManagedJobTemplates", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListManagedJobTemplates(tc.ctx, &iot.ListManagedJobTemplatesInput{NextToken: token})
+		templates, err := paginate(func(next *string) ([]iottypes.ManagedJobTemplateSummary, *string, error) {
+			out, err := tc.client.ListManagedJobTemplates(tc.ctx, &iot.ListManagedJobTemplatesInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, t := range out.ManagedJobTemplates {
-				if t.TemplateName == nil || *t.TemplateName == "" {
-					return fmt.Errorf("ListManagedJobTemplates returned template with empty name")
-				}
+			return out.ManagedJobTemplates, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range templates {
+			if t.TemplateName == nil || *t.TemplateName == "" {
+				return fmt.Errorf("ListManagedJobTemplates returned template with empty name")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "List_ThingRegistrationTasks", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListThingRegistrationTasks(tc.ctx, &iot.ListThingRegistrationTasksInput{NextToken: token})
+		ids, err := paginate(func(next *string) ([]string, *string, error) {
+			out, err := tc.client.ListThingRegistrationTasks(tc.ctx, &iot.ListThingRegistrationTasksInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, id := range out.TaskIds {
-				if id == "" {
-					return fmt.Errorf("ListThingRegistrationTasks returned empty task ID")
-				}
+			return out.TaskIds, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			if id == "" {
+				return fmt.Errorf("ListThingRegistrationTasks returned empty task ID")
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return nil
 	}))

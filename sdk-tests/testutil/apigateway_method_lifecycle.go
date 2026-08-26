@@ -1,31 +1,25 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
+func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "PutMethod_AuthorizationTypes", func() error {
-		pmAPI := fmt.Sprintf("PmAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(pmAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("PmAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("secure"),
 		})
 		if err != nil {
@@ -33,8 +27,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		}
 
 		for _, authType := range []string{"NONE", "AWS_IAM", "CUSTOM"} {
-			_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-				RestApiId:         createResp.Id,
+			_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+				RestApiId:         aws.String(ownAPI),
 				ResourceId:        resResp.Id,
 				HttpMethod:        aws.String("GET"),
 				AuthorizationType: aws.String(authType),
@@ -42,8 +36,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			if err != nil {
 				return fmt.Errorf("put method with auth %s: %v", authType, err)
 			}
-			getResp, err := client.GetMethod(ctx, &apigateway.GetMethodInput{
-				RestApiId:  createResp.Id,
+			getResp, err := tc.client.GetMethod(tc.ctx, &apigateway.GetMethodInput{
+				RestApiId:  aws.String(ownAPI),
 				ResourceId: resResp.Id,
 				HttpMethod: aws.String("GET"),
 			})
@@ -58,26 +52,22 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutMethod_InvalidAuthType", func() error {
-		iaAPI := fmt.Sprintf("IaAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(iaAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("IaAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("invalid-auth"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource: %v", err)
 		}
 
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         createResp.Id,
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
 			ResourceId:        resResp.Id,
 			HttpMethod:        aws.String("GET"),
 			AuthorizationType: aws.String("INVALID_TYPE"),
@@ -89,26 +79,22 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutIntegration_Types", func() error {
-		itAPI := fmt.Sprintf("ItAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(itAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("ItAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("inttest"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource: %v", err)
 		}
 
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         createResp.Id,
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
 			ResourceId:        resResp.Id,
 			HttpMethod:        aws.String("POST"),
 			AuthorizationType: aws.String("NONE"),
@@ -124,7 +110,7 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			types.IntegrationTypeAwsProxy,
 		} {
 			input := &apigateway.PutIntegrationInput{
-				RestApiId:  createResp.Id,
+				RestApiId:  aws.String(ownAPI),
 				ResourceId: resResp.Id,
 				HttpMethod: aws.String("POST"),
 				Type:       intType,
@@ -136,12 +122,12 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			if intType == types.IntegrationTypeAws || intType == types.IntegrationTypeAwsProxy {
 				input.IntegrationHttpMethod = aws.String("POST")
 			}
-			_, err = client.PutIntegration(ctx, input)
+			_, err = tc.client.PutIntegration(tc.ctx, input)
 			if err != nil {
 				return fmt.Errorf("put integration type %s: %v", intType, err)
 			}
-			getResp, err := client.GetIntegration(ctx, &apigateway.GetIntegrationInput{
-				RestApiId:  createResp.Id,
+			getResp, err := tc.client.GetIntegration(tc.ctx, &apigateway.GetIntegrationInput{
+				RestApiId:  aws.String(ownAPI),
 				ResourceId: resResp.Id,
 				HttpMethod: aws.String("POST"),
 			})
@@ -156,19 +142,19 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 	}))
 
 	results = append(results, r.RunTest("apigateway", "TestInvokeMethod", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: aws.String(apiID),
-			ParentId:  aws.String(rootResourceID),
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(tc.apiID),
+			ParentId:  aws.String(tc.rootResourceID),
 			PathPart:  aws.String("mock"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource: %v", err)
 		}
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         aws.String(apiID),
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(tc.apiID),
 			ResourceId:        resResp.Id,
 			HttpMethod:        aws.String("POST"),
 			AuthorizationType: aws.String("NONE"),
@@ -176,8 +162,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		if err != nil {
 			return fmt.Errorf("put method: %v", err)
 		}
-		_, err = client.PutIntegration(ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("POST"),
 			Type:       types.IntegrationTypeMock,
@@ -188,8 +174,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		if err != nil {
 			return fmt.Errorf("put integration: %v", err)
 		}
-		resp, err := client.TestInvokeMethod(ctx, &apigateway.TestInvokeMethodInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.TestInvokeMethod(tc.ctx, &apigateway.TestInvokeMethodInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("POST"),
 			Body:       aws.String(`{"test": "data"}`),
@@ -206,29 +192,25 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 		return nil
 	}))
 
-	results = append(results, r.vtlTests(ctx, client, apiID, rootResourceID)...)
+	results = append(results, r.vtlTests(tc)...)
 
 	results = append(results, r.RunTest("apigateway", "MethodWithIntegration_FullLifecycle", func() error {
-		lcAPI := fmt.Sprintf("LcAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(lcAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("LcAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("lifecycle"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource: %v", err)
 		}
 
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         createResp.Id,
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
 			ResourceId:        resResp.Id,
 			HttpMethod:        aws.String("GET"),
 			AuthorizationType: aws.String("NONE"),
@@ -238,8 +220,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("put method: %v", err)
 		}
 
-		_, err = client.PutIntegration(ctx, &apigateway.PutIntegrationInput{
-			RestApiId:             createResp.Id,
+		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+			RestApiId:             aws.String(ownAPI),
 			ResourceId:            resResp.Id,
 			HttpMethod:            aws.String("GET"),
 			Type:                  types.IntegrationTypeMock,
@@ -256,8 +238,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("put integration: %v", err)
 		}
 
-		getIntResp, err := client.GetIntegration(ctx, &apigateway.GetIntegrationInput{
-			RestApiId:  createResp.Id,
+		getIntResp, err := tc.client.GetIntegration(tc.ctx, &apigateway.GetIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("GET"),
 		})
@@ -271,8 +253,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("timeoutInMillis mismatch, got %d", getIntResp.TimeoutInMillis)
 		}
 
-		_, err = client.PutIntegrationResponse(ctx, &apigateway.PutIntegrationResponseInput{
-			RestApiId:          createResp.Id,
+		_, err = tc.client.PutIntegrationResponse(tc.ctx, &apigateway.PutIntegrationResponseInput{
+			RestApiId:          aws.String(ownAPI),
 			ResourceId:         resResp.Id,
 			HttpMethod:         aws.String("GET"),
 			StatusCode:         aws.String("200"),
@@ -284,8 +266,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("put integration response: %v", err)
 		}
 
-		_, err = client.PutMethodResponse(ctx, &apigateway.PutMethodResponseInput{
-			RestApiId:          createResp.Id,
+		_, err = tc.client.PutMethodResponse(tc.ctx, &apigateway.PutMethodResponseInput{
+			RestApiId:          aws.String(ownAPI),
 			ResourceId:         resResp.Id,
 			HttpMethod:         aws.String("GET"),
 			StatusCode:         aws.String("200"),
@@ -296,8 +278,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("put method response: %v", err)
 		}
 
-		_, err = client.DeleteMethodResponse(ctx, &apigateway.DeleteMethodResponseInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.DeleteMethodResponse(tc.ctx, &apigateway.DeleteMethodResponseInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -306,8 +288,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("delete method response: %v", err)
 		}
 
-		_, err = client.DeleteIntegrationResponse(ctx, &apigateway.DeleteIntegrationResponseInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.DeleteIntegrationResponse(tc.ctx, &apigateway.DeleteIntegrationResponseInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -316,8 +298,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("delete integration response: %v", err)
 		}
 
-		_, err = client.DeleteIntegration(ctx, &apigateway.DeleteIntegrationInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.DeleteIntegration(tc.ctx, &apigateway.DeleteIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("GET"),
 		})
@@ -325,8 +307,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("delete integration: %v", err)
 		}
 
-		_, err = client.DeleteMethod(ctx, &apigateway.DeleteMethodInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.DeleteMethod(tc.ctx, &apigateway.DeleteMethodInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("GET"),
 		})
@@ -334,8 +316,8 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(ctx context.Context, clie
 			return fmt.Errorf("delete method: %v", err)
 		}
 
-		_, err = client.DeleteResource(ctx, &apigateway.DeleteResourceInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.DeleteResource(tc.ctx, &apigateway.DeleteResourceInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 		})
 		if err != nil {

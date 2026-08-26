@@ -91,17 +91,88 @@ func acmUniqueDomain(prefix string) string {
 	return fmt.Sprintf("%s-%d.com", prefix, time.Now().UnixNano())
 }
 
-func (tc *acmTestContext) requestCert(domain string, method types.ValidationMethod) (*acm.RequestCertificateOutput, error) {
-	return tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+// requestCert submits a RequestCertificate call and returns the new
+// certificate's ARN.
+func (tc *acmTestContext) requestCert(input *acm.RequestCertificateInput) (string, error) {
+	resp, err := tc.client.RequestCertificate(tc.ctx, input)
+	if err != nil {
+		return "", err
+	}
+	arn := aws.ToString(resp.CertificateArn)
+	if arn == "" {
+		return "", fmt.Errorf("expected CertificateArn in RequestCertificate response")
+	}
+	return arn, nil
+}
+
+// requestDNSCert requests a DNS-validated certificate and returns its ARN.
+func (tc *acmTestContext) requestDNSCert(domain string) (string, error) {
+	return tc.requestCert(&acm.RequestCertificateInput{
 		DomainName:       aws.String(domain),
-		ValidationMethod: method,
+		ValidationMethod: types.ValidationMethodDns,
 	})
 }
 
-func (tc *acmTestContext) importDefaultCert() (*acm.ImportCertificateOutput, error) {
-	return tc.client.ImportCertificate(tc.ctx, &acm.ImportCertificateInput{
-		Certificate: testCertPEM,
-		PrivateKey:  testKeyPEM,
+// requestEmailCert requests an email-validated certificate and returns its ARN.
+func (tc *acmTestContext) requestEmailCert(domain string) (string, error) {
+	return tc.requestCert(&acm.RequestCertificateInput{
+		DomainName:       aws.String(domain),
+		ValidationMethod: types.ValidationMethodEmail,
+	})
+}
+
+// requestCertSANs requests a DNS-validated certificate with subject
+// alternative names and returns its ARN.
+func (tc *acmTestContext) requestCertSANs(domain string, sans ...string) (string, error) {
+	return tc.requestCert(&acm.RequestCertificateInput{
+		DomainName:              aws.String(domain),
+		ValidationMethod:        types.ValidationMethodDns,
+		SubjectAlternativeNames: sans,
+	})
+}
+
+func (tc *acmTestContext) importDefaultCert() (string, error) {
+	return tc.importCertificate(testCertPEM, testKeyPEM, nil)
+}
+
+func (tc *acmTestContext) importCertWithChain() (string, error) {
+	return tc.importCertificate(testCertPEM, testKeyPEM, testChainPEM)
+}
+
+// importCertificate imports a certificate body and returns the new
+// certificate's ARN.
+func (tc *acmTestContext) importCertificate(certificate, privateKey, chain []byte) (string, error) {
+	input := &acm.ImportCertificateInput{
+		Certificate: certificate,
+		PrivateKey:  privateKey,
+	}
+	if chain != nil {
+		input.CertificateChain = chain
+	}
+	resp, err := tc.client.ImportCertificate(tc.ctx, input)
+	if err != nil {
+		return "", err
+	}
+	arn := aws.ToString(resp.CertificateArn)
+	if arn == "" {
+		return "", fmt.Errorf("expected CertificateArn in ImportCertificate response")
+	}
+	return arn, nil
+}
+
+// allCertificates walks ListCertificates to completion collecting every
+// certificate summary across all pages. Optional statuses filter the list.
+func (tc *acmTestContext) allCertificates(statuses []types.CertificateStatus) ([]types.CertificateSummary, error) {
+	return paginate(func(next *string) ([]types.CertificateSummary, *string, error) {
+		resp, err := tc.client.ListCertificates(tc.ctx, &acm.ListCertificatesInput{
+			MaxItems:            aws.Int32(100),
+			CertificateStatuses: statuses,
+			NextToken:           next,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("list certificates page: %v", err)
+		}
+		return resp.CertificateSummaryList, resp.NextToken, nil
 	})
 }
 
@@ -109,35 +180,22 @@ func (tc *acmTestContext) importDefaultCert() (*acm.ImportCertificateOutput, err
 // runs. These accumulate across sessions and eventually fill the first page
 // of ListCertificates, causing pagination-dependent tests to fail.
 func (tc *acmTestContext) cleanupStaleCertificates() {
-	var nextToken *string
-	for {
-		input := &acm.ListCertificatesInput{MaxItems: aws.Int32(100)}
-		if nextToken != nil {
-			input.NextToken = nextToken
+	certs, err := tc.allCertificates(nil)
+	if err != nil {
+		return
+	}
+	for _, s := range certs {
+		domain := aws.ToString(s.DomainName)
+		if strings.HasPrefix(domain, "page-") || strings.HasPrefix(domain, "summary-") || strings.HasPrefix(domain, "test-") {
+			tc.deleteCert(aws.ToString(s.CertificateArn))
 		}
-		resp, err := tc.client.ListCertificates(tc.ctx, input)
-		if err != nil {
-			return
-		}
-		for _, s := range resp.CertificateSummaryList {
-			domain := aws.ToString(s.DomainName)
-			if strings.HasPrefix(domain, "page-") || strings.HasPrefix(domain, "summary-") || strings.HasPrefix(domain, "test-") {
-				tc.deleteCert(aws.ToString(s.CertificateArn))
-			}
-		}
-		if resp.NextToken == nil || aws.ToString(resp.NextToken) == "" {
-			break
-		}
-		nextToken = resp.NextToken
 	}
 }
 
-func (tc *acmTestContext) importCertWithChain() (*acm.ImportCertificateOutput, error) {
-	return tc.client.ImportCertificate(tc.ctx, &acm.ImportCertificateInput{
-		Certificate:      testCertPEM,
-		PrivateKey:       testKeyPEM,
-		CertificateChain: testChainPEM,
-	})
+// nonExistentArn builds the ARN of a certificate that never exists, for
+// negative-path tests pinning ResourceNotFoundException.
+func (tc *acmTestContext) nonExistentArn() string {
+	return fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)
 }
 
 func (tc *acmTestContext) deleteCert(arn string) {

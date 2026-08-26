@@ -16,44 +16,41 @@ import (
 // create call and shared across the sequential test closures.
 func (r *TestRunner) runIoTCertTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
-	var certID, certARN string
+	var certID string
+	var primaryCleanup func()
 
 	results = append(results, r.RunTest("iot", "Cert_CreateKeysAndCertificate", func() error {
-		out, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{SetAsActive: true})
+		cert, cleanup, err := tc.createCertificate(true)
 		if err != nil {
-			return fmt.Errorf("CreateKeysAndCertificate failed: %w", err)
+			return err
 		}
-		if out.CertificateId == nil || *out.CertificateId == "" {
+		if cert.ID == "" {
 			return fmt.Errorf("expected non-empty certificateId")
 		}
-		certID = *out.CertificateId
-		certARN = aws.ToString(out.CertificateArn)
-		if certARN == "" {
+		if cert.ARN == "" {
 			return fmt.Errorf("expected non-empty certificateArn")
 		}
-		if out.CertificatePem == nil || !strings.Contains(*out.CertificatePem, "BEGIN CERTIFICATE") {
+		if !strings.Contains(cert.PEM, "BEGIN CERTIFICATE") {
 			return fmt.Errorf("expected PEM certificate")
 		}
-		if out.KeyPair == nil {
+		if cert.KeyPair == nil {
 			return fmt.Errorf("expected keyPair")
 		}
-		if out.KeyPair.PublicKey == nil || *out.KeyPair.PublicKey == "" {
+		if cert.KeyPair.PublicKey == nil || *cert.KeyPair.PublicKey == "" {
 			return fmt.Errorf("expected publicKey")
 		}
-		if out.KeyPair.PrivateKey == nil || !strings.Contains(*out.KeyPair.PrivateKey, "BEGIN") {
+		if cert.KeyPair.PrivateKey == nil || !strings.Contains(*cert.KeyPair.PrivateKey, "BEGIN") {
 			return fmt.Errorf("expected privateKey PEM")
 		}
+		certID = cert.ID
+		primaryCleanup = cleanup
 		return nil
 	}))
 
 	// Best-effort cleanup so a mid-suite failure never strands a cert.
 	defer func() {
-		if certID != "" {
-			tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
-				CertificateId: aws.String(certID),
-				NewStatus:     types.CertificateStatusInactive,
-			})
-			tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{CertificateId: aws.String(certID)})
+		if primaryCleanup != nil {
+			primaryCleanup()
 		}
 	}()
 

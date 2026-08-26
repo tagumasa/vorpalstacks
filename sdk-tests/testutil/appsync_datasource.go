@@ -79,23 +79,16 @@ func (r *TestRunner) runAppSyncDataSourceTests(res *appsyncResources) []TestResu
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListDataSources", func() error {
-		resp, err := client.ListDataSources(ctx, &appsync.ListDataSourcesInput{
-			ApiId: aws.String(res.gqlApiId),
-		})
+		dataSources, err := res.allDataSources(res.gqlApiId)
 		if err != nil {
 			return err
 		}
-		if len(resp.DataSources) < 2 {
-			return fmt.Errorf("expected at least 2 data sources, got %d", len(resp.DataSources))
+		if len(dataSources) < 2 {
+			return fmt.Errorf("expected at least 2 data sources, got %d", len(dataSources))
 		}
-		found := false
-		for _, ds := range resp.DataSources {
-			if ds.Name != nil && *ds.Name == "testDS" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(dataSources, func(ds *types.DataSource) bool {
+			return ds.Name != nil && *ds.Name == "testDS"
+		}) == nil {
 			return fmt.Errorf("created data source testDS not found in list")
 		}
 		return nil

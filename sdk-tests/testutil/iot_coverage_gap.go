@@ -70,39 +70,22 @@ wsEOldC5/vHN6ezAWr9mxu6GKXP9d3tdlJDP6JXC72cKztlcyczPRYHXGZawjkfF
 func (r *TestRunner) runIoTPolicyV2GapTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 	policyName := uniqueName("gap-policy")
-	certID := ""
 
-	// Best-effort cleanup so a failed run never leaves resources behind.
-	defer func() {
-		if certID != "" {
-			tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
-				CertificateId: aws.String(certID), NewStatus: iottypes.CertificateStatusInactive,
-			})
-			tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{
-				CertificateId: aws.String(certID),
-			})
-		}
-		tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
-	}()
-
-	// Setup: create policy + certificate
-	results = append(results, r.RunTest("iot", "Gap_PolicyV2_Setup", func() error {
-		_, err := tc.client.CreatePolicy(tc.ctx, &iot.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"iot:*","Resource":"*"}]}`),
-		})
-		if err != nil {
-			return err
-		}
-		cert, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{
-			SetAsActive: true,
-		})
-		if err != nil {
-			return err
-		}
-		certID = *cert.CertificateId
-		return nil
-	}))
+	// Setup: create policy + certificate through the shared cleanup-returning
+	// helpers so a mid-suite failure never strands resources. A prerequisite
+	// failure surfaces as one FAIL row named after the setup step it replaces.
+	const gapPolicyDocument = `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"iot:*","Resource":"*"}]}`
+	policyCleanup, err := tc.createPolicy(policyName, gapPolicyDocument)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_PolicyV2_Setup", Status: "FAIL", Error: err.Error()}}
+	}
+	defer policyCleanup()
+	cert, certCleanup, err := tc.createCertificate(true)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_PolicyV2_Setup", Status: "FAIL", Error: err.Error()}}
+	}
+	defer certCleanup()
+	certID := cert.ID
 
 	principalARN := func() string {
 		return fmt.Sprintf("arn:aws:iot:%s:%s:cert/%s", tc.region, tc.accountID, certID)
@@ -240,13 +223,13 @@ func (r *TestRunner) runIoTTopicRuleJobSecGapTests(tc *iotTestContext) []TestRes
 		_, _ = tc.client.DeleteThingType(tc.ctx, &iot.DeleteThingTypeInput{ThingTypeName: aws.String(thingType)})
 	}()
 
-	// Setup: create thing type
-	results = append(results, r.RunTest("iot", "Gap_SecProfile_Setup", func() error {
-		_, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{
-			ThingTypeName: aws.String(thingType),
-		})
-		return err
-	}))
+	// Setup: create thing type up front; a prerequisite failure surfaces as a
+	// single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{
+		ThingTypeName: aws.String(thingType),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_SecProfile_Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	// SecurityProfile: Create -> Update -> Validate
 	results = append(results, r.RunTest("iot", "Gap_UpdateSecurityProfile", func() error {
@@ -369,15 +352,15 @@ func (r *TestRunner) runIoTProvTemplateVersionGapTests(tc *iotTestContext) []Tes
 		_, _ = tc.client.DeleteProvisioningTemplate(tc.ctx, &iot.DeleteProvisioningTemplateInput{TemplateName: aws.String(templateName)})
 	}()
 
-	// Setup: create template
-	results = append(results, r.RunTest("iot", "Gap_ProvTemplateVersion_Setup", func() error {
-		_, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
-			TemplateName:        aws.String(templateName),
-			TemplateBody:        aws.String(templateBody),
-			ProvisioningRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test", tc.accountID)),
-		})
-		return err
-	}))
+	// Setup: create template up front; a prerequisite failure surfaces as a
+	// single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
+		TemplateName:        aws.String(templateName),
+		TemplateBody:        aws.String(templateBody),
+		ProvisioningRoleArn: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/test", tc.accountID)),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_ProvTemplateVersion_Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	var createdVersionID int32
 
@@ -455,19 +438,19 @@ func (r *TestRunner) runIoTPackageExtraGapTests(tc *iotTestContext) []TestResult
 		_, _ = tc.client.DeletePackage(tc.ctx, &iot.DeletePackageInput{PackageName: aws.String(pkgName)})
 	}()
 
-	results = append(results, r.RunTest("iot", "Gap_Package_Setup", func() error {
-		_, err := tc.client.CreatePackage(tc.ctx, &iot.CreatePackageInput{
-			PackageName: aws.String(pkgName),
-		})
-		if err != nil {
-			return err
-		}
-		_, err = tc.client.CreatePackageVersion(tc.ctx, &iot.CreatePackageVersionInput{
-			PackageName: aws.String(pkgName),
-			VersionName: aws.String(versionName),
-		})
-		return err
-	}))
+	// Setup: create package + version up front; a prerequisite failure
+	// surfaces as a single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreatePackage(tc.ctx, &iot.CreatePackageInput{
+		PackageName: aws.String(pkgName),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_Package_Setup", Status: "FAIL", Error: err.Error()}}
+	}
+	if _, err := tc.client.CreatePackageVersion(tc.ctx, &iot.CreatePackageVersionInput{
+		PackageName: aws.String(pkgName),
+		VersionName: aws.String(versionName),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_Package_Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	results = append(results, r.RunTest("iot", "Gap_GetPackageConfiguration", func() error {
 		_, err := tc.client.GetPackageConfiguration(tc.ctx, &iot.GetPackageConfigurationInput{})
@@ -541,14 +524,14 @@ func (r *TestRunner) runIoTCommandExecutionGapTests(tc *iotTestContext) []TestRe
 		_, _ = tc.client.DeleteCommand(tc.ctx, &iot.DeleteCommandInput{CommandId: aws.String(cmdID)})
 	}()
 
-	// Setup: create command
-	results = append(results, r.RunTest("iot", "Gap_CmdExec_Setup", func() error {
-		_, err := tc.client.CreateCommand(tc.ctx, &iot.CreateCommandInput{
-			CommandId:   aws.String(cmdID),
-			DisplayName: aws.String("gap test command"),
-		})
-		return err
-	}))
+	// Setup: create command up front; a prerequisite failure surfaces as a
+	// single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreateCommand(tc.ctx, &iot.CreateCommandInput{
+		CommandId:   aws.String(cmdID),
+		DisplayName: aws.String("gap test command"),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_CmdExec_Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	cmdARN := fmt.Sprintf("arn:aws:iot:%s:%s:command/%s", tc.region, tc.accountID, cmdID)
 
@@ -602,17 +585,17 @@ func (r *TestRunner) runIoTCertProviderUpdateGapTests(tc *iotTestContext) []Test
 		_, _ = tc.client.DeleteCertificateProvider(tc.ctx, &iot.DeleteCertificateProviderInput{CertificateProviderName: aws.String(providerName)})
 	}()
 
-	// Setup
-	results = append(results, r.RunTest("iot", "Gap_CertProvider_Setup", func() error {
-		_, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
-			CertificateProviderName: aws.String(providerName),
-			LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", tc.region, tc.accountID)),
-			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
-				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
-			},
-		})
-		return err
-	}))
+	// Setup: create the provider up front; a prerequisite failure surfaces as
+	// a single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
+		CertificateProviderName: aws.String(providerName),
+		LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", tc.region, tc.accountID)),
+		AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
+			iottypes.CertificateProviderOperationCreateCertificateFromCsr,
+		},
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "Gap_CertProvider_Setup", Status: "FAIL", Error: err.Error()}}
+	}
 
 	results = append(results, r.RunTest("iot", "Gap_UpdateCertificateProvider", func() error {
 		_, err := tc.client.UpdateCertificateProvider(tc.ctx, &iot.UpdateCertificateProviderInput{

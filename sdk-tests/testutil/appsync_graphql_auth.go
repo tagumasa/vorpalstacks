@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,36 +21,29 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 	var results []TestResult
 	ctx := res.ctx
 	client := res.client
-	uid := res.uid
 
-	// Create a dedicated GraphQL API with API_KEY auth.
-	var authApiId string
-	var authApiKeyId string
-
-	results = append(results, r.RunTest("appsync", "GraphQLAuth_Setup", func() error {
-		resp, err := client.CreateGraphqlApi(ctx, &appsync.CreateGraphqlApiInput{
-			Name:               aws.String(fmt.Sprintf("test-gqlauth-%d", uid)),
-			AuthenticationType: types.AuthenticationTypeApiKey,
+	authApiId, authApiKeyId, err := setupGraphQLAuthAPI(client, ctx, res.uid)
+	if err != nil {
+		return append(results, TestResult{
+			Service:  "appsync",
+			TestName: "GraphQLAuth_Setup",
+			Status:   "FAIL",
+			Error:    err.Error(),
 		})
-		if err != nil {
-			return err
-		}
-		authApiId = *resp.GraphqlApi.ApiId
+	}
 
-		// Create an API key for this API.
-		keyResp, err := client.CreateApiKey(ctx, &appsync.CreateApiKeyInput{
+	// Best-effort cleanup of the dedicated API key and API; ignore errors.
+	defer func() {
+		if authApiKeyId != "" {
+			client.DeleteApiKey(ctx, &appsync.DeleteApiKeyInput{
+				ApiId: aws.String(authApiId),
+				Id:    aws.String(authApiKeyId),
+			})
+		}
+		client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{
 			ApiId: aws.String(authApiId),
 		})
-		if err != nil {
-			return err
-		}
-		authApiKeyId = *keyResp.ApiKey.Id
-		return nil
-	}))
-
-	if authApiId == "" {
-		return results
-	}
+	}()
 
 	// Build the GraphQL endpoint URL.
 	graphqlURL := fmt.Sprintf("%s/v1/apis/%s/graphql", r.endpoint, authApiId)
@@ -83,25 +77,7 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 		if err != nil {
 			return fmt.Errorf("send GraphQL: %w", err)
 		}
-		if resp == nil {
-			return fmt.Errorf("no response")
-		}
-		if resp.StatusCode != http.StatusUnauthorized {
-			return fmt.Errorf("expected 401, got %d (body: %s)", resp.StatusCode, string(respBody))
-		}
-		var result struct {
-			Errors []struct {
-				ErrorType string `json:"errorType"`
-				Message   string `json:"message"`
-			} `json:"errors"`
-		}
-		if err := json.Unmarshal(respBody, &result); err != nil {
-			return fmt.Errorf("failed to parse error body: %w", err)
-		}
-		if len(result.Errors) == 0 || result.Errors[0].ErrorType != "UnauthorizedException" {
-			return fmt.Errorf("expected UnauthorizedException error, got: %s", string(respBody))
-		}
-		return nil
+		return assertUnauthorized(resp, respBody)
 	}))
 
 	// Test: Invalid API key -> 401 UnauthorizedException
@@ -110,25 +86,7 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 		if err != nil {
 			return fmt.Errorf("send GraphQL: %w", err)
 		}
-		if resp == nil {
-			return fmt.Errorf("no response")
-		}
-		if resp.StatusCode != http.StatusUnauthorized {
-			return fmt.Errorf("expected 401, got %d (body: %s)", resp.StatusCode, string(respBody))
-		}
-		var result struct {
-			Errors []struct {
-				ErrorType string `json:"errorType"`
-				Message   string `json:"message"`
-			} `json:"errors"`
-		}
-		if err := json.Unmarshal(respBody, &result); err != nil {
-			return fmt.Errorf("failed to parse error body: %w", err)
-		}
-		if len(result.Errors) == 0 || result.Errors[0].ErrorType != "UnauthorizedException" {
-			return fmt.Errorf("expected UnauthorizedException error, got: %s", string(respBody))
-		}
-		return nil
+		return assertUnauthorized(resp, respBody)
 	}))
 
 	// Test: Valid API key -> should NOT be 401
@@ -146,20 +104,59 @@ func (r *TestRunner) runAppSyncGraphQLAuthTests(res *appsyncResources) []TestRes
 		return nil
 	}))
 
-	// Cleanup: delete the API key and API.
-	results = append(results, r.RunTest("appsync", "GraphQLAuth_Cleanup", func() error {
-		// Best-effort cleanup; ignore errors.
-		if authApiKeyId != "" {
-			client.DeleteApiKey(ctx, &appsync.DeleteApiKeyInput{
-				ApiId: aws.String(authApiId),
-				Id:    aws.String(authApiKeyId),
-			})
-		}
-		client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{
-			ApiId: aws.String(authApiId),
-		})
-		return nil
-	}))
-
 	return results
+}
+
+// setupGraphQLAuthAPI provisions the dedicated GraphQL API and its API key
+// backing the auth tests. It runs at section start and its failure surfaces
+// as the GraphQLAuth_Setup FAIL row.
+func setupGraphQLAuthAPI(client *appsync.Client, ctx context.Context, uid int64) (string, string, error) {
+	resp, err := client.CreateGraphqlApi(ctx, &appsync.CreateGraphqlApiInput{
+		Name:               aws.String(fmt.Sprintf("test-gqlauth-%d", uid)),
+		AuthenticationType: types.AuthenticationTypeApiKey,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	if resp.GraphqlApi == nil || resp.GraphqlApi.ApiId == nil || *resp.GraphqlApi.ApiId == "" {
+		return "", "", fmt.Errorf("expected GraphqlApi with ApiId in CreateGraphqlApi response")
+	}
+	apiId := *resp.GraphqlApi.ApiId
+
+	keyResp, err := client.CreateApiKey(ctx, &appsync.CreateApiKeyInput{
+		ApiId: aws.String(apiId),
+	})
+	if err != nil {
+		_, _ = client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{ApiId: aws.String(apiId)})
+		return "", "", fmt.Errorf("failed to create API key: %v", err)
+	}
+	if keyResp.ApiKey == nil || keyResp.ApiKey.Id == nil || *keyResp.ApiKey.Id == "" {
+		_, _ = client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{ApiId: aws.String(apiId)})
+		return "", "", fmt.Errorf("expected ApiKey with Id in CreateApiKey response")
+	}
+	return apiId, *keyResp.ApiKey.Id, nil
+}
+
+// assertUnauthorized verifies that a GraphQL data-plane response rejected
+// the request with 401 and an UnauthorizedException error entry.
+func assertUnauthorized(resp *http.Response, respBody []byte) error {
+	if resp == nil {
+		return fmt.Errorf("no response")
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("expected 401, got %d (body: %s)", resp.StatusCode, string(respBody))
+	}
+	var result struct {
+		Errors []struct {
+			ErrorType string `json:"errorType"`
+			Message   string `json:"message"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return fmt.Errorf("failed to parse error body: %w", err)
+	}
+	if len(result.Errors) == 0 || result.Errors[0].ErrorType != "UnauthorizedException" {
+		return fmt.Errorf("expected UnauthorizedException error, got: %s", string(respBody))
+	}
+	return nil
 }

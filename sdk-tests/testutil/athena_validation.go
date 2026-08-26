@@ -10,32 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 )
 
-// waitForQuery polls GetQueryExecution until the query reaches a terminal
-// state (SUCCEEDED, FAILED, or CANCELLED) or the max poll count is reached.
-func (tc *athenaTestCtx) waitForQuery(queryExecutionId string) (types.QueryExecutionState, error) {
-	for i := 0; i < 60; i++ {
-		resp, err := tc.client.GetQueryExecution(tc.ctx, &athena.GetQueryExecutionInput{
-			QueryExecutionId: aws.String(queryExecutionId),
-		})
-		if err != nil {
-			return "", err
-		}
-		state := resp.QueryExecution.Status.State
-		if state == types.QueryExecutionStateSucceeded ||
-			state == types.QueryExecutionStateFailed ||
-			state == types.QueryExecutionStateCancelled {
-			if state != types.QueryExecutionStateSucceeded {
-				reason := aws.ToString(resp.QueryExecution.Status.StateChangeReason)
-				return state, fmt.Errorf("query %s ended in %s: %s", queryExecutionId, state, reason)
-			}
-			return state, nil
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	return "", fmt.Errorf("query %s did not complete within 30s", queryExecutionId)
-}
-
-func (tc *athenaTestCtx) testValidation() []TestResult {
+func (tc *athenaTestContext) testValidation() []TestResult {
 	var results []TestResult
 	client := tc.client
 	ctx := tc.ctx
@@ -333,7 +308,7 @@ func (tc *athenaTestCtx) testValidation() []TestResult {
 				Value: aws.String(fmt.Sprintf("val%d", i)),
 			})
 		}
-		arn := fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), wgName)
+		arn := tc.workgroupARN(wgName)
 		if _, err := client.TagResource(ctx, &athena.TagResourceInput{
 			ResourceARN: aws.String(arn),
 			Tags:        tags,

@@ -10,11 +10,11 @@ import (
 
 func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []TestResult {
 	var results []TestResult
-	snapshotName := fmt.Sprintf("sdk-snap-%s", tc.tsNano[len(tc.tsNano)-8:])
+	snapshotName := tc.unique("sdk-snap")
 
 	results = append(results, r.RunTest("neptunegraph", "CreateGraphSnapshot", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.CreateGraphSnapshot(tc.ctx, &neptunegraph.CreateGraphSnapshotInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -37,8 +37,8 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetGraphSnapshot", func() error {
-		if tc.snapshotID == "" {
-			return fmt.Errorf("no snapshot ID")
+		if err := tc.requireSnapshot(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetGraphSnapshot(tc.ctx, &neptunegraph.GetGraphSnapshotInput{
 			SnapshotIdentifier: aws.String(tc.snapshotID),
@@ -56,40 +56,42 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListGraphSnapshots", func() error {
-		resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{})
-		if err != nil {
-			return err
-		}
-		if resp.GraphSnapshots == nil {
-			return fmt.Errorf("expected non-nil GraphSnapshots list")
-		}
-		found := false
-		for _, s := range resp.GraphSnapshots {
-			if s.Id != nil && *s.Id == tc.snapshotID {
-				found = true
-				break
+		snapshots, err := paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
+			resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{NextToken: next})
+			if err != nil {
+				return nil, nil, err
 			}
-		}
-		if !found {
-			return fmt.Errorf("created snapshot not found in ListGraphSnapshots")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunegraph", "ListGraphSnapshots_FilterByGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
-		}
-		resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
-			GraphIdentifier: aws.String(tc.graphID),
+			return resp.GraphSnapshots, resp.NextToken, nil
 		})
 		if err != nil {
 			return err
 		}
-		if resp.GraphSnapshots == nil {
-			return fmt.Errorf("expected non-nil GraphSnapshots list")
+		for _, s := range snapshots {
+			if s.Id != nil && *s.Id == tc.snapshotID {
+				return nil
+			}
 		}
-		for _, s := range resp.GraphSnapshots {
+		return fmt.Errorf("created snapshot not found in ListGraphSnapshots")
+	}))
+
+	results = append(results, r.RunTest("neptunegraph", "ListGraphSnapshots_FilterByGraph", func() error {
+		if err := tc.requireGraph(); err != nil {
+			return err
+		}
+		snapshots, err := paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
+			resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
+				GraphIdentifier: aws.String(tc.graphID),
+				NextToken:       next,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.GraphSnapshots, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, s := range snapshots {
 			if s.Id != nil && *s.Id == tc.snapshotID {
 				return nil
 			}
@@ -100,8 +102,8 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 	results = append(results, r.runNeptunegraphRestoreTests(tc)...)
 
 	results = append(results, r.RunTest("neptunegraph", "DeleteGraphSnapshot", func() error {
-		if tc.snapshotID == "" {
-			return fmt.Errorf("no snapshot ID")
+		if err := tc.requireSnapshot(); err != nil {
+			return err
 		}
 		resp, err := tc.client.DeleteGraphSnapshot(tc.ctx, &neptunegraph.DeleteGraphSnapshotInput{
 			SnapshotIdentifier: aws.String(tc.snapshotID),
@@ -116,8 +118,8 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "DeleteGraphSnapshot_Verify", func() error {
-		if tc.snapshotID == "" {
-			return fmt.Errorf("no snapshot ID")
+		if err := tc.requireSnapshot(); err != nil {
+			return err
 		}
 		_, err := tc.client.GetGraphSnapshot(tc.ctx, &neptunegraph.GetGraphSnapshotInput{
 			SnapshotIdentifier: aws.String(tc.snapshotID),
@@ -136,10 +138,10 @@ func (r *TestRunner) runNeptunegraphRestoreTests(tc *neptunegraphContext) []Test
 
 	var restoredGraphID string
 	results = append(results, r.RunTest("neptunegraph", "RestoreGraphFromSnapshot", func() error {
-		if tc.snapshotID == "" {
-			return fmt.Errorf("no snapshot ID")
+		if err := tc.requireSnapshot(); err != nil {
+			return err
 		}
-		restoreName := fmt.Sprintf("sdk-restored-%s", tc.tsNano[len(tc.tsNano)-6:])
+		restoreName := tc.unique("sdk-restored")
 		resp, err := tc.client.RestoreGraphFromSnapshot(tc.ctx, &neptunegraph.RestoreGraphFromSnapshotInput{
 			SnapshotIdentifier: aws.String(tc.snapshotID),
 			GraphName:          aws.String(restoreName),
@@ -163,12 +165,10 @@ func (r *TestRunner) runNeptunegraphRestoreTests(tc *neptunegraphContext) []Test
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "RestoreGraphFromSnapshot_Verify", func() error {
-		if restoredGraphID == "" {
-			return fmt.Errorf("no restored graph ID")
+		if err := requireID(restoredGraphID, "restored graph ID"); err != nil {
+			return err
 		}
-		resp, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
-			GraphIdentifier: aws.String(restoredGraphID),
-		})
+		resp, err := tc.getGraph(restoredGraphID)
 		if err != nil {
 			return err
 		}

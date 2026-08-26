@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
 func (r *TestRunner) runNeptuneClusterParamGroupTests(tc *neptuneContext) []TestResult {
@@ -33,22 +34,18 @@ func (r *TestRunner) runNeptuneClusterParamGroupTests(tc *neptuneContext) []Test
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterParameterGroups", func() error {
-		resp, err := tc.client.DescribeDBClusterParameterGroups(tc.ctx, &neptune.DescribeDBClusterParameterGroupsInput{})
+		groups, err := tc.allClusterParameterGroups(nil)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, pg := range resp.DBClusterParameterGroups {
-			if pg.DBClusterParameterGroupName != nil && *pg.DBClusterParameterGroupName == tc.paramGroupName {
-				found = true
-				if pg.DBParameterGroupFamily == nil || *pg.DBParameterGroupFamily != "neptune1" {
-					return fmt.Errorf("expected DBParameterGroupFamily=neptune1, got %v", pg.DBParameterGroupFamily)
-				}
-				break
-			}
-		}
-		if !found {
+		pg := containsID(groups, func(pg *types.DBClusterParameterGroup) bool {
+			return pg.DBClusterParameterGroupName != nil && *pg.DBClusterParameterGroupName == tc.paramGroupName
+		})
+		if pg == nil {
 			return fmt.Errorf("created parameter group not found in list")
+		}
+		if pg.DBParameterGroupFamily == nil || *pg.DBParameterGroupFamily != "neptune1" {
+			return fmt.Errorf("expected DBParameterGroupFamily=neptune1, got %v", pg.DBParameterGroupFamily)
 		}
 		return nil
 	}))

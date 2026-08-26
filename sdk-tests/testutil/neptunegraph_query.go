@@ -12,8 +12,8 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 	var results []TestResult
 
 	results = append(results, r.RunTest("neptunegraph", "ExecuteQuery_BasicMatch", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ExecuteQuery(tc.ctx, &neptunegraph.ExecuteQueryInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -31,8 +31,8 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "CancelQuery_NonExistentQuery", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		_, err := tc.client.CancelQuery(tc.ctx, &neptunegraph.CancelQueryInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -45,8 +45,8 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetGraphSummary", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetGraphSummary(tc.ctx, &neptunegraph.GetGraphSummaryInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -62,8 +62,8 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListQueries", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListQueries(tc.ctx, &neptunegraph.ListQueriesInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -79,8 +79,8 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetQuery_NotFound", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		_, err := tc.client.GetQuery(tc.ctx, &neptunegraph.GetQueryInput{
 			GraphIdentifier: aws.String(tc.graphID),

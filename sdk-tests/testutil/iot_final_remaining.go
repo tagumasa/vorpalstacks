@@ -15,19 +15,19 @@ func (r *TestRunner) runIoTFinalRemainingTests(tc *iotTestContext) []TestResult 
 	policyName := uniqueName("finalrem-policy")
 	thingARN := tc.arn("iot", "thing", thingName)
 
-	defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
-	defer tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
-
-	results = append(results, r.RunTest("iot", "FinalRem_Setup", func() error {
-		if _, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{ThingName: aws.String(thingName)}); err != nil {
-			return err
-		}
-		_, err := tc.client.CreatePolicy(tc.ctx, &iot.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(`{"Version":"2012-10-17","Statement":[]}`),
-		})
-		return err
-	}))
+	// Setup: create the thing and policy through the shared cleanup-returning
+	// helpers; a prerequisite failure surfaces as a single FAIL row named
+	// after the setup step it replaces.
+	cleanupThing, err := tc.createThing(thingName)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "FinalRem_Setup", Status: "FAIL", Error: err.Error()}}
+	}
+	defer cleanupThing()
+	cleanupPolicy, err := tc.createPolicy(policyName, `{"Version":"2012-10-17","Statement":[]}`)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "FinalRem_Setup", Status: "FAIL", Error: err.Error()}}
+	}
+	defer cleanupPolicy()
 
 	results = append(results, r.RunTest("iot", "UpdateEncryptionConfiguration_Validation", func() error {
 		_, err := tc.client.UpdateEncryptionConfiguration(tc.ctx, &iot.UpdateEncryptionConfigurationInput{})

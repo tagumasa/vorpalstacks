@@ -32,8 +32,8 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "UpdateGraph_DisableDeletionProtection", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateGraph(tc.ctx, &neptunegraph.UpdateGraphInput{
 			GraphIdentifier:    aws.String(tc.graphID),
@@ -52,8 +52,8 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "DeleteGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.DeleteGraph(tc.ctx, &neptunegraph.DeleteGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -69,8 +69,8 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "DeleteGraph_Verify", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		_, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),

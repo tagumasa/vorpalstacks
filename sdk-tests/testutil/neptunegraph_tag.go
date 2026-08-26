@@ -12,11 +12,11 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	var results []TestResult
 
 	results = append(results, r.RunTest("neptunegraph", "TagResource", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
 			ResourceArn: aws.String(tc.graphARN),
@@ -29,8 +29,8 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "TagResource_ReservedPrefixRejected", func() error {
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
 			ResourceArn: aws.String(tc.graphARN),
@@ -46,8 +46,8 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 
 	// Tag values are limited to 256 Unicode characters, not bytes.
 	results = append(results, r.RunTest("neptunegraph", "TagResource_MultibyteTagValueAccepted", func() error {
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		value := strings.Repeat("\u65e5", 200)
 		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
@@ -72,11 +72,11 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListTagsForResource", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{
 			ResourceArn: aws.String(tc.graphARN),
@@ -100,11 +100,11 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "UntagResource", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		_, err := tc.client.UntagResource(tc.ctx, &neptunegraph.UntagResourceInput{
 			ResourceArn: aws.String(tc.graphARN),
@@ -114,11 +114,11 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListTagsForResource_AfterUntag", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		if tc.graphARN == "" {
-			return fmt.Errorf("no graph ARN")
+		if err := tc.requireGraphARN(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{
 			ResourceArn: aws.String(tc.graphARN),

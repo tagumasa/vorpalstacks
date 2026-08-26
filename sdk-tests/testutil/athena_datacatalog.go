@@ -2,20 +2,17 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 )
 
-func (tc *athenaTestCtx) testDataCatalogs() []TestResult {
+func (tc *athenaTestContext) testDataCatalogs() []TestResult {
 	var results []TestResult
-	client := tc.client
-	ctx := tc.ctx
 
 	results = append(results, tc.runner.RunTest("athena", "ListDataCatalogs", func() error {
-		resp, err := client.ListDataCatalogs(ctx, &athena.ListDataCatalogsInput{
+		resp, err := tc.client.ListDataCatalogs(tc.ctx, &athena.ListDataCatalogsInput{
 			MaxResults: aws.Int32(10),
 		})
 		if err != nil {
@@ -39,25 +36,15 @@ func (tc *athenaTestCtx) testDataCatalogs() []TestResult {
 		return nil
 	}))
 
-	customCatalogName := fmt.Sprintf("test-catalog-%d", time.Now().UnixNano()%1000000000)
-
+	customCatalogName := tc.uniqueName("test-catalog")
+	// Created here and kept alive for the Get and Delete scenarios below;
+	// the DeleteDataCatalog scenario performs the actual deletion.
 	results = append(results, tc.runner.RunTest("athena", "CreateDataCatalog", func() error {
-		resp, err := client.CreateDataCatalog(ctx, &athena.CreateDataCatalogInput{
-			Name:        aws.String(customCatalogName),
-			Type:        types.DataCatalogTypeGlue,
-			Description: aws.String("Test catalog for GetDataCatalog"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp == nil {
-			return fmt.Errorf("response is nil")
-		}
-		return nil
+		return tc.createDataCatalog(customCatalogName, "Test catalog for GetDataCatalog")
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "GetDataCatalog", func() error {
-		resp, err := client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
+		resp, err := tc.client.GetDataCatalog(tc.ctx, &athena.GetDataCatalogInput{
 			Name: aws.String(customCatalogName),
 		})
 		if err != nil {
@@ -79,18 +66,16 @@ func (tc *athenaTestCtx) testDataCatalogs() []TestResult {
 		return nil
 	}))
 
-	udcCatalogName := fmt.Sprintf("udc-cat-%d", time.Now().UnixNano()%1000000000)
-	results = append(results, tc.runner.RunTest("athena", "UpdateDataCatalog_Setup", func() error {
-		_, err := client.CreateDataCatalog(ctx, &athena.CreateDataCatalogInput{
-			Name:        aws.String(udcCatalogName),
-			Type:        types.DataCatalogTypeGlue,
-			Description: aws.String("Before update"),
-		})
-		return err
-	}))
-
+	// Update then verify in one scenario: the description must change and
+	// the update must be observable via GetDataCatalog.
+	udcCatalogName := tc.uniqueName("udc-cat")
 	results = append(results, tc.runner.RunTest("athena", "UpdateDataCatalog", func() error {
-		_, err := client.UpdateDataCatalog(ctx, &athena.UpdateDataCatalogInput{
+		if err := tc.createDataCatalog(udcCatalogName, "Before update"); err != nil {
+			return fmt.Errorf("setup create failed: %w", err)
+		}
+		defer tc.deleteDataCatalog(udcCatalogName)
+
+		_, err := tc.client.UpdateDataCatalog(tc.ctx, &athena.UpdateDataCatalogInput{
 			Name:        aws.String(udcCatalogName),
 			Type:        types.DataCatalogTypeGlue,
 			Description: aws.String("After update"),
@@ -98,11 +83,10 @@ func (tc *athenaTestCtx) testDataCatalogs() []TestResult {
 				"key1": "value1",
 			},
 		})
-		return err
-	}))
-
-	results = append(results, tc.runner.RunTest("athena", "UpdateDataCatalog_Verify", func() error {
-		resp, err := client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetDataCatalog(tc.ctx, &athena.GetDataCatalogInput{
 			Name: aws.String(udcCatalogName),
 		})
 		if err != nil {
@@ -114,21 +98,14 @@ func (tc *athenaTestCtx) testDataCatalogs() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("athena", "DeleteDataCatalog_UDCCleanup", func() error {
-		_, err := client.DeleteDataCatalog(ctx, &athena.DeleteDataCatalogInput{
-			Name: aws.String(udcCatalogName),
-		})
-		return err
-	}))
-
 	results = append(results, tc.runner.RunTest("athena", "DeleteDataCatalog", func() error {
-		_, err := client.DeleteDataCatalog(ctx, &athena.DeleteDataCatalogInput{
+		_, err := tc.client.DeleteDataCatalog(tc.ctx, &athena.DeleteDataCatalogInput{
 			Name: aws.String(customCatalogName),
 		})
 		if err != nil {
 			return err
 		}
-		_, err = client.GetDataCatalog(ctx, &athena.GetDataCatalogInput{
+		_, err = tc.client.GetDataCatalog(tc.ctx, &athena.GetDataCatalogInput{
 			Name: aws.String(customCatalogName),
 		})
 		if err == nil {

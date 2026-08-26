@@ -66,21 +66,20 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("iot", "Package_ListPackages_IncludesCreated", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListPackages(tc.ctx, &iot.ListPackagesInput{NextToken: token})
+		pkgs, err := paginate(func(next *string) ([]iottypes.PackageSummary, *string, error) {
+			out, err := tc.client.ListPackages(tc.ctx, &iot.ListPackagesInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, p := range out.PackageSummaries {
-				if p.PackageName != nil && *p.PackageName == pkgName {
-					return nil
-				}
+			return out.PackageSummaries, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, p := range pkgs {
+			if p.PackageName != nil && *p.PackageName == pkgName {
+				return nil
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return fmt.Errorf("created package not found in ListPackages")
 	}))
@@ -195,21 +194,20 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("iot", "Command_ListCommands_IncludesCreated", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListCommands(tc.ctx, &iot.ListCommandsInput{NextToken: token})
+		cmds, err := paginate(func(next *string) ([]iottypes.CommandSummary, *string, error) {
+			out, err := tc.client.ListCommands(tc.ctx, &iot.ListCommandsInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, c := range out.Commands {
-				if c.CommandId != nil && *c.CommandId == cmdID {
-					return nil
-				}
+			return out.Commands, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, c := range cmds {
+			if c.CommandId != nil && *c.CommandId == cmdID {
+				return nil
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return fmt.Errorf("created command not found in ListCommands")
 	}))
@@ -254,21 +252,20 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("iot", "CertProvider_List_IncludesCreated", func() error {
-		var token *string
-		for {
-			out, err := tc.client.ListCertificateProviders(tc.ctx, &iot.ListCertificateProvidersInput{NextToken: token})
+		providers, err := paginate(func(next *string) ([]iottypes.CertificateProviderSummary, *string, error) {
+			out, err := tc.client.ListCertificateProviders(tc.ctx, &iot.ListCertificateProvidersInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, p := range out.CertificateProviders {
-				if p.CertificateProviderName != nil && *p.CertificateProviderName == certProviderName {
-					return nil
-				}
+			return out.CertificateProviders, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, p := range providers {
+			if p.CertificateProviderName != nil && *p.CertificateProviderName == certProviderName {
+				return nil
 			}
-			if out.NextToken == nil || *out.NextToken == "" {
-				break
-			}
-			token = out.NextToken
 		}
 		return fmt.Errorf("created provider not found in ListCertificateProviders")
 	}))

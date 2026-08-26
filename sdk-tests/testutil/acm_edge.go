@@ -13,25 +13,23 @@ import (
 func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 	var results []TestResult
 
-	fakeCertARN := fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)
-
 	results = append(results, r.RunTest("acm", "DescribeCertificate_NonExistent", func() error {
 		_, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{
-			CertificateArn: aws.String(fakeCertARN),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "GetCertificate_NonExistent", func() error {
 		_, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{
-			CertificateArn: aws.String(fakeCertARN),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_NonExistent", func() error {
 		_, err := tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: aws.String(fakeCertARN),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 			Tags:           []types.Tag{{Key: aws.String("X"), Value: aws.String("Y")}},
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
@@ -39,7 +37,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RemoveTagsFromCertificate_NonExistent", func() error {
 		_, err := tc.client.RemoveTagsFromCertificate(tc.ctx, &acm.RemoveTagsFromCertificateInput{
-			CertificateArn: aws.String(fakeCertARN),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 			Tags:           []types.Tag{{Key: aws.String("X")}},
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
@@ -47,24 +45,21 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "ListTagsForCertificate_NonExistent", func() error {
 		_, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{
-			CertificateArn: aws.String(fakeCertARN),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "ExportCertificate_AMAZON_ISSUED_Error", func() error {
 		domain := acmUniqueDomain("export-ai")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.ExportCertificate(tc.ctx, &acm.ExportCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Passphrase:     []byte("test-passphrase"),
 		})
 		return AssertErrorContains(err, "ValidationException")
@@ -95,14 +90,14 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 
 	// Passphrase too short (< 4 bytes)
 	results = append(results, r.RunTest("acm", "ExportCertificate_PassphraseTooShort", func() error {
-		importResp, err := tc.importDefaultCert()
+		importArn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(importArn)
 
 		_, err = tc.client.ExportCertificate(tc.ctx, &acm.ExportCertificateInput{
-			CertificateArn: importResp.CertificateArn,
+			CertificateArn: aws.String(importArn),
 			Passphrase:     []byte("ab"),
 		})
 		return AssertErrorContains(err, "ValidationException")
@@ -126,20 +121,17 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 	// DescribeCertificate Serial must match the X.509 PEM SerialNumber.
 	results = append(results, r.RunTest("acm", "DescribeCertificate_SerialConsistency", func() error {
 		domain := acmUniqueDomain("serial-consistency")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		// Wait for cert to be issued.
 		var certPEM string
 		for i := 0; i < 10; i++ {
 			getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{
-				CertificateArn: resp.CertificateArn,
+				CertificateArn: aws.String(arn),
 			})
 			if err == nil && aws.ToString(getResp.Certificate) != "" {
 				certPEM = aws.ToString(getResp.Certificate)
@@ -162,9 +154,7 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 		x509Serial := parsed.SerialNumber.String()
 
 		// Get DescribeCertificate Serial from metadata.
-		descResp, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{
-			CertificateArn: resp.CertificateArn,
-		})
+		descResp, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -194,24 +184,21 @@ func (r *TestRunner) runACMEdgeTests(tc *acmTestContext) []TestResult {
 	results = append(results, r.RunTest("acm", "SearchCertificates_SortByExported", func() error {
 		// Create and export a cert to mark WasExported=true.
 		domain := acmUniqueDomain("sort-exported")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		// Import a cert so we can export it (only IMPORTED certs can be exported).
-		importResp, err := tc.importDefaultCert()
+		importArn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(importArn)
 
 		_, err = tc.client.ExportCertificate(tc.ctx, &acm.ExportCertificateInput{
-			CertificateArn: importResp.CertificateArn,
+			CertificateArn: aws.String(importArn),
 			Passphrase:     []byte("test-passphrase-1234"),
 		})
 		if err != nil {

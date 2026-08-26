@@ -113,17 +113,35 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			RoleName:            aws.String(role),
 		})
 
-		resp, err := tc.client.GetAccountAuthorizationDetails(tc.ctx, &iam.GetAccountAuthorizationDetailsInput{
-			MaxItems: aws.Int32(1000),
-		})
-		if err != nil {
-			return err
+		// Walk every page: during full regression the account carries
+		// thousands of entities from other suites' resources, so a single
+		// MaxItems-bounded page truncates the tail and hides freshly
+		// created entities.
+		var userDetailList []types.UserDetail
+		var roleDetailList []types.RoleDetail
+		var policyDetails []types.ManagedPolicyDetail
+		var marker *string
+		for {
+			resp, err := tc.client.GetAccountAuthorizationDetails(tc.ctx, &iam.GetAccountAuthorizationDetailsInput{
+				MaxItems: aws.Int32(1000),
+				Marker:   marker,
+			})
+			if err != nil {
+				return err
+			}
+			userDetailList = append(userDetailList, resp.UserDetailList...)
+			roleDetailList = append(roleDetailList, resp.RoleDetailList...)
+			policyDetails = append(policyDetails, resp.Policies...)
+			if !resp.IsTruncated || resp.Marker == nil {
+				break
+			}
+			marker = resp.Marker
 		}
 
 		var userDetail *types.UserDetail
-		for i := range resp.UserDetailList {
-			if aws.ToString(resp.UserDetailList[i].UserName) == user {
-				userDetail = &resp.UserDetailList[i]
+		for i := range userDetailList {
+			if aws.ToString(userDetailList[i].UserName) == user {
+				userDetail = &userDetailList[i]
 				break
 			}
 		}
@@ -138,9 +156,9 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 
 		var roleDetail *types.RoleDetail
-		for i := range resp.RoleDetailList {
-			if aws.ToString(resp.RoleDetailList[i].RoleName) == role {
-				roleDetail = &resp.RoleDetailList[i]
+		for i := range roleDetailList {
+			if aws.ToString(roleDetailList[i].RoleName) == role {
+				roleDetail = &roleDetailList[i]
 				break
 			}
 		}
@@ -155,9 +173,9 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 
 		var policyDetail *types.ManagedPolicyDetail
-		for i := range resp.Policies {
-			if aws.ToString(resp.Policies[i].PolicyName) == policy {
-				policyDetail = &resp.Policies[i]
+		for i := range policyDetails {
+			if aws.ToString(policyDetails[i].PolicyName) == policy {
+				policyDetail = &policyDetails[i]
 				break
 			}
 		}

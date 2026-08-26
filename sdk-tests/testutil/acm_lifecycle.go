@@ -13,17 +13,16 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "DeleteCertificate_NonExistent", func() error {
 		_, err := tc.client.DeleteCertificate(tc.ctx, &acm.DeleteCertificateInput{
-			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "DeleteCertificate_VerifyGone", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		arn := aws.ToString(importResp.CertificateArn)
 
 		_, err = tc.client.DeleteCertificate(tc.ctx, &acm.DeleteCertificateInput{
 			CertificateArn: aws.String(arn),
@@ -43,14 +42,11 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "ResendValidationEmail", func() error {
 		domain := acmUniqueDomain("resend")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodEmail,
-		})
+		arn, err := tc.requestEmailCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		// Our edge implementation immediately issues certificates (no real
 		// validation phase), so the cert is in ISSUED status by the time
@@ -58,22 +54,23 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 		// PENDING_VALIDATION certs, so this correctly returns
 		// InvalidStateException.
 		_, err = tc.client.ResendValidationEmail(tc.ctx, &acm.ResendValidationEmailInput{
-			CertificateArn:   resp.CertificateArn,
+			CertificateArn:   aws.String(arn),
 			Domain:           aws.String(domain),
 			ValidationDomain: aws.String(domain),
 		})
-		return AssertErrorContains(err, "InvalidStateException")
-	}))
+		if err := AssertErrorContains(err, "InvalidStateException"); err != nil {
+			return err
+		}
 
-	results = append(results, r.RunTest("acm", "ResendValidationEmail_IssuedStatus", func() error {
-		importResp, err := tc.importDefaultCert()
+		// Imported certs are born ISSUED without ever entering
+		// PENDING_VALIDATION, so the same InvalidStateException applies.
+		importArn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
-
+		defer tc.deleteCert(importArn)
 		_, err = tc.client.ResendValidationEmail(tc.ctx, &acm.ResendValidationEmailInput{
-			CertificateArn:   importResp.CertificateArn,
+			CertificateArn:   aws.String(importArn),
 			Domain:           aws.String("example.com"),
 			ValidationDomain: aws.String("example.com"),
 		})
@@ -82,17 +79,14 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "UpdateCertificateOptions_VerifyInDescribe", func() error {
 		domain := acmUniqueDomain("updopt")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.UpdateCertificateOptions(tc.ctx, &acm.UpdateCertificateOptionsInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Options: &types.CertificateOptions{
 				CertificateTransparencyLoggingPreference: types.CertificateTransparencyLoggingPreferenceDisabled,
 			},
@@ -100,7 +94,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -115,7 +109,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "UpdateCertificateOptions_NonExistent", func() error {
 		_, err := tc.client.UpdateCertificateOptions(tc.ctx, &acm.UpdateCertificateOptionsInput{
-			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 			Options: &types.CertificateOptions{
 				CertificateTransparencyLoggingPreference: types.CertificateTransparencyLoggingPreferenceEnabled,
 			},
@@ -124,66 +118,45 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "RenewCertificate_ImportedCert_Error", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.RenewCertificate(tc.ctx, &acm.RenewCertificateInput{
-			CertificateArn: importResp.CertificateArn,
+			CertificateArn: aws.String(arn),
 		})
 		return AssertErrorContains(err, "ValidationException")
 	}))
 
 	results = append(results, r.RunTest("acm", "RenewCertificate_NonExistent", func() error {
 		_, err := tc.client.RenewCertificate(tc.ctx, &acm.RenewCertificateInput{
-			CertificateArn: aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
+			CertificateArn: aws.String(tc.nonExistentArn()),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_ImportedCert", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   importResp.CertificateArn,
+			CertificateArn:   aws.String(arn),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		if err != nil {
 			return err
 		}
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: importResp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
 		if desc.Certificate.Status != types.CertificateStatusRevoked {
 			return fmt.Errorf("expected REVOKED, got %s", desc.Certificate.Status)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("acm", "RevokeCertificate_VerifyRevokedAt", func() error {
-		importResp, err := tc.importDefaultCert()
-		if err != nil {
-			return err
-		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
-
-		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   importResp.CertificateArn,
-			RevocationReason: types.RevocationReasonSuperseded,
-		})
-		if err != nil {
-			return err
-		}
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: importResp.CertificateArn})
-		if err != nil {
-			return err
 		}
 		if desc.Certificate.RevokedAt == nil {
 			return fmt.Errorf("RevokedAt is nil")
@@ -192,45 +165,45 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_VerifyRevocationReason", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   importResp.CertificateArn,
-			RevocationReason: types.RevocationReasonKeyCompromise,
+			CertificateArn:   aws.String(arn),
+			RevocationReason: types.RevocationReasonSuperseded,
 		})
 		if err != nil {
 			return err
 		}
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: importResp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
-		if desc.Certificate.RevocationReason != types.RevocationReasonKeyCompromise {
-			return fmt.Errorf("expected KEY_COMPROMISE, got %s", desc.Certificate.RevocationReason)
+		if desc.Certificate.RevocationReason != types.RevocationReasonSuperseded {
+			return fmt.Errorf("expected SUPERSEDED, got %s", desc.Certificate.RevocationReason)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_AlreadyRevoked", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   importResp.CertificateArn,
+			CertificateArn:   aws.String(arn),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		if err != nil {
 			return fmt.Errorf("first revoke failed: %v", err)
 		}
 		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   importResp.CertificateArn,
+			CertificateArn:   aws.String(arn),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		if err == nil {
@@ -241,25 +214,20 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_PendingValidation", func() error {
 		domain := acmUniqueDomain("revoke-pv")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   resp.CertificateArn,
+			CertificateArn:   aws.String(arn),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		if err != nil {
 			return fmt.Errorf("RevokeCertificate failed: %v", err)
 		}
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{
-			CertificateArn: resp.CertificateArn,
-		})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -271,7 +239,7 @@ func (r *TestRunner) runACMLifecycleTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RevokeCertificate_NonExistent", func() error {
 		_, err := tc.client.RevokeCertificate(tc.ctx, &acm.RevokeCertificateInput{
-			CertificateArn:   aws.String(fmt.Sprintf("arn:aws:acm:%s:%s:certificate/nonexistent", tc.region, tc.accountID)),
+			CertificateArn:   aws.String(tc.nonExistentArn()),
 			RevocationReason: types.RevocationReasonKeyCompromise,
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")

@@ -38,22 +38,18 @@ func (r *TestRunner) runNeptuneInstanceParamGroupTests(tc *neptuneContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBParameterGroups", func() error {
-		resp, err := tc.client.DescribeDBParameterGroups(tc.ctx, &neptune.DescribeDBParameterGroupsInput{})
+		groups, err := tc.allParameterGroups(nil)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, pg := range resp.DBParameterGroups {
-			if pg.DBParameterGroupName != nil && *pg.DBParameterGroupName == instancePGName {
-				found = true
-				if pg.DBParameterGroupFamily == nil || *pg.DBParameterGroupFamily != "neptune1" {
-					return fmt.Errorf("expected DBParameterGroupFamily=neptune1, got %v", pg.DBParameterGroupFamily)
-				}
-				break
-			}
-		}
-		if !found {
+		pg := containsID(groups, func(pg *types.DBParameterGroup) bool {
+			return pg.DBParameterGroupName != nil && *pg.DBParameterGroupName == instancePGName
+		})
+		if pg == nil {
 			return fmt.Errorf("created parameter group not found in list")
+		}
+		if pg.DBParameterGroupFamily == nil || *pg.DBParameterGroupFamily != "neptune1" {
+			return fmt.Errorf("expected DBParameterGroupFamily=neptune1, got %v", pg.DBParameterGroupFamily)
 		}
 		return nil
 	}))

@@ -14,12 +14,14 @@ import (
 func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 	thingName := uniqueName("crud-thing")
-	defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
 
-	results = append(results, r.RunTest("iot", "CRUDExt_Setup_CreateThing", func() error {
-		_, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{ThingName: aws.String(thingName)})
-		return err
-	}))
+	// Setup: create the thing up front; a prerequisite failure surfaces as a
+	// single FAIL row named after the setup step it replaces.
+	cleanupThing, err := tc.createThing(thingName)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "CRUDExt_Setup_CreateThing", Status: "FAIL", Error: err.Error()}}
+	}
+	defer cleanupThing()
 
 	// ── TopicRule ──
 	ruleName := uniqueName("topic-rule")

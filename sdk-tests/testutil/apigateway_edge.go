@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -10,22 +9,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayEdgeTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "TagResource_UntagResource_ListTags", func() error {
-		tagAPI := fmt.Sprintf("TagAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(tagAPI),
-		})
+		ownAPI, _, err := tc.createAPI(tc.uniqueName("TagAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(ownAPI)
 
-		arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/%s", r.region, *createResp.Id)
+		arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/%s", tc.r.region, ownAPI)
 
-		_, err = client.TagResource(ctx, &apigateway.TagResourceInput{
+		_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
 			ResourceArn: aws.String(arn),
 			Tags: map[string]string{
 				"key1": "value1",
@@ -36,7 +32,7 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 			return fmt.Errorf("tag: %v", err)
 		}
 
-		tagResp, err := client.GetTags(ctx, &apigateway.GetTagsInput{
+		tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -46,7 +42,7 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 			return fmt.Errorf("tags mismatch, got %v", tagResp.Tags)
 		}
 
-		_, err = client.UntagResource(ctx, &apigateway.UntagResourceInput{
+		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"key2"},
 		})
@@ -54,7 +50,7 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 			return fmt.Errorf("untag: %v", err)
 		}
 
-		tagResp2, err := client.GetTags(ctx, &apigateway.GetTagsInput{
+		tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -70,7 +66,7 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetRestApi_NonExistent", func() error {
-		_, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
+		_, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
 			RestApiId: aws.String("nonexistent_xyz"),
 		})
 		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
@@ -80,7 +76,7 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteRestApi_NonExistent", func() error {
-		_, err := client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{
+		_, err := tc.client.DeleteRestApi(tc.ctx, &apigateway.DeleteRestApiInput{
 			RestApiId: aws.String("nonexistent_xyz"),
 		})
 		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
@@ -90,17 +86,13 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetStage_NonExistent", func() error {
-		tmpAPI := fmt.Sprintf("TmpAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(tmpAPI),
-		})
+		ownAPI, _, err := tc.createAPI(tc.uniqueName("TmpAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		_, err = client.GetStage(ctx, &apigateway.GetStageInput{
-			RestApiId: createResp.Id,
+		defer tc.deleteAPI(ownAPI)
+		_, err = tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+			RestApiId: aws.String(ownAPI),
 			StageName: aws.String("nonexistent_stage"),
 		})
 		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
@@ -112,36 +104,23 @@ func (r *TestRunner) runAPIGatewayEdgeTests(ctx context.Context, client *apigate
 	return results
 }
 
-func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "PutMethod_AuthorizationScopes_RoundTrip", func() error {
-		tmpAPI := fmt.Sprintf("AuthScopeAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(tmpAPI),
-		})
+		ownAPI, _, err := tc.createAPI(tc.uniqueName("AuthScopeAPI"))
 		if err != nil {
 			return fmt.Errorf("create api: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(ownAPI)
 
-		var rootId string
-		resources, err := client.GetResources(ctx, &apigateway.GetResourcesInput{RestApiId: createResp.Id})
+		rootId, err := tc.findRootResource(ownAPI)
 		if err != nil {
-			return fmt.Errorf("get resources: %v", err)
-		}
-		for _, res := range resources.Items {
-			if res.Path != nil && *res.Path == "/" {
-				rootId = *res.Id
-				break
-			}
-		}
-		if rootId == "" {
-			return fmt.Errorf("root resource not found")
+			return err
 		}
 
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:           createResp.Id,
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:           aws.String(ownAPI),
 			ResourceId:          &rootId,
 			HttpMethod:          aws.String("GET"),
 			AuthorizationType:   aws.String("NONE"),
@@ -151,8 +130,8 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("put method: %v", err)
 		}
 
-		method, err := client.GetMethod(ctx, &apigateway.GetMethodInput{
-			RestApiId:  createResp.Id,
+		method, err := tc.client.GetMethod(tc.ctx, &apigateway.GetMethodInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: &rootId,
 			HttpMethod: aws.String("GET"),
 		})
@@ -170,32 +149,19 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutIntegration_TlsConfig_Timeout_RoundTrip", func() error {
-		tmpAPI := fmt.Sprintf("TlsAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(tmpAPI),
-		})
+		ownAPI, _, err := tc.createAPI(tc.uniqueName("TlsAPI"))
 		if err != nil {
 			return fmt.Errorf("create api: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(ownAPI)
 
-		var rootId string
-		resources, err := client.GetResources(ctx, &apigateway.GetResourcesInput{RestApiId: createResp.Id})
+		rootId, err := tc.findRootResource(ownAPI)
 		if err != nil {
-			return fmt.Errorf("get resources: %v", err)
-		}
-		for _, res := range resources.Items {
-			if res.Path != nil && *res.Path == "/" {
-				rootId = *res.Id
-				break
-			}
-		}
-		if rootId == "" {
-			return fmt.Errorf("root resource not found")
+			return err
 		}
 
-		_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         createResp.Id,
+		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
 			ResourceId:        &rootId,
 			HttpMethod:        aws.String("GET"),
 			AuthorizationType: aws.String("NONE"),
@@ -204,8 +170,8 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("put method: %v", err)
 		}
 
-		_, err = client.PutIntegration(ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: &rootId,
 			HttpMethod: aws.String("GET"),
 			Type:       "HTTP",
@@ -218,8 +184,8 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("put integration: %v", err)
 		}
 
-		integ, err := client.GetIntegration(ctx, &apigateway.GetIntegrationInput{
-			RestApiId:  createResp.Id,
+		integ, err := tc.client.GetIntegration(tc.ctx, &apigateway.GetIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: &rootId,
 			HttpMethod: aws.String("GET"),
 		})
@@ -241,17 +207,17 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 
 	results = append(results, r.RunTest("apigateway", "TagResource_UsagePlan", func() error {
 		planName := fmt.Sprintf("TagPlan-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		createResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String(planName),
 		})
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
+		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
 
-		arn := fmt.Sprintf("arn:aws:apigateway:%s::/usageplans/%s", r.region, *createResp.Id)
+		arn := fmt.Sprintf("arn:aws:apigateway:%s::/usageplans/%s", tc.r.region, *createResp.Id)
 
-		_, err = client.TagResource(ctx, &apigateway.TagResourceInput{
+		_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
 			ResourceArn: aws.String(arn),
 			Tags: map[string]string{
 				"env":  "test",
@@ -262,7 +228,7 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("tag usage plan: %v", err)
 		}
 
-		tagResp, err := client.GetTags(ctx, &apigateway.GetTagsInput{
+		tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -272,7 +238,7 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("tags mismatch: %v", tagResp.Tags)
 		}
 
-		_, err = client.UntagResource(ctx, &apigateway.UntagResourceInput{
+		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"team"},
 		})
@@ -280,7 +246,7 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 			return fmt.Errorf("untag: %v", err)
 		}
 
-		tagResp2, err := client.GetTags(ctx, &apigateway.GetTagsInput{
+		tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
 			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
@@ -297,7 +263,7 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 
 	results = append(results, r.RunTest("apigateway", "CreateUsagePlan_QuotaOffset", func() error {
 		planName := fmt.Sprintf("OffsetPlan-%d", time.Now().UnixNano())
-		createResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		createResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String(planName),
 			Quota: &types.QuotaSettings{
 				Limit:  1000,
@@ -308,9 +274,9 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
+		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
 
-		plan, err := client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+		plan, err := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: createResp.Id,
 		})
 		if err != nil {
@@ -327,18 +293,17 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(ctx context.Context, client *ap
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateRestApi_DisableExecuteApiEndpoint", func() error {
-		apiName := fmt.Sprintf("DisableExec-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name:                      aws.String(apiName),
+		createResp, err := tc.client.CreateRestApi(tc.ctx, &apigateway.CreateRestApiInput{
+			Name:                      aws.String(tc.uniqueName("DisableExec")),
 			DisableExecuteApiEndpoint: true,
 			MinimumCompressionSize:    aws.Int32(0),
 		})
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(*createResp.Id)
 
-		api, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
+		api, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
 			RestApiId: createResp.Id,
 		})
 		if err != nil {

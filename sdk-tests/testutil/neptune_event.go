@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
 func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []TestResult {
@@ -42,25 +43,21 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeEventSubscriptions", func() error {
-		resp, err := tc.client.DescribeEventSubscriptions(tc.ctx, &neptune.DescribeEventSubscriptionsInput{})
+		subs, err := tc.allEventSubscriptions()
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, sub := range resp.EventSubscriptionsList {
-			if sub.CustSubscriptionId != nil && *sub.CustSubscriptionId == subName {
-				found = true
-				if sub.SnsTopicArn == nil || *sub.SnsTopicArn != snsARN {
-					return fmt.Errorf("expected SnsTopicArn in subscription, got %v", sub.SnsTopicArn)
-				}
-				if sub.Status == nil || *sub.Status == "" {
-					return fmt.Errorf("expected non-empty Status in subscription")
-				}
-				break
-			}
-		}
-		if !found {
+		sub := containsID(subs, func(sub *types.EventSubscription) bool {
+			return sub.CustSubscriptionId != nil && *sub.CustSubscriptionId == subName
+		})
+		if sub == nil {
 			return fmt.Errorf("created event subscription not found in list")
+		}
+		if sub.SnsTopicArn == nil || *sub.SnsTopicArn != snsARN {
+			return fmt.Errorf("expected SnsTopicArn in subscription, got %v", sub.SnsTopicArn)
+		}
+		if sub.Status == nil || *sub.Status == "" {
+			return fmt.Errorf("expected non-empty Status in subscription")
 		}
 		return nil
 	}))

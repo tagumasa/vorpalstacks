@@ -189,18 +189,15 @@ func (r *TestRunner) runIoTThingTests(tc *iotTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iot", "Thing_AttachDetachThingPrincipal", func() error {
 		// Create a certificate to use as the principal.
-		cert, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{SetAsActive: true})
+		cert, cleanup, err := tc.createCertificate(true)
 		if err != nil {
 			return fmt.Errorf("CreateKeysAndCertificate failed: %w", err)
 		}
-		certARN := aws.ToString(cert.CertificateArn)
+		certARN := cert.ARN
 		defer tc.client.DetachThingPrincipal(tc.ctx, &iot.DetachThingPrincipalInput{
 			ThingName: aws.String(thingName), Principal: aws.String(certARN),
 		})
-		defer tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
-			CertificateId: cert.CertificateId, NewStatus: types.CertificateStatusInactive,
-		})
-		defer tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{CertificateId: cert.CertificateId})
+		defer cleanup()
 
 		if _, err := tc.client.AttachThingPrincipal(tc.ctx, &iot.AttachThingPrincipalInput{
 			ThingName: aws.String(thingName), Principal: aws.String(certARN),

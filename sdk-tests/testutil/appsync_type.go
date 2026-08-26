@@ -66,24 +66,16 @@ func (r *TestRunner) runAppSyncTypeTests(res *appsyncResources) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListTypes", func() error {
-		resp, err := client.ListTypes(ctx, &appsync.ListTypesInput{
-			ApiId:  aws.String(res.gqlApiId),
-			Format: types.TypeDefinitionFormatSdl,
-		})
+		definitions, err := res.allTypes(res.gqlApiId, types.TypeDefinitionFormatSdl)
 		if err != nil {
 			return err
 		}
-		if len(resp.Types) < 1 {
-			return fmt.Errorf("expected at least 1 type, got %d", len(resp.Types))
+		if len(definitions) < 1 {
+			return fmt.Errorf("expected at least 1 type, got %d", len(definitions))
 		}
-		found := false
-		for _, t := range resp.Types {
-			if t.Name != nil && *t.Name == "Post" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(definitions, func(t *types.Type) bool {
+			return t.Name != nil && *t.Name == "Post"
+		}) == nil {
 			return fmt.Errorf("created type Post not found in list")
 		}
 		return nil

@@ -13,7 +13,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_WithTags", func() error {
 		domain := acmUniqueDomain("tag-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			Tags: []types.Tag{
@@ -24,9 +24,9 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: resp.CertificateArn})
+		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -48,24 +48,21 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_UpdateExistingTag", func() error {
 		domain := acmUniqueDomain("tagupd")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("Env"), Value: aws.String("dev")}},
 		})
 		tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("Env"), Value: aws.String("prod")}},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: resp.CertificateArn})
+		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -82,23 +79,20 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_VerifyContent", func() error {
 		domain := acmUniqueDomain("tagver")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Tags: []types.Tag{
 				{Key: aws.String("Key1"), Value: aws.String("Val1")},
 				{Key: aws.String("Key2"), Value: aws.String("Val2")},
 			},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: resp.CertificateArn})
+		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -110,24 +104,21 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RemoveTagsFromCertificate_VerifyEmpty", func() error {
 		domain := acmUniqueDomain("tagrm")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		tc.client.AddTagsToCertificate(tc.ctx, &acm.AddTagsToCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("X"), Value: aws.String("Y")}},
 		})
 		tc.client.RemoveTagsFromCertificate(tc.ctx, &acm.RemoveTagsFromCertificateInput{
-			CertificateArn: resp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("X")}},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: resp.CertificateArn})
+		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -139,7 +130,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "ListTagsForCertificate_VerifyMultipleTags", func() error {
 		domain := acmUniqueDomain("listtag")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			Tags: []types.Tag{
@@ -151,9 +142,9 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: resp.CertificateArn})
+		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -173,17 +164,14 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 	// Generic tag API: TagResource / UntagResource / ListTagsForResource
 	results = append(results, r.RunTest("acm", "TagResource_AddAndList", func() error {
 		domain := acmUniqueDomain("generic-tag")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.TagResource(tc.ctx, &acm.TagResourceInput{
-			ResourceArn: resp.CertificateArn,
+			ResourceArn: aws.String(arn),
 			Tags: []types.Tag{
 				{Key: aws.String("Project"), Value: aws.String("acme")},
 				{Key: aws.String("Owner"), Value: aws.String("devops")},
@@ -194,7 +182,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		}
 
 		listResp, err := tc.client.ListTagsForResource(tc.ctx, &acm.ListTagsForResourceInput{
-			ResourceArn: resp.CertificateArn,
+			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
 			return err
@@ -207,7 +195,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "UntagResource_RemoveByKey", func() error {
 		domain := acmUniqueDomain("generic-untag")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			Tags: []types.Tag{
@@ -218,10 +206,10 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		_, err = tc.client.UntagResource(tc.ctx, &acm.UntagResourceInput{
-			ResourceArn: resp.CertificateArn,
+			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"Remove"},
 		})
 		if err != nil {
@@ -229,7 +217,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		}
 
 		listResp, err := tc.client.ListTagsForResource(tc.ctx, &acm.ListTagsForResourceInput{
-			ResourceArn: resp.CertificateArn,
+			ResourceArn: aws.String(arn),
 		})
 		if err != nil {
 			return err
@@ -246,14 +234,11 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 	// SearchCertificates
 	results = append(results, r.RunTest("acm", "SearchCertificates_ReturnsResults", func() error {
 		domain := acmUniqueDomain("search-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		searchResp, err := tc.client.SearchCertificates(tc.ctx, &acm.SearchCertificatesInput{})
 		if err != nil {
@@ -263,8 +248,8 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 			return fmt.Errorf("expected at least 1 search result")
 		}
 		// Verify each result has required fields.
-		for _, r := range searchResp.Results {
-			if aws.ToString(r.CertificateArn) == "" {
+		for _, sr := range searchResp.Results {
+			if aws.ToString(sr.CertificateArn) == "" {
 				return fmt.Errorf("CertificateArn empty in search result")
 			}
 		}

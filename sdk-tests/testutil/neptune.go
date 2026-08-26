@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -28,6 +29,128 @@ type neptuneContext struct {
 	vpcID           *string
 	subnetIds       []string
 	allSubnetIds    []string
+}
+
+// clusterRoleArn is the test role ARN used by the
+// AddRoleToDBCluster/RemoveRoleFromDBCluster round-trip.
+func (tc *neptuneContext) clusterRoleArn() string {
+	return fmt.Sprintf("arn:aws:iam::%s:role/test-role", tc.accountID)
+}
+
+// The all* walkers below traverse every page of a describe API so the list
+// assertions hold during full regression when other suites create resources
+// in parallel and a single page may not contain the suite's own resources.
+
+func (tc *neptuneContext) allClusters(filter *string) ([]types.DBCluster, error) {
+	return paginate(func(next *string) ([]types.DBCluster, *string, error) {
+		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
+			DBClusterIdentifier: filter,
+			Marker:              next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBClusters, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allSnapshots(filter *string) ([]types.DBClusterSnapshot, error) {
+	return paginate(func(next *string) ([]types.DBClusterSnapshot, *string, error) {
+		resp, err := tc.client.DescribeDBClusterSnapshots(tc.ctx, &neptune.DescribeDBClusterSnapshotsInput{
+			DBClusterSnapshotIdentifier: filter,
+			Marker:                      next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBClusterSnapshots, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allInstances() ([]types.DBInstance, error) {
+	return paginate(func(next *string) ([]types.DBInstance, *string, error) {
+		resp, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{Marker: next})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBInstances, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allGlobalClusters(filter *string) ([]types.GlobalCluster, error) {
+	return paginate(func(next *string) ([]types.GlobalCluster, *string, error) {
+		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
+			GlobalClusterIdentifier: filter,
+			Marker:                  next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.GlobalClusters, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allEventSubscriptions() ([]types.EventSubscription, error) {
+	return paginate(func(next *string) ([]types.EventSubscription, *string, error) {
+		resp, err := tc.client.DescribeEventSubscriptions(tc.ctx, &neptune.DescribeEventSubscriptionsInput{Marker: next})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.EventSubscriptionsList, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allEndpoints(clusterFilter, idFilter *string) ([]types.DBClusterEndpoint, error) {
+	return paginate(func(next *string) ([]types.DBClusterEndpoint, *string, error) {
+		resp, err := tc.client.DescribeDBClusterEndpoints(tc.ctx, &neptune.DescribeDBClusterEndpointsInput{
+			DBClusterIdentifier:         clusterFilter,
+			DBClusterEndpointIdentifier: idFilter,
+			Marker:                      next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBClusterEndpoints, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allSubnetGroups(filter *string) ([]types.DBSubnetGroup, error) {
+	return paginate(func(next *string) ([]types.DBSubnetGroup, *string, error) {
+		resp, err := tc.client.DescribeDBSubnetGroups(tc.ctx, &neptune.DescribeDBSubnetGroupsInput{
+			DBSubnetGroupName: filter,
+			Marker:            next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBSubnetGroups, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allClusterParameterGroups(filter *string) ([]types.DBClusterParameterGroup, error) {
+	return paginate(func(next *string) ([]types.DBClusterParameterGroup, *string, error) {
+		resp, err := tc.client.DescribeDBClusterParameterGroups(tc.ctx, &neptune.DescribeDBClusterParameterGroupsInput{
+			DBClusterParameterGroupName: filter,
+			Marker:                      next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBClusterParameterGroups, resp.Marker, nil
+	})
+}
+
+func (tc *neptuneContext) allParameterGroups(filter *string) ([]types.DBParameterGroup, error) {
+	return paginate(func(next *string) ([]types.DBParameterGroup, *string, error) {
+		resp, err := tc.client.DescribeDBParameterGroups(tc.ctx, &neptune.DescribeDBParameterGroupsInput{
+			DBParameterGroupName: filter,
+			Marker:               next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.DBParameterGroups, resp.Marker, nil
+	})
 }
 
 func (r *TestRunner) RunNeptuneTests() []TestResult {

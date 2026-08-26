@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -11,11 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "CreateUsagePlan", func() error {
-		resp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		resp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name:        aws.String("test-usage-plan"),
 			Description: aws.String("Test usage plan"),
 			Throttle: &types.ThrottleSettings{
@@ -62,24 +61,20 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 
 	var usagePlanID string
 	results = append(results, r.RunTest("apigateway", "GetUsagePlans", func() error {
-		resp, err := client.GetUsagePlans(ctx, &apigateway.GetUsagePlansInput{
-			Limit: aws.Int32(100),
-		})
+		items, err := tc.allUsagePlans()
 		if err != nil {
 			return err
 		}
-		if len(resp.Items) == 0 {
+		if len(items) == 0 {
 			return fmt.Errorf("expected at least 1 usage plan")
 		}
-		for _, item := range resp.Items {
-			if item.Name != nil && *item.Name == "test-usage-plan" {
-				usagePlanID = *item.Id
-				break
-			}
-		}
-		if usagePlanID == "" {
+		found := containsID(items, func(item *types.UsagePlan) bool {
+			return item.Name != nil && *item.Name == "test-usage-plan"
+		})
+		if found == nil {
 			return fmt.Errorf("test-usage-plan not found")
 		}
+		usagePlanID = *found.Id
 		return nil
 	}))
 
@@ -87,7 +82,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 		if usagePlanID == "" {
 			return fmt.Errorf("usage plan ID not available")
 		}
-		resp, err := client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+		resp, err := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: aws.String(usagePlanID),
 		})
 		if err != nil {
@@ -112,7 +107,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 		if usagePlanID == "" {
 			return fmt.Errorf("usage plan ID not available")
 		}
-		resp, err := client.UpdateUsagePlan(ctx, &apigateway.UpdateUsagePlanInput{
+		resp, err := tc.client.UpdateUsagePlan(tc.ctx, &apigateway.UpdateUsagePlanInput{
 			UsagePlanId: aws.String(usagePlanID),
 			PatchOperations: []types.PatchOperation{
 				{
@@ -135,13 +130,13 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 		if usagePlanID == "" {
 			return fmt.Errorf("usage plan ID not available")
 		}
-		_, err := client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{
+		_, err := tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{
 			UsagePlanId: aws.String(usagePlanID),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+		_, err = tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: aws.String(usagePlanID),
 		})
 		if err == nil {
@@ -154,24 +149,24 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateUsagePlanKey_Lifecycle", func() error {
-		keyResp, err := client.CreateApiKey(ctx, &apigateway.CreateApiKeyInput{
+		keyResp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
 			Name:    aws.String("upk-test-key"),
 			Enabled: true,
 		})
 		if err != nil {
 			return fmt.Errorf("create api key: %v", err)
 		}
-		defer client.DeleteApiKey(ctx, &apigateway.DeleteApiKeyInput{ApiKey: keyResp.Id})
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: keyResp.Id})
 
-		upResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		upResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String("upk-test-plan"),
 		})
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
 
-		upkResp, err := client.CreateUsagePlanKey(ctx, &apigateway.CreateUsagePlanKeyInput{
+		upkResp, err := tc.client.CreateUsagePlanKey(tc.ctx, &apigateway.CreateUsagePlanKeyInput{
 			UsagePlanId: upResp.Id,
 			KeyId:       keyResp.Id,
 			KeyType:     aws.String("API_KEY"),
@@ -183,7 +178,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("usage plan key ID is nil")
 		}
 
-		getResp, err := client.GetUsagePlanKey(ctx, &apigateway.GetUsagePlanKeyInput{
+		getResp, err := tc.client.GetUsagePlanKey(tc.ctx, &apigateway.GetUsagePlanKeyInput{
 			UsagePlanId: upResp.Id,
 			KeyId:       keyResp.Id,
 		})
@@ -194,7 +189,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("type mismatch, got %v", getResp.Type)
 		}
 
-		keysResp, err := client.GetUsagePlanKeys(ctx, &apigateway.GetUsagePlanKeysInput{
+		keysResp, err := tc.client.GetUsagePlanKeys(tc.ctx, &apigateway.GetUsagePlanKeysInput{
 			UsagePlanId: upResp.Id,
 			Limit:       aws.Int32(100),
 		})
@@ -205,7 +200,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("expected at least 1 usage plan key")
 		}
 
-		_, err = client.DeleteUsagePlanKey(ctx, &apigateway.DeleteUsagePlanKeyInput{
+		_, err = tc.client.DeleteUsagePlanKey(tc.ctx, &apigateway.DeleteUsagePlanKeyInput{
 			UsagePlanId: upResp.Id,
 			KeyId:       keyResp.Id,
 		})
@@ -216,18 +211,18 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetUsage", func() error {
-		upResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		upResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String(fmt.Sprintf("usage-plan-%d", time.Now().UnixNano())),
 		})
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
 
 		now := time.Now().UTC()
 		startDate := now.AddDate(0, -1, 0).Format("2006-01-02")
 		endDate := now.Format("2006-01-02")
-		resp, err := client.GetUsage(ctx, &apigateway.GetUsageInput{
+		resp, err := tc.client.GetUsage(tc.ctx, &apigateway.GetUsageInput{
 			UsagePlanId: upResp.Id,
 			StartDate:   aws.String(startDate),
 			EndDate:     aws.String(endDate),
@@ -242,36 +237,30 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UsagePlan_WithApiStages", func() error {
-		usAPI := fmt.Sprintf("UsAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(usAPI),
-		})
+		ownAPI, _, err := tc.createAPI(tc.uniqueName("UsAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		depResp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
-			RestApiId: createResp.Id,
-		})
+		defer tc.deleteAPI(ownAPI)
+		depID, err := tc.createDeployment(ownAPI, "")
 		if err != nil {
 			return fmt.Errorf("deploy: %v", err)
 		}
 
-		_, err = client.CreateStage(ctx, &apigateway.CreateStageInput{
-			RestApiId:    createResp.Id,
+		_, err = tc.client.CreateStage(tc.ctx, &apigateway.CreateStageInput{
+			RestApiId:    aws.String(ownAPI),
 			StageName:    aws.String("api-stage"),
-			DeploymentId: depResp.Id,
+			DeploymentId: aws.String(depID),
 		})
 		if err != nil {
 			return fmt.Errorf("create stage: %v", err)
 		}
 
-		upResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		upResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String(fmt.Sprintf("us-plan-%d", time.Now().UnixNano())),
 			ApiStages: []types.ApiStage{
 				{
-					ApiId: createResp.Id,
+					ApiId: aws.String(ownAPI),
 					Stage: aws.String("api-stage"),
 				},
 			},
@@ -280,7 +269,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("create usage plan: %v", err)
 		}
 
-		getResp, err := client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+		getResp, err := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: upResp.Id,
 		})
 		if err != nil {
@@ -290,22 +279,22 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("expected apiStages to be set")
 		}
 
-		client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+		tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateUsagePlan_ApiStageIndexOutOfRange_Rejected", func() error {
-		upResp, err := client.CreateUsagePlan(ctx, &apigateway.CreateUsagePlanInput{
+		upResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
 			Name: aws.String(fmt.Sprintf("oob-plan-%d", time.Now().UnixNano())),
 		})
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer client.DeleteUsagePlan(ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
+		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: upResp.Id})
 
 		// The plan has no api stages; index 0 is out of range and must be
 		// rejected instead of silently appending an empty stage entry.
-		_, err = client.UpdateUsagePlan(ctx, &apigateway.UpdateUsagePlanInput{
+		_, err = tc.client.UpdateUsagePlan(tc.ctx, &apigateway.UpdateUsagePlanInput{
 			UsagePlanId: upResp.Id,
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/apiStages/0/apiId"), Value: aws.String("abc123")},
@@ -315,7 +304,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(ctx context.Context, client *ap
 			return fmt.Errorf("expected BadRequestException for out-of-range apiStages index, got: %v", err)
 		}
 
-		getResp, getErr := client.GetUsagePlan(ctx, &apigateway.GetUsagePlanInput{
+		getResp, getErr := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: upResp.Id,
 		})
 		if getErr != nil {

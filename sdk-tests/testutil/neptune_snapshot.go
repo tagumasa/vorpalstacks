@@ -5,7 +5,25 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
+
+// assertRestoreAttributeAll verifies that the snapshot attribute list grants
+// the restore attribute to "all".
+func assertRestoreAttributeAll(attrs []types.DBClusterSnapshotAttribute) error {
+	restore := containsID(attrs, func(a *types.DBClusterSnapshotAttribute) bool {
+		return a.AttributeName != nil && *a.AttributeName == "restore"
+	})
+	if restore == nil {
+		return fmt.Errorf("expected 'restore' attribute in snapshot attributes")
+	}
+	for _, v := range restore.AttributeValues {
+		if v == "all" {
+			return nil
+		}
+	}
+	return fmt.Errorf("expected 'all' in restore attribute values")
+}
 
 func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 	var results []TestResult
@@ -32,22 +50,18 @@ func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterSnapshots", func() error {
-		resp, err := tc.client.DescribeDBClusterSnapshots(tc.ctx, &neptune.DescribeDBClusterSnapshotsInput{})
+		snapshots, err := tc.allSnapshots(nil)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, snap := range resp.DBClusterSnapshots {
-			if snap.DBClusterSnapshotIdentifier != nil && *snap.DBClusterSnapshotIdentifier == tc.snapshotID {
-				found = true
-				if snap.DBClusterIdentifier == nil || *snap.DBClusterIdentifier != tc.clusterID {
-					return fmt.Errorf("expected DBClusterIdentifier=%s on snapshot, got %v", tc.clusterID, snap.DBClusterIdentifier)
-				}
-				break
-			}
-		}
-		if !found {
+		snap := containsID(snapshots, func(s *types.DBClusterSnapshot) bool {
+			return s.DBClusterSnapshotIdentifier != nil && *s.DBClusterSnapshotIdentifier == tc.snapshotID
+		})
+		if snap == nil {
 			return fmt.Errorf("created snapshot not found in list")
+		}
+		if snap.DBClusterIdentifier == nil || *snap.DBClusterIdentifier != tc.clusterID {
+			return fmt.Errorf("expected DBClusterIdentifier=%s on snapshot, got %v", tc.clusterID, snap.DBClusterIdentifier)
 		}
 		return nil
 	}))
@@ -100,23 +114,8 @@ func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 		if resp.DBClusterSnapshotAttributesResult == nil {
 			return fmt.Errorf("expected DBClusterSnapshotAttributesResult in response")
 		}
-		foundRestore := false
-		for _, attr := range resp.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes {
-			if attr.AttributeName != nil && *attr.AttributeName == "restore" {
-				foundRestore = true
-				hasAll := false
-				for _, v := range attr.AttributeValues {
-					if v == "all" {
-						hasAll = true
-					}
-				}
-				if !hasAll {
-					return fmt.Errorf("expected 'all' in restore attribute values after modify")
-				}
-			}
-		}
-		if !foundRestore {
-			return fmt.Errorf("expected 'restore' attribute in ModifyDBClusterSnapshotAttribute response")
+		if err := assertRestoreAttributeAll(resp.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes); err != nil {
+			return fmt.Errorf("%v in ModifyDBClusterSnapshotAttribute response", err)
 		}
 		return nil
 	}))
@@ -128,26 +127,7 @@ func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		attrs := resp.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes
-		foundRestore := false
-		for _, attr := range attrs {
-			if attr.AttributeName != nil && *attr.AttributeName == "restore" {
-				foundRestore = true
-				hasAll := false
-				for _, v := range attr.AttributeValues {
-					if v == "all" {
-						hasAll = true
-					}
-				}
-				if !hasAll {
-					return fmt.Errorf("expected 'all' in restore attribute values")
-				}
-			}
-		}
-		if !foundRestore {
-			return fmt.Errorf("expected 'restore' attribute in snapshot attributes")
-		}
-		return nil
+		return assertRestoreAttributeAll(resp.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes)
 	}))
 
 	results = append(results, r.RunTest("neptune", "CopyDBClusterSnapshot", func() error {

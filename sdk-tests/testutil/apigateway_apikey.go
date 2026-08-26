@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -11,12 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apigateway.Client) []TestResult {
+func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	var apiKeyValue string
 	results = append(results, r.RunTest("apigateway", "CreateApiKey", func() error {
-		resp, err := client.CreateApiKey(ctx, &apigateway.CreateApiKeyInput{
+		resp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
 			Name:        aws.String("test-api-key"),
 			Description: aws.String("Test API key"),
 			Enabled:     true,
@@ -51,24 +50,20 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apiga
 
 	var apiKeyID string
 	results = append(results, r.RunTest("apigateway", "GetApiKeys", func() error {
-		resp, err := client.GetApiKeys(ctx, &apigateway.GetApiKeysInput{
-			Limit: aws.Int32(100),
-		})
+		items, err := tc.allApiKeys()
 		if err != nil {
 			return err
 		}
-		if len(resp.Items) == 0 {
+		if len(items) == 0 {
 			return fmt.Errorf("expected at least 1 api key")
 		}
-		for _, item := range resp.Items {
-			if item.Name != nil && *item.Name == "test-api-key" {
-				apiKeyID = *item.Id
-				break
-			}
-		}
-		if apiKeyID == "" {
+		found := containsID(items, func(item *types.ApiKey) bool {
+			return item.Name != nil && *item.Name == "test-api-key"
+		})
+		if found == nil {
 			return fmt.Errorf("test-api-key not found")
 		}
+		apiKeyID = *found.Id
 		return nil
 	}))
 
@@ -76,7 +71,7 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apiga
 		if apiKeyID == "" {
 			return fmt.Errorf("api key ID not available")
 		}
-		resp, err := client.GetApiKey(ctx, &apigateway.GetApiKeyInput{
+		resp, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
 			ApiKey:       aws.String(apiKeyID),
 			IncludeValue: aws.Bool(true),
 		})
@@ -96,7 +91,7 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apiga
 		if apiKeyID == "" {
 			return fmt.Errorf("api key ID not available")
 		}
-		resp, err := client.UpdateApiKey(ctx, &apigateway.UpdateApiKeyInput{
+		resp, err := tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
 			PatchOperations: []types.PatchOperation{
 				{
@@ -119,13 +114,13 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apiga
 		if apiKeyID == "" {
 			return fmt.Errorf("api key ID not available")
 		}
-		_, err := client.DeleteApiKey(ctx, &apigateway.DeleteApiKeyInput{
+		_, err := tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetApiKey(ctx, &apigateway.GetApiKeyInput{
+		_, err = tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
 		})
 		if err == nil {
@@ -139,13 +134,13 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(ctx context.Context, client *apiga
 
 	results = append(results, r.RunTest("apigateway", "CreateApiKey_DefaultEnabled", func() error {
 		keyName := fmt.Sprintf("default-key-%d", time.Now().UnixNano())
-		resp, err := client.CreateApiKey(ctx, &apigateway.CreateApiKeyInput{
+		resp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
 			Name: aws.String(keyName),
 		})
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteApiKey(ctx, &apigateway.DeleteApiKeyInput{ApiKey: resp.Id})
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: resp.Id})
 
 		if !resp.Enabled {
 			return fmt.Errorf("expected enabled=true by default, got false")

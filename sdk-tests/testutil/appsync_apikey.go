@@ -65,23 +65,16 @@ func (r *TestRunner) runAppSyncApiKeyTests(res *appsyncResources) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListApiKeys", func() error {
-		resp, err := client.ListApiKeys(ctx, &appsync.ListApiKeysInput{
-			ApiId: aws.String(res.gqlApiId),
-		})
+		keys, err := res.allApiKeys(res.gqlApiId)
 		if err != nil {
 			return err
 		}
-		if len(resp.ApiKeys) < 2 {
-			return fmt.Errorf("expected at least 2 API keys, got %d", len(resp.ApiKeys))
+		if len(keys) < 2 {
+			return fmt.Errorf("expected at least 2 API keys, got %d", len(keys))
 		}
-		found := false
-		for _, key := range resp.ApiKeys {
-			if key.Id != nil && *key.Id == res.apiKeyId {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(keys, func(key *types.ApiKey) bool {
+			return key.Id != nil && *key.Id == res.apiKeyId
+		}) == nil {
 			return fmt.Errorf("created API key not found in list")
 		}
 		return nil
@@ -141,16 +134,14 @@ func (r *TestRunner) runAppSyncApiKeyTests(res *appsyncResources) []TestResult {
 		if err != nil {
 			return err
 		}
-		listResp, err := client.ListApiKeys(ctx, &appsync.ListApiKeysInput{
-			ApiId: aws.String(res.gqlApiId),
-		})
+		keys, err := res.allApiKeys(res.gqlApiId)
 		if err != nil {
 			return err
 		}
-		for _, key := range listResp.ApiKeys {
-			if key.Id != nil && *key.Id == res.apiKeyId {
-				return fmt.Errorf("deleted API key still appears in list")
-			}
+		if containsID(keys, func(key *types.ApiKey) bool {
+			return key.Id != nil && *key.Id == res.apiKeyId
+		}) != nil {
+			return fmt.Errorf("deleted API key still appears in list")
 		}
 		return nil
 	}))

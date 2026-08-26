@@ -28,14 +28,11 @@ func (r *TestRunner) runACMListTests(tc *acmTestContext) []TestResult {
 	results = append(results, r.RunTest("acm", "ListCertificates_Pagination", func() error {
 		var arns []string
 		for i := 0; i < 3; i++ {
-			resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-				DomainName:       aws.String(fmt.Sprintf("page-%d-%d.com", time.Now().UnixNano(), i)),
-				ValidationMethod: types.ValidationMethodDns,
-			})
+			arn, err := tc.requestDNSCert(fmt.Sprintf("page-%d-%d.com", time.Now().UnixNano(), i))
 			if err != nil {
 				return err
 			}
-			arns = append(arns, aws.ToString(resp.CertificateArn))
+			arns = append(arns, arn)
 		}
 		defer func() {
 			for _, arn := range arns {
@@ -43,119 +40,59 @@ func (r *TestRunner) runACMListTests(tc *acmTestContext) []TestResult {
 			}
 		}()
 
-		var allArns []string
-		var nextToken *string
-		for {
-			input := &acm.ListCertificatesInput{
-				MaxItems: aws.Int32(2),
-			}
-			if nextToken != nil {
-				input.NextToken = nextToken
-			}
-			resp, err := tc.client.ListCertificates(tc.ctx, input)
-			if err != nil {
-				return fmt.Errorf("list page: %v", err)
-			}
-			for _, s := range resp.CertificateSummaryList {
-				allArns = append(allArns, aws.ToString(s.CertificateArn))
-			}
-			if resp.NextToken == nil || aws.ToString(resp.NextToken) == "" {
-				break
-			}
-			nextToken = resp.NextToken
+		allCerts, err := tc.allCertificates(nil)
+		if err != nil {
+			return err
 		}
-
-		foundCount := 0
-		arnSet := make(map[string]bool)
-		for _, a := range arns {
-			arnSet[a] = true
-		}
-		for _, a := range allArns {
-			if arnSet[a] {
-				foundCount++
+		for _, want := range arns {
+			if containsID(allCerts, func(s *types.CertificateSummary) bool {
+				return aws.ToString(s.CertificateArn) == want
+			}) == nil {
+				return fmt.Errorf("requested cert %s not found across pages", want)
 			}
-		}
-		if foundCount != 3 {
-			return fmt.Errorf("expected to find all 3 certs across pages, found %d", foundCount)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("acm", "ListCertificates_CertificateStatusesFilter", func() error {
-		importResp, err := tc.importDefaultCert()
+		importArn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		importArn := aws.ToString(importResp.CertificateArn)
 		defer tc.deleteCert(importArn)
 
-		found := false
-		var nextToken *string
-		for {
-			input := &acm.ListCertificatesInput{
-				CertificateStatuses: []types.CertificateStatus{types.CertificateStatusIssued},
-			}
-			if nextToken != nil {
-				input.NextToken = nextToken
-			}
-			resp, err := tc.client.ListCertificates(tc.ctx, input)
-			if err != nil {
-				return err
-			}
-			for _, s := range resp.CertificateSummaryList {
-				if aws.ToString(s.CertificateArn) == importArn {
-					found = true
-				}
-				if s.Status != types.CertificateStatusIssued {
-					return fmt.Errorf("found non-ISSUED cert in filtered list: %s", s.Status)
-				}
-			}
-			if found || resp.NextToken == nil || aws.ToString(resp.NextToken) == "" {
-				break
-			}
-			nextToken = resp.NextToken
+		certs, err := tc.allCertificates([]types.CertificateStatus{types.CertificateStatusIssued})
+		if err != nil {
+			return err
 		}
-		if !found {
+		if containsID(certs, func(s *types.CertificateSummary) bool {
+			return aws.ToString(s.CertificateArn) == importArn
+		}) == nil {
 			return fmt.Errorf("imported ISSUED cert not found in filtered list")
+		}
+		for _, s := range certs {
+			if s.Status != types.CertificateStatusIssued {
+				return fmt.Errorf("found non-ISSUED cert in filtered list: %s", s.Status)
+			}
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("acm", "ListCertificates_SummaryFields", func() error {
 		domain := acmUniqueDomain("summary")
-		reqResp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		arn := aws.ToString(reqResp.CertificateArn)
 		defer tc.deleteCert(arn)
 
-		var found *types.CertificateSummary
-		var nextToken *string
-		for {
-			input := &acm.ListCertificatesInput{MaxItems: aws.Int32(100)}
-			if nextToken != nil {
-				input.NextToken = nextToken
-			}
-			listResp, err := tc.client.ListCertificates(tc.ctx, input)
-			if err != nil {
-				return err
-			}
-			for _, s := range listResp.CertificateSummaryList {
-				if aws.ToString(s.CertificateArn) == arn {
-					cs := s
-					found = &cs
-					break
-				}
-			}
-			if found != nil || listResp.NextToken == nil {
-				break
-			}
-			nextToken = listResp.NextToken
+		certs, err := tc.allCertificates(nil)
+		if err != nil {
+			return err
 		}
+		found := containsID(certs, func(s *types.CertificateSummary) bool {
+			return aws.ToString(s.CertificateArn) == arn
+		})
 		if found == nil {
 			return fmt.Errorf("certificate not found in list")
 		}

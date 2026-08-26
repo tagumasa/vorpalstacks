@@ -16,12 +16,13 @@ func (r *TestRunner) runIoTFinalBatchTests(tc *iotTestContext) []TestResult {
 	thingName := uniqueName("final-thing")
 	thingARN := tc.arn("iot", "thing", thingName)
 
-	defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
-
-	results = append(results, r.RunTest("iot", "Final_Setup_CreateThing", func() error {
-		_, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{ThingName: aws.String(thingName)})
-		return err
-	}))
+	// Setup: create the thing up front; a prerequisite failure surfaces as a
+	// single FAIL row named after the setup step it replaces.
+	cleanupThing, err := tc.createThing(thingName)
+	if err != nil {
+		return []TestResult{{Service: "iot", TestName: "Final_Setup_CreateThing", Status: "FAIL", Error: err.Error()}}
+	}
+	defer cleanupThing()
 
 	results = append(results, r.RunTest("iot", "GetRegistrationCode", func() error {
 		// The edge platform may not issue a real registration code; assert the

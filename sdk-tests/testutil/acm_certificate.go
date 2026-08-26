@@ -16,17 +16,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_WithSubjectAlternativeNames", func() error {
 		domain := acmUniqueDomain("san-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:              aws.String(domain),
-			ValidationMethod:        types.ValidationMethodDns,
-			SubjectAlternativeNames: []string{fmt.Sprintf("www.%s", domain), fmt.Sprintf("api.%s", domain)},
-		})
+		arn, err := tc.requestCertSANs(domain, fmt.Sprintf("www.%s", domain), fmt.Sprintf("api.%s", domain))
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -38,7 +34,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_WithOptions", func() error {
 		domain := acmUniqueDomain("opts-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			Options: &types.CertificateOptions{
@@ -48,9 +44,9 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -65,16 +61,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_WithEmailValidation", func() error {
 		domain := acmUniqueDomain("email-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodEmail,
-		})
+		arn, err := tc.requestEmailCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -93,16 +86,12 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_VerifyArnFormat", func() error {
 		domain := acmUniqueDomain("arn-test")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		arn := aws.ToString(resp.CertificateArn)
 		if !strings.HasPrefix(arn, "arn:aws:acm:") {
 			return fmt.Errorf("ARN should start with arn:aws:acm:, got %s", arn)
 		}
@@ -114,16 +103,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "DescribeCertificate_AMAZON_ISSUED_Fields", func() error {
 		domain := acmUniqueDomain("desc-ai")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -163,16 +149,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 
 	results = append(results, r.RunTest("acm", "DescribeCertificate_DomainValidationOptions_DNS", func() error {
 		domain := acmUniqueDomain("dv-dns")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:       aws.String(domain),
-			ValidationMethod: types.ValidationMethodDns,
-		})
+		arn, err := tc.requestDNSCert(domain)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -199,13 +182,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "DescribeCertificate_IMPORTED_Fields", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: importResp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -232,13 +215,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "GetCertificate_ImportedCert", func() error {
-		importResp, err := tc.importCertWithChain()
+		arn, err := tc.importCertWithChain()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: importResp.CertificateArn})
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -255,46 +238,26 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "ImportCertificate", func() error {
-		resp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
-		if resp.CertificateArn == nil {
-			return fmt.Errorf("CertificateArn is nil")
-		}
-		if !strings.HasPrefix(aws.ToString(resp.CertificateArn), "arn:aws:acm:") {
-			return fmt.Errorf("ARN format incorrect: %s", aws.ToString(resp.CertificateArn))
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("acm", "ImportCertificate_WithCertificateChain", func() error {
-		resp, err := tc.importCertWithChain()
-		if err != nil {
-			return err
-		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
-
-		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: resp.CertificateArn})
-		if err != nil {
-			return err
-		}
-		if aws.ToString(getResp.CertificateChain) == "" {
-			return fmt.Errorf("CertificateChain is empty")
+		defer tc.deleteCert(arn)
+		if !strings.HasPrefix(arn, "arn:aws:acm:") {
+			return fmt.Errorf("ARN format incorrect: %s", arn)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("acm", "ExportCertificate", func() error {
-		importResp, err := tc.importDefaultCert()
+		arn, err := tc.importDefaultCert()
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(importResp.CertificateArn))
+		defer tc.deleteCert(arn)
 
 		exportResp, err := tc.client.ExportCertificate(tc.ctx, &acm.ExportCertificateInput{
-			CertificateArn: importResp.CertificateArn,
+			CertificateArn: aws.String(arn),
 			Passphrase:     []byte("test-passphrase"),
 		})
 		if err != nil {
@@ -314,17 +277,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		domain := acmUniqueDomain("san-embed")
 		san1 := fmt.Sprintf("www.%s", domain)
 		san2 := fmt.Sprintf("api.%s", domain)
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
-			DomainName:              aws.String(domain),
-			ValidationMethod:        types.ValidationMethodDns,
-			SubjectAlternativeNames: []string{san1, san2},
-		})
+		arn, err := tc.requestCertSANs(domain, san1, san2)
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: resp.CertificateArn})
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -355,7 +314,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	// KeyAlgorithm EC_prime256v1
 	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_EC_prime256v1", func() error {
 		domain := acmUniqueDomain("ec256")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			KeyAlgorithm:     types.KeyAlgorithmEcPrime256v1,
@@ -363,9 +322,9 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -373,7 +332,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 			return fmt.Errorf("expected EC_prime256v1, got %s", desc.Certificate.KeyAlgorithm)
 		}
 		// Verify the actual cert uses ECDSA
-		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: resp.CertificateArn})
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
@@ -394,7 +353,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	// KeyAlgorithm RSA_4096
 	results = append(results, r.RunTest("acm", "RequestCertificate_KeyAlgorithm_RSA_4096", func() error {
 		domain := acmUniqueDomain("rsa4096")
-		resp, err := tc.client.RequestCertificate(tc.ctx, &acm.RequestCertificateInput{
+		arn, err := tc.requestCert(&acm.RequestCertificateInput{
 			DomainName:       aws.String(domain),
 			ValidationMethod: types.ValidationMethodDns,
 			KeyAlgorithm:     types.KeyAlgorithmRsa4096,
@@ -402,9 +361,9 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.deleteCert(aws.ToString(resp.CertificateArn))
+		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: resp.CertificateArn})
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}

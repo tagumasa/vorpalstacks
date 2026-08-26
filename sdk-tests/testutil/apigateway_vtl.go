@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -20,18 +19,18 @@ type vtlTest struct {
 	respTmpl string
 }
 
-func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, apiID, rootResourceID, pathPart, template, body string, respTmpl string) (string, error) {
-	resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-		RestApiId: aws.String(apiID),
-		ParentId:  aws.String(rootResourceID),
+func (r *TestRunner) invokeMock(tc *apigwTestContext, pathPart, template, body string, respTmpl string) (string, error) {
+	resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+		RestApiId: aws.String(tc.apiID),
+		ParentId:  aws.String(tc.rootResourceID),
 		PathPart:  aws.String(pathPart),
 	})
 	if err != nil {
 		return "", fmt.Errorf("create resource: %w", err)
 	}
 
-	_, err = client.PutMethod(ctx, &apigateway.PutMethodInput{
-		RestApiId:         aws.String(apiID),
+	_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+		RestApiId:         aws.String(tc.apiID),
 		ResourceId:        resResp.Id,
 		HttpMethod:        aws.String("POST"),
 		AuthorizationType: aws.String("NONE"),
@@ -41,7 +40,7 @@ func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, 
 	}
 
 	putIntInput := &apigateway.PutIntegrationInput{
-		RestApiId:  aws.String(apiID),
+		RestApiId:  aws.String(tc.apiID),
 		ResourceId: resResp.Id,
 		HttpMethod: aws.String("POST"),
 		Type:       types.IntegrationTypeMock,
@@ -49,14 +48,14 @@ func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, 
 			"application/json": template,
 		},
 	}
-	_, err = client.PutIntegration(ctx, putIntInput)
+	_, err = tc.client.PutIntegration(tc.ctx, putIntInput)
 	if err != nil {
 		return "", fmt.Errorf("put integration: %w", err)
 	}
 
 	if respTmpl != "" {
-		_, err = client.PutIntegrationResponse(ctx, &apigateway.PutIntegrationResponseInput{
-			RestApiId:         aws.String(apiID),
+		_, err = tc.client.PutIntegrationResponse(tc.ctx, &apigateway.PutIntegrationResponseInput{
+			RestApiId:         aws.String(tc.apiID),
 			ResourceId:        resResp.Id,
 			HttpMethod:        aws.String("POST"),
 			StatusCode:        aws.String("200"),
@@ -71,8 +70,8 @@ func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, 
 	if body != "" {
 		testBody = body
 	}
-	resp, err := client.TestInvokeMethod(ctx, &apigateway.TestInvokeMethodInput{
-		RestApiId:  aws.String(apiID),
+	resp, err := tc.client.TestInvokeMethod(tc.ctx, &apigateway.TestInvokeMethodInput{
+		RestApiId:  aws.String(tc.apiID),
 		ResourceId: resResp.Id,
 		HttpMethod: aws.String("POST"),
 		Body:       aws.String(testBody),
@@ -89,7 +88,7 @@ func (r *TestRunner) invokeMock(ctx context.Context, client *apigateway.Client, 
 	return *resp.Body, nil
 }
 
-func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
+func (r *TestRunner) vtlTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	tests := []vtlTest{
@@ -195,8 +194,8 @@ func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, ap
 				if !ok {
 					return fmt.Errorf("apiId is not a string: %v", parsed["apiId"])
 				}
-				if got != apiID {
-					return fmt.Errorf("expected apiId %s, got: %s", apiID, got)
+				if got != tc.apiID {
+					return fmt.Errorf("expected apiId %s, got: %s", tc.apiID, got)
 				}
 				return nil
 			},
@@ -379,8 +378,8 @@ func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, ap
 					return fmt.Errorf("expected name \"Frank\", got: %s", name)
 				}
 				api, _ := parsed["api"].(string)
-				if api != apiID {
-					return fmt.Errorf("expected api \"%s\", got: %s", apiID, api)
+				if api != tc.apiID {
+					return fmt.Errorf("expected api \"%s\", got: %s", tc.apiID, api)
 				}
 				ver, _ := parsed["version"].(string)
 				if ver != "2" {
@@ -530,19 +529,19 @@ func (r *TestRunner) vtlTests(ctx context.Context, client *apigateway.Client, ap
 		},
 	}
 
-	for _, tc := range tests {
-		tc := tc
-		testName := "TestInvokeMethod_" + tc.name
+	for _, tt := range tests {
+		tt := tt
+		testName := "TestInvokeMethod_" + tt.name
 		results = append(results, r.RunTest("apigateway", testName, func() error {
-			if apiID == "" {
+			if tc.apiID == "" {
 				return fmt.Errorf("API ID not available")
 			}
 			pathPart := fmt.Sprintf("vtl-%d", time.Now().UnixNano())
-			body, err := r.invokeMock(ctx, client, apiID, rootResourceID, pathPart, tc.template, tc.body, tc.respTmpl)
+			body, err := r.invokeMock(tc, pathPart, tt.template, tt.body, tt.respTmpl)
 			if err != nil {
 				return err
 			}
-			return tc.validate(body)
+			return tt.validate(body)
 		}))
 	}
 

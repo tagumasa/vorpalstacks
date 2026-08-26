@@ -10,7 +10,7 @@ import (
 
 func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestResult {
 	var results []TestResult
-	graphName := fmt.Sprintf("sdk-graph-%s", tc.tsNano[len(tc.tsNano)-8:])
+	graphName := tc.unique("sdk-graph")
 
 	results = append(results, r.RunTest("neptunegraph", "CreateGraph", func() error {
 		resp, err := tc.client.CreateGraph(tc.ctx, &neptunegraph.CreateGraphInput{
@@ -47,12 +47,10 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID from CreateGraph")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		resp, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
-			GraphIdentifier: aws.String(tc.graphID),
-		})
+		resp, err := tc.getGraph(tc.graphID)
 		if err != nil {
 			return err
 		}
@@ -72,29 +70,30 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListGraphs", func() error {
-		resp, err := tc.client.ListGraphs(tc.ctx, &neptunegraph.ListGraphsInput{})
+		if err := tc.requireGraph(); err != nil {
+			return err
+		}
+		graphs, err := paginate(func(next *string) ([]types.GraphSummary, *string, error) {
+			resp, err := tc.client.ListGraphs(tc.ctx, &neptunegraph.ListGraphsInput{NextToken: next})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.Graphs, resp.NextToken, nil
+		})
 		if err != nil {
 			return err
 		}
-		if resp.Graphs == nil {
-			return fmt.Errorf("expected non-nil Graphs list")
-		}
-		found := false
-		for _, g := range resp.Graphs {
+		for _, g := range graphs {
 			if g.Id != nil && *g.Id == tc.graphID {
-				found = true
-				break
+				return nil
 			}
 		}
-		if !found {
-			return fmt.Errorf("created graph not found in ListGraphs")
-		}
-		return nil
+		return fmt.Errorf("created graph not found in ListGraphs")
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "UpdateGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateGraph(tc.ctx, &neptunegraph.UpdateGraphInput{
 			GraphIdentifier:    aws.String(tc.graphID),
@@ -117,12 +116,10 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "UpdateGraph_Verify", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		resp, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
-			GraphIdentifier: aws.String(tc.graphID),
-		})
+		resp, err := tc.getGraph(tc.graphID)
 		if err != nil {
 			return err
 		}
@@ -136,8 +133,8 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "StopGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.StopGraph(tc.ctx, &neptunegraph.StopGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -152,12 +149,10 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "StopGraph_Verify", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		resp, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
-			GraphIdentifier: aws.String(tc.graphID),
-		})
+		resp, err := tc.getGraph(tc.graphID)
 		if err != nil {
 			return err
 		}
@@ -168,8 +163,8 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "StartGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.StartGraph(tc.ctx, &neptunegraph.StartGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -184,12 +179,10 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "StartGraph_Verify", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
-		resp, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
-			GraphIdentifier: aws.String(tc.graphID),
-		})
+		resp, err := tc.getGraph(tc.graphID)
 		if err != nil {
 			return err
 		}
@@ -200,8 +193,8 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ResetGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ResetGraph(tc.ctx, &neptunegraph.ResetGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),

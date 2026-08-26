@@ -83,21 +83,16 @@ func (r *TestRunner) runAppSyncDomainTests(res *appsyncResources) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListDomainNames", func() error {
-		resp, err := client.ListDomainNames(ctx, &appsync.ListDomainNamesInput{})
+		domains, err := res.allDomainNames()
 		if err != nil {
 			return err
 		}
-		if len(resp.DomainNameConfigs) < 2 {
-			return fmt.Errorf("expected at least 2 domain names, got %d", len(resp.DomainNameConfigs))
+		if len(domains) < 2 {
+			return fmt.Errorf("expected at least 2 domain names, got %d", len(domains))
 		}
-		found := false
-		for _, dnc := range resp.DomainNameConfigs {
-			if dnc.DomainName != nil && *dnc.DomainName == res.domainName {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(domains, func(dnc *types.DomainNameConfig) bool {
+			return dnc.DomainName != nil && *dnc.DomainName == res.domainName
+		}) == nil {
 			return fmt.Errorf("created domain %s not found in list", res.domainName)
 		}
 		return nil
@@ -331,23 +326,16 @@ func (r *TestRunner) runAppSyncMergedApiTests(res *appsyncResources) []TestResul
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListSourceApiAssociations", func() error {
-		resp, err := client.ListSourceApiAssociations(ctx, &appsync.ListSourceApiAssociationsInput{
-			ApiId: aws.String(res.mergedApiId),
-		})
+		associations, err := res.allSourceApiAssociations(res.mergedApiId)
 		if err != nil {
 			return err
 		}
-		if len(resp.SourceApiAssociationSummaries) < 1 {
-			return fmt.Errorf("expected at least 1 association, got %d", len(resp.SourceApiAssociationSummaries))
+		if len(associations) < 1 {
+			return fmt.Errorf("expected at least 1 association, got %d", len(associations))
 		}
-		found := false
-		for _, a := range resp.SourceApiAssociationSummaries {
-			if a.AssociationId != nil && *a.AssociationId == res.associationId {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(associations, func(a *types.SourceApiAssociationSummary) bool {
+			return a.AssociationId != nil && *a.AssociationId == res.associationId
+		}) == nil {
 			return fmt.Errorf("created association not found in list")
 		}
 		return nil

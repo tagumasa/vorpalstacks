@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
 func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestResult {
@@ -33,29 +34,24 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints", func() error {
-		resp, err := tc.client.DescribeDBClusterEndpoints(tc.ctx, &neptune.DescribeDBClusterEndpointsInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		endpoints, err := tc.allEndpoints(aws.String(tc.clusterID), nil)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, ep := range resp.DBClusterEndpoints {
-			if ep.DBClusterEndpointIdentifier != nil && *ep.DBClusterEndpointIdentifier == endpointID {
-				found = true
-				if ep.EndpointType == nil || *ep.EndpointType != "READER" {
-					return fmt.Errorf("expected EndpointType READER, got %v", ep.EndpointType)
-				}
-				if ep.Status == nil || *ep.Status == "" {
-					return fmt.Errorf("expected non-empty Status")
-				}
-				if ep.DBClusterIdentifier == nil || *ep.DBClusterIdentifier != tc.clusterID {
-					return fmt.Errorf("expected DBClusterIdentifier=%s, got %v", tc.clusterID, ep.DBClusterIdentifier)
-				}
-			}
-		}
-		if !found {
+		ep := containsID(endpoints, func(ep *types.DBClusterEndpoint) bool {
+			return ep.DBClusterEndpointIdentifier != nil && *ep.DBClusterEndpointIdentifier == endpointID
+		})
+		if ep == nil {
 			return fmt.Errorf("expected endpoint %s in DescribeDBClusterEndpoints response", endpointID)
+		}
+		if ep.EndpointType == nil || *ep.EndpointType != "READER" {
+			return fmt.Errorf("expected EndpointType READER, got %v", ep.EndpointType)
+		}
+		if ep.Status == nil || *ep.Status == "" {
+			return fmt.Errorf("expected non-empty Status")
+		}
+		if ep.DBClusterIdentifier == nil || *ep.DBClusterIdentifier != tc.clusterID {
+			return fmt.Errorf("expected DBClusterIdentifier=%s, got %v", tc.clusterID, ep.DBClusterIdentifier)
 		}
 		return nil
 	}))
@@ -69,16 +65,14 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBClusterEndpoint_Verify", func() error {
-		resp, err := tc.client.DescribeDBClusterEndpoints(tc.ctx, &neptune.DescribeDBClusterEndpointsInput{
-			DBClusterEndpointIdentifier: aws.String(endpointID),
-		})
+		endpoints, err := tc.allEndpoints(nil, aws.String(endpointID))
 		if err != nil {
 			return err
 		}
-		if len(resp.DBClusterEndpoints) != 1 {
-			return fmt.Errorf("expected 1 endpoint, got %d", len(resp.DBClusterEndpoints))
+		if len(endpoints) != 1 {
+			return fmt.Errorf("expected 1 endpoint, got %d", len(endpoints))
 		}
-		ep := resp.DBClusterEndpoints[0]
+		ep := endpoints[0]
 		if ep.EndpointType == nil || *ep.EndpointType != "ANY" {
 			return fmt.Errorf("expected EndpointType=ANY after modify, got %v", ep.EndpointType)
 		}
@@ -99,22 +93,20 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptune", "DeleteDBClusterEndpoint_VerifyDeleted", func() error {
-		resp, err := tc.client.DescribeDBClusterEndpoints(tc.ctx, &neptune.DescribeDBClusterEndpointsInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		endpoints, err := tc.allEndpoints(aws.String(tc.clusterID), nil)
 		if err != nil {
 			return err
 		}
-		for _, ep := range resp.DBClusterEndpoints {
-			if ep.DBClusterEndpointIdentifier != nil && *ep.DBClusterEndpointIdentifier == endpointID {
-				return fmt.Errorf("expected endpoint %s to be deleted but still found", endpointID)
-			}
+		if containsID(endpoints, func(ep *types.DBClusterEndpoint) bool {
+			return ep.DBClusterEndpointIdentifier != nil && *ep.DBClusterEndpointIdentifier == endpointID
+		}) != nil {
+			return fmt.Errorf("expected endpoint %s to be deleted but still found", endpointID)
 		}
 		return nil
 	}))
 
 	endpointID2 := fmt.Sprintf("test-ep2-%d", tc.ts)
-	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints_FilterByEndpointID", func() error {
+	results = append(results, r.RunTest("neptune", "CreateDBClusterEndpoint_ForFilterTarget", func() error {
 		resp, err := tc.client.CreateDBClusterEndpoint(tc.ctx, &neptune.CreateDBClusterEndpointInput{
 			DBClusterEndpointIdentifier: aws.String(endpointID2),
 			DBClusterIdentifier:         aws.String(tc.clusterID),
@@ -130,16 +122,14 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterEndpoints_ByEndpointID", func() error {
-		resp, err := tc.client.DescribeDBClusterEndpoints(tc.ctx, &neptune.DescribeDBClusterEndpointsInput{
-			DBClusterEndpointIdentifier: aws.String(endpointID2),
-		})
+		endpoints, err := tc.allEndpoints(nil, aws.String(endpointID2))
 		if err != nil {
 			return err
 		}
-		if len(resp.DBClusterEndpoints) != 1 {
-			return fmt.Errorf("expected 1 endpoint when filtering by ID, got %d", len(resp.DBClusterEndpoints))
+		if len(endpoints) != 1 {
+			return fmt.Errorf("expected 1 endpoint when filtering by ID, got %d", len(endpoints))
 		}
-		if resp.DBClusterEndpoints[0].DBClusterEndpointIdentifier == nil || *resp.DBClusterEndpoints[0].DBClusterEndpointIdentifier != endpointID2 {
+		if endpoints[0].DBClusterEndpointIdentifier == nil || *endpoints[0].DBClusterEndpointIdentifier != endpointID2 {
 			return fmt.Errorf("endpoint ID mismatch")
 		}
 		return nil

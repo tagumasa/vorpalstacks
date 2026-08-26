@@ -60,24 +60,16 @@ func (r *TestRunner) runAppSyncResolverTests(res *appsyncResources) []TestResult
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListResolvers", func() error {
-		resp, err := client.ListResolvers(ctx, &appsync.ListResolversInput{
-			ApiId:    aws.String(res.gqlApiId),
-			TypeName: aws.String("Query"),
-		})
+		resolvers, err := res.allResolvers(res.gqlApiId, "Query")
 		if err != nil {
 			return err
 		}
-		if len(resp.Resolvers) < 1 {
-			return fmt.Errorf("expected at least 1 resolver, got %d", len(resp.Resolvers))
+		if len(resolvers) < 1 {
+			return fmt.Errorf("expected at least 1 resolver, got %d", len(resolvers))
 		}
-		found := false
-		for _, rv := range resp.Resolvers {
-			if rv.FieldName != nil && *rv.FieldName == "getPost" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(resolvers, func(rv *types.Resolver) bool {
+			return rv.FieldName != nil && *rv.FieldName == "getPost"
+		}) == nil {
 			return fmt.Errorf("created resolver getPost not found in list")
 		}
 		return nil
@@ -185,23 +177,16 @@ func (r *TestRunner) runAppSyncFunctionTests(res *appsyncResources) []TestResult
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListFunctions", func() error {
-		resp, err := client.ListFunctions(ctx, &appsync.ListFunctionsInput{
-			ApiId: aws.String(res.gqlApiId),
-		})
+		functions, err := res.allFunctions(res.gqlApiId)
 		if err != nil {
 			return err
 		}
-		if len(resp.Functions) < 1 {
-			return fmt.Errorf("expected at least 1 function, got %d", len(resp.Functions))
+		if len(functions) < 1 {
+			return fmt.Errorf("expected at least 1 function, got %d", len(functions))
 		}
-		found := false
-		for _, fn := range resp.Functions {
-			if fn.Name != nil && *fn.Name == "testFn" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(functions, func(fn *types.FunctionConfiguration) bool {
+			return fn.Name != nil && *fn.Name == "testFn"
+		}) == nil {
 			return fmt.Errorf("created function testFn not found in list")
 		}
 		return nil
@@ -288,24 +273,16 @@ func (r *TestRunner) runAppSyncListResolversByFunctionTest(res *appsyncResources
 			return err
 		}
 
-		listResp, err := client.ListResolversByFunction(ctx, &appsync.ListResolversByFunctionInput{
-			ApiId:      aws.String(res.gqlApiId),
-			FunctionId: aws.String(listFnId),
-		})
+		resolvers, err := res.allResolversByFunction(res.gqlApiId, listFnId)
 		if err != nil {
 			return err
 		}
-		if len(listResp.Resolvers) < 1 {
-			return fmt.Errorf("expected at least 1 resolver, got %d", len(listResp.Resolvers))
+		if len(resolvers) < 1 {
+			return fmt.Errorf("expected at least 1 resolver, got %d", len(resolvers))
 		}
-		found := false
-		for _, r := range listResp.Resolvers {
-			if *r.FieldName == *pipelineResp.Resolver.FieldName {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(resolvers, func(rv *types.Resolver) bool {
+			return rv.FieldName != nil && *rv.FieldName == *pipelineResp.Resolver.FieldName
+		}) == nil {
 			return fmt.Errorf("pipeline resolver not found in ListResolversByFunction")
 		}
 

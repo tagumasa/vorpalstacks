@@ -14,8 +14,8 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 	var importTaskID string
 
 	results = append(results, r.RunTest("neptunegraph", "StartImportTask", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.StartImportTask(tc.ctx, &neptunegraph.StartImportTaskInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -37,8 +37,8 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetImportTask", func() error {
-		if importTaskID == "" {
-			return fmt.Errorf("no import task ID")
+		if err := requireID(importTaskID, "import task ID"); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetImportTask(tc.ctx, &neptunegraph.GetImportTaskInput{
 			TaskIdentifier: aws.String(importTaskID),
@@ -53,30 +53,30 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListImportTasks", func() error {
-		var nextToken *string
-		for {
-			resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{
-				NextToken: nextToken,
-			})
+		if err := requireID(importTaskID, "import task ID"); err != nil {
+			return err
+		}
+		tasks, err := paginate(func(next *string) ([]types.ImportTaskSummary, *string, error) {
+			resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, t := range resp.Tasks {
-				if t.TaskId != nil && *t.TaskId == importTaskID {
-					return nil
-				}
+			return resp.Tasks, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range tasks {
+			if t.TaskId != nil && *t.TaskId == importTaskID {
+				return nil
 			}
-			if resp.NextToken == nil {
-				break
-			}
-			nextToken = resp.NextToken
 		}
 		return fmt.Errorf("import task not found in ListImportTasks")
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "CancelImportTask", func() error {
-		if importTaskID == "" {
-			return fmt.Errorf("no import task ID")
+		if err := requireID(importTaskID, "import task ID"); err != nil {
+			return err
 		}
 		resp, err := tc.client.CancelImportTask(tc.ctx, &neptunegraph.CancelImportTaskInput{
 			TaskIdentifier: aws.String(importTaskID),
@@ -91,7 +91,7 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "CreateGraphUsingImportTask", func() error {
-		importGraphName := fmt.Sprintf("sdk-impgraph-%s", tc.tsNano[len(tc.tsNano)-6:])
+		importGraphName := tc.unique("sdk-impgraph")
 		resp, err := tc.client.CreateGraphUsingImportTask(tc.ctx, &neptunegraph.CreateGraphUsingImportTaskInput{
 			GraphName: aws.String(importGraphName),
 			Source:    aws.String("s3://test-bucket/import-data/"),
@@ -129,8 +129,8 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 	acct := tc.accountID
 
 	results = append(results, r.RunTest("neptunegraph", "StartExportTask", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.StartExportTask(tc.ctx, &neptunegraph.StartExportTaskInput{
 			GraphIdentifier:  aws.String(tc.graphID),
@@ -150,8 +150,8 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "GetExportTask", func() error {
-		if exportTaskID == "" {
-			return fmt.Errorf("no export task ID")
+		if err := requireID(exportTaskID, "export task ID"); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetExportTask(tc.ctx, &neptunegraph.GetExportTaskInput{
 			TaskIdentifier: aws.String(exportTaskID),
@@ -166,30 +166,30 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListExportTasks", func() error {
-		var nextToken *string
-		for {
-			resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{
-				NextToken: nextToken,
-			})
+		if err := requireID(exportTaskID, "export task ID"); err != nil {
+			return err
+		}
+		tasks, err := paginate(func(next *string) ([]types.ExportTaskSummary, *string, error) {
+			resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{NextToken: next})
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
-			for _, t := range resp.Tasks {
-				if t.TaskId != nil && *t.TaskId == exportTaskID {
-					return nil
-				}
+			return resp.Tasks, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, t := range tasks {
+			if t.TaskId != nil && *t.TaskId == exportTaskID {
+				return nil
 			}
-			if resp.NextToken == nil {
-				break
-			}
-			nextToken = resp.NextToken
 		}
 		return fmt.Errorf("export task not found in ListExportTasks")
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListExportTasks_FilterByGraph", func() error {
-		if tc.graphID == "" {
-			return fmt.Errorf("no graph ID")
+		if err := tc.requireGraph(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{
 			GraphIdentifier: aws.String(tc.graphID),
@@ -209,8 +209,8 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "CancelExportTask", func() error {
-		if exportTaskID == "" {
-			return fmt.Errorf("no export task ID")
+		if err := requireID(exportTaskID, "export task ID"); err != nil {
+			return err
 		}
 		resp, err := tc.client.CancelExportTask(tc.ctx, &neptunegraph.CancelExportTaskInput{
 			TaskIdentifier: aws.String(exportTaskID),

@@ -87,6 +87,17 @@ func paginate[T any](fetch func(next *string) ([]T, *string, error)) ([]T, error
 	}
 }
 
+// containsID returns a pointer to the first item for which match reports
+// true, or nil when no item matches.
+func containsID[T any](items []T, match func(*T) bool) *T {
+	for i := range items {
+		if match(&items[i]) {
+			return &items[i]
+		}
+	}
+	return nil
+}
+
 func IAMCreateRole(client *iam.Client, roleName, trustPolicy string) error {
 	_, err := client.CreateRole(context.Background(), &iam.CreateRoleInput{
 		RoleName:                 aws.String(roleName),

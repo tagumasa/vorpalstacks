@@ -1,26 +1,24 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	var deploymentID string
 	results = append(results, r.RunTest("apigateway", "CreateDeployment", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
-			RestApiId:   aws.String(apiID),
+		resp, err := tc.client.CreateDeployment(tc.ctx, &apigateway.CreateDeploymentInput{
+			RestApiId:   aws.String(tc.apiID),
 			Description: aws.String("test deployment"),
 		})
 		if err != nil {
@@ -37,11 +35,11 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetDeployment", func() error {
-		if apiID == "" || deploymentID == "" {
+		if tc.apiID == "" || deploymentID == "" {
 			return fmt.Errorf("API ID or deployment ID not available")
 		}
-		resp, err := client.GetDeployment(ctx, &apigateway.GetDeploymentInput{
-			RestApiId:    aws.String(apiID),
+		resp, err := tc.client.GetDeployment(tc.ctx, &apigateway.GetDeploymentInput{
+			RestApiId:    aws.String(tc.apiID),
 			DeploymentId: aws.String(deploymentID),
 		})
 		if err != nil {
@@ -60,11 +58,11 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateDeployment", func() error {
-		if apiID == "" || deploymentID == "" {
+		if tc.apiID == "" || deploymentID == "" {
 			return fmt.Errorf("API ID or deployment ID not available")
 		}
-		resp, err := client.UpdateDeployment(ctx, &apigateway.UpdateDeploymentInput{
-			RestApiId:    aws.String(apiID),
+		resp, err := tc.client.UpdateDeployment(tc.ctx, &apigateway.UpdateDeploymentInput{
+			RestApiId:    aws.String(tc.apiID),
 			DeploymentId: aws.String(deploymentID),
 			PatchOperations: []types.PatchOperation{
 				{
@@ -80,15 +78,27 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		if resp.Description == nil || *resp.Description != "updated deployment" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
 		}
+
+		// Verify the description change persists via a fresh read.
+		getResp, err := tc.client.GetDeployment(tc.ctx, &apigateway.GetDeploymentInput{
+			RestApiId:    aws.String(tc.apiID),
+			DeploymentId: aws.String(deploymentID),
+		})
+		if err != nil {
+			return fmt.Errorf("get deployment: %v", err)
+		}
+		if getResp.Description == nil || *getResp.Description != "updated deployment" {
+			return fmt.Errorf("deployment description mismatch, got %v", getResp.Description)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetDeployments", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.GetDeployments(ctx, &apigateway.GetDeploymentsInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.GetDeployments(tc.ctx, &apigateway.GetDeploymentsInput{
+			RestApiId: aws.String(tc.apiID),
 		})
 		if err != nil {
 			return err
@@ -100,11 +110,11 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateStage", func() error {
-		if apiID == "" || deploymentID == "" {
+		if tc.apiID == "" || deploymentID == "" {
 			return fmt.Errorf("API ID or deployment ID not available")
 		}
-		resp, err := client.CreateStage(ctx, &apigateway.CreateStageInput{
-			RestApiId:    aws.String(apiID),
+		resp, err := tc.client.CreateStage(tc.ctx, &apigateway.CreateStageInput{
+			RestApiId:    aws.String(tc.apiID),
 			StageName:    aws.String("test"),
 			DeploymentId: aws.String(deploymentID),
 			Description:  aws.String("test stage"),
@@ -128,11 +138,11 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetStage", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.GetStage(ctx, &apigateway.GetStageInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+			RestApiId: aws.String(tc.apiID),
 			StageName: aws.String("test"),
 		})
 		if err != nil {
@@ -151,11 +161,11 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetStages", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.GetStages(ctx, &apigateway.GetStagesInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.GetStages(tc.ctx, &apigateway.GetStagesInput{
+			RestApiId: aws.String(tc.apiID),
 		})
 		if err != nil {
 			return err
@@ -167,17 +177,22 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateStage", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.UpdateStage(ctx, &apigateway.UpdateStageInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.UpdateStage(tc.ctx, &apigateway.UpdateStageInput{
+			RestApiId: aws.String(tc.apiID),
 			StageName: aws.String("test"),
 			PatchOperations: []types.PatchOperation{
 				{
 					Op:    types.OpReplace,
 					Path:  aws.String("/description"),
 					Value: aws.String("updated stage"),
+				},
+				{
+					Op:    types.OpReplace,
+					Path:  aws.String("/variables/env"),
+					Value: aws.String("prod"),
 				},
 			},
 		})
@@ -187,22 +202,34 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		if resp.Description == nil || *resp.Description != "updated stage" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
 		}
+
+		// Verify the stage variable round-trips via a fresh read.
+		stageResp, err := tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+			RestApiId: aws.String(tc.apiID),
+			StageName: aws.String("test"),
+		})
+		if err != nil {
+			return fmt.Errorf("get stage: %v", err)
+		}
+		if stageResp.Variables == nil || stageResp.Variables["env"] != "prod" {
+			return fmt.Errorf("stage variables not set, got %v", stageResp.Variables)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteStage", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		_, err := client.DeleteStage(ctx, &apigateway.DeleteStageInput{
-			RestApiId: aws.String(apiID),
+		_, err := tc.client.DeleteStage(tc.ctx, &apigateway.DeleteStageInput{
+			RestApiId: aws.String(tc.apiID),
 			StageName: aws.String("test"),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetStage(ctx, &apigateway.GetStageInput{
-			RestApiId: aws.String(apiID),
+		_, err = tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+			RestApiId: aws.String(tc.apiID),
 			StageName: aws.String("test"),
 		})
 		if err == nil {
@@ -215,18 +242,18 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteDeployment", func() error {
-		if apiID == "" || deploymentID == "" {
+		if tc.apiID == "" || deploymentID == "" {
 			return fmt.Errorf("API ID or deployment ID not available")
 		}
-		_, err := client.DeleteDeployment(ctx, &apigateway.DeleteDeploymentInput{
-			RestApiId:    aws.String(apiID),
+		_, err := tc.client.DeleteDeployment(tc.ctx, &apigateway.DeleteDeploymentInput{
+			RestApiId:    aws.String(tc.apiID),
 			DeploymentId: aws.String(deploymentID),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetDeployment(ctx, &apigateway.GetDeploymentInput{
-			RestApiId:    aws.String(apiID),
+		_, err = tc.client.GetDeployment(tc.ctx, &apigateway.GetDeploymentInput{
+			RestApiId:    aws.String(tc.apiID),
 			DeploymentId: aws.String(deploymentID),
 		})
 		if err == nil {
@@ -239,35 +266,30 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateStage_VerifyConfig", func() error {
-		csAPI := fmt.Sprintf("CsAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(csAPI),
-		})
+		apiID, _, err := tc.createAPI(tc.uniqueName("CsAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(apiID)
 
-		depResp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
-			RestApiId: createResp.Id,
-		})
+		depID, err := tc.createDeployment(apiID, "")
 		if err != nil {
 			return fmt.Errorf("deploy: %v", err)
 		}
 
 		stageDesc := "test stage description"
-		_, err = client.CreateStage(ctx, &apigateway.CreateStageInput{
-			RestApiId:    createResp.Id,
+		_, err = tc.client.CreateStage(tc.ctx, &apigateway.CreateStageInput{
+			RestApiId:    aws.String(apiID),
 			StageName:    aws.String("v1"),
-			DeploymentId: depResp.Id,
+			DeploymentId: aws.String(depID),
 			Description:  aws.String(stageDesc),
 		})
 		if err != nil {
 			return fmt.Errorf("create stage: %v", err)
 		}
 
-		resp, err := client.GetStage(ctx, &apigateway.GetStageInput{
-			RestApiId: createResp.Id,
+		resp, err := tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+			RestApiId: aws.String(apiID),
 			StageName: aws.String("v1"),
 		})
 		if err != nil {
@@ -276,144 +298,36 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		if resp.Description == nil || *resp.Description != stageDesc {
 			return fmt.Errorf("stage description mismatch, got %v", resp.Description)
 		}
-		if resp.DeploymentId == nil || *resp.DeploymentId != *depResp.Id {
+		if resp.DeploymentId == nil || *resp.DeploymentId != depID {
 			return fmt.Errorf("deployment ID mismatch, got %v", resp.DeploymentId)
 		}
 		return nil
 	}))
 
-	results = append(results, r.RunTest("apigateway", "Deployment_Stage_FullLifecycle", func() error {
-		dsAPI := fmt.Sprintf("DsAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(dsAPI),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		depResp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
-			RestApiId:   createResp.Id,
-			Description: aws.String("v1 deployment"),
-		})
-		if err != nil {
-			return fmt.Errorf("create deployment: %v", err)
-		}
-
-		getDepResp, err := client.GetDeployment(ctx, &apigateway.GetDeploymentInput{
-			RestApiId:    createResp.Id,
-			DeploymentId: depResp.Id,
-		})
-		if err != nil {
-			return fmt.Errorf("get deployment: %v", err)
-		}
-		if getDepResp.Description == nil || *getDepResp.Description != "v1 deployment" {
-			return fmt.Errorf("deployment description mismatch, got %v", getDepResp.Description)
-		}
-
-		_, err = client.UpdateDeployment(ctx, &apigateway.UpdateDeploymentInput{
-			RestApiId:    createResp.Id,
-			DeploymentId: depResp.Id,
-			PatchOperations: []types.PatchOperation{
-				{
-					Op:    types.OpReplace,
-					Path:  aws.String("/description"),
-					Value: aws.String("v1 updated"),
-				},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("update deployment: %v", err)
-		}
-
-		_, err = client.CreateStage(ctx, &apigateway.CreateStageInput{
-			RestApiId:    createResp.Id,
-			StageName:    aws.String("production"),
-			DeploymentId: depResp.Id,
-			Description:  aws.String("production stage"),
-		})
-		if err != nil {
-			return fmt.Errorf("create stage: %v", err)
-		}
-
-		_, err = client.UpdateStage(ctx, &apigateway.UpdateStageInput{
-			RestApiId: createResp.Id,
-			StageName: aws.String("production"),
-			PatchOperations: []types.PatchOperation{
-				{
-					Op:    types.OpReplace,
-					Path:  aws.String("/description"),
-					Value: aws.String("production updated"),
-				},
-				{
-					Op:    types.OpReplace,
-					Path:  aws.String("/variables/env"),
-					Value: aws.String("prod"),
-				},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("update stage: %v", err)
-		}
-
-		stageResp, err := client.GetStage(ctx, &apigateway.GetStageInput{
-			RestApiId: createResp.Id,
-			StageName: aws.String("production"),
-		})
-		if err != nil {
-			return fmt.Errorf("get stage: %v", err)
-		}
-		if stageResp.Variables == nil || stageResp.Variables["env"] != "prod" {
-			return fmt.Errorf("stage variables not set, got %v", stageResp.Variables)
-		}
-
-		_, err = client.DeleteStage(ctx, &apigateway.DeleteStageInput{
-			RestApiId: createResp.Id,
-			StageName: aws.String("production"),
-		})
-		if err != nil {
-			return fmt.Errorf("delete stage: %v", err)
-		}
-
-		_, err = client.DeleteDeployment(ctx, &apigateway.DeleteDeploymentInput{
-			RestApiId:    createResp.Id,
-			DeploymentId: depResp.Id,
-		})
-		if err != nil {
-			return fmt.Errorf("delete deployment: %v", err)
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("apigateway", "UpdateStage_AccessLogDestinationArn_Validated", func() error {
-		alAPI := fmt.Sprintf("AlAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(alAPI),
-		})
+		apiID, _, err := tc.createAPI(tc.uniqueName("AlAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(apiID)
 
-		depResp, err := client.CreateDeployment(ctx, &apigateway.CreateDeploymentInput{
-			RestApiId: createResp.Id,
-		})
+		depID, err := tc.createDeployment(apiID, "")
 		if err != nil {
 			return fmt.Errorf("deploy: %v", err)
 		}
 
-		_, err = client.CreateStage(ctx, &apigateway.CreateStageInput{
-			RestApiId:    createResp.Id,
+		_, err = tc.client.CreateStage(tc.ctx, &apigateway.CreateStageInput{
+			RestApiId:    aws.String(apiID),
 			StageName:    aws.String("access-log"),
-			DeploymentId: depResp.Id,
+			DeploymentId: aws.String(depID),
 		})
 		if err != nil {
 			return fmt.Errorf("create stage: %v", err)
 		}
 
 		// A Lambda function ARN is not a valid access log destination.
-		_, err = client.UpdateStage(ctx, &apigateway.UpdateStageInput{
-			RestApiId: createResp.Id,
+		_, err = tc.client.UpdateStage(tc.ctx, &apigateway.UpdateStageInput{
+			RestApiId: aws.String(apiID),
 			StageName: aws.String("access-log"),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),
@@ -425,8 +339,8 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		}
 
 		// Firehose delivery streams must begin with amazon-apigateway-.
-		_, err = client.UpdateStage(ctx, &apigateway.UpdateStageInput{
-			RestApiId: createResp.Id,
+		_, err = tc.client.UpdateStage(tc.ctx, &apigateway.UpdateStageInput{
+			RestApiId: aws.String(apiID),
 			StageName: aws.String("access-log"),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),
@@ -438,8 +352,8 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(ctx context.Context, client *a
 		}
 
 		// A CloudWatch Logs log group ARN is accepted.
-		stageResp, err := client.UpdateStage(ctx, &apigateway.UpdateStageInput{
-			RestApiId: createResp.Id,
+		stageResp, err := tc.client.UpdateStage(tc.ctx, &apigateway.UpdateStageInput{
+			RestApiId: aws.String(apiID),
 			StageName: aws.String("access-log"),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/destinationArn"),

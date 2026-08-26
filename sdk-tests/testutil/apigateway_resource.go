@@ -1,27 +1,25 @@
 package testutil
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *apigateway.Client, apiID, rootResourceID string) []TestResult {
+func (r *TestRunner) runAPIGatewayResourceTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	var resourceID string
 	results = append(results, r.RunTest("apigateway", "CreateResource", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: aws.String(apiID),
-			ParentId:  aws.String(rootResourceID),
+		resp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(tc.apiID),
+			ParentId:  aws.String(tc.rootResourceID),
 			PathPart:  aws.String("test"),
 		})
 		if err != nil {
@@ -36,7 +34,7 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		if resp.Path == nil || *resp.Path != "/test" {
 			return fmt.Errorf("path mismatch, got %v", resp.Path)
 		}
-		if resp.ParentId == nil || *resp.ParentId != rootResourceID {
+		if resp.ParentId == nil || *resp.ParentId != tc.rootResourceID {
 			return fmt.Errorf("parentId mismatch, got %v", resp.ParentId)
 		}
 		resourceID = *resp.Id
@@ -44,11 +42,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetResource", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.GetResource(ctx, &apigateway.GetResourceInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.GetResource(tc.ctx, &apigateway.GetResourceInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 		})
 		if err != nil {
@@ -64,11 +62,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetResources", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.GetResources(ctx, &apigateway.GetResourcesInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(tc.apiID),
 		})
 		if err != nil {
 			return err
@@ -83,11 +81,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateResource", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.UpdateResource(tc.ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			PatchOperations: []types.PatchOperation{
 				{
@@ -107,11 +105,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutMethod", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.PutMethod(ctx, &apigateway.PutMethodInput{
-			RestApiId:         aws.String(apiID),
+		resp, err := tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(tc.apiID),
 			ResourceId:        aws.String(resourceID),
 			HttpMethod:        aws.String("GET"),
 			AuthorizationType: aws.String("NONE"),
@@ -130,11 +128,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetMethod", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.GetMethod(ctx, &apigateway.GetMethodInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.GetMethod(tc.ctx, &apigateway.GetMethodInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
@@ -151,11 +149,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateMethod", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.UpdateMethod(ctx, &apigateway.UpdateMethodInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.UpdateMethod(tc.ctx, &apigateway.UpdateMethodInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			PatchOperations: []types.PatchOperation{
@@ -176,11 +174,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutIntegration", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.PutIntegration(ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			Type:       types.IntegrationTypeMock,
@@ -201,11 +199,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetIntegration", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.GetIntegration(ctx, &apigateway.GetIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.GetIntegration(tc.ctx, &apigateway.GetIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
@@ -222,11 +220,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateIntegration", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.UpdateIntegration(ctx, &apigateway.UpdateIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.UpdateIntegration(tc.ctx, &apigateway.UpdateIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			PatchOperations: []types.PatchOperation{
@@ -247,11 +245,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutIntegrationResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.PutIntegrationResponse(ctx, &apigateway.PutIntegrationResponseInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.PutIntegrationResponse(tc.ctx, &apigateway.PutIntegrationResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -276,11 +274,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetIntegrationResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.GetIntegrationResponse(ctx, &apigateway.GetIntegrationResponseInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.GetIntegrationResponse(tc.ctx, &apigateway.GetIntegrationResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -301,11 +299,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateIntegrationResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.UpdateIntegrationResponse(ctx, &apigateway.UpdateIntegrationResponseInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.UpdateIntegrationResponse(tc.ctx, &apigateway.UpdateIntegrationResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -327,11 +325,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutMethodResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.PutMethodResponse(ctx, &apigateway.PutMethodResponseInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.PutMethodResponse(tc.ctx, &apigateway.PutMethodResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -352,11 +350,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetMethodResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		resp, err := client.GetMethodResponse(ctx, &apigateway.GetMethodResponseInput{
-			RestApiId:  aws.String(apiID),
+		resp, err := tc.client.GetMethodResponse(tc.ctx, &apigateway.GetMethodResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -374,11 +372,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteMethodResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		_, err := client.DeleteMethodResponse(ctx, &apigateway.DeleteMethodResponseInput{
-			RestApiId:  aws.String(apiID),
+		_, err := tc.client.DeleteMethodResponse(tc.ctx, &apigateway.DeleteMethodResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -386,8 +384,8 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetMethodResponse(ctx, &apigateway.GetMethodResponseInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.GetMethodResponse(tc.ctx, &apigateway.GetMethodResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -402,11 +400,11 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteIntegrationResponse", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		_, err := client.DeleteIntegrationResponse(ctx, &apigateway.DeleteIntegrationResponseInput{
-			RestApiId:  aws.String(apiID),
+		_, err := tc.client.DeleteIntegrationResponse(tc.ctx, &apigateway.DeleteIntegrationResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -414,8 +412,8 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetIntegrationResponse(ctx, &apigateway.GetIntegrationResponseInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.GetIntegrationResponse(tc.ctx, &apigateway.GetIntegrationResponseInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 			StatusCode: aws.String("200"),
@@ -430,19 +428,19 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteIntegration", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		_, err := client.DeleteIntegration(ctx, &apigateway.DeleteIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		_, err := tc.client.DeleteIntegration(tc.ctx, &apigateway.DeleteIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetIntegration(ctx, &apigateway.GetIntegrationInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.GetIntegration(tc.ctx, &apigateway.GetIntegrationInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
@@ -456,19 +454,19 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteMethod", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		_, err := client.DeleteMethod(ctx, &apigateway.DeleteMethodInput{
-			RestApiId:  aws.String(apiID),
+		_, err := tc.client.DeleteMethod(tc.ctx, &apigateway.DeleteMethodInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetMethod(ctx, &apigateway.GetMethodInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.GetMethod(tc.ctx, &apigateway.GetMethodInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 			HttpMethod: aws.String("GET"),
 		})
@@ -482,18 +480,18 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteResource", func() error {
-		if apiID == "" || resourceID == "" {
+		if tc.apiID == "" || resourceID == "" {
 			return fmt.Errorf("API ID or resource ID not available")
 		}
-		_, err := client.DeleteResource(ctx, &apigateway.DeleteResourceInput{
-			RestApiId:  aws.String(apiID),
+		_, err := tc.client.DeleteResource(tc.ctx, &apigateway.DeleteResourceInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 		})
 		if err != nil {
 			return fmt.Errorf("delete: %v", err)
 		}
-		_, err = client.GetResource(ctx, &apigateway.GetResourceInput{
-			RestApiId:  aws.String(apiID),
+		_, err = tc.client.GetResource(tc.ctx, &apigateway.GetResourceInput{
+			RestApiId:  aws.String(tc.apiID),
 			ResourceId: aws.String(resourceID),
 		})
 		if err == nil {
@@ -506,26 +504,22 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateResource_NestedPath", func() error {
-		crAPI := fmt.Sprintf("CrAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(crAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("CrAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		usersResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		usersResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("users"),
 		})
 		if err != nil {
 			return fmt.Errorf("create users resource: %v", err)
 		}
 
-		userIdResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
+		userIdResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
 			ParentId:  usersResp.Id,
 			PathPart:  aws.String("{userId}"),
 		})
@@ -536,8 +530,8 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 			return fmt.Errorf("nested path mismatch, got %v", userIdResp.Path)
 		}
 
-		resResp, err := client.GetResources(ctx, &apigateway.GetResourcesInput{
-			RestApiId: createResp.Id,
+		resResp, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(ownAPI),
 		})
 		if err != nil {
 			return fmt.Errorf("get resources: %v", err)
@@ -549,26 +543,22 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateResource_CascadeChildPaths", func() error {
-		ccAPI := fmt.Sprintf("CcAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(ccAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("CcAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		parentResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		parentResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("items"),
 		})
 		if err != nil {
 			return fmt.Errorf("create parent: %v", err)
 		}
 
-		childResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
+		childResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
 			ParentId:  parentResp.Id,
 			PathPart:  aws.String("{id}"),
 		})
@@ -579,8 +569,8 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 			return fmt.Errorf("child path mismatch before rename, got %v", childResp.Path)
 		}
 
-		_, err = client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.UpdateResource(tc.ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: parentResp.Id,
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/pathPart"), Value: aws.String("products")},
@@ -590,8 +580,8 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 			return fmt.Errorf("update parent pathPart: %v", err)
 		}
 
-		childAfter, err := client.GetResource(ctx, &apigateway.GetResourceInput{
-			RestApiId:  createResp.Id,
+		childAfter, err := tc.client.GetResource(tc.ctx, &apigateway.GetResourceInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: childResp.Id,
 		})
 		if err != nil {
@@ -604,27 +594,23 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateResource_DuplicateConflict", func() error {
-		dcAPI := fmt.Sprintf("DcAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(dcAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("DcAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		_, err = client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		_, err = tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("dup"),
 		})
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
 
-		_, err = client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		_, err = tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("dup"),
 		})
 		if err := AssertErrorContains(err, "ConflictException"); err != nil {
@@ -634,18 +620,14 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateResource_RootPathPart_Rejected", func() error {
-		rpAPI := fmt.Sprintf("RpAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(rpAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("RpAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		_, err = client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
-			RestApiId:  createResp.Id,
-			ResourceId: createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		_, err = tc.client.UpdateResource(tc.ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  aws.String(ownAPI),
+			ResourceId: aws.String(ownRoot),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/pathPart"), Value: aws.String("root")},
 			},
@@ -657,26 +639,22 @@ func (r *TestRunner) runAPIGatewayResourceTests(ctx context.Context, client *api
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateResource_UnsupportedPatchOp_Rejected", func() error {
-		upAPI := fmt.Sprintf("UpAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(upAPI),
-		})
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("UpAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		resResp, err := client.CreateResource(ctx, &apigateway.CreateResourceInput{
-			RestApiId: createResp.Id,
-			ParentId:  createResp.RootResourceId,
+		defer tc.deleteAPI(ownAPI)
+		resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
 			PathPart:  aws.String("items"),
 		})
 		if err != nil {
 			return fmt.Errorf("create resource: %v", err)
 		}
 
-		_, err = client.UpdateResource(ctx, &apigateway.UpdateResourceInput{
-			RestApiId:  createResp.Id,
+		_, err = tc.client.UpdateResource(tc.ctx, &apigateway.UpdateResourceInput{
+			RestApiId:  aws.String(ownAPI),
 			ResourceId: resResp.Id,
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpMove, From: aws.String("/pathPart"), Path: aws.String("/pathPart")},

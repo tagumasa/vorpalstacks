@@ -70,27 +70,10 @@ func (r *TestRunner) runIoTAuditStreamProvTests(tc *iotTestContext) []TestResult
 	}))
 
 	// ── Stream lifecycle ──
-	streamID := uniqueName("stream")
-	defer tc.client.DeleteStream(tc.ctx, &iot.DeleteStreamInput{StreamId: aws.String(streamID)})
-
-	results = append(results, r.RunTest("iot", "Stream_CreateStream", func() error {
-		_, err := tc.client.CreateStream(tc.ctx, &iot.CreateStreamInput{
-			StreamId: aws.String(streamID),
-			Files:    []iottypes.StreamFile{},
-			RoleArn:  aws.String(tc.iamRoleARN("test")),
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("iot", "Stream_DescribeStream", func() error {
-		_, err := tc.client.DescribeStream(tc.ctx, &iot.DescribeStreamInput{StreamId: aws.String(streamID)})
-		return err
-	}))
-
-	results = append(results, r.RunTest("iot", "Stream_DeleteStream", func() error {
-		_, err := tc.client.DeleteStream(tc.ctx, &iot.DeleteStreamInput{StreamId: aws.String(streamID)})
-		return err
-	}))
+	// The stream resource lifecycle (Create/Describe/Update/Delete/List) is
+	// covered by runIoTStreamRegistrationTests; registering it here as well
+	// would double-count identical scenarios, so this section only exercises
+	// the read-only aggregations.
 
 	// ── Read-only aggregations ──
 	results = append(results, r.RunTest("iot", "ListStreams", func() error {

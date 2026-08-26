@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,347 test cases (3,280 SDK + 50 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,297 test cases (3,230 SDK + 50 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -20,10 +20,10 @@ which are separate services in the SDK classification used by
 
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
-| ACM | 57 | 100% | ✅ Perfect |
-| API Gateway | 144 | 100% | ✅ Perfect |
-| AppSync | 175 | 100% | ✅ Perfect |
-| Athena | 84 | 100% | ✅ Perfect |
+| ACM | 54 | 100% | ✅ Perfect |
+| API Gateway | 135 | 100% | ✅ Perfect |
+| AppSync | 173 | 100% | ✅ Perfect |
+| Athena | 68 | 100% | ✅ Perfect |
 | CloudFront | 92 | 100% | ✅ Perfect |
 | CloudTrail | 113 | 100% | ✅ Perfect |
 | CloudWatch | 25 | 100% | ✅ Perfect |
@@ -34,13 +34,13 @@ which are separate services in the SDK classification used by
 | EC2 | 37 | 100% | ✅ Perfect |
 | EventBridge | 64 | 100% | ✅ Perfect |
 | IAM | 220 | 100% | ✅ Perfect |
-| IoT | 362 | 100% | ✅ Perfect |
+| IoT | 344 | 100% | ✅ Perfect |
 | Kinesis | 52 | 100% | ✅ Perfect |
 | KMS | 102 | 100% | ✅ Perfect |
 | Lambda | 119 | 100% | ✅ Perfect |
-| Neptune | 97 | 100% | ✅ Perfect |
+| Neptune | 96 | 100% | ✅ Perfect |
 | NeptuneData | 168 | 100% | ✅ Perfect |
-| NeptuneGraph | 49 | 100% | ✅ Perfect |
+| NeptuneGraph | 48 | 100% | ✅ Perfect |
 | RDS Data | 17 | 100% | ✅ Perfect |
 | Route53 | 48 | 100% | ✅ Perfect |
 | S3 | 143 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 72 | 100% | ✅ Perfect |
 
-**Overall: 3,347/3,347 tests passing (100%) — 3,280 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-26 on main after the StepFunctions, SQS, S3, IAM, Cognito, Lambda, Scheduler, STS, and Scheduler validation suite work)
+**Overall: 3,297/3,297 tests passing (100%) — 3,230 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-26 on main after the StepFunctions, SQS, S3, IAM, Cognito, Lambda, Scheduler, STS, Scheduler validation, IoT, Neptune, AppSync, ACM, Athena, and API Gateway suite work)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -12,21 +11,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/apigateway/types"
 )
 
-func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apigateway.Client, apiID, apiName string) []TestResult {
+func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "GetRestApis", func() error {
-		resp, err := client.GetRestApis(ctx, &apigateway.GetRestApisInput{
-			Limit: aws.Int32(500),
-		})
+		// Walk every page — accumulated APIs from previous runs can push
+		// the shared API beyond the first page.
+		items, err := tc.allRestApis()
 		if err != nil {
 			return err
 		}
-		if resp.Items == nil {
+		if items == nil {
 			return fmt.Errorf("items list is nil")
 		}
-		for _, item := range resp.Items {
-			if item.Name != nil && *item.Name == apiName {
+		for _, item := range items {
+			if item.Name != nil && *item.Name == tc.apiName {
 				return nil
 			}
 		}
@@ -34,19 +33,19 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetRestApi", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+			RestApiId: aws.String(tc.apiID),
 		})
 		if err != nil {
 			return err
 		}
-		if resp.Name == nil || *resp.Name != apiName {
+		if resp.Name == nil || *resp.Name != tc.apiName {
 			return fmt.Errorf("name mismatch, got %v", resp.Name)
 		}
-		if resp.Id == nil || *resp.Id != apiID {
+		if resp.Id == nil || *resp.Id != tc.apiID {
 			return fmt.Errorf("id mismatch, got %v", resp.Id)
 		}
 		if resp.CreatedDate == nil {
@@ -65,11 +64,11 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRestApi", func() error {
-		if apiID == "" {
+		if tc.apiID == "" {
 			return fmt.Errorf("API ID not available")
 		}
-		resp, err := client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
-			RestApiId: aws.String(apiID),
+		resp, err := tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(tc.apiID),
 			PatchOperations: []types.PatchOperation{
 				{
 					Op:    types.OpReplace,
@@ -87,87 +86,16 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 		if resp.Description == nil || *resp.Description != "Updated API" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
 		}
-		return nil
-	}))
 
-	results = append(results, r.RunTest("apigateway", "UpdateRestApi_VerifyUpdate", func() error {
-		uaAPI := fmt.Sprintf("UaAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name:        aws.String(uaAPI),
-			Description: aws.String("original desc"),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		newDesc := "updated description v2"
-		_, err = client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
-			RestApiId: createResp.Id,
-			PatchOperations: []types.PatchOperation{
-				{
-					Op:    types.OpReplace,
-					Path:  aws.String("/description"),
-					Value: aws.String(newDesc),
-				},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("update: %v", err)
-		}
-
-		resp, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
-			RestApiId: createResp.Id,
+		// Verify the update persists via a fresh read of the shared API.
+		getResp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+			RestApiId: aws.String(tc.apiID),
 		})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
-		if resp.Description == nil || *resp.Description != newDesc {
-			return fmt.Errorf("description not updated, got %v", resp.Description)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("apigateway", "GetRestApis_ContainsCreated", func() error {
-		gaAPI := fmt.Sprintf("GaAPI-%d", time.Now().UnixNano())
-		gaDesc := "searchable description"
-		_, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name:        aws.String(gaAPI),
-			Description: aws.String(gaDesc),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: func() *string {
-			resp, _ := client.GetRestApis(ctx, &apigateway.GetRestApisInput{Limit: aws.Int32(500)})
-			if resp != nil {
-				for _, item := range resp.Items {
-					if item.Name != nil && *item.Name == gaAPI {
-						return item.Id
-					}
-				}
-			}
-			return nil
-		}()})
-
-		resp, err := client.GetRestApis(ctx, &apigateway.GetRestApisInput{
-			Limit: aws.Int32(500),
-		})
-		if err != nil {
-			return fmt.Errorf("list: %v", err)
-		}
-		found := false
-		for _, item := range resp.Items {
-			if item.Name != nil && *item.Name == gaAPI {
-				found = true
-				if item.Description == nil || *item.Description != gaDesc {
-					return fmt.Errorf("description mismatch in list, got %v", item.Description)
-				}
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("created API %s not found in GetRestApis", gaAPI)
+		if getResp.Description == nil || *getResp.Description != "Updated API" {
+			return fmt.Errorf("description not updated, got %v", getResp.Description)
 		}
 		return nil
 	}))
@@ -180,48 +108,46 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 			},
 		}
 		policyBytes, _ := json.Marshal(policyDoc)
-		polAPI := fmt.Sprintf("PolAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name:   aws.String(polAPI),
+
+		createResp, err := tc.client.CreateRestApi(tc.ctx, &apigateway.CreateRestApiInput{
+			Name:   aws.String(tc.uniqueName("PolAPI")),
 			Policy: aws.String(string(policyBytes)),
 		})
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		apiID := aws.ToString(createResp.Id)
+		defer tc.deleteAPI(apiID)
 
 		if createResp.Policy == nil || *createResp.Policy == "" {
 			return fmt.Errorf("policy not returned in create response")
 		}
 
-		getResp, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
+		resp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
 			RestApiId: createResp.Id,
 		})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
-		if getResp.Policy == nil || *getResp.Policy == "" {
+		if resp.Policy == nil || *resp.Policy == "" {
 			return fmt.Errorf("policy not returned in get response")
 		}
 		var parsed map[string]interface{}
-		if err := json.Unmarshal([]byte(*getResp.Policy), &parsed); err != nil {
+		if err := json.Unmarshal([]byte(*resp.Policy), &parsed); err != nil {
 			return fmt.Errorf("policy is not valid JSON: %v", err)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRestApi_BinaryMediaTypes", func() error {
-		bmAPI := fmt.Sprintf("BmAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(bmAPI),
-		})
+		apiID, _, err := tc.createAPI(tc.uniqueName("BmAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(apiID)
 
-		_, err = client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
-			RestApiId: createResp.Id,
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpAdd, Path: aws.String("/binaryMediaTypes"), Value: aws.String("image/png")},
 				{Op: types.OpAdd, Path: aws.String("/binaryMediaTypes"), Value: aws.String("application/octet-stream")},
@@ -231,8 +157,8 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 			return fmt.Errorf("add binaryMediaTypes: %v", err)
 		}
 
-		resp, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
-			RestApiId: createResp.Id,
+		resp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+			RestApiId: aws.String(apiID),
 		})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
@@ -248,8 +174,8 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 			return fmt.Errorf("binaryMediaTypes mismatch, got %v", resp.BinaryMediaTypes)
 		}
 
-		_, err = client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
-			RestApiId: createResp.Id,
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpRemove, Path: aws.String("/binaryMediaTypes/image~1png")},
 			},
@@ -258,8 +184,8 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 			return fmt.Errorf("remove binaryMediaType: %v", err)
 		}
 
-		resp2, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
-			RestApiId: createResp.Id,
+		resp2, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+			RestApiId: aws.String(apiID),
 		})
 		if err != nil {
 			return fmt.Errorf("get after remove: %v", err)
@@ -271,22 +197,19 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRestApi_MinimumCompressionSize", func() error {
-		mcAPI := fmt.Sprintf("McAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(mcAPI),
-		})
+		apiID, _, err := tc.createAPI(tc.uniqueName("McAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(apiID)
 
-		getBefore, _ := client.GetRestApi(ctx, &apigateway.GetRestApiInput{RestApiId: createResp.Id})
+		getBefore, _ := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{RestApiId: aws.String(apiID)})
 		if getBefore.MinimumCompressionSize != nil {
 			return fmt.Errorf("minimumCompressionSize should be nil before setting, got %d", *getBefore.MinimumCompressionSize)
 		}
 
-		_, err = client.UpdateRestApi(ctx, &apigateway.UpdateRestApiInput{
-			RestApiId: createResp.Id,
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
 			PatchOperations: []types.PatchOperation{
 				{Op: types.OpReplace, Path: aws.String("/minimumCompressionSize"), Value: aws.String("2048")},
 			},
@@ -295,8 +218,8 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 			return fmt.Errorf("update: %v", err)
 		}
 
-		resp, err := client.GetRestApi(ctx, &apigateway.GetRestApiInput{
-			RestApiId: createResp.Id,
+		resp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+			RestApiId: aws.String(apiID),
 		})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
@@ -312,49 +235,26 @@ func (r *TestRunner) runAPIGatewayRestApiTests(ctx context.Context, client *apig
 		var pgAPIs []string
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagAPI-%s-%d", pgTs, i)
-			resp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-				Name:        aws.String(name),
-				Description: aws.String("pagination test"),
-			})
+			apiID, _, err := tc.createAPI(name)
 			if err != nil {
-				for _, id := range pgAPIs {
-					client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
-				}
 				return fmt.Errorf("create rest api %s: %v", name, err)
 			}
-			pgAPIs = append(pgAPIs, *resp.Id)
+			defer tc.deleteAPI(apiID)
+			pgAPIs = append(pgAPIs, apiID)
 		}
 
-		var allAPIs []string
-		var position *string
-		for {
-			resp, err := client.GetRestApis(ctx, &apigateway.GetRestApisInput{
-				Limit:    aws.Int32(2),
-				Position: position,
-			})
-			if err != nil {
-				for _, id := range pgAPIs {
-					client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
-				}
-				return fmt.Errorf("get rest apis page: %v", err)
-			}
-			for _, item := range resp.Items {
-				if item.Name != nil && strings.HasPrefix(*item.Name, "PagAPI-"+pgTs) {
-					allAPIs = append(allAPIs, *item.Name)
-				}
-			}
-			if resp.Position != nil && *resp.Position != "" {
-				position = resp.Position
-			} else {
-				break
+		allAPIs, err := tc.allRestApis()
+		if err != nil {
+			return fmt.Errorf("get rest apis page: %v", err)
+		}
+		count := 0
+		for _, item := range allAPIs {
+			if item.Name != nil && strings.HasPrefix(*item.Name, "PagAPI-"+pgTs) {
+				count++
 			}
 		}
-
-		for _, id := range pgAPIs {
-			client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: aws.String(id)})
-		}
-		if len(allAPIs) != 5 {
-			return fmt.Errorf("expected 5 paginated rest apis, got %d", len(allAPIs))
+		if len(pgAPIs) != 5 || count != 5 {
+			return fmt.Errorf("expected 5 paginated rest apis, got %d", count)
 		}
 		return nil
 	}))

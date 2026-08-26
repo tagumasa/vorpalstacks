@@ -2,29 +2,32 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 )
 
-func (tc *athenaTestCtx) testTagging() []TestResult {
+func (tc *athenaTestContext) testTagging() []TestResult {
 	var results []TestResult
-	client := tc.client
-	ctx := tc.ctx
 
-	tagWorkGroupName := fmt.Sprintf("tag-wg-%d", time.Now().UnixNano()%1000000000)
-	results = append(results, tc.runner.RunTest("athena", "TagResource_CreateWG", func() error {
-		_, err := client.CreateWorkGroup(ctx, &athena.CreateWorkGroupInput{
-			Name: aws.String(tagWorkGroupName),
+	// Shared work group fixture for the tag scenarios; the deferred delete
+	// runs once every tagging scenario below has completed. A setup failure
+	// surfaces as one FAIL row named after the step it replaced.
+	tagWorkGroupName := tc.uniqueName("tag-wg")
+	if err := tc.createWorkGroup(tagWorkGroupName, nil); err != nil {
+		return append(results, TestResult{
+			Service:  "athena",
+			TestName: "TagResource_CreateWG",
+			Status:   "FAIL",
+			Error:    fmt.Sprintf("work group setup failed: %v", err),
 		})
-		return err
-	}))
+	}
+	defer tc.deleteWorkGroup(tagWorkGroupName)
 
 	results = append(results, tc.runner.RunTest("athena", "TagResource", func() error {
-		_, err := client.TagResource(ctx, &athena.TagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+		_, err := tc.client.TagResource(tc.ctx, &athena.TagResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(tagWorkGroupName)),
 			Tags: []types.Tag{
 				{Key: aws.String("env"), Value: aws.String("test")},
 				{Key: aws.String("team"), Value: aws.String("athena")},
@@ -34,8 +37,8 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "TagResource_ReservedPrefixRejected", func() error {
-		_, err := client.TagResource(ctx, &athena.TagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+		_, err := tc.client.TagResource(tc.ctx, &athena.TagResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(tagWorkGroupName)),
 			Tags: []types.Tag{
 				{Key: aws.String("aws:reserved"), Value: aws.String("v")},
 			},
@@ -47,8 +50,8 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource", func() error {
-		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &athena.ListTagsForResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(tagWorkGroupName)),
 		})
 		if err != nil {
 			return err
@@ -66,17 +69,18 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 		return nil
 	}))
 
+	// Untag then verify: env must be gone and team must remain.
 	results = append(results, tc.runner.RunTest("athena", "UntagResource", func() error {
-		_, err := client.UntagResource(ctx, &athena.UntagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+		_, err := tc.client.UntagResource(tc.ctx, &athena.UntagResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(tagWorkGroupName)),
 			TagKeys:     []string{"env"},
 		})
-		return err
-	}))
+		if err != nil {
+			return err
+		}
 
-	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource_AfterUntag", func() error {
-		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:workgroup/%s", tc.runner.region, tc.runner.AccountID(), tagWorkGroupName)),
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &athena.ListTagsForResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(tagWorkGroupName)),
 		})
 		if err != nil {
 			return err
@@ -96,25 +100,17 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("athena", "DeleteWorkGroup_TagCleanup", func() error {
-		_, err := client.DeleteWorkGroup(ctx, &athena.DeleteWorkGroupInput{
-			WorkGroup: aws.String(tagWorkGroupName),
-		})
-		return err
-	}))
-
-	tagCatalogName := fmt.Sprintf("tag-cat-%d", time.Now().UnixNano()%1000000000)
+	// Data catalog tagging: create, tag, verify in one scenario with
+	// best-effort cleanup.
+	tagCatalogName := tc.uniqueName("tag-cat")
 	results = append(results, tc.runner.RunTest("athena", "TagResource_DataCatalog", func() error {
-		_, err := client.CreateDataCatalog(ctx, &athena.CreateDataCatalogInput{
-			Name:        aws.String(tagCatalogName),
-			Type:        types.DataCatalogTypeGlue,
-			Description: aws.String("Catalog for tag test"),
-		})
-		if err != nil {
+		if err := tc.createDataCatalog(tagCatalogName, "Catalog for tag test"); err != nil {
 			return err
 		}
-		_, err = client.TagResource(ctx, &athena.TagResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:datacatalog/%s", tc.runner.region, tc.runner.AccountID(), tagCatalogName)),
+		defer tc.deleteDataCatalog(tagCatalogName)
+
+		_, err := tc.client.TagResource(tc.ctx, &athena.TagResourceInput{
+			ResourceARN: aws.String(tc.datacatalogARN(tagCatalogName)),
 			Tags: []types.Tag{
 				{Key: aws.String("purpose"), Value: aws.String("testing")},
 			},
@@ -122,8 +118,8 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
-			ResourceARN: aws.String(fmt.Sprintf("arn:aws:athena:%s:%s:datacatalog/%s", tc.runner.region, tc.runner.AccountID(), tagCatalogName)),
+		resp, err := tc.client.ListTagsForResource(tc.ctx, &athena.ListTagsForResourceInput{
+			ResourceARN: aws.String(tc.datacatalogARN(tagCatalogName)),
 		})
 		if err != nil {
 			return err
@@ -139,13 +135,6 @@ func (tc *athenaTestCtx) testTagging() []TestResult {
 			return fmt.Errorf("expected purpose=testing, got %q", tagMap["purpose"])
 		}
 		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("athena", "DeleteDataCatalog_TagCleanup", func() error {
-		_, err := client.DeleteDataCatalog(ctx, &athena.DeleteDataCatalogInput{
-			Name: aws.String(tagCatalogName),
-		})
-		return err
 	}))
 
 	return results

@@ -84,21 +84,16 @@ func (r *TestRunner) runAppSyncGraphqlApiTests(res *appsyncResources) []TestResu
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListGraphqlApis", func() error {
-		resp, err := client.ListGraphqlApis(ctx, &appsync.ListGraphqlApisInput{})
+		apis, err := res.allGraphqlApis()
 		if err != nil {
 			return err
 		}
-		if len(resp.GraphqlApis) < 2 {
-			return fmt.Errorf("expected at least 2 GraphQL APIs, got %d", len(resp.GraphqlApis))
+		if len(apis) < 2 {
+			return fmt.Errorf("expected at least 2 GraphQL APIs, got %d", len(apis))
 		}
-		found := false
-		for _, api := range resp.GraphqlApis {
-			if *api.ApiId == res.gqlApiId {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(apis, func(api *types.GraphqlApi) bool {
+			return api.ApiId != nil && *api.ApiId == res.gqlApiId
+		}) == nil {
 			return fmt.Errorf("created GraphQL API not found in list")
 		}
 		return nil

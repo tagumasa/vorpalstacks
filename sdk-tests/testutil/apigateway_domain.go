@@ -72,8 +72,10 @@ func (r *TestRunner) cleanupStaleDomainNames(ctx context.Context, client *apigat
 	}
 }
 
-func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apigateway.Client, apiID string) []TestResult {
+func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
+
+	ctx, client := tc.ctx, tc.client
 
 	// Clean up stale domains from previous interrupted test runs.
 	r.cleanupStaleDomainNames(ctx, client)
@@ -185,12 +187,12 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateBasePathMapping", func() error {
-		if apiID == "" || domainName == "" {
+		if tc.apiID == "" || domainName == "" {
 			return fmt.Errorf("API ID or domain name not available")
 		}
 		resp, err := client.CreateBasePathMapping(ctx, &apigateway.CreateBasePathMappingInput{
 			DomainName: aws.String(domainName),
-			RestApiId:  aws.String(apiID),
+			RestApiId:  aws.String(tc.apiID),
 			BasePath:   aws.String("v1"),
 			Stage:      aws.String("prod"),
 		})
@@ -200,7 +202,7 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		if resp.BasePath == nil || *resp.BasePath != "v1" {
 			return fmt.Errorf("basePath mismatch, got %v", resp.BasePath)
 		}
-		if resp.RestApiId == nil || *resp.RestApiId != apiID {
+		if resp.RestApiId == nil || *resp.RestApiId != tc.apiID {
 			return fmt.Errorf("restApiId mismatch, got %v", resp.RestApiId)
 		}
 		return nil
@@ -310,71 +312,12 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		return nil
 	}))
 
-	results = append(results, r.RunTest("apigateway", "DomainName_BasePathMapping_FullLifecycle", func() error {
-		dbAPI := fmt.Sprintf("DbAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(dbAPI),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
-
-		domain := fmt.Sprintf("lc-%d.example.com", time.Now().UnixNano())
-		dnResp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
-			DomainName:     aws.String(domain),
-			CertificateArn: aws.String(certArn),
-		})
-		if err != nil {
-			return fmt.Errorf("create domain: %v", err)
-		}
-		if aws.ToString(dnResp.DomainName) != domain {
-			return fmt.Errorf("expected domainName=%s, got %s", domain, aws.ToString(dnResp.DomainName))
-		}
-		if aws.ToString(dnResp.CertificateArn) != certArn {
-			return fmt.Errorf("expected certificateArn=%s, got %s", certArn, aws.ToString(dnResp.CertificateArn))
-		}
-
-		_, err = client.CreateBasePathMapping(ctx, &apigateway.CreateBasePathMappingInput{
-			DomainName: aws.String(domain),
-			RestApiId:  createResp.Id,
-			BasePath:   aws.String("(none)"),
-			Stage:      aws.String("prod"),
-		})
-		if err != nil {
-			return fmt.Errorf("create base path mapping: %v", err)
-		}
-
-		_, err = client.GetBasePathMappings(ctx, &apigateway.GetBasePathMappingsInput{
-			DomainName: aws.String(domain),
-		})
-		if err != nil {
-			return fmt.Errorf("get base path mappings: %v", err)
-		}
-
-		_, err = client.DeleteBasePathMapping(ctx, &apigateway.DeleteBasePathMappingInput{
-			DomainName: aws.String(domain),
-			BasePath:   aws.String("(none)"),
-		})
-		if err != nil {
-			return fmt.Errorf("delete base path mapping: %v", err)
-		}
-
-		_, err = client.DeleteDomainName(ctx, &apigateway.DeleteDomainNameInput{
-			DomainName: aws.String(domain),
-		})
-		return err
-	}))
-
 	results = append(results, r.RunTest("apigateway", "CreateBasePathMapping_DefaultNone", func() error {
-		bnAPI := fmt.Sprintf("BnAPI-%d", time.Now().UnixNano())
-		createResp, err := client.CreateRestApi(ctx, &apigateway.CreateRestApiInput{
-			Name: aws.String(bnAPI),
-		})
+		apiID, _, err := tc.createAPI(tc.uniqueName("BnAPI"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer client.DeleteRestApi(ctx, &apigateway.DeleteRestApiInput{RestApiId: createResp.Id})
+		defer tc.deleteAPI(apiID)
 
 		domain := fmt.Sprintf("none-%d.example.com", time.Now().UnixNano())
 		_, err = client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
@@ -388,7 +331,7 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 
 		mappingResp, err := client.CreateBasePathMapping(ctx, &apigateway.CreateBasePathMappingInput{
 			DomainName: aws.String(domain),
-			RestApiId:  createResp.Id,
+			RestApiId:  aws.String(apiID),
 			Stage:      aws.String("prod"),
 		})
 		if err != nil {
@@ -407,6 +350,21 @@ func (r *TestRunner) runAPIGatewayDomainTests(ctx context.Context, client *apiga
 		}
 		if getResp.BasePath == nil || *getResp.BasePath != "(none)" {
 			return fmt.Errorf("get basePath mismatch, got %v", getResp.BasePath)
+		}
+
+		_, err = client.GetBasePathMappings(ctx, &apigateway.GetBasePathMappingsInput{
+			DomainName: aws.String(domain),
+		})
+		if err != nil {
+			return fmt.Errorf("get base path mappings: %v", err)
+		}
+
+		_, err = client.DeleteBasePathMapping(ctx, &apigateway.DeleteBasePathMappingInput{
+			DomainName: aws.String(domain),
+			BasePath:   aws.String("(none)"),
+		})
+		if err != nil {
+			return fmt.Errorf("delete base path mapping: %v", err)
 		}
 		return nil
 	}))

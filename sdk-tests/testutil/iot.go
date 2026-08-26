@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
+	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -59,136 +60,194 @@ func (tc *iotTestContext) iamRoleARN(suffix string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, suffix)
 }
 
+// createThing registers a thing and returns a cleanup function that deletes
+// it. Callers defer the cleanup so a mid-suite failure never strands the
+// resource; on creation failure no cleanup is returned and nothing was created.
+func (tc *iotTestContext) createThing(thingName string) (func(), error) {
+	if _, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{ThingName: aws.String(thingName)}); err != nil {
+		return nil, fmt.Errorf("CreateThing failed: %w", err)
+	}
+	cleanup := func() {
+		_, _ = tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
+	}
+	return cleanup, nil
+}
+
+// iotCertificate bundles the identifiers returned by CreateKeysAndCertificate.
+type iotCertificate struct {
+	ID      string
+	ARN     string
+	PEM     string
+	KeyPair *iottypes.KeyPair
+}
+
+// createCertificate creates a certificate and returns it together with a
+// cleanup function that deactivates (a prerequisite for deletion) and then
+// deletes the certificate. The PEM body is best-effort only — the server may
+// omit it for non-creation reads, so callers must not require it here.
+func (tc *iotTestContext) createCertificate(setAsActive bool) (*iotCertificate, func(), error) {
+	out, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{SetAsActive: setAsActive})
+	if err != nil {
+		return nil, nil, fmt.Errorf("CreateKeysAndCertificate failed: %w", err)
+	}
+	cert := &iotCertificate{
+		ID:      aws.ToString(out.CertificateId),
+		ARN:     aws.ToString(out.CertificateArn),
+		PEM:     aws.ToString(out.CertificatePem),
+		KeyPair: out.KeyPair,
+	}
+	cleanup := func() {
+		if cert.ID == "" {
+			return
+		}
+		_, _ = tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
+			CertificateId: aws.String(cert.ID),
+			NewStatus:     iottypes.CertificateStatusInactive,
+		})
+		_, _ = tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{CertificateId: aws.String(cert.ID)})
+	}
+	return cert, cleanup, nil
+}
+
+// createPolicy registers an IoT policy from the given document and returns a
+// cleanup function that deletes it.
+func (tc *iotTestContext) createPolicy(policyName, policyDocument string) (func(), error) {
+	if _, err := tc.client.CreatePolicy(tc.ctx, &iot.CreatePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(policyDocument),
+	}); err != nil {
+		return nil, fmt.Errorf("CreatePolicy failed: %w", err)
+	}
+	cleanup := func() {
+		_, _ = tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
+	}
+	return cleanup, nil
+}
+
 // thingGroupExists paginates ListThingGroups and reports whether a group with
 // the given name exists. Pagination is mandatory because full regressions run
 // many services in parallel and the target group may sit beyond the first page.
 func (tc *iotTestContext) thingGroupExists(groupName string) (bool, error) {
-	var token *string
-	for {
-		out, err := tc.client.ListThingGroups(tc.ctx, &iot.ListThingGroupsInput{NextToken: token})
+	groups, err := paginate(func(next *string) ([]iottypes.GroupNameAndArn, *string, error) {
+		out, err := tc.client.ListThingGroups(tc.ctx, &iot.ListThingGroupsInput{NextToken: next})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, g := range out.ThingGroups {
-			if g.GroupName != nil && *g.GroupName == groupName {
-				return true, nil
-			}
+		return out.ThingGroups, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, g := range groups {
+		if g.GroupName != nil && *g.GroupName == groupName {
+			return true, nil
 		}
-		if out.NextToken == nil || *out.NextToken == "" {
-			break
-		}
-		token = out.NextToken
 	}
 	return false, nil
 }
 
 // billingGroupExists paginates ListBillingGroups for groupName.
 func (tc *iotTestContext) billingGroupExists(groupName string) (bool, error) {
-	var token *string
-	for {
-		out, err := tc.client.ListBillingGroups(tc.ctx, &iot.ListBillingGroupsInput{NextToken: token})
+	groups, err := paginate(func(next *string) ([]iottypes.GroupNameAndArn, *string, error) {
+		out, err := tc.client.ListBillingGroups(tc.ctx, &iot.ListBillingGroupsInput{NextToken: next})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, g := range out.BillingGroups {
-			if g.GroupName != nil && *g.GroupName == groupName {
-				return true, nil
-			}
+		return out.BillingGroups, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, g := range groups {
+		if g.GroupName != nil && *g.GroupName == groupName {
+			return true, nil
 		}
-		if out.NextToken == nil || *out.NextToken == "" {
-			break
-		}
-		token = out.NextToken
 	}
 	return false, nil
 }
 
 // thingInGroupExists paginates ListThingsInThingGroup for thingName.
 func (tc *iotTestContext) thingInGroupExists(groupName, thingName string) (bool, error) {
-	var token *string
-	for {
+	things, err := paginate(func(next *string) ([]string, *string, error) {
 		out, err := tc.client.ListThingsInThingGroup(tc.ctx, &iot.ListThingsInThingGroupInput{
 			ThingGroupName: aws.String(groupName),
-			NextToken:      token,
+			NextToken:      next,
 		})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, t := range out.Things {
-			if t == thingName {
-				return true, nil
-			}
+		return out.Things, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, t := range things {
+		if t == thingName {
+			return true, nil
 		}
-		if out.NextToken == nil || *out.NextToken == "" {
-			break
-		}
-		token = out.NextToken
 	}
 	return false, nil
 }
 
 // thingInBillingGroupExists paginates ListThingsInBillingGroup for thingName.
 func (tc *iotTestContext) thingInBillingGroupExists(groupName, thingName string) (bool, error) {
-	var token *string
-	for {
+	things, err := paginate(func(next *string) ([]string, *string, error) {
 		out, err := tc.client.ListThingsInBillingGroup(tc.ctx, &iot.ListThingsInBillingGroupInput{
 			BillingGroupName: aws.String(groupName),
-			NextToken:        token,
+			NextToken:        next,
 		})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, t := range out.Things {
-			if t == thingName {
-				return true, nil
-			}
+		return out.Things, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, t := range things {
+		if t == thingName {
+			return true, nil
 		}
-		if out.NextToken == nil || *out.NextToken == "" {
-			break
-		}
-		token = out.NextToken
 	}
 	return false, nil
 }
 
 // thingExists paginates ListThings for thingName.
 func (tc *iotTestContext) thingExists(thingName string) (bool, error) {
-	var token *string
-	for {
-		out, err := tc.client.ListThings(tc.ctx, &iot.ListThingsInput{NextToken: token})
+	things, err := paginate(func(next *string) ([]iottypes.ThingAttribute, *string, error) {
+		out, err := tc.client.ListThings(tc.ctx, &iot.ListThingsInput{NextToken: next})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, t := range out.Things {
-			if t.ThingName != nil && *t.ThingName == thingName {
-				return true, nil
-			}
+		return out.Things, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, t := range things {
+		if t.ThingName != nil && *t.ThingName == thingName {
+			return true, nil
 		}
-		if out.NextToken == nil || *out.NextToken == "" {
-			break
-		}
-		token = out.NextToken
 	}
 	return false, nil
 }
 
 // certificateExists paginates ListCertificates (marker-based) for the given id.
 func (tc *iotTestContext) certificateExists(certID string) (bool, error) {
-	var marker *string
-	for {
-		out, err := tc.client.ListCertificates(tc.ctx, &iot.ListCertificatesInput{Marker: marker})
+	certs, err := paginate(func(next *string) ([]iottypes.Certificate, *string, error) {
+		out, err := tc.client.ListCertificates(tc.ctx, &iot.ListCertificatesInput{Marker: next})
 		if err != nil {
-			return false, err
+			return nil, nil, err
 		}
-		for _, c := range out.Certificates {
-			if c.CertificateId != nil && *c.CertificateId == certID {
-				return true, nil
-			}
+		return out.Certificates, out.NextMarker, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, c := range certs {
+		if c.CertificateId != nil && *c.CertificateId == certID {
+			return true, nil
 		}
-		if out.NextMarker == nil || *out.NextMarker == "" {
-			break
-		}
-		marker = out.NextMarker
 	}
 	return false, nil
 }

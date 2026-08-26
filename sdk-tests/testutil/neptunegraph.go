@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptunegraph"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -44,6 +45,38 @@ type neptunegraphContext struct {
 	tsNano     string
 	region     string
 	accountID  string
+}
+
+// unique returns a per-suite unique resource name.
+func (tc *neptunegraphContext) unique(prefix string) string {
+	return prefix + "-" + tc.tsNano[len(tc.tsNano)-8:]
+}
+
+// requireID fails a test whose prerequisite resource was never created.
+func requireID(id, what string) error {
+	if id == "" {
+		return fmt.Errorf("no %s", what)
+	}
+	return nil
+}
+
+func (tc *neptunegraphContext) requireGraph() error {
+	return requireID(tc.graphID, "graph ID")
+}
+
+func (tc *neptunegraphContext) requireGraphARN() error {
+	return requireID(tc.graphARN, "graph ARN")
+}
+
+func (tc *neptunegraphContext) requireSnapshot() error {
+	return requireID(tc.snapshotID, "snapshot ID")
+}
+
+// getGraph fetches the current graph summary for id.
+func (tc *neptunegraphContext) getGraph(id string) (*neptunegraph.GetGraphOutput, error) {
+	return tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
+		GraphIdentifier: aws.String(id),
+	})
 }
 
 func (r *TestRunner) RunNeptunegraphTests() []TestResult {

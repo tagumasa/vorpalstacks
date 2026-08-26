@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/appsync"
+	"github.com/aws/aws-sdk-go-v2/service/appsync/types"
 )
 
 func (r *TestRunner) runAppSyncChannelTests(res *appsyncResources) []TestResult {
@@ -67,23 +68,16 @@ func (r *TestRunner) runAppSyncChannelTests(res *appsyncResources) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListChannelNamespaces", func() error {
-		resp, err := client.ListChannelNamespaces(ctx, &appsync.ListChannelNamespacesInput{
-			ApiId: aws.String(res.apiId),
-		})
+		namespaces, err := res.allChannelNamespaces(res.apiId)
 		if err != nil {
 			return err
 		}
-		if len(resp.ChannelNamespaces) < 1 {
-			return fmt.Errorf("expected at least 1 namespace, got %d", len(resp.ChannelNamespaces))
+		if len(namespaces) < 1 {
+			return fmt.Errorf("expected at least 1 namespace, got %d", len(namespaces))
 		}
-		found := false
-		for _, ns := range resp.ChannelNamespaces {
-			if ns.Name != nil && *ns.Name == res.nsName {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(namespaces, func(ns *types.ChannelNamespace) bool {
+			return ns.Name != nil && *ns.Name == res.nsName
+		}) == nil {
 			return fmt.Errorf("created namespace %s not found in list", res.nsName)
 		}
 		return nil

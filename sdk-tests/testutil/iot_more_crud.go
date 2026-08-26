@@ -19,15 +19,14 @@ func (r *TestRunner) runIoTMoreCRUDTests(tc *iotTestContext) []TestResult {
 	defer tc.client.DeleteSecurityProfile(tc.ctx, &iot.DeleteSecurityProfileInput{SecurityProfileName: aws.String(profileName)})
 	defer tc.client.DeleteThingGroup(tc.ctx, &iot.DeleteThingGroupInput{ThingGroupName: aws.String(groupName)})
 
-	results = append(results, r.RunTest("iot", "More_Setup", func() error {
-		if _, err := tc.client.CreateThingGroup(tc.ctx, &iot.CreateThingGroupInput{ThingGroupName: aws.String(groupName)}); err != nil {
-			return fmt.Errorf("CreateThingGroup failed: %w", err)
-		}
-		if _, err := tc.client.CreateSecurityProfile(tc.ctx, &iot.CreateSecurityProfileInput{SecurityProfileName: aws.String(profileName)}); err != nil {
-			return fmt.Errorf("CreateSecurityProfile failed: %w", err)
-		}
-		return nil
-	}))
+	// Setup: create the group and profile up front; a prerequisite failure
+	// surfaces as a single FAIL row named after the setup step it replaces.
+	if _, err := tc.client.CreateThingGroup(tc.ctx, &iot.CreateThingGroupInput{ThingGroupName: aws.String(groupName)}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "More_Setup", Status: "FAIL", Error: fmt.Sprintf("CreateThingGroup failed: %v", err)}}
+	}
+	if _, err := tc.client.CreateSecurityProfile(tc.ctx, &iot.CreateSecurityProfileInput{SecurityProfileName: aws.String(profileName)}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "More_Setup", Status: "FAIL", Error: fmt.Sprintf("CreateSecurityProfile failed: %v", err)}}
+	}
 
 	results = append(results, r.RunTest("iot", "AttachSecurityProfile", func() error {
 		_, err := tc.client.AttachSecurityProfile(tc.ctx, &iot.AttachSecurityProfileInput{

@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
-	"github.com/aws/aws-sdk-go-v2/service/iot/types"
 )
 
 const testIoTPolicyDocument = `{
@@ -22,28 +21,18 @@ const testIoTPolicyDocument = `{
 func (r *TestRunner) runIoTPolicyTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 	policyName := uniqueName("policy")
-	var certID, certARN string
 
 	// Create a throwaway certificate to use as an attach principal.
-	results = append(results, r.RunTest("iot", "Policy_Setup_Certificate", func() error {
-		out, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{SetAsActive: true})
-		if err != nil {
-			return fmt.Errorf("CreateKeysAndCertificate prerequisite failed: %w", err)
-		}
-		certID = *out.CertificateId
-		certARN = aws.ToString(out.CertificateArn)
-		return nil
-	}))
+	cert, certCleanup, certErr := tc.createCertificate(true)
+	if certErr != nil {
+		return []TestResult{{Service: "iot", TestName: "Policy_Setup", Status: "FAIL", Error: certErr.Error()}}
+	}
+	defer certCleanup()
+	certARN := cert.ARN
 
 	defer func() {
 		if policyName != "" {
 			tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
-		}
-		if certID != "" {
-			tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
-				CertificateId: aws.String(certID), NewStatus: types.CertificateStatusInactive,
-			})
-			tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{CertificateId: aws.String(certID)})
 		}
 	}()
 

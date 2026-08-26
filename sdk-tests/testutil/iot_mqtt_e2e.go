@@ -18,67 +18,61 @@ import (
 func (r *TestRunner) runIoTMQTTTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 
-	// Provision a device certificate via the control plane.
-	var certPEM, keyPEM, certID string
+	// Provision a device certificate via the control plane through the shared
+	// cleanup-returning helper; prerequisite failures surface as a single FAIL
+	// row named after the setup step they replace.
+	cert, certCleanup, certErr := tc.createCertificate(true)
+	if certErr != nil {
+		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_CreateKeysAndCertificate", Status: "FAIL", Error: certErr.Error()}}
+	}
+	certPEM := cert.PEM
+	keyPEM := aws.ToString(cert.KeyPair.PrivateKey)
 	policyName := uniqueName("mqtt-test-policy")
 	thingName := uniqueName("mqtt-test-thing")
 
-	results = append(results, r.RunTest("iot", "MQTT_Setup_CreateKeysAndCertificate", func() error {
-		out, err := tc.client.CreateKeysAndCertificate(tc.ctx, &iot.CreateKeysAndCertificateInput{SetAsActive: true})
-		if err != nil {
-			return fmt.Errorf("CreateKeysAndCertificate failed: %w", err)
-		}
-		certID = aws.ToString(out.CertificateId)
-		certPEM = aws.ToString(out.CertificatePem)
-		keyPEM = aws.ToString(out.KeyPair.PrivateKey)
-		return nil
-	}))
+	var policyCleanup func()
 
-	// Best-effort cleanup.
+	// Best-effort cleanup: detach the policy and principal associations first,
+	// then let the shared helpers delete the policy and the certificate.
 	defer func() {
-		if certID != "" {
+		if policyCleanup != nil {
 			tc.client.DetachPolicy(tc.ctx, &iot.DetachPolicyInput{
 				PolicyName: aws.String(policyName),
-				Target:     aws.String(tc.arn("iot", "cert", certID)),
+				Target:     aws.String(cert.ARN),
 			})
-			tc.client.UpdateCertificate(tc.ctx, &iot.UpdateCertificateInput{
-				CertificateId: aws.String(certID),
-				NewStatus:     "INACTIVE",
+			policyCleanup()
+		}
+		if certCleanup != nil {
+			certCleanup()
+		}
+		if thingName != "" {
+			tc.client.DetachThingPrincipal(tc.ctx, &iot.DetachThingPrincipalInput{
+				ThingName: aws.String(thingName),
+				Principal: aws.String(cert.ARN),
 			})
-			tc.client.DeleteCertificate(tc.ctx, &iot.DeleteCertificateInput{CertificateId: aws.String(certID)})
-			tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
-			if thingName != "" {
-				tc.client.DetachThingPrincipal(tc.ctx, &iot.DetachThingPrincipalInput{
-					ThingName: aws.String(thingName),
-					Principal: aws.String(tc.arn("iot", "cert", certID)),
-				})
-				tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
-			}
+			tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
 		}
 	}()
 
-	results = append(results, r.RunTest("iot", "MQTT_Setup_CreatePolicy", func() error {
-		policyDoc := fmt.Sprintf(`{
+	policyDoc := fmt.Sprintf(`{
 			"Version": "2012-10-17",
 			"Statement": [
 				{"Effect": "Allow", "Action": "iot:Connect", "Resource": "*"},
 				{"Effect": "Allow", "Action": ["iot:Publish", "iot:Subscribe", "iot:Receive"], "Resource": "test/topic/%s/#"}
 			]
 		}`, thingName)
-		_, err := tc.client.CreatePolicy(tc.ctx, &iot.CreatePolicyInput{
-			PolicyName:     aws.String(policyName),
-			PolicyDocument: aws.String(policyDoc),
-		})
-		return err
-	}))
+	cleanupPolicy, policyErr := tc.createPolicy(policyName, policyDoc)
+	if policyErr != nil {
+		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_CreatePolicy", Status: "FAIL", Error: policyErr.Error()}}
+	}
+	policyCleanup = cleanupPolicy
 
-	results = append(results, r.RunTest("iot", "MQTT_Setup_AttachPolicy", func() error {
-		_, err := tc.client.AttachPolicy(tc.ctx, &iot.AttachPolicyInput{
-			PolicyName: aws.String(policyName),
-			Target:     aws.String(tc.arn("iot", "cert", certID)),
-		})
-		return err
-	}))
+	if _, err := tc.client.AttachPolicy(tc.ctx, &iot.AttachPolicyInput{
+		PolicyName: aws.String(policyName),
+		Target:     aws.String(cert.ARN),
+	}); err != nil {
+		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_AttachPolicy", Status: "FAIL", Error: err.Error()}}
+	}
 
 	// Resolve the broker endpoint.
 	var brokerURL string

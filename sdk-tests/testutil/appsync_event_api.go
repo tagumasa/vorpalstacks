@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/appsync"
+	"github.com/aws/aws-sdk-go-v2/service/appsync/types"
 )
 
 func (r *TestRunner) runAppSyncEventApiTests(res *appsyncResources) []TestResult {
@@ -98,21 +99,16 @@ func (r *TestRunner) runAppSyncEventApiTests(res *appsyncResources) []TestResult
 	}))
 
 	results = append(results, r.RunTest("appsync", "ListApis", func() error {
-		resp, err := client.ListApis(ctx, &appsync.ListApisInput{})
+		apis, err := res.allApis()
 		if err != nil {
 			return err
 		}
-		if len(resp.Apis) < 3 {
-			return fmt.Errorf("expected at least 3 APIs, got %d", len(resp.Apis))
+		if len(apis) < 3 {
+			return fmt.Errorf("expected at least 3 APIs, got %d", len(apis))
 		}
-		found := false
-		for _, api := range resp.Apis {
-			if *api.ApiId == res.apiId {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if containsID(apis, func(api *types.Api) bool {
+			return api.ApiId != nil && *api.ApiId == res.apiId
+		}) == nil {
 			return fmt.Errorf("created API not found in list")
 		}
 		return nil
@@ -166,28 +162,23 @@ func (r *TestRunner) runAppSyncEventApiPaginationTests(res *appsyncResources) []
 	client := res.client
 
 	results = append(results, r.RunTest("appsync", "ListApis_NextTokenFollowUp", func() error {
-		nextToken := ""
-		pageCount := 0
-		for {
-			input := &appsync.ListApisInput{MaxResults: 1}
-			if nextToken != "" {
-				input.NextToken = aws.String(nextToken)
-			}
-			resp, err := client.ListApis(ctx, input)
+		items, err := paginate(func(next *string) ([]types.Api, *string, error) {
+			resp, err := client.ListApis(ctx, &appsync.ListApisInput{
+				MaxResults: 1,
+				NextToken:  next,
+			})
 			if err != nil {
-				return fmt.Errorf("list apis page: %v", err)
+				return nil, nil, fmt.Errorf("list apis page: %v", err)
 			}
-			pageCount++
-			for range resp.Apis {
-			}
-			if resp.NextToken != nil && *resp.NextToken != "" {
-				nextToken = *resp.NextToken
-			} else {
-				break
-			}
+			return resp.Apis, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
 		}
-		if pageCount < 2 {
-			return fmt.Errorf("expected at least 2 pages for ListApis with MaxResults=1, got %d", pageCount)
+		// MaxResults=1 forces one item per page, so at least two items
+		// prove the NextToken follow-up crossed a page boundary.
+		if len(items) < 2 {
+			return fmt.Errorf("expected at least 2 pages for ListApis with MaxResults=1, got %d", len(items))
 		}
 		return nil
 	}))

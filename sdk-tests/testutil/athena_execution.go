@@ -2,41 +2,27 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 )
 
-func (tc *athenaTestCtx) testQueryExecution() []TestResult {
+func (tc *athenaTestContext) testQueryExecution() []TestResult {
 	var results []TestResult
-	client := tc.client
-	ctx := tc.ctx
 
 	var queryExecutionId string
 	results = append(results, tc.runner.RunTest("athena", "StartQueryExecution", func() error {
-		resp, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
-			QueryString: aws.String("SELECT 1"),
-			QueryExecutionContext: &types.QueryExecutionContext{
-				Database: aws.String("default"),
-			},
-			ResultConfiguration: &types.ResultConfiguration{
-				OutputLocation: aws.String("s3://test-bucket/athena/"),
-			},
-		})
+		id, err := tc.startQuery("SELECT 1")
 		if err != nil {
 			return err
 		}
-		queryExecutionId = aws.ToString(resp.QueryExecutionId)
-		if queryExecutionId == "" {
-			return fmt.Errorf("QueryExecutionId is empty")
-		}
+		queryExecutionId = id
 		return nil
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "GetQueryExecution", func() error {
-		resp, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+		resp, err := tc.client.GetQueryExecution(tc.ctx, &athena.GetQueryExecutionInput{
 			QueryExecutionId: aws.String(queryExecutionId),
 		})
 		if err != nil {
@@ -59,57 +45,33 @@ func (tc *athenaTestCtx) testQueryExecution() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("athena", "ListQueryExecutions", func() error {
-		var found bool
-		var nextToken *string
-		for i := 0; i < 50; i++ {
-			resp, err := client.ListQueryExecutions(ctx, &athena.ListQueryExecutionsInput{
-				MaxResults: aws.Int32(50),
-				NextToken:  nextToken,
-			})
-			if err != nil {
-				return err
-			}
-			if resp.QueryExecutionIds == nil {
-				return fmt.Errorf("query execution IDs list is nil")
-			}
-			for _, id := range resp.QueryExecutionIds {
-				if id == queryExecutionId {
-					found = true
-					break
-				}
-			}
-			if found {
-				break
-			}
-			if resp.NextToken == nil {
-				break
-			}
-			nextToken = resp.NextToken
-		}
-		if !found {
-			return fmt.Errorf("started query execution ID %q not found in list", queryExecutionId)
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("athena", "StopQueryExecution", func() error {
-		resp, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
-			QueryString: aws.String("/* SLOW */ SELECT 1"),
-		})
+		allIDs, err := tc.allQueryExecutions()
 		if err != nil {
 			return err
 		}
-		stopQueryId := resp.QueryExecutionId
+		for _, id := range allIDs {
+			if id == queryExecutionId {
+				return nil
+			}
+		}
+		return fmt.Errorf("started query execution ID %q not found in list", queryExecutionId)
+	}))
 
-		_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-			QueryExecutionId: stopQueryId,
+	results = append(results, tc.runner.RunTest("athena", "StopQueryExecution", func() error {
+		stopQueryId, err := tc.startQuery("/* SLOW */ SELECT 1")
+		if err != nil {
+			return err
+		}
+
+		_, err = tc.client.StopQueryExecution(tc.ctx, &athena.StopQueryExecutionInput{
+			QueryExecutionId: aws.String(stopQueryId),
 		})
 		if err != nil {
 			return fmt.Errorf("StopQueryExecution failed: %v", err)
 		}
 
-		getResp, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-			QueryExecutionId: stopQueryId,
+		getResp, err := tc.client.GetQueryExecution(tc.ctx, &athena.GetQueryExecutionInput{
+			QueryExecutionId: aws.String(stopQueryId),
 		})
 		if err != nil {
 			return err
@@ -120,44 +82,24 @@ func (tc *athenaTestCtx) testQueryExecution() []TestResult {
 		return nil
 	}))
 
-	var batchQEId1, batchQEId2 string
-	results = append(results, tc.runner.RunTest("athena", "BatchGetQueryExecution_Setup", func() error {
-		resp1, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
-			QueryString: aws.String("SELECT 1"),
-			QueryExecutionContext: &types.QueryExecutionContext{
-				Database: aws.String("default"),
-			},
-		})
-		if err != nil {
-			return err
-		}
-		batchQEId1 = aws.ToString(resp1.QueryExecutionId)
-
-		resp2, err := client.StartQueryExecution(ctx, &athena.StartQueryExecutionInput{
-			QueryString: aws.String("SELECT 2"),
-			QueryExecutionContext: &types.QueryExecutionContext{
-				Database: aws.String("default"),
-			},
-		})
-		if err != nil {
-			return err
-		}
-		batchQEId2 = aws.ToString(resp2.QueryExecutionId)
-
-		for i := 0; i < 30; i++ {
-			r1, _ := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{QueryExecutionId: aws.String(batchQEId1)})
-			r2, _ := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{QueryExecutionId: aws.String(batchQEId2)})
-			if r1.QueryExecution.Status.State == types.QueryExecutionStateSucceeded &&
-				r2.QueryExecution.Status.State == types.QueryExecutionStateSucceeded {
-				return nil
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		return fmt.Errorf("queries did not complete within timeout")
-	}))
-
 	results = append(results, tc.runner.RunTest("athena", "BatchGetQueryExecution", func() error {
-		resp, err := client.BatchGetQueryExecution(ctx, &athena.BatchGetQueryExecutionInput{
+		batchQEId1, err := tc.startQuery("SELECT 1")
+		if err != nil {
+			return fmt.Errorf("setup start 1 failed: %w", err)
+		}
+		batchQEId2, err := tc.startQuery("SELECT 2")
+		if err != nil {
+			return fmt.Errorf("setup start 2 failed: %w", err)
+		}
+
+		if _, err := tc.waitForQuery(batchQEId1); err != nil {
+			return fmt.Errorf("setup query 1 did not complete: %w", err)
+		}
+		if _, err := tc.waitForQuery(batchQEId2); err != nil {
+			return fmt.Errorf("setup query 2 did not complete: %w", err)
+		}
+
+		resp, err := tc.client.BatchGetQueryExecution(tc.ctx, &athena.BatchGetQueryExecutionInput{
 			QueryExecutionIds: []string{batchQEId1, batchQEId2, "nonexistent-qe-id"},
 		})
 		if err != nil {

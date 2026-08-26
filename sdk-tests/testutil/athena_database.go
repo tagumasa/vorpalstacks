@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 )
 
-func (tc *athenaTestCtx) testDatabases() []TestResult {
+func (tc *athenaTestContext) testDatabases() []TestResult {
 	var results []TestResult
 	client := tc.client
 	ctx := tc.ctx

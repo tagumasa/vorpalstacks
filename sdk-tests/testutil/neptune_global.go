@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
 func (r *TestRunner) runNeptuneGlobalClusterTests(tc *neptuneContext) []TestResult {
@@ -32,22 +33,18 @@ func (r *TestRunner) runNeptuneGlobalClusterTests(tc *neptuneContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeGlobalClusters", func() error {
-		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{})
+		globals, err := tc.allGlobalClusters(nil)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, gc := range resp.GlobalClusters {
-			if gc.GlobalClusterIdentifier != nil && *gc.GlobalClusterIdentifier == tc.globalClusterID {
-				found = true
-				if gc.Engine == nil || *gc.Engine != "neptune" {
-					return fmt.Errorf("expected Engine=neptune on global cluster, got %v", gc.Engine)
-				}
-				break
-			}
-		}
-		if !found {
+		gc := containsID(globals, func(gc *types.GlobalCluster) bool {
+			return gc.GlobalClusterIdentifier != nil && *gc.GlobalClusterIdentifier == tc.globalClusterID
+		})
+		if gc == nil {
 			return fmt.Errorf("created global cluster not found in list")
+		}
+		if gc.Engine == nil || *gc.Engine != "neptune" {
+			return fmt.Errorf("expected Engine=neptune on global cluster, got %v", gc.Engine)
 		}
 		return nil
 	}))

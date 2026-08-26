@@ -16,16 +16,7 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_AddVertex", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.addV('person').property('name','marko').property('age',29)"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.RequestId == nil || *resp.RequestId == "" {
-			return fmt.Errorf("expected non-empty requestId")
-		}
-		return nil
+		return tc.gremlin("g.addV('person').property('name','marko').property('age',29)")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_AddMoreVertices", func() error {
@@ -35,14 +26,8 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 			"g.addV('software').property('name','lop').property('lang','java')",
 		}
 		for _, q := range queries {
-			resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-				GremlinQuery: aws.String(q),
-			})
-			if err != nil {
+			if err := tc.gremlin(q); err != nil {
 				return err
-			}
-			if resp.RequestId == nil || *resp.RequestId == "" {
-				return fmt.Errorf("expected non-empty requestId for query: %s", q)
 			}
 		}
 		return nil
@@ -55,41 +40,22 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 			"g.V().has('name','marko').addE('created').to(g.V().has('name','lop')).property('weight',0.4)",
 		}
 		for _, q := range queries {
-			resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-				GremlinQuery: aws.String(q),
-			})
-			if err != nil {
+			if err := tc.gremlin(q); err != nil {
 				return err
-			}
-			if resp.RequestId == nil || *resp.RequestId == "" {
-				return fmt.Errorf("expected non-empty requestId for edge query: %s", q)
 			}
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_Count", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().count()"),
-		})
-		if err != nil {
-			return err
-		}
-		s := marshalDoc(resp.Result)
-		if !strings.Contains(s, "4") {
-			return fmt.Errorf("expected count 4 in gremlin result, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().count()", "4")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_Traversal", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().has('name','marko').out('knows').values('name')"),
-		})
+		s, err := tc.gremlinResult("g.V().has('name','marko').out('knows').values('name')")
 		if err != nil {
 			return err
 		}
-		s := marshalDoc(resp.Result)
 		for _, name := range []string{"vadas", "josh"} {
 			if !strings.Contains(s, name) {
 				return fmt.Errorf("expected '%s' in gremlin traversal results, got %s", name, s)
@@ -99,13 +65,10 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_ValueMap", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().has('name','marko').valueMap()"),
-		})
+		s, err := tc.gremlinResult("g.V().has('name','marko').valueMap()")
 		if err != nil {
 			return err
 		}
-		s := marshalDoc(resp.Result)
 		for _, key := range []string{"name", "age"} {
 			if !strings.Contains(s, key) {
 				return fmt.Errorf("expected key '%s' in valueMap result, got %s", key, s)
@@ -115,58 +78,19 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_HasLabel", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().hasLabel('software').count()"),
-		})
-		if err != nil {
-			return err
-		}
-		s := marshalDoc(resp.Result)
-		if !strings.Contains(s, "1") {
-			return fmt.Errorf("expected count 1 for software label, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('software').count()", "1")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_EdgeCount", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.E().count()"),
-		})
-		if err != nil {
-			return err
-		}
-		s := marshalDoc(resp.Result)
-		if !strings.Contains(s, "3") {
-			return fmt.Errorf("expected count 3 for edges, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.E().count()", "3")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_DropVertex", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().has('name','lop').drop()"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.RequestId == nil || *resp.RequestId == "" {
-			return fmt.Errorf("expected non-empty requestId for drop")
-		}
-		return nil
+		return tc.gremlin("g.V().has('name','lop').drop()")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_VerifyDrop", func() error {
-		resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.V().has('name','lop').count()"),
-		})
-		if err != nil {
-			return err
-		}
-		s := marshalDoc(resp.Result)
-		if !strings.Contains(s, "0") {
-			return fmt.Errorf("expected count 0 after drop, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','lop').count()", "0")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinExplainQuery", func() error {

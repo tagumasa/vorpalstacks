@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
+	"github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
 func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
@@ -40,22 +41,18 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBInstances", func() error {
-		resp, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{})
+		instances, err := tc.allInstances()
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, i := range resp.DBInstances {
-			if i.DBInstanceIdentifier != nil && *i.DBInstanceIdentifier == tc.instanceID {
-				found = true
-				if i.Engine == nil || *i.Engine != "neptune" {
-					return fmt.Errorf("expected Engine=neptune on instance, got %v", i.Engine)
-				}
-				break
-			}
-		}
-		if !found {
+		i := containsID(instances, func(i *types.DBInstance) bool {
+			return i.DBInstanceIdentifier != nil && *i.DBInstanceIdentifier == tc.instanceID
+		})
+		if i == nil {
 			return fmt.Errorf("created instance not found in list")
+		}
+		if i.Engine == nil || *i.Engine != "neptune" {
+			return fmt.Errorf("expected Engine=neptune on instance, got %v", i.Engine)
 		}
 		return nil
 	}))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -38,6 +39,85 @@ type neptunedataContext struct {
 	clusterID string
 	region    string
 	accountID string
+}
+
+// gremlin runs one Gremlin query and asserts a non-empty requestId on
+// success.
+func (tc *neptunedataContext) gremlin(q string) error {
+	resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
+		GremlinQuery: aws.String(q),
+	})
+	if err != nil {
+		return err
+	}
+	if resp.RequestId == nil || *resp.RequestId == "" {
+		return fmt.Errorf("expected non-empty requestId for query: %s", q)
+	}
+	return nil
+}
+
+// gremlinResult runs one Gremlin query and returns its result document
+// marshalled to JSON.
+func (tc *neptunedataContext) gremlinResult(q string) (string, error) {
+	resp, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
+		GremlinQuery: aws.String(q),
+	})
+	if err != nil {
+		return "", err
+	}
+	return marshalDoc(resp.Result), nil
+}
+
+// gremlinContains runs one Gremlin query and asserts that the marshalled
+// result document contains substr.
+func (tc *neptunedataContext) gremlinContains(q, substr string) error {
+	s, err := tc.gremlinResult(q)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(s, substr) {
+		return fmt.Errorf("expected %q in result, got %s", substr, s)
+	}
+	return nil
+}
+
+// cypher runs one openCypher query and asserts non-nil results on success.
+func (tc *neptunedataContext) cypher(q string) error {
+	resp, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
+		OpenCypherQuery: aws.String(q),
+	})
+	if err != nil {
+		return err
+	}
+	if resp.Results == nil {
+		return fmt.Errorf("expected non-nil results for query: %s", q)
+	}
+	return nil
+}
+
+// cypherResult runs one openCypher query and returns its results document
+// marshalled to JSON.
+func (tc *neptunedataContext) cypherResult(q string) (string, error) {
+	resp, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
+		OpenCypherQuery: aws.String(q),
+	})
+	if err != nil {
+		return "", err
+	}
+	return marshalDoc(resp.Results), nil
+}
+
+// cypherContains runs one openCypher query and asserts that the marshalled
+// results document contains substr.
+func (tc *neptunedataContext) cypherContains(q, substr string) error {
+	s, err := tc.cypherResult(q)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(s, substr) {
+		return fmt.Errorf("expected %q in results, got %s", substr, s)
+	}
+	return nil
 }
 
 func (r *TestRunner) runNeptunedataClusterTests(tc *neptunedataContext) []TestResult {
