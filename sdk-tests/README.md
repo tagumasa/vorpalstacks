@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,297 test cases (3,230 SDK + 50 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,316 test cases (3,249 SDK + 50 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -45,7 +45,7 @@ which are separate services in the SDK classification used by
 | Route53 | 48 | 100% | ✅ Perfect |
 | S3 | 143 | 100% | ✅ Perfect |
 | Scheduler | 70 | 100% | ✅ Perfect |
-| SecretsManager | 44 | 100% | ✅ Perfect |
+| SecretsManager | 63 | 100% | ✅ Perfect |
 | SESv2 | 94 | 100% | ✅ Perfect |
 | SNS | 83 | 100% | ✅ Perfect |
 | SQS | 87 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
 | WAFv2 | 72 | 100% | ✅ Perfect |
 
-**Overall: 3,297/3,297 tests passing (100%) — 3,230 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-26 on main after the StepFunctions, SQS, S3, IAM, Cognito, Lambda, Scheduler, STS, Scheduler validation, IoT, Neptune, AppSync, ACM, Athena, and API Gateway suite work)
+**Overall: 3,316/3,316 tests passing (100%) — 3,249 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-27 on main after the StepFunctions, SQS, S3, IAM, Cognito, Lambda, Scheduler, STS, Scheduler validation, IoT, Neptune, AppSync, ACM, Athena, API Gateway, SecretsManager suite work, and the SecretsManager contract fixes)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

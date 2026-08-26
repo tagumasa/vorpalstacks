@@ -68,7 +68,8 @@ func pbToListSecretsInput(req *pb.ListSecretsRequest) ListSecretsInput {
 		NextToken: req.Nexttoken,
 	}
 	if req.Maxresults != nil {
-		in.MaxResults = int(*req.Maxresults)
+		v := int(*req.Maxresults)
+		in.MaxResults = &v
 	}
 	return in
 }

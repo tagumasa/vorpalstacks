@@ -139,7 +139,7 @@ func NextExecutionTime(expr string, now time.Time, creationTime time.Time, start
 	}
 
 	if strings.HasPrefix(expr, "rate(") {
-		if duration, ok := parseRateDuration(expr); ok {
+		if duration, ok := ParseRateDuration(expr); ok {
 			base := creationTime
 			if startDate != nil {
 				base = *startDate
@@ -171,10 +171,13 @@ func parseAtTime(expr string) (time.Time, bool) {
 	return t, true
 }
 
-// parseRateDuration extracts the interval of a rate(value unit)
+// ParseRateDuration extracts the interval of a rate(value unit)
 // expression, reporting false when the expression is not a well-formed
-// rate() form.
-func parseRateDuration(expr string) (time.Duration, bool) {
+// rate() form. Consumers that derive their own next-fire times from the
+// rate period (for example the Secrets Manager rotation scheduler, which
+// anchors periods at the last rotation rather than the schedule creation)
+// share this parser so the unit grammar stays defined once.
+func ParseRateDuration(expr string) (time.Duration, bool) {
 	matches := rateExprPattern.FindStringSubmatch(expr)
 	if len(matches) != 3 {
 		return 0, false
@@ -274,7 +277,7 @@ func ElapsedExecutionTime(expr string, now time.Time, creationTime time.Time, st
 	}
 
 	if strings.HasPrefix(expr, "rate(") {
-		duration, ok := parseRateDuration(expr)
+		duration, ok := ParseRateDuration(expr)
 		if !ok {
 			return time.Time{}, false
 		}

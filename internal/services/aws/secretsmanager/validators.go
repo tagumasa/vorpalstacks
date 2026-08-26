@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/scheduleexpr"
 	tagutil "vorpalstacks/internal/common/tags"
 
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
@@ -35,9 +37,21 @@ const (
 	maxKmsKeyIdLength          = 2048                       // KmsKeyIdType @length(min=0, max=2048)
 	maxRotationLambdaARNLength = 2048                       // RotationLambdaARNType @length(min=0, max=2048)
 	maxExcludeCharactersLength = 4096                       // ExcludeCharactersType @length(min=0, max=4096)
+	maxListSecretsResults      = 100                        // MaxResultsType @range(1-100) — ListSecrets, ListSecretVersionIds
+	maxBatchSecretsResults     = 20                         // MaxResultsBatchType @range(1-20) — BatchGetSecretValue
+	maxFilterValues            = 10                         // FilterValuesStringList @length(1-10)
+	maxFilterValueLength       = 512                        // FilterValueStringType @length(0-512)
+	maxExternalMetaKeyLength   = 256                        // ExternalSecretRotationMetadataItemKeyType @length(1-256)
+	maxExternalMetaValueLength = 2048                       // ExternalSecretRotationMetadataItemValueType @length(1-2048)
+	minExternalRoleARNLength   = 20                         // RoleARNType @length(20-2048)
+	maxExternalRoleARNLength   = 2048                       // RoleARNType @length(20-2048)
 )
 
 var rotationTokenPattern = regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)
+
+// filterValuePattern is the FilterValueStringType @pattern; the optional
+// leading "!" is the documented negation prefix.
+var filterValuePattern = regexp.MustCompile(`^\!?[a-zA-Z0-9 :_@/\+\=\.\-\!]*$`)
 
 var (
 	durationPattern     = regexp.MustCompile(`^[0-9]+h$`)
@@ -188,13 +202,38 @@ func validateMaxFilters(n int) error {
 // SecretIdListType @length(max=20).
 func validateSecretIdList(ids []string) error {
 	if len(ids) > maxSecretIdListItems {
-		return awserrors.NewAWSError("ValidationException",
+		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("You can include up to %d secrets in a batch.", maxSecretIdListItems), http.StatusBadRequest)
 	}
 	for _, id := range ids {
 		if utf8.RuneCountInString(id) > maxSecretIdLength {
 			return awserrors.NewAWSError("InvalidParameterException",
 				fmt.Sprintf("SecretId must not exceed %d characters.", maxSecretIdLength), http.StatusBadRequest)
+		}
+	}
+	return nil
+}
+
+// validateExternalSecretRotation validates the managed external secret
+// rotation members against the Smithy constraints: metadata item keys are
+// @length(1,256), item values @length(1,2048), and the role ARN
+// @length(20,2048) (counted in Unicode characters; the shapes carry no
+// pattern).
+func validateExternalSecretRotation(metadata []secretsmanagerstore.ExternalSecretRotationMetadataItem, roleArn string) error {
+	for _, item := range metadata {
+		if k := utf8.RuneCountInString(item.Key); k < 1 || k > maxExternalMetaKeyLength {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("ExternalSecretRotationMetadata keys must be between 1 and %d characters long.", maxExternalMetaKeyLength), http.StatusBadRequest)
+		}
+		if v := utf8.RuneCountInString(item.Value); v < 1 || v > maxExternalMetaValueLength {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("ExternalSecretRotationMetadata values must be between 1 and %d characters long.", maxExternalMetaValueLength), http.StatusBadRequest)
+		}
+	}
+	if roleArn != "" {
+		if n := utf8.RuneCountInString(roleArn); n < minExternalRoleARNLength || n > maxExternalRoleARNLength {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("ExternalSecretRotationRoleArn must be between %d and %d characters long.", minExternalRoleARNLength, maxExternalRoleARNLength), http.StatusBadRequest)
 		}
 	}
 	return nil
@@ -255,7 +294,10 @@ func decodeAndValidateSecretBinary(secretBinaryStr string) ([]byte, error) {
 	}
 	decoded, err := base64.StdEncoding.DecodeString(secretBinaryStr)
 	if err != nil {
-		return nil, awserrors.NewValidationException(fmt.Sprintf("invalid SecretBinary encoding: %v", err))
+		// The service model has no ValidationException shape; invalid base64
+		// input is an invalid parameter value.
+		return nil, awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("invalid SecretBinary encoding: %v", err), http.StatusBadRequest)
 	}
 	if err := validateSecretBinaryLength(decoded); err != nil {
 		return nil, err
@@ -318,7 +360,7 @@ func validateSortOrder(order string) error {
 
 // validateSortBy validates SortBy against the Smithy SortByType enum
 // (name, created-date, last-accessed-date, last-changed-date).  Empty
-// string is valid (defaults to name).
+// string is valid (the Core defaults the sort key to created-date).
 func validateSortBy(by string) error {
 	switch by {
 	case "", "name", "created-date", "last-accessed-date", "last-changed-date":
@@ -360,7 +402,10 @@ func validateDuration(d string) error {
 
 // validateScheduleExpression validates the RotationRules ScheduleExpression
 // against the Smithy ScheduleExpressionType @length(min=1, max=256) and
-// @pattern constraints.
+// @pattern constraints, and structurally against the shared AWS schedule
+// expression engine. Secrets Manager schedules are rate() or cron()
+// expressions (the at() form is an EventBridge Scheduler one-shot and is
+// not part of this contract).
 func validateScheduleExpression(expr string) error {
 	if expr == "" {
 		return nil
@@ -372,6 +417,14 @@ func validateScheduleExpression(expr string) error {
 	if !scheduleExprPattern.MatchString(expr) {
 		return awserrors.NewAWSError("InvalidParameterException",
 			fmt.Sprintf("ScheduleExpression contains invalid characters: '%s'.", expr), http.StatusBadRequest)
+	}
+	if !strings.HasPrefix(expr, "rate(") && !strings.HasPrefix(expr, "cron(") {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("ScheduleExpression must be a rate() or cron() expression, got '%s'.", expr), http.StatusBadRequest)
+	}
+	if !scheduleexpr.ValidateExpression(expr) {
+		return awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("ScheduleExpression is not a valid rate() or cron() expression: '%s'.", expr), http.StatusBadRequest)
 	}
 	return nil
 }
@@ -415,6 +468,55 @@ func validateRegion(region string) error {
 			fmt.Sprintf("Region '%s' does not match the expected format (e.g. 'us-east-1').", region), http.StatusBadRequest)
 	}
 	return nil
+}
+
+// validateSecretFilters enforces the Filter shape constraints from the
+// Smithy model: FilterNameStringType enum keys, FilterValuesStringList
+// @length(max 10), and FilterValueStringType @length(max 512) + pattern.
+func validateSecretFilters(filters []SecretFilter) error {
+	for _, f := range filters {
+		switch f.Key {
+		case "", "description", "name", "tag-key", "tag-value", "primary-region", "owning-service", "all":
+		default:
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("Filter key must be one of 'description', 'name', 'tag-key', 'tag-value', 'primary-region', 'owning-service', 'all', got '%s'.", f.Key), http.StatusBadRequest)
+		}
+		if len(f.Values) > maxFilterValues {
+			return awserrors.NewAWSError("InvalidParameterException",
+				fmt.Sprintf("A filter may include up to %d values.", maxFilterValues), http.StatusBadRequest)
+		}
+		for _, v := range f.Values {
+			if len(v) > maxFilterValueLength {
+				return awserrors.NewAWSError("InvalidParameterException",
+					fmt.Sprintf("Filter values must not exceed %d characters.", maxFilterValueLength), http.StatusBadRequest)
+			}
+			if !filterValuePattern.MatchString(v) {
+				return awserrors.NewAWSError("InvalidParameterException",
+					fmt.Sprintf("Filter value '%s' contains invalid characters.", v), http.StatusBadRequest)
+			}
+		}
+	}
+	return nil
+}
+
+// resolveListMaxResults resolves a page-size parameter with explicit
+// presence semantics: a nil pointer means the parameter is absent and maps
+// to defaultVal, while a present pointer outside [1,max] is rejected with
+// InvalidParameterException. The pointer distinguishes an explicit 0 (out
+// of the documented range, rejected) from an unset parameter (default) —
+// AWS documents "Valid Range: Minimum value of 1" for these parameters, so
+// clamping or defaulting an explicit out-of-range value would hide the
+// contract violation.
+func resolveListMaxResults(value *int, defaultVal, max int) (int, error) {
+	if value == nil {
+		return defaultVal, nil
+	}
+	v := *value
+	if v < 1 || v > max {
+		return 0, awserrors.NewAWSError("InvalidParameterException",
+			fmt.Sprintf("MaxResults must be between 1 and %d.", max), http.StatusBadRequest)
+	}
+	return v, nil
 }
 
 // validateSecretId validates the SecretId against the Smithy

@@ -186,6 +186,58 @@ type rotationLambdaResponse struct {
 	SecretId string `json:"SecretId"`
 }
 
+// invokeRotationLambda invokes one step of the rotation protocol on the
+// rotation Lambda. It distinguishes Lambda-not-found (wrapped
+// errRotationLambdaNotFound, mapped by callers to
+// ResourceNotFoundException) from other invocation and contract failures.
+func (s *SecretsManagerService) invokeRotationLambda(ctx context.Context, lambdaARN, secretARN, clientToken, step string) error {
+	if s.bus == nil {
+		return fmt.Errorf("event bus not configured for secret rotation")
+	}
+
+	lambdaInvoker := s.bus.LambdaInvoker()
+	if lambdaInvoker == nil {
+		return fmt.Errorf("lambda invoker not configured on event bus")
+	}
+
+	payload := rotationPayload{
+		SecretId:           secretARN,
+		ClientRequestToken: clientToken,
+		Step:               step,
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal rotation payload for step %s: %w", step, err)
+	}
+
+	statusCode, respBytes, invokeErr := lambdaInvoker.InvokeForGateway(ctx, lambdaARN, payloadBytes)
+	if invokeErr != nil {
+		// Distinguish Lambda-not-found from other invocation errors.
+		// AWS returns ResourceNotFoundException when the
+		// rotation Lambda doesn't exist.
+		if errors.Is(invokeErr, errRotationLambdaNotFound) || isLambdaNotFoundInvokeError(invokeErr) {
+			return fmt.Errorf("%w: %v", errRotationLambdaNotFound, invokeErr)
+		}
+		return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
+	}
+
+	if statusCode == 404 {
+		return fmt.Errorf("%w at step %s", errRotationLambdaNotFound, step)
+	}
+
+	if statusCode != 200 {
+		return fmt.Errorf("rotation Lambda returned status %d at step %s: %s", statusCode, step, string(respBytes))
+	}
+
+	var lambdaResp rotationLambdaResponse
+	if len(respBytes) > 0 {
+		if jsonErr := json.Unmarshal(respBytes, &lambdaResp); jsonErr != nil {
+			return fmt.Errorf("failed to parse rotation Lambda response at step %s: %w", step, jsonErr)
+		}
+	}
+	return nil
+}
+
 // executeRotation performs the full multi-step rotation sequence for a secret.
 //
 // The AWS rotation protocol requires four sequential steps:
@@ -205,15 +257,6 @@ type rotationLambdaResponse struct {
 // (passed to the Lambda as ClientRequestToken in the payload and used as the
 // pending version ID). Otherwise a token is auto-generated.
 func (s *SecretsManagerService) executeRotation(ctx context.Context, store secretsmanagerstore.SecretStoreInterface, secret *secretsmanagerstore.Secret, clientRequestToken string) error {
-	if s.bus == nil {
-		return fmt.Errorf("event bus not configured for secret rotation")
-	}
-
-	lambdaInvoker := s.bus.LambdaInvoker()
-	if lambdaInvoker == nil {
-		return fmt.Errorf("lambda invoker not configured on event bus")
-	}
-
 	// Use the caller-provided ClientRequestToken when available;
 	// otherwise auto-generate one for this rotation cycle.
 	clientToken := clientRequestToken
@@ -224,48 +267,16 @@ func (s *SecretsManagerService) executeRotation(ctx context.Context, store secre
 	steps := []string{rotationStepCreate, rotationStepSet, rotationStepTest}
 
 	for _, step := range steps {
-		payload := rotationPayload{
-			SecretId:           secret.ARN,
-			ClientRequestToken: clientToken,
-			Step:               step,
-		}
-		payloadBytes, err := json.Marshal(payload)
-		if err != nil {
-			return fmt.Errorf("failed to marshal rotation payload for step %s: %w", step, err)
-		}
-
-		statusCode, respBytes, invokeErr := lambdaInvoker.InvokeForGateway(ctx, secret.RotationLambdaARN, payloadBytes)
-		if invokeErr != nil {
-			// Distinguish Lambda-not-found from other invocation errors.
-			// AWS returns ResourceNotFoundException when the
-			// rotation Lambda doesn't exist.
-			if errors.Is(invokeErr, errRotationLambdaNotFound) || isLambdaNotFoundInvokeError(invokeErr) {
-				return fmt.Errorf("%w: %v", errRotationLambdaNotFound, invokeErr)
-			}
-			return fmt.Errorf("rotation Lambda invocation failed at step %s: %w", step, invokeErr)
-		}
-
-		if statusCode == 404 {
-			return fmt.Errorf("%w at step %s", errRotationLambdaNotFound, step)
-		}
-
-		if statusCode != 200 {
-			return fmt.Errorf("rotation Lambda returned status %d at step %s: %s", statusCode, step, string(respBytes))
-		}
-
-		var lambdaResp rotationLambdaResponse
-		if len(respBytes) > 0 {
-			if jsonErr := json.Unmarshal(respBytes, &lambdaResp); jsonErr != nil {
-				return fmt.Errorf("failed to parse rotation Lambda response at step %s: %w", step, jsonErr)
-			}
+		if err := s.invokeRotationLambda(ctx, secret.RotationLambdaARN, secret.ARN, clientToken, step); err != nil {
+			return err
 		}
 	}
 
 	// Set rotation dates before persisting via finishRotation so that the
 	// store's atomic FinishRotation includes them in a single write.
 	secret.LastRotatedDate = storeClock()
-	if secret.RotationRules != nil && secret.RotationRules.AutomaticallyAfterDays > 0 {
-		secret.NextRotationDate = secret.LastRotatedDate.AddDate(0, 0, secret.RotationRules.AutomaticallyAfterDays)
+	if next := computeNextRotationDate(secret.RotationRules, secret.LastRotatedDate, secret.LastRotatedDate); !next.IsZero() {
+		secret.NextRotationDate = next
 	}
 
 	if err := s.finishRotation(store, secret, clientToken); err != nil {

@@ -39,8 +39,13 @@ type Secret struct {
 	Type              string              `json:"type,omitempty"`
 	OwningService     string              `json:"owningService,omitempty"`
 	PrimaryRegion     string              `json:"primaryRegion,omitempty"`
-	NextRotationDate  time.Time           `json:"nextRotationDate,omitempty"`
-	InitialVersionId  string              `json:"-"`
+	// Managed external secret rotation metadata (partner-supplied) and the
+	// role ARN that permits rotating a partner-held secret; both are
+	// configuration storage with no behavioural consumer on-platform.
+	ExternalSecretRotationMetadata []ExternalSecretRotationMetadataItem `json:"externalSecretRotationMetadata,omitempty"`
+	ExternalSecretRotationRoleArn  string                               `json:"externalSecretRotationRoleArn,omitempty"`
+	NextRotationDate               time.Time                            `json:"nextRotationDate,omitempty"`
+	InitialVersionId               string                               `json:"-"`
 }
 
 // RotationRules defines the rotation rules for a secret.
@@ -48,6 +53,13 @@ type RotationRules struct {
 	AutomaticallyAfterDays int    `json:"automaticallyAfterDays,omitempty"`
 	Duration               string `json:"duration,omitempty"`
 	ScheduleExpression     string `json:"scheduleExpression,omitempty"`
+}
+
+// ExternalSecretRotationMetadataItem is one partner-supplied key/value pair
+// of the managed external secret rotation metadata.
+type ExternalSecretRotationMetadataItem struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // SecretVersion represents a version of a Secrets Manager secret.

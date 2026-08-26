@@ -3,6 +3,8 @@ package secretsmanager
 import (
 	"strings"
 	"testing"
+
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // TestValidateSecretNameUnicodeLengths pins that NameType @length(1,512) is
@@ -67,4 +69,37 @@ func TestValidateSecretStringLengthByteCeiling(t *testing.T) {
 	if err := validateSecretStringLength(strings.Repeat(cjk, 30000)); err == nil {
 		t.Error("30000-character CJK secret (90000 bytes) accepted despite the byte quota")
 	}
+}
+
+// TestSecretsManagerErrorCodesAreModelled pins that validators only emit
+// error codes defined by the secrets-manager-2017-10-17 model. The model's
+// error inventory has no ValidationException shape (unlike Scheduler), so
+// both the batch-size limiter and the SecretBinary decoder must report
+// InvalidParameterException; an alien code can never match a typed error
+// in the AWS SDKs.
+func TestSecretsManagerErrorCodesAreModelled(t *testing.T) {
+	err := validateSecretIdList(make([]string, maxSecretIdListItems+1))
+	if err == nil {
+		t.Fatal("oversized SecretIdList accepted")
+	}
+	if code := errorCode(err); code != "InvalidParameterException" {
+		t.Errorf("SecretIdList overflow error code = %q, want InvalidParameterException", code)
+	}
+
+	_, err = decodeAndValidateSecretBinary("not-base64-$$$")
+	if err == nil {
+		t.Fatal("invalid base64 SecretBinary accepted")
+	}
+	if code := errorCode(err); code != "InvalidParameterException" {
+		t.Errorf("SecretBinary decode error code = %q, want InvalidParameterException", code)
+	}
+}
+
+// errorCode extracts the wire code from an *awserrors.AWSError.
+func errorCode(err error) string {
+	awsErr, ok := err.(*awserrors.AWSError)
+	if !ok {
+		return ""
+	}
+	return awsErr.GetCode()
 }

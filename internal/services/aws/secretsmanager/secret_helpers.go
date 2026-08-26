@@ -2,11 +2,10 @@ package secretsmanager
 
 import (
 	"net/http"
-	"strings"
+	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
@@ -35,60 +34,26 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: secretsmanagerstore.ErrInvalidVersionId, AWS: ErrInvalidVersionId},
 }
 
+// parseOffsetNextToken parses an integer-offset pagination token for the
+// list operations (ListSecrets, ListSecretVersionIds, BatchGetSecretValue).
+// Tokens are opaque to clients but internally a plain decimal offset, so
+// anything non-numeric, negative, or beyond the result set is invalid —
+// all three operations document InvalidNextTokenException (HTTP 400) for
+// an invalid NextToken value.
+func parseOffsetNextToken(token string, total int) (int, error) {
+	if token == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(token)
+	if err != nil || n < 0 || n >= total {
+		return 0, awserrors.NewAWSError("InvalidNextTokenException",
+			"Your request has an invalid next token.", http.StatusBadRequest)
+	}
+	return n, nil
+}
+
 func mapStoreError(err error) error {
 	return awserrors.MapStoreError(err, storeErrorMappings)
-}
-
-func (s *SecretsManagerService) resolveSecret(reqCtx *request.RequestContext, secretId string) (*secretsmanagerstore.Secret, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if strings.HasPrefix(secretId, arnPrefix) {
-		secret, err := store.GetSecretByARN(secretId)
-		return secret, mapStoreError(err)
-	}
-	secret, err := store.GetSecret(secretId)
-	return secret, mapStoreError(err)
-}
-
-func (s *SecretsManagerService) resolveSecretForMetadata(reqCtx *request.RequestContext, secretId string) (*secretsmanagerstore.Secret, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if strings.HasPrefix(secretId, arnPrefix) {
-		name, err := store.LookupNameByARN(secretId)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		return store.GetSecretForMetadata(name)
-	}
-	secret, err := store.GetSecretForMetadata(secretId)
-	return secret, mapStoreError(err)
-}
-
-func (s *SecretsManagerService) buildSecretVersionsToStages(reqCtx *request.RequestContext, secret *secretsmanagerstore.Secret) map[string][]string {
-	result := make(map[string][]string)
-	store, err := s.store(reqCtx)
-	if err != nil {
-		for _, versionId := range secret.VersionIDs {
-			if versionId == secret.CurrentVersion {
-				result[versionId] = []string{"AWSCURRENT"}
-			}
-		}
-		return result
-	}
-
-	for _, versionId := range secret.VersionIDs {
-		version, err := store.GetSecretVersion(secret.Name, versionId)
-		if err == nil && len(version.VersionStages) > 0 {
-			result[versionId] = version.VersionStages
-		} else if versionId == secret.CurrentVersion {
-			result[versionId] = []string{"AWSCURRENT"}
-		}
-	}
-	return result
 }
 
 func (s *SecretsManagerService) buildTagsList(secret *secretsmanagerstore.Secret) []interface{} {

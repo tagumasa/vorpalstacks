@@ -123,6 +123,23 @@ func (r *TestRunner) runSecretsManagerPolicyTests(tc *secretsManagerTestContext)
 		return nil
 	}))
 
+	results = append(results, r.RunTest("secretsmanager", "ValidateResourcePolicy_TooLongRejected", func() error {
+		// NonEmptyResourcePolicyType caps the document at 20480 bytes; the
+		// same constraint binds ValidateResourcePolicy as PutResourcePolicy.
+		pad := make([]byte, 21000)
+		for i := range pad {
+			pad[i] = 'a'
+		}
+		policy := `{"Version":"2012-10-17","Statement":[{"Sid":"` + string(pad) + `","Effect":"Allow","Principal":"*","Action":"secretsmanager:GetSecretValue","Resource":"*"}]}`
+		_, err := tc.client.ValidateResourcePolicy(tc.ctx, &secretsmanager.ValidateResourcePolicyInput{
+			ResourcePolicy: aws.String(policy),
+		})
+		if err == nil {
+			return fmt.Errorf("oversized ResourcePolicy should be rejected")
+		}
+		return expectAWSErrorCode(err, "InvalidParameterException")
+	}))
+
 	results = append(results, r.RunTest("secretsmanager", "GetResourcePolicy_NonExistent", func() error {
 		_, err := tc.client.GetResourcePolicy(tc.ctx, &secretsmanager.GetResourcePolicyInput{
 			SecretId: aws.String("nonexistent-policy-secret"),

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
+	"vorpalstacks-sdk-tests/config"
 )
 
 func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestContext) []TestResult {
@@ -78,6 +79,83 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 			}
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "ListSecrets_PrimaryRegionOnReplica", func() error {
+		name := tc.uniqueName("PrimRegion")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(name),
+			SecretString: aws.String("prim-region"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(name)
+
+		if _, err := tc.client.ReplicateSecretToRegions(tc.ctx, &secretsmanager.ReplicateSecretToRegionsInput{
+			SecretId: aws.String(name),
+			AddReplicaRegions: []types.ReplicaRegionType{
+				{Region: aws.String("us-west-2")},
+			},
+		}); err != nil {
+			return fmt.Errorf("replicate: %v", err)
+		}
+		defer tc.client.RemoveRegionsFromReplication(tc.ctx, &secretsmanager.RemoveRegionsFromReplicationInput{
+			SecretId:             aws.String(name),
+			RemoveReplicaRegions: []string{"us-west-2"},
+		})
+
+		// The replica lives in the target region and its SecretListEntry
+		// must carry PrimaryRegion pointing at the source region.
+		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   "us-west-2",
+		})
+		if err != nil {
+			return fmt.Errorf("replica config: %v", err)
+		}
+		replicaClient := secretsmanager.NewFromConfig(cfg)
+
+		resp, err := replicaClient.ListSecrets(tc.ctx, &secretsmanager.ListSecretsInput{
+			Filters: []types.Filter{{Key: types.FilterNameStringTypeName, Values: []string{name}}},
+		})
+		if err != nil {
+			return fmt.Errorf("replica list: %v", err)
+		}
+		found := false
+		for _, entry := range resp.SecretList {
+			if aws.ToString(entry.Name) == name {
+				found = true
+				if aws.ToString(entry.PrimaryRegion) != tc.region {
+					return fmt.Errorf("replica entry PrimaryRegion = %q, want %q", aws.ToString(entry.PrimaryRegion), tc.region)
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("replica not listed in target region")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "RemoveRegionsFromReplication_ErrReplicaNotFound", func() error {
+		name := tc.uniqueName("RmNonExist")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(name),
+			SecretString: aws.String("rm-nonexist"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(name)
+
+		_, err = tc.client.RemoveRegionsFromReplication(tc.ctx, &secretsmanager.RemoveRegionsFromReplicationInput{
+			SecretId:             aws.String(name),
+			RemoveReplicaRegions: []string{"ap-south-1"},
+		})
+		if err == nil {
+			return fmt.Errorf("removing a region with no replica should fail")
+		}
+		return expectAWSErrorCode(err, "ResourceNotFoundException")
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "ReplicateSecretToRegions_DuplicateRegion", func() error {

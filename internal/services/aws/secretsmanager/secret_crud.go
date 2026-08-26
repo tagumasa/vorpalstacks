@@ -1,54 +1,16 @@
 package secretsmanager
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"net/http"
-	"time"
 
-	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
-	secretsmanagerstore "vorpalstacks/internal/store/aws/secretsmanager"
 )
-
-// bytesEqual reports whether two byte slices are equal, treating nil and
-// empty slices as equivalent.
-func bytesEqual(a, b []byte) bool {
-	if len(a) == 0 && len(b) == 0 {
-		return true
-	}
-	return bytes.Equal(a, b)
-}
 
 // CreateSecret creates a new secret in AWS Secrets Manager.
 func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	name := request.GetStringParam(req.Parameters, "Name")
-	if err := validateSecretName(name); err != nil {
-		return nil, err
-	}
-
-	secretBinary, err := decodeAndValidateSecretBinary(request.GetStringParam(req.Parameters, "SecretBinary"))
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := s.createSecretCore(ctx, store, CreateSecretInput{
-		Name:               name,
-		SecretString:       request.GetStringParam(req.Parameters, "SecretString"),
-		SecretBinary:       secretBinary,
-		Description:        request.GetStringParam(req.Parameters, "Description"),
-		KmsKeyId:           request.GetStringParam(req.Parameters, "KmsKeyId"),
-		Type:               request.GetStringParam(req.Parameters, "Type"),
-		ClientRequestToken: request.GetStringParam(req.Parameters, "ClientRequestToken"),
-		Tags:               tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
-	})
 	if err != nil {
 		return nil, err
 	}
@@ -61,29 +23,31 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
+	result, err := s.createSecretCore(ctx, store, CreateSecretInput{
+		Name:                        request.GetStringParam(req.Parameters, "Name"),
+		SecretString:                request.GetStringParam(req.Parameters, "SecretString"),
+		SecretBinaryB64:             request.GetStringParam(req.Parameters, "SecretBinary"),
+		Description:                 request.GetStringParam(req.Parameters, "Description"),
+		KmsKeyId:                    request.GetStringParam(req.Parameters, "KmsKeyId"),
+		Type:                        request.GetStringParam(req.Parameters, "Type"),
+		ClientRequestToken:          request.GetStringParam(req.Parameters, "ClientRequestToken"),
+		Tags:                        tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
+		AddReplicaRegions:           addReplicaRegions,
+		ForceOverwriteReplicaSecret: request.GetBoolParam(req.Parameters, "ForceOverwriteReplicaSecret"),
+		Region:                      reqCtx.GetRegion(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	response := map[string]interface{}{
 		"ARN":       result.ARN,
 		"Name":      result.Name,
 		"VersionId": result.VersionID,
 	}
 
-	if len(addReplicaRegions) > 0 {
-		if s.storageManager == nil {
-			return nil, errors.NewAWSError("InvalidRequestException",
-				"Replication is not configured for this service.", http.StatusBadRequest)
-		}
-		created, metaErr := store.GetSecretForMetadata(result.Name)
-		if metaErr != nil {
-			return nil, mapStoreError(metaErr)
-		}
-		forceOverwrite := request.GetBoolParam(req.Parameters, "ForceOverwriteReplicaSecret")
-		s.replicateSecretToRegions(store, created, addReplicaRegions, forceOverwrite, reqCtx.GetRegion())
-		if err := store.UpdateSecretMetadata(created); err != nil {
-			return nil, mapStoreError(err)
-		}
-		if len(created.ReplicationStatus) > 0 {
-			response["ReplicationStatus"] = buildReplicationStatusResponse(created.ReplicationStatus)
-		}
+	if len(result.ReplicationStatus) > 0 {
+		response["ReplicationStatus"] = buildReplicationStatusResponse(result.ReplicationStatus)
 	}
 
 	return response, nil
@@ -91,172 +55,69 @@ func (s *SecretsManagerService) CreateSecret(ctx context.Context, reqCtx *reques
 
 // GetSecretValue returns the secret value for a secret.
 func (s *SecretsManagerService) GetSecretValue(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	versionId := request.GetStringParam(req.Parameters, "VersionId")
-	versionStage := request.GetStringParam(req.Parameters, "VersionStage")
-
-	if err := validateSecretId(secretId); err != nil {
-		return nil, err
-	}
-
-	if versionId != "" && versionStage != "" {
-		return nil, errors.NewAWSError("InvalidParameterException",
-			"You can't specify both VersionStage and VersionId.", http.StatusBadRequest)
-	}
-
-	secret, err := s.resolveSecret(reqCtx, secretId)
-	if err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var version *secretsmanagerstore.SecretVersion
-	if versionId == "" && versionStage != "" {
-		var err error
-		version, err = store.GetSecretVersionByStage(secret.Name, versionStage)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-	} else if versionId == "" {
-		if secret.CurrentVersion == "" {
-			return nil, errors.NewAWSError("ResourceNotFoundException",
-				"Secrets Manager can't find the version for the secret because no version has been created.", http.StatusNotFound)
-		}
-		var err error
-		version, err = store.GetSecretVersion(secret.Name, secret.CurrentVersion)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-	} else {
-		if isStageLabel(versionId) {
-			if secret.CurrentVersion == "" {
-				return nil, errors.NewAWSError("ResourceNotFoundException",
-					"Secrets Manager can't find the version for the secret because no version has been created.", http.StatusNotFound)
-			}
-			var err error
-			version, err = store.GetSecretVersionByStage(secret.Name, versionId)
-			if err != nil {
-				return nil, mapStoreError(err)
-			}
-		} else {
-			var err error
-			version, err = store.GetSecretVersion(secret.Name, versionId)
-			if err != nil {
-				return nil, mapStoreError(err)
-			}
-		}
+	result, err := s.getSecretValueCore(ctx, store, GetSecretValueInput{
+		SecretId:     request.GetStringParam(req.Parameters, "SecretId"),
+		VersionId:    request.GetStringParam(req.Parameters, "VersionId"),
+		VersionStage: request.GetStringParam(req.Parameters, "VersionStage"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"ARN":           secret.ARN,
-		"Name":          secret.Name,
-		"VersionId":     version.VersionId,
-		"VersionStages": version.VersionStages,
-		"CreatedDate":   version.CreatedDate.Unix(),
+	response := map[string]interface{}{
+		"ARN":           result.Secret.ARN,
+		"Name":          result.Secret.Name,
+		"VersionId":     result.Version.VersionId,
+		"VersionStages": result.Version.VersionStages,
+		"CreatedDate":   result.Version.CreatedDate.Unix(),
 	}
 
-	if version.SecretString != "" {
-		result["SecretString"] = version.SecretString
+	if result.Version.SecretString != "" {
+		response["SecretString"] = result.Version.SecretString
 	}
-	if len(version.SecretBinary) > 0 {
-		result["SecretBinary"] = base64.StdEncoding.EncodeToString(version.SecretBinary)
+	if len(result.Version.SecretBinary) > 0 {
+		response["SecretBinary"] = base64.StdEncoding.EncodeToString(result.Version.SecretBinary)
 	}
 
-	return result, nil
+	return response, nil
 }
 
 // UpdateSecret updates an existing secret.
 func (s *SecretsManagerService) UpdateSecret(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	secretId := request.GetStringParam(req.Parameters, "SecretId")
-	if err := validateSecretId(secretId); err != nil {
-		return nil, err
-	}
-
-	secret, err := s.resolveSecret(reqCtx, secretId)
-	if err != nil {
-		return nil, err
-	}
-
-	secretString := request.GetStringParam(req.Parameters, "SecretString")
-	secretBinaryStr := request.GetStringParam(req.Parameters, "SecretBinary")
-	if err := validateSecretValueMutex(secretString, secretBinaryStr); err != nil {
-		return nil, err
-	}
-	if err := validateSecretStringLength(secretString); err != nil {
-		return nil, err
-	}
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := validateDescription(description); err != nil {
-		return nil, err
-	}
-	kmsKeyId := request.GetStringParam(req.Parameters, "KmsKeyId")
-	if err := validateKmsKeyId(kmsKeyId); err != nil {
-		return nil, err
-	}
-	secretType := request.GetStringParam(req.Parameters, "Type")
-	clientRequestToken := request.GetStringParam(req.Parameters, "ClientRequestToken")
-	if err := validateClientRequestToken(clientRequestToken); err != nil {
-		return nil, err
-	}
-
-	hasSecretValue := secretString != "" || secretBinaryStr != ""
-
-	if secretString != "" {
-		secret.SecretString = secretString
-		secret.SecretBinary = nil
-	} else if secretBinaryStr != "" {
-		decoded, decErr := decodeAndValidateSecretBinary(secretBinaryStr)
-		if decErr != nil {
-			return nil, decErr
-		}
-		secret.SecretBinary = decoded
-		secret.SecretString = ""
-	}
-	if request.HasParam(req.Parameters, "Description") {
-		secret.Description = description
-	}
-	if request.HasParam(req.Parameters, "KmsKeyId") {
-		secret.KmsKeyId = kmsKeyId
-	}
-	if request.HasParam(req.Parameters, "Type") {
-		secret.Type = secretType
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var versionId string
-	if hasSecretValue {
-		// ClientRequestToken becomes the version ID when a new
-		// version is created.
-		secret.InitialVersionId = clientRequestToken
-		updated, err := store.UpdateSecret(secret)
-		if err != nil {
-			return nil, mapStoreError(err)
-		}
-		versionId = updated.CurrentVersion
-	} else {
-		// Metadata-only update: persist changes without creating a new version.
-		secret.LastChangedDate = time.Now().UTC()
-		if err := store.UpdateSecretMetadata(secret); err != nil {
-			return nil, mapStoreError(err)
-		}
+	result, err := s.updateSecretCore(ctx, store, UpdateSecretInput{
+		SecretId:           request.GetStringParam(req.Parameters, "SecretId"),
+		SecretString:       request.GetStringParam(req.Parameters, "SecretString"),
+		SecretBinaryB64:    request.GetStringParam(req.Parameters, "SecretBinary"),
+		Description:        request.GetStringParam(req.Parameters, "Description"),
+		KmsKeyId:           request.GetStringParam(req.Parameters, "KmsKeyId"),
+		Type:               request.GetStringParam(req.Parameters, "Type"),
+		ClientRequestToken: request.GetStringParam(req.Parameters, "ClientRequestToken"),
+		HasDescription:     request.HasParam(req.Parameters, "Description"),
+		HasKmsKeyId:        request.HasParam(req.Parameters, "KmsKeyId"),
+		HasType:            request.HasParam(req.Parameters, "Type"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"ARN":  secret.ARN,
-		"Name": secret.Name,
+	response := map[string]interface{}{
+		"ARN":  result.ARN,
+		"Name": result.Name,
 	}
-	if versionId != "" {
-		result["VersionId"] = versionId
+	if result.VersionID != "" {
+		response["VersionId"] = result.VersionID
 	}
-	return result, nil
+	return response, nil
 }
 
 // DeleteSecret deletes a secret.

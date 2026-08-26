@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 )
 
 func (r *TestRunner) runSecretsManagerBatchTests(tc *secretsManagerTestContext) []TestResult {
@@ -44,6 +45,87 @@ func (r *TestRunner) runSecretsManagerBatchTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("missing secrets in batch response: found %v", foundNames)
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "BatchGetSecretValue_MaxResultsRejected", func() error {
+		prefix := tc.uniqueName("BatchRange")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(prefix),
+			SecretString: aws.String("range"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(prefix)
+
+		for _, bad := range []int32{0, 21} {
+			_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+				Filters:    []types.Filter{{Key: types.FilterNameStringTypeName, Values: []string{prefix}}},
+				MaxResults: aws.Int32(bad),
+			})
+			if err == nil {
+				return fmt.Errorf("MaxResults=%d should be rejected", bad)
+			}
+			if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+				return fmt.Errorf("MaxResults=%d: %v", bad, e)
+			}
+		}
+
+		// MaxResults is documented as requiring Filters; pairing it with
+		// SecretIdList is rejected rather than silently ignored.
+		_, err = tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+			SecretIdList: []string{prefix},
+			MaxResults:   aws.Int32(5),
+		})
+		if err == nil {
+			return fmt.Errorf("MaxResults with SecretIdList should be rejected")
+		}
+		if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+			return fmt.Errorf("MaxResults with SecretIdList: %v", e)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "BatchGetSecretValue_InvalidNextTokenRejected", func() error {
+		prefix := tc.uniqueName("BatchBadToken")
+		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(prefix),
+			SecretString: aws.String("bad-token"),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.forceDeleteSecret(prefix)
+
+		for _, bad := range []string{"9999", "-1", "abc", "1x"} {
+			_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+				Filters:   []types.Filter{{Key: types.FilterNameStringTypeName, Values: []string{prefix}}},
+				NextToken: aws.String(bad),
+			})
+			if err == nil {
+				return fmt.Errorf("NextToken=%q should be rejected", bad)
+			}
+			if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
+				return fmt.Errorf("NextToken=%q: %v", bad, e)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("secretsmanager", "BatchGetSecretValue_TooManyIdsRejected", func() error {
+		ids := make([]string, 21)
+		for i := range ids {
+			ids[i] = fmt.Sprintf("batch-id-%d", i)
+		}
+		_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+			SecretIdList: ids,
+		})
+		if err == nil {
+			return fmt.Errorf("21 SecretIds should be rejected")
+		}
+		// The service model has no ValidationException shape; the batch
+		// limit reports InvalidParameterException.
+		return expectAWSErrorCode(err, "InvalidParameterException")
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "BatchGetSecretValue_NonExistent", func() error {
