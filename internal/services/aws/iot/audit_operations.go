@@ -2,49 +2,30 @@ package iot
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // ---- Audit (task/findings) ------------------------------------------
-// Audit task lifecycle mirrors the Detect Mitigation task pattern: Start
-// persists the task id, Cancel/Describe enforce ResourceNotFoundException for
-// unknown ids. Audit findings are not generated without a Defender engine,
-// so DescribeAuditFinding always returns NotFound for an arbitrary id.
 
 func (s *IoTService) DescribeAccountAuditConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("config/accountAudit", &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return map[string]interface{}{
-			"auditCheckConfigurations":              map[string]interface{}{},
-			"auditNotificationTargetConfigurations": map[string]interface{}{},
-		}, nil
-	}
-	return rec, nil
+	return s.describeAccountAuditConfigurationCore(store)
 }
 func (s *IoTService) UpdateAccountAuditConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{
-		"roleArn":                               request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
-		"auditCheckConfigurations":              request.GetMapParamCaseInsensitive(req.Parameters, "auditCheckConfigurations"),
-		"auditNotificationTargetConfigurations": request.GetMapParamCaseInsensitive(req.Parameters, "auditNotificationTargetConfigurations"),
+	in := UpdateAccountAuditConfigurationInput{
+		RoleArn:                               request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		AuditCheckConfigurations:              request.GetMapParamCaseInsensitive(req.Parameters, "auditCheckConfigurations"),
+		AuditNotificationTargetConfigurations: request.GetMapParamCaseInsensitive(req.Parameters, "auditNotificationTargetConfigurations"),
 	}
-	if err := store.PutGeneric("config/accountAudit", rec); err != nil {
+	if err := s.updateAccountAuditConfigurationCore(store, in); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -54,75 +35,48 @@ func (s *IoTService) DeleteAccountAuditConfiguration(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteGeneric("config/accountAudit"); err != nil {
+	if err := s.deleteAccountAuditConfigurationCore(store); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) StartOnDemandAuditTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := uuid.New().String()
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{
-		"taskId":         taskId,
-		"status":         "IN_PROGRESS",
-		"startTime":      time.Now().UTC().Unix(),
-		"targetAccounts": request.GetParamCaseInsensitive(req.Parameters, "targetAccounts"),
-		"auditChecks":    request.GetParamCaseInsensitive(req.Parameters, "auditChecks"),
-	}
-	if err := store.PutGeneric("auditTask/"+taskId, rec); err != nil {
+	taskId, err := s.startOnDemandAuditTaskCore(store, StartOnDemandAuditTaskInput{
+		TargetCheckNames: request.GetStringList(req.Parameters, "targetCheckNames"),
+	})
+	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{"taskId": taskId}, nil
 }
 func (s *IoTService) CancelAuditTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := request.GetParamCaseInsensitive(req.Parameters, "taskId")
-	if taskId == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key := "auditTask/" + taskId
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists(key, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrAuditTaskNotFound
-	}
-	rec["status"] = "CANCELED"
-	rec["endTime"] = time.Now().UTC().Unix()
-	if err := store.PutGeneric(key, rec); err != nil {
+	if err := s.cancelAuditTaskCore(store, request.GetParamCaseInsensitive(req.Parameters, "taskId")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DescribeAuditTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	taskId := request.GetParamCaseInsensitive(req.Parameters, "taskId")
-	if taskId == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("auditTask/"+taskId, &rec)
+	details, err := s.describeAuditTaskCore(store, request.GetParamCaseInsensitive(req.Parameters, "taskId"))
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrAuditTaskNotFound
-	}
 	return map[string]interface{}{
-		"taskId":           rec["taskId"],
-		"taskStatus":       rec["status"],
-		"auditTaskDetails": rec,
+		"taskStatus":    details.TaskStatus,
+		"taskType":      details.TaskType,
+		"taskStartTime": details.TaskStartTime,
+		"auditDetails":  details.AuditDetails,
 	}, nil
 }
 func (s *IoTService) ListAuditTasks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -130,38 +84,28 @@ func (s *IoTService) ListAuditTasks(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("auditTask/")
+	items, err := s.listAuditTasksCore(store)
 	if err != nil {
 		return nil, err
 	}
 	tasks := make([]map[string]interface{}, 0, len(items))
-	for _, rec := range items {
+	for _, item := range items {
 		tasks = append(tasks, map[string]interface{}{
-			"taskId":     rec["taskId"],
-			"taskStatus": rec["status"],
-			"taskType":   "ON_DEMAND_AUDIT_TASK",
+			"taskId":     item.TaskID,
+			"taskStatus": item.TaskStatus,
+			"taskType":   item.TaskType,
 		})
 	}
-	return paginatedMaps("tasks", tasks, req.Parameters), nil
+	return paginatedMaps("tasks", tasks, req.Parameters)
 }
 func (s *IoTService) DescribeAuditFinding(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	findingId := request.GetParamCaseInsensitive(req.Parameters, "findingId")
-	if findingId == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("auditFinding/"+findingId, &rec)
+	rec, err := s.describeAuditFindingCore(store, request.GetParamCaseInsensitive(req.Parameters, "findingId"))
 	if err != nil {
 		return nil, err
-	}
-	if !exists {
-		// No Defender engine generates findings, so any caller-supplied id
-		// is unknown to the platform. AWS returns ResourceNotFoundException.
-		return nil, iotstore.ErrAuditFindingNotFound
 	}
 	return map[string]interface{}{"finding": rec}, nil
 }
@@ -170,38 +114,20 @@ func (s *IoTService) ListAuditFindings(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("auditFinding/")
+	findings, err := s.listAuditFindingsCore(store)
 	if err != nil {
 		return nil, err
 	}
-	findings := make([]map[string]interface{}, 0, len(items))
-	findings = append(findings, items...)
-	return paginatedMaps("findings", findings, req.Parameters), nil
+	return paginatedMaps("findings", findings, req.Parameters)
 }
 func (s *IoTService) ListRelatedResourcesForAuditFinding(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	findingID := request.GetParamCaseInsensitive(req.Parameters, "findingId")
-	if findingID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("auditFinding/"+findingID, &rec)
+	resources, err := s.listRelatedResourcesForAuditFindingCore(store, request.GetParamCaseInsensitive(req.Parameters, "findingId"))
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrAuditFindingNotFound
-	}
-	resources := []map[string]interface{}{}
-	if raw, ok := rec["relatedResources"].([]interface{}); ok {
-		for _, r := range raw {
-			if m, ok := r.(map[string]interface{}); ok {
-				resources = append(resources, m)
-			}
-		}
-	}
-	return paginatedMaps("relatedResources", resources, req.Parameters), nil
+	return paginatedMaps("relatedResources", resources, req.Parameters)
 }

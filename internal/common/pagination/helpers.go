@@ -2,6 +2,7 @@
 package pagination
 
 import (
+	"errors"
 	"strconv"
 
 	"vorpalstacks/internal/common/request"
@@ -12,6 +13,29 @@ const DefaultMaxItems = 100
 
 // AbsoluteMaxItems is the hard upper limit for any pagination parameter.
 const AbsoluteMaxItems = 1000
+
+// ErrInvalidOffsetToken reports a nextToken that is not a usable offset
+// into the result set: non-numeric, negative, or at/beyond the set's
+// length. Consumers surface it as their operation's documented
+// invalid-token error (for the iot list operations,
+// InvalidRequestException).
+var ErrInvalidOffsetToken = errors.New("invalid offset pagination token")
+
+// ParseOffsetToken parses an integer-offset pagination token against the
+// result-set length. Tokens are opaque to clients but internally a plain
+// decimal offset, so anything non-numeric, negative, or beyond the result
+// set is invalid — silently restarting at the first page or clamping
+// would desynchronise a client's walk over the list.
+func ParseOffsetToken(token string, total int) (int, error) {
+	if token == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(token)
+	if err != nil || n < 0 || n >= total {
+		return 0, ErrInvalidOffsetToken
+	}
+	return n, nil
+}
 
 // GetMaxItems extracts a pagination limit parameter from the given params map.
 // It checks paramName first, then falls back to "MaxItems" for backward compatibility.
@@ -167,16 +191,13 @@ func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor K
 // PaginateOffsetMaps paginates a slice of maps using integer-offset tokens.
 // The offset is read from the "nextToken" parameter (case-insensitive)
 // and the page size from "maxResults". The response map uses the given key
-// for the page items and "nextToken" for the continuation token.
-func PaginateOffsetMaps(key string, items []map[string]interface{}, params map[string]interface{}) map[string]interface{} {
-	offset := 0
-	if token := request.GetParamCaseInsensitive(params, "nextToken"); token != "" {
-		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
-			offset = n
-		}
-	}
-	if offset > len(items) {
-		offset = len(items)
+// for the page items and "nextToken" for the continuation token. An
+// unusable token is reported through ErrInvalidOffsetToken rather than
+// being ignored.
+func PaginateOffsetMaps(key string, items []map[string]interface{}, params map[string]interface{}) (map[string]interface{}, error) {
+	offset, err := ParseOffsetToken(request.GetParamCaseInsensitive(params, "nextToken"), len(items))
+	if err != nil {
+		return nil, err
 	}
 	max := len(items)
 	if m := request.GetIntParam(params, "maxResults"); m > 0 {
@@ -191,20 +212,15 @@ func PaginateOffsetMaps(key string, items []map[string]interface{}, params map[s
 	if end < len(items) {
 		resp["nextToken"] = strconv.Itoa(end)
 	}
-	return resp
+	return resp, nil
 }
 
 // PaginateOffsetStrings paginates a string slice using the same offset-based
 // scheme as PaginateOffsetMaps.
-func PaginateOffsetStrings(key string, items []string, params map[string]interface{}) map[string]interface{} {
-	offset := 0
-	if token := request.GetParamCaseInsensitive(params, "nextToken"); token != "" {
-		if n, err := strconv.Atoi(token); err == nil && n >= 0 {
-			offset = n
-		}
-	}
-	if offset > len(items) {
-		offset = len(items)
+func PaginateOffsetStrings(key string, items []string, params map[string]interface{}) (map[string]interface{}, error) {
+	offset, err := ParseOffsetToken(request.GetParamCaseInsensitive(params, "nextToken"), len(items))
+	if err != nil {
+		return nil, err
 	}
 	max := len(items)
 	if m := request.GetIntParam(params, "maxResults"); m > 0 {
@@ -219,5 +235,5 @@ func PaginateOffsetStrings(key string, items []string, params map[string]interfa
 	if end < len(items) {
 		resp["nextToken"] = strconv.Itoa(end)
 	}
-	return resp
+	return resp, nil
 }

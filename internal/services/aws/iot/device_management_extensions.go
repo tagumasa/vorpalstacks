@@ -2,9 +2,7 @@ package iot
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
+	"strings"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -25,14 +23,11 @@ func (s *IoTService) UpdateDynamicThingGroup(ctx context.Context, reqCtx *reques
 func (s *IoTService) AddThingToBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
 	billingGroup := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if thingName == "" || billingGroup == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.AddThingToBillingGroup(thingName, billingGroup); err != nil {
+	if err := s.addThingToBillingGroupCore(store, thingName, billingGroup); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -41,14 +36,11 @@ func (s *IoTService) AddThingToBillingGroup(ctx context.Context, reqCtx *request
 func (s *IoTService) RemoveThingFromBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
 	billingGroup := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if thingName == "" || billingGroup == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.RemoveThingFromBillingGroup(thingName, billingGroup); err != nil {
+	if err := s.removeThingFromBillingGroupCore(store, thingName, billingGroup); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -56,51 +48,43 @@ func (s *IoTService) RemoveThingFromBillingGroup(ctx context.Context, reqCtx *re
 
 func (s *IoTService) ListThingsInBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	billingGroup := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if billingGroup == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// AWS: returns ResourceNotFoundException for a non-existent billing group.
-	if _, err := store.GetBillingGroup(billingGroup); err != nil {
-		return nil, err
-	}
-	things, err := store.ListThingsInBillingGroup(billingGroup)
+	things, err := s.listThingsInBillingGroupCore(store, billingGroup)
 	if err != nil {
 		return nil, err
 	}
-	return paginatedStrings("things", things, req.Parameters), nil
+	return paginatedStrings("things", things, req.Parameters)
 }
 
 func (s *IoTService) RegisterThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	templateName := request.GetParamCaseInsensitive(req.Parameters, "templateName")
-	if templateName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		thingName = "registered-" + uuid.New().String()[:8]
+	parameters := map[string]string{}
+	for k, v := range request.GetMapParamCaseInsensitive(req.Parameters, "parameters") {
+		if str, ok := v.(string); ok {
+			parameters[k] = str
+		}
 	}
-	thing := &iotstore.Thing{
-		ThingName:        thingName,
-		Version:          1,
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
+	in := RegisterThingInput{
+		TemplateBody: request.GetParamCaseInsensitive(req.Parameters, "templateBody"),
+		Parameters:   parameters,
 	}
-	created, err := store.CreateThing(thing)
+	result, err := s.registerThingCore(store, s.caForReq(reqCtx), in)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{
-		"thingName": created.ThingName,
-		"thingArn":  created.ThingARN,
-	}, nil
+	resp := map[string]interface{}{
+		"resourceArns": result.ResourceArns,
+	}
+	if result.CertificatePem != "" {
+		resp["certificatePem"] = result.CertificatePem
+	}
+	return resp, nil
 }
 
 func (s *IoTService) StartThingRegistrationTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -108,14 +92,17 @@ func (s *IoTService) StartThingRegistrationTask(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
-	taskID := uuid.New().String()
-	rec := map[string]interface{}{
-		"taskId":       taskID,
-		"templateBody": request.GetParamCaseInsensitive(req.Parameters, "templateBody"),
-		"status":       "Completed",
-		"creationDate": time.Now().UTC().Unix(),
+	in := StartThingRegistrationTaskInput{
+		TemplateBody:    request.GetParamCaseInsensitive(req.Parameters, "templateBody"),
+		InputFileBucket: request.GetParamCaseInsensitive(req.Parameters, "inputFileBucket"),
+		InputFileKey:    request.GetParamCaseInsensitive(req.Parameters, "inputFileKey"),
+		RoleArn:         request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
 	}
-	if err := store.PutGeneric("registrationTask/"+taskID, rec); err != nil {
+	if reqCtx != nil {
+		in.Region = reqCtx.GetRegion()
+	}
+	taskID, err := s.startThingRegistrationTaskCore(store, in)
+	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
@@ -125,23 +112,11 @@ func (s *IoTService) StartThingRegistrationTask(ctx context.Context, reqCtx *req
 
 func (s *IoTService) StopThingRegistrationTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskID := request.GetParamCaseInsensitive(req.Parameters, "taskId")
-	if taskID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("registrationTask/"+taskID, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrThingRegistrationTaskNotFound
-	}
-	rec["status"] = "Cancelled"
-	if err := store.PutGeneric("registrationTask/"+taskID, rec); err != nil {
+	if err := s.stopThingRegistrationTaskCore(store, taskID); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -149,29 +124,27 @@ func (s *IoTService) StopThingRegistrationTask(ctx context.Context, reqCtx *requ
 
 func (s *IoTService) DescribeThingRegistrationTask(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	taskID := request.GetParamCaseInsensitive(req.Parameters, "taskId")
-	if taskID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("registrationTask/"+taskID, &rec)
+	result, err := s.describeThingRegistrationTaskCore(store, taskID)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrThingRegistrationTaskNotFound
-	}
-	status, _ := rec["status"].(string)
 	return map[string]interface{}{
-		"taskId":               taskID,
-		"status":               status,
-		"creationDate":         rec["creationDate"],
-		"successfulExecutions": 0,
-		"failedExecutions":     0,
-		"percentageProgress":   100,
+		"taskId":             result.TaskID,
+		"status":             result.Status,
+		"creationDate":       result.CreationDate,
+		"lastModifiedDate":   result.LastModifiedDate,
+		"templateBody":       result.TemplateBody,
+		"inputFileBucket":    result.InputFileBucket,
+		"inputFileKey":       result.InputFileKey,
+		"roleArn":            result.RoleArn,
+		"message":            result.Message,
+		"successCount":       result.SuccessCount,
+		"failureCount":       result.FailureCount,
+		"percentageProgress": result.PercentageProgress,
 	}, nil
 }
 
@@ -180,18 +153,12 @@ func (s *IoTService) ListThingRegistrationTasks(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("registrationTask/")
+	// Smithy: ListThingRegistrationTasksResponse.taskIds is list<TaskId> (string).
+	taskIds, err := s.listThingRegistrationTasksCore(store)
 	if err != nil {
 		return nil, err
 	}
-	// Smithy: ListThingRegistrationTasksResponse.taskIds is list<TaskId> (string).
-	taskIds := make([]string, 0, len(items))
-	for _, item := range items {
-		if id, ok := item["taskId"].(string); ok {
-			taskIds = append(taskIds, id)
-		}
-	}
-	return paginatedStrings("taskIds", taskIds, req.Parameters), nil
+	return paginatedStrings("taskIds", taskIds, req.Parameters)
 }
 
 func (s *IoTService) ListThingRegistrationTaskReports(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -199,5 +166,23 @@ func (s *IoTService) ListThingRegistrationTaskReports(ctx context.Context, reqCt
 	if taskID == "" {
 		return nil, iotstore.ErrMissingParam
 	}
-	return paginatedMaps("taskReports", []map[string]interface{}{}, req.Parameters), nil
+	// The Smithy ReportType enum's wire values are ERRORS and RESULTS.
+	reportType := strings.ToUpper(request.GetParamCaseInsensitive(req.Parameters, "reportType"))
+	if reportType != "ERRORS" && reportType != "RESULTS" {
+		return nil, iotstore.ErrMissingParam
+	}
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	links, err := s.thingRegistrationReportLinks(reqCtx, req, store, taskID, reportType)
+	if err != nil {
+		return nil, err
+	}
+	// The response shape is reportType/resourceLinks/nextToken; the link
+	// expiry lives inside the presigned URLs, not as a response member.
+	return map[string]interface{}{
+		"reportType":    reportType,
+		"resourceLinks": links,
+	}, nil
 }

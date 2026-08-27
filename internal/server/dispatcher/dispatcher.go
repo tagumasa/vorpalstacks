@@ -251,6 +251,12 @@ func (d *Dispatcher) DispatchWithContext(w http.ResponseWriter, r *http.Request,
 // including authorisation, resilience wrapping, and audit recording.
 func (d *Dispatcher) DispatchClassified(w http.ResponseWriter, r *http.Request, cr *classifier.ClassifiedRequest) {
 	parsedReq := classifiedToParsed(cr)
+	// The classifier carries neither the dialled host nor the scheme, but
+	// the live request is right here — propagate both so response-side
+	// URLs (presigned links, location headers) derive from the endpoint
+	// the client actually used instead of a localhost fallback.
+	parsedReq.Host = r.Host
+	parsedReq.IsTLS = r.TLS != nil
 
 	if d.tryExecuteHandler(w, r, cr.ServiceName, parsedReq.Operation, parsedReq) {
 		return

@@ -545,7 +545,7 @@ type SecurityProfile struct {
 	SecurityProfileDescription  string
 	Behaviors                   []*Behavior
 	AlertTargets                map[string]*AlertTarget
-	AdditionalMetricsToRetainV2 []string
+	AdditionalMetricsToRetainV2 []*MetricToRetain
 	Version                     int64
 	CreationDate                time.Time
 	LastModifiedDate            time.Time
@@ -558,6 +558,16 @@ type SecurityProfile struct {
 type AlertTarget struct {
 	AlertTargetARN string
 	RoleARN        string
+}
+
+// MetricToRetain is one retained-metric entry of a security profile: the
+// metric name, an optional scoping dimension (name plus the optional
+// IN/NOT_IN operator) and the export flag.
+type MetricToRetain struct {
+	Metric          string
+	MetricDimension string
+	Operator        string
+	ExportMetric    bool
 }
 
 // Behavior represents a security profile behaviour definition.
@@ -667,13 +677,23 @@ func SecurityProfileToProto(s *SecurityProfile) (*pb.SecurityProfile, error) {
 			RoleArn:        v.RoleARN,
 		}
 	}
+	// The retained-metric entries are structures on the wire; the storage
+	// proto carries them as one JSON-encoded string per entry.
+	pbMetricsV2 := make([]string, 0, len(s.AdditionalMetricsToRetainV2))
+	for _, m := range s.AdditionalMetricsToRetainV2 {
+		encoded, err := json.Marshal(m)
+		if err != nil {
+			return nil, err
+		}
+		pbMetricsV2 = append(pbMetricsV2, string(encoded))
+	}
 	return &pb.SecurityProfile{
 		SecurityProfileName:         s.SecurityProfileName,
 		SecurityProfileArn:          s.SecurityProfileARN,
 		SecurityProfileDescription:  s.SecurityProfileDescription,
 		Behaviors:                   pbBehaviors,
 		AlertTargets:                pbAlertTargets,
-		AdditionalMetricsToRetainV2: s.AdditionalMetricsToRetainV2,
+		AdditionalMetricsToRetainV2: pbMetricsV2,
 		Version:                     s.Version,
 		CreationDate:                timeToProto(s.CreationDate),
 		LastModifiedDate:            timeToProto(s.LastModifiedDate),
@@ -695,13 +715,21 @@ func ProtoToSecurityProfile(p *pb.SecurityProfile) *SecurityProfile {
 			RoleARN:        v.RoleArn,
 		}
 	}
+	domainMetricsV2 := make([]*MetricToRetain, 0, len(p.AdditionalMetricsToRetainV2))
+	for _, entry := range p.AdditionalMetricsToRetainV2 {
+		var m MetricToRetain
+		if err := json.Unmarshal([]byte(entry), &m); err != nil {
+			continue
+		}
+		domainMetricsV2 = append(domainMetricsV2, &m)
+	}
 	return &SecurityProfile{
 		SecurityProfileName:         p.SecurityProfileName,
 		SecurityProfileARN:          p.SecurityProfileArn,
 		SecurityProfileDescription:  p.SecurityProfileDescription,
 		Behaviors:                   domainBehaviors,
 		AlertTargets:                domainAlertTargets,
-		AdditionalMetricsToRetainV2: p.AdditionalMetricsToRetainV2,
+		AdditionalMetricsToRetainV2: domainMetricsV2,
 		Version:                     p.Version,
 		CreationDate:                protoToTime(p.CreationDate),
 		LastModifiedDate:            protoToTime(p.LastModifiedDate),

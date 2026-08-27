@@ -677,6 +677,12 @@ func (a *App) initIoT(st *serviceState) error {
 		EventBus:       eb,
 		Dispatchers:    dispatchers,
 	})
+	iotService.SetReportCredentialsProvider(auth.NewStaticCredentialsProvider(
+		a.cfg.AccessKeyID,
+		a.cfg.SecretAccessKey,
+		a.cfg.Region,
+		"",
+	))
 
 	// Each regional broker authenticates against its own region's store
 	// and CA, so a certificate created in one region is never accepted by

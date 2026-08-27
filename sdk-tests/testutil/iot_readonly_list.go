@@ -152,6 +152,18 @@ func (r *TestRunner) runIoTReadonlyListTests(tc *iotTestContext) []TestResult {
 		return nil
 	}))
 
+	// A nextToken the server could never have issued (non-numeric, or an
+	// offset beyond the result set) must be rejected, not silently treated
+	// as page zero.
+	results = append(results, r.RunTest("iot", "ListDimensions_InvalidNextTokenRejected", func() error {
+		_, err := tc.client.ListDimensions(tc.ctx, &iot.ListDimensionsInput{NextToken: aws.String("abc")})
+		if vErr := expectAWSErrorCode(err, "InvalidRequestException"); vErr != nil {
+			return vErr
+		}
+		_, err = tc.client.ListDimensions(tc.ctx, &iot.ListDimensionsInput{NextToken: aws.String("999999")})
+		return expectAWSErrorCode(err, "InvalidRequestException")
+	}))
+
 	results = append(results, r.RunTest("iot", "List_MitigationActions", func() error {
 		actions, err := paginate(func(next *string) ([]iottypes.MitigationActionIdentifier, *string, error) {
 			out, err := tc.client.ListMitigationActions(tc.ctx, &iot.ListMitigationActionsInput{NextToken: next})

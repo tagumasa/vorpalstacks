@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
@@ -107,8 +108,31 @@ func (r *TestRunner) runIoTPolicyTests(tc *iotTestContext) []TestResult {
 		if out.PolicyVersionId == nil || *out.PolicyVersionId == "" {
 			return fmt.Errorf("expected non-empty policyVersionId")
 		}
+		// AWS numbers policy versions with purely numeric ids.
+		if !regexp.MustCompile(`^[0-9]+$`).MatchString(*out.PolicyVersionId) {
+			return fmt.Errorf("expected numeric policyVersionId, got %q", *out.PolicyVersionId)
+		}
+		if out.PolicyArn == nil || *out.PolicyArn == "" {
+			return fmt.Errorf("expected non-empty policyArn")
+		}
 		createdVersionID = *out.PolicyVersionId
 		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "PolicyVersion_CreatePolicyVersion_NonExistentPolicyRejected", func() error {
+		_, err := tc.client.CreatePolicyVersion(tc.ctx, &iot.CreatePolicyVersionInput{
+			PolicyName:     aws.String(uniqueName("no-such-policy")),
+			PolicyDocument: aws.String(testIoTPolicyDocument),
+		})
+		return expectNotFound(err)
+	}))
+
+	results = append(results, r.RunTest("iot", "PolicyVersion_MalformedDocumentRejected", func() error {
+		_, err := tc.client.CreatePolicyVersion(tc.ctx, &iot.CreatePolicyVersionInput{
+			PolicyName:     aws.String(policyName),
+			PolicyDocument: aws.String(`{"not-json"`),
+		})
+		return expectValidationError(err)
 	}))
 
 	results = append(results, r.RunTest("iot", "PolicyVersion_GetPolicyVersion", func() error {
@@ -140,6 +164,15 @@ func (r *TestRunner) runIoTPolicyTests(tc *iotTestContext) []TestResult {
 		if len(out.PolicyVersions) < 2 {
 			return fmt.Errorf("expected at least 2 versions, got %d", len(out.PolicyVersions))
 		}
+		defaults := 0
+		for _, v := range out.PolicyVersions {
+			if v.IsDefaultVersion {
+				defaults++
+			}
+		}
+		if defaults != 1 {
+			return fmt.Errorf("expected exactly 1 default version, got %d", defaults)
+		}
 		return nil
 	}))
 
@@ -163,6 +196,31 @@ func (r *TestRunner) runIoTPolicyTests(tc *iotTestContext) []TestResult {
 			PolicyVersionId: aws.String(nonDefault),
 		}); err != nil {
 			return fmt.Errorf("SetDefaultPolicyVersion failed: %w", err)
+		}
+		// Exactly one default remains after the promotion.
+		afterList, err := tc.client.ListPolicyVersions(tc.ctx, &iot.ListPolicyVersionsInput{PolicyName: aws.String(policyName)})
+		if err != nil {
+			return fmt.Errorf("ListPolicyVersions after setDefault failed: %w", err)
+		}
+		defaults := 0
+		for _, v := range afterList.PolicyVersions {
+			if v.IsDefaultVersion {
+				defaults++
+			}
+		}
+		if defaults != 1 {
+			return fmt.Errorf("expected exactly 1 default after SetDefaultPolicyVersion, got %d", defaults)
+		}
+		// The initial version "1" resolves from the stored set with its document.
+		v1, err := tc.client.GetPolicyVersion(tc.ctx, &iot.GetPolicyVersionInput{
+			PolicyName:      aws.String(policyName),
+			PolicyVersionId: aws.String("1"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetPolicyVersion(1) failed: %w", err)
+		}
+		if v1.PolicyDocument == nil || *v1.PolicyDocument == "" {
+			return fmt.Errorf("expected version 1 document to resolve after default move")
 		}
 		return nil
 	}))

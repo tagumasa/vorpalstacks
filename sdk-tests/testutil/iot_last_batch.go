@@ -66,11 +66,19 @@ func (r *TestRunner) runIoTLastBatchTests(tc *iotTestContext) []TestResult {
 		if destArn == "" {
 			return fmt.Errorf("destArn not captured from create step")
 		}
-		_, err := tc.client.UpdateTopicRuleDestination(tc.ctx, &iot.UpdateTopicRuleDestinationInput{
+		if _, err := tc.client.UpdateTopicRuleDestination(tc.ctx, &iot.UpdateTopicRuleDestinationInput{
 			Arn:    aws.String(destArn),
 			Status: iottypes.TopicRuleDestinationStatusDisabled,
+		}); err != nil {
+			return err
+		}
+		// Statuses outside the documented enum are rejected with
+		// InvalidRequestException.
+		_, err := tc.client.UpdateTopicRuleDestination(tc.ctx, &iot.UpdateTopicRuleDestinationInput{
+			Arn:    aws.String(destArn),
+			Status: iottypes.TopicRuleDestinationStatus("NOT_A_STATUS"),
 		})
-		return err
+		return expectAWSErrorCode(err, "InvalidRequestException")
 	}))
 
 	results = append(results, r.RunTest("iot", "TopicRuleDestination_Delete_Created", func() error {

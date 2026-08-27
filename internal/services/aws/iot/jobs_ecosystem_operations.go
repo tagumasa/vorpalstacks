@@ -2,74 +2,47 @@ package iot
 
 import (
 	"context"
-	"fmt"
-	"time"
-
-	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 func (s *IoTService) CreateJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{
-		"jobTemplateId": name,
-		"description":   request.GetParamCaseInsensitive(req.Parameters, "description"),
-		"document":      request.GetParamCaseInsensitive(req.Parameters, "document"),
-		"createdAt":     time.Now().Unix(),
-	}
-	if err := store.PutGeneric("jobTemplate/"+name, rec); err != nil {
+	result, err := s.createJobTemplateCore(store, CreateJobTemplateInput{
+		JobTemplateID: request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId"),
+		Description:   request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Document:      request.GetParamCaseInsensitive(req.Parameters, "document"),
+	})
+	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"jobTemplateId":  name,
-		"jobTemplateArn": iotstore.BuildJobTemplateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
+		"jobTemplateId":  result.JobTemplateID,
+		"jobTemplateArn": result.JobTemplateARN,
 	}, nil
 }
 
 func (s *IoTService) DeleteJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	exists, err := store.GetGenericExists("jobTemplate/"+name, &map[string]interface{}{})
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobTemplateNotFound
-	}
-	if err := store.DeleteGeneric("jobTemplate/" + name); err != nil {
+	if err := s.deleteJobTemplateCore(store, request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 
 func (s *IoTService) DescribeJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("jobTemplate/"+name, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobTemplateNotFound
-	}
-	return rec, nil
+	return s.describeJobTemplateCore(store, request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId"))
 }
 
 func (s *IoTService) ListJobTemplates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -77,295 +50,139 @@ func (s *IoTService) ListJobTemplates(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("jobTemplate/")
+	items, err := s.listJobTemplatesCore(store)
 	if err != nil {
 		return nil, err
 	}
-	return paginatedMaps("jobTemplates", items, req.Parameters), nil
+	return paginatedMaps("jobTemplates", items, req.Parameters)
 }
 
 func (s *IoTService) DescribeManagedJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "templateName")
-	return map[string]interface{}{
-		"templateName": name,
-		"templateArn":  iotstore.BuildJobTemplateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
-		"description":  "AWS-provided managed job template",
-		"platform":     "Linux",
-		"pathToDefine": "",
-	}, nil
+	return s.describeManagedJobTemplateCore(
+		reqCtx.GetAccountID(), reqCtx.GetRegion(),
+		request.GetParamCaseInsensitive(req.Parameters, "templateName")), nil
 }
 
 func (s *IoTService) ListManagedJobTemplates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return paginatedMaps("managedJobTemplates", []map[string]interface{}{}, req.Parameters), nil
+	return paginatedMaps("managedJobTemplates", []map[string]interface{}{}, req.Parameters)
 }
 
 func (s *IoTService) CancelJobExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	jobID := request.GetParamCaseInsensitive(req.Parameters, "jobId")
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if jobID == "" || thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// Validate the parent job exists; AWS returns ResourceNotFoundException.
-	if _, err := store.GetJob(jobID); err != nil {
-		return nil, err
-	}
-	key := "jobExecution/" + jobID + "/" + thingName
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists(key, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobExecutionNotFound
-	}
-	rec["status"] = "CANCELED"
-	rec["forceCanceled"] = request.GetBoolParam(req.Parameters, "force")
-	rec["lastUpdatedAt"] = time.Now().UTC().Unix()
-	if err := store.PutGeneric(key, rec); err != nil {
+	if err := s.cancelJobExecutionCore(store, CancelJobExecutionInput{
+		JobID:     request.GetParamCaseInsensitive(req.Parameters, "jobId"),
+		ThingName: request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		Force:     request.GetBoolParam(req.Parameters, "force"),
+	}); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 
 func (s *IoTService) DeleteJobExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	jobID := request.GetParamCaseInsensitive(req.Parameters, "jobId")
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if jobID == "" || thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetJob(jobID); err != nil {
-		return nil, err
-	}
-	key := "jobExecution/" + jobID + "/" + thingName
-	exists, err := store.GetGenericExists(key, &map[string]interface{}{})
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobExecutionNotFound
-	}
-	if err := store.DeleteGeneric(key); err != nil {
+	if err := s.deleteJobExecutionCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "jobId"),
+		request.GetParamCaseInsensitive(req.Parameters, "thingName")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 
 func (s *IoTService) DescribeJobExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	jobID := request.GetParamCaseInsensitive(req.Parameters, "jobId")
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if jobID == "" || thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetJob(jobID); err != nil {
-		return nil, err
-	}
-	key := "jobExecution/" + jobID + "/" + thingName
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists(key, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobExecutionNotFound
-	}
-	return map[string]interface{}{
-		"execution": map[string]interface{}{
-			"jobId":           jobID,
-			"status":          rec["status"],
-			"executionNumber": rec["executionNumber"],
-			"queuedAt":        rec["queuedAt"],
-			"startedAt":       rec["startedAt"],
-			"lastUpdatedAt":   rec["lastUpdatedAt"],
-			"thingArn":        iotstore.BuildThingARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), thingName),
-			"versionNumber":   rec["versionNumber"],
-		},
-	}, nil
+	return s.describeJobExecutionCore(store, DescribeJobExecutionInput{
+		JobID:     request.GetParamCaseInsensitive(req.Parameters, "jobId"),
+		ThingName: request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+	})
 }
 
 func (s *IoTService) ListJobExecutionsForJob(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	jobID := request.GetParamCaseInsensitive(req.Parameters, "jobId")
-	if jobID == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// Validate the parent job exists; AWS returns ResourceNotFoundException.
-	if _, err := store.GetJob(jobID); err != nil {
-		return nil, err
-	}
-	items, err := store.ListGeneric("jobExecution/" + jobID + "/")
+	summaries, err := s.listJobExecutionsForJobCore(store, request.GetParamCaseInsensitive(req.Parameters, "jobId"))
 	if err != nil {
 		return nil, err
 	}
-	summaries := make([]map[string]interface{}, 0, len(items))
-	for _, rec := range items {
-		thingName, _ := rec["thingName"].(string)
-		summaries = append(summaries, map[string]interface{}{
-			"thingArn": iotstore.BuildThingARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), thingName),
-			"jobExecutionSummary": map[string]interface{}{
-				"status":          rec["status"],
-				"executionNumber": rec["executionNumber"],
-				"queuedAt":        rec["queuedAt"],
-				"versionNumber":   rec["versionNumber"],
-			},
-		})
-	}
-	return paginatedMaps("executionSummaries", summaries, req.Parameters), nil
+	return paginatedMaps("executionSummaries", summaries, req.Parameters)
 }
 
 func (s *IoTService) ListJobExecutionsForThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// Scan all job-execution records and filter by thingName.
-	allItems, err := store.ListGeneric("jobExecution/")
+	summaries, err := s.listJobExecutionsForThingCore(store, request.GetParamCaseInsensitive(req.Parameters, "thingName"))
 	if err != nil {
 		return nil, err
 	}
-	summaries := make([]map[string]interface{}, 0)
-	for _, rec := range allItems {
-		rThing, _ := rec["thingName"].(string)
-		if rThing != thingName {
-			continue
-		}
-		jobID, _ := rec["jobId"].(string)
-		summaries = append(summaries, map[string]interface{}{
-			"jobArn": iotstore.BuildJobARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), jobID),
-			"jobExecutionSummary": map[string]interface{}{
-				"status":          rec["status"],
-				"executionNumber": rec["executionNumber"],
-				"queuedAt":        rec["queuedAt"],
-				"versionNumber":   rec["versionNumber"],
-			},
-		})
-	}
-	return paginatedMaps("executionSummaries", summaries, req.Parameters), nil
+	return paginatedMaps("executionSummaries", summaries, req.Parameters)
 }
 
 func (s *IoTService) CreateOTAUpdate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
 	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
 	recTags := make(map[string]string, len(tagList))
 	for _, t := range tagList {
 		recTags[t.Key] = t.Value
 	}
-	otaID := uuid.New().String()
-	now := time.Now().Unix()
-	rec := map[string]interface{}{
-		"otaUpdateId":                   name,
-		"otaUpdateArn":                  iotstore.BuildOTAUpdateARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
-		"description":                   request.GetParamCaseInsensitive(req.Parameters, "description"),
-		"targets":                       request.GetStringList(req.Parameters, "targets"),
-		"protocols":                     request.GetStringList(req.Parameters, "protocols"),
-		"targetSelection":               request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
-		"awsJobExecutionsRolloutConfig": request.GetParamCaseInsensitive(req.Parameters, "awsJobExecutionsRolloutConfig"),
-		"awsJobPresignedUrlConfig":      request.GetParamCaseInsensitive(req.Parameters, "awsJobPresignedUrlConfig"),
-		"awsJobAbortConfig":             request.GetParamCaseInsensitive(req.Parameters, "awsJobAbortConfig"),
-		"awsJobTimeoutConfig":           request.GetParamCaseInsensitive(req.Parameters, "awsJobTimeoutConfig"),
-		"roleArn":                       request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
-		"tags":                          recTags,
-		"status":                        "CREATE_COMPLETE",
-		"awsIotJobId":                   otaID,
-		"createdAt":                     now,
-	}
-	if err := store.PutGeneric("otaUpdate/"+name, rec); err != nil {
-		return nil, err
-	}
-	return map[string]interface{}{
-		"otaUpdateId":     name,
-		"otaUpdateArn":    rec["otaUpdateArn"],
-		"otaUpdateStatus": "CREATE_COMPLETE",
-		"awsIotJobId":     otaID,
-		"awsIotJobArn":    iotstore.BuildJobARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), otaID),
-	}, nil
-}
 
-func (s *IoTService) DeleteOTAUpdate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	exists, err := store.GetGenericExists("otaUpdate/"+name, &map[string]interface{}{})
+	result, err := s.createOTAUpdateCore(store, CreateOTAUpdateInput{
+		OtaUpdateID:                   request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId"),
+		Description:                   request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Targets:                       request.GetStringList(req.Parameters, "targets"),
+		Protocols:                     request.GetStringList(req.Parameters, "protocols"),
+		TargetSelection:               request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
+		AwsJobExecutionsRolloutConfig: request.GetParamCaseInsensitive(req.Parameters, "awsJobExecutionsRolloutConfig"),
+		AwsJobPresignedUrlConfig:      request.GetParamCaseInsensitive(req.Parameters, "awsJobPresignedUrlConfig"),
+		AwsJobAbortConfig:             request.GetParamCaseInsensitive(req.Parameters, "awsJobAbortConfig"),
+		AwsJobTimeoutConfig:           request.GetParamCaseInsensitive(req.Parameters, "awsJobTimeoutConfig"),
+		RoleArn:                       request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		Tags:                          recTags,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrJobNotFound
+	return map[string]interface{}{
+		"otaUpdateId":     result.OtaUpdateID,
+		"otaUpdateArn":    result.OtaUpdateArn,
+		"otaUpdateStatus": result.OtaUpdateStatus,
+		"awsIotJobId":     result.AwsIotJobID,
+		"awsIotJobArn":    result.AwsIotJobArn,
+	}, nil
+}
+
+func (s *IoTService) DeleteOTAUpdate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-	if err := store.DeleteGeneric("otaUpdate/" + name); err != nil {
+	if err := s.deleteOTAUpdateCore(store, request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 
 func (s *IoTService) GetOTAUpdate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId")
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("otaUpdate/"+name, &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrJobNotFound
-	}
-	// Strip empty-string fields that would break SDK deserialization.
-	// Complex types (configs, maps) must be omitted when empty, not sent as "".
-	for k, v := range rec {
-		if s, ok := v.(string); ok && s == "" {
-			switch k {
-			case "awsJobExecutionsRolloutConfig", "awsJobPresignedUrlConfig",
-				"awsJobAbortConfig", "awsJobTimeoutConfig":
-				delete(rec, k)
-			}
-		}
-		if v == nil {
-			delete(rec, k)
-		}
-	}
-	// Convert tags from map to []Tag format expected by SDK.
-	// GetGenericExists unmarshals JSON into map[string]interface{}, so the
-	// assertion must be on map[string]interface{}, not map[string]string.
-	if tagMap, ok := rec["tags"].(map[string]interface{}); ok && len(tagMap) > 0 {
-		tagList := make([]map[string]string, 0, len(tagMap))
-		for k, v := range tagMap {
-			tagList = append(tagList, map[string]string{"Key": k, "Value": fmt.Sprint(v)})
-		}
-		rec["tags"] = tagList
-	} else {
-		delete(rec, "tags")
-	}
-	return map[string]interface{}{"otaUpdateInfo": rec}, nil
+	return s.getOTAUpdateCore(store, request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId"))
 }
 
 func (s *IoTService) ListOTAUpdates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -373,9 +190,9 @@ func (s *IoTService) ListOTAUpdates(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("otaUpdate/")
+	items, err := s.listOTAUpdatesCore(store)
 	if err != nil {
 		return nil, err
 	}
-	return paginatedMaps("otaUpdates", items, req.Parameters), nil
+	return paginatedMaps("otaUpdates", items, req.Parameters)
 }

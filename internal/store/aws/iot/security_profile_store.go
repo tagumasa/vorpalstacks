@@ -27,28 +27,17 @@ func (s *IotStore) GetSecurityProfile(name string) (*SecurityProfile, error) {
 	return s.securityProfilePS.Get(name)
 }
 
+// UpdateSecurityProfile replaces the stored record wholesale. The service
+// Core owns versioning and timestamps and performs the read-modify-write,
+// so a full replace is required for cleared members (nil behaviours and
+// the delete-flag semantics) to persist.
 func (s *IotStore) UpdateSecurityProfile(name string, sp *SecurityProfile) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	existing, err := s.securityProfilePS.Get(name)
-	if err != nil {
+	if _, err := s.securityProfilePS.Get(name); err != nil {
 		return err
 	}
-	if sp.SecurityProfileDescription != "" {
-		existing.SecurityProfileDescription = sp.SecurityProfileDescription
-	}
-	if sp.Behaviors != nil {
-		existing.Behaviors = sp.Behaviors
-	}
-	if sp.AlertTargets != nil {
-		existing.AlertTargets = sp.AlertTargets
-	}
-	if sp.AdditionalMetricsToRetainV2 != nil {
-		existing.AdditionalMetricsToRetainV2 = sp.AdditionalMetricsToRetainV2
-	}
-	existing.LastModifiedDate = time.Now().UTC()
-	existing.Version++
-	return s.securityProfilePS.Update(existing)
+	return s.securityProfilePS.Update(sp)
 }
 
 func (s *IotStore) DeleteSecurityProfile(name string) error {

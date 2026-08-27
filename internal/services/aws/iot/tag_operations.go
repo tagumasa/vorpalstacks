@@ -9,18 +9,18 @@ import (
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
-// iotTagConfig builds a TagHandlerConfig backed by the IoT store.
-func iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
+// iotTagConfig builds a TagHandlerConfig backed by the IoT store Cores.
+func (s *IoTService) iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.StandardConfig,
 		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
-			return store.TagResource(resourceKey, tagutil.ToMap(tags))
+			return s.tagResourceCore(store, resourceKey, tagutil.ToMap(tags))
 		},
 		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
-			return store.UntagResource(resourceKey, tagKeys)
+			return s.untagResourceCore(store, resourceKey, tagKeys)
 		},
 		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			tagsMap, err := store.ListTags(resourceKey)
+			tagsMap, err := s.listTagsCore(store, resourceKey)
 			if err != nil {
 				return nil, err
 			}
@@ -54,7 +54,7 @@ func (s *IoTService) TagResource(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleTag(ctx, req, iotTagConfig(store))
+	return tagutil.HandleTag(ctx, req, s.iotTagConfig(store))
 }
 
 // UntagResource removes tags from an IoT resource.
@@ -63,7 +63,7 @@ func (s *IoTService) UntagResource(ctx context.Context, reqCtx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleUntag(ctx, req, iotTagConfig(store))
+	return tagutil.HandleUntag(ctx, req, s.iotTagConfig(store))
 }
 
 // ListTagsForResource lists tags attached to an IoT resource.
@@ -72,7 +72,7 @@ func (s *IoTService) ListTagsForResource(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	return tagutil.HandleList(ctx, req, iotTagConfig(store))
+	return tagutil.HandleList(ctx, req, s.iotTagConfig(store))
 }
 
 func (s *IoTService) ListActiveViolations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -80,24 +80,17 @@ func (s *IoTService) ListActiveViolations(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	securityProfileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-
-	violations, err := store.ListActiveViolations(thingName)
+	violations, err := s.listActiveViolationsCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"))
 	if err != nil {
 		return nil, err
 	}
-
 	items := make([]map[string]interface{}, 0, len(violations))
 	for _, v := range violations {
-		if securityProfileName != "" && v.SecurityProfileName != securityProfileName {
-			continue
-		}
-		items = append(items, violationEventResponse(v))
+		items = append(items, activeViolationResponse(v))
 	}
-
-	return paginatedMaps("activeViolations", items, req.Parameters), nil
+	return paginatedMaps("activeViolations", items, req.Parameters)
 }
 
 func (s *IoTService) ListViolationEvents(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -105,20 +98,16 @@ func (s *IoTService) ListViolationEvents(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	securityProfileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-
-	events, err := store.ListViolationEvents(parseListOptions(req.Parameters), securityProfileName, thingName)
+	events, err := s.listViolationEventsCore(store, parseListOptions(req.Parameters),
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		request.GetParamCaseInsensitive(req.Parameters, "thingName"))
 	if err != nil {
 		return nil, err
 	}
-
 	items := make([]map[string]interface{}, 0, len(events))
 	for _, e := range events {
 		items = append(items, violationEventResponse(e))
 	}
-
 	return map[string]interface{}{
 		"violationEvents": items,
 	}, nil

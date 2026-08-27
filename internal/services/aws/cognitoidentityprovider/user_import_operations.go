@@ -103,6 +103,9 @@ func (s *CognitoService) importUploadURL(req *request.ParsedRequest, userPoolID,
 	}
 	host := req.Host
 	if host == "" {
+		// Reachable only when the request reached the handler without a
+		// wire host (synthetic dispatch); live traffic carries Host from
+		// the dispatch boundary.
 		host = "localhost:" + strconv.Itoa(serviceports.HTTP)
 	}
 	accessKey, secret := "", ""

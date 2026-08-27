@@ -27,7 +27,13 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 			CaCertificate:           aws.String(caPem),
 			VerificationCertificate: aws.String("verification-cert"),
 			SetAsActive:             true,
-			AllowAutoRegistration:   false,
+			AllowAutoRegistration:   true,
+			CertificateMode:         iottypes.CertificateModeDefault,
+			RegistrationConfig: &iottypes.RegistrationConfig{
+				TemplateName: aws.String("test-provisioning-template"),
+				RoleArn:      aws.String("arn:aws:iam::123456789012:role/test-jitp"),
+			},
+			Tags: []iottypes.Tag{{Key: aws.String("purpose"), Value: aws.String("ca-sdk-test")}},
 		})
 		if err != nil {
 			return fmt.Errorf("RegisterCACertificate failed: %w", err)
@@ -36,6 +42,37 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected non-empty certificateId")
 		}
 		caID = *out.CertificateId
+		// setAsActive/allowAutoRegistration/certificateMode take effect.
+		desc, err := tc.client.DescribeCACertificate(tc.ctx, &iot.DescribeCACertificateInput{CertificateId: aws.String(caID)})
+		if err != nil {
+			return fmt.Errorf("DescribeCACertificate after register failed: %w", err)
+		}
+		if desc.CertificateDescription == nil {
+			return fmt.Errorf("expected certificateDescription after register")
+		}
+		if desc.CertificateDescription.Status != iottypes.CACertificateStatusActive {
+			return fmt.Errorf("expected status ACTIVE from setAsActive=true, got %v", desc.CertificateDescription.Status)
+		}
+		if desc.CertificateDescription.AutoRegistrationStatus != iottypes.AutoRegistrationStatusEnable {
+			return fmt.Errorf("expected autoRegistrationStatus=ENABLE, got %v", desc.CertificateDescription.AutoRegistrationStatus)
+		}
+		if desc.CertificateDescription.CertificateMode != iottypes.CertificateModeDefault {
+			return fmt.Errorf("expected certificateMode=DEFAULT, got %v", desc.CertificateDescription.CertificateMode)
+		}
+		// Registration-time tags are visible through ListTagsForResource.
+		tags, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.CertificateArn})
+		if err != nil {
+			return fmt.Errorf("ListTagsForResource failed: %w", err)
+		}
+		found := false
+		for _, t := range tags.Tags {
+			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "ca-sdk-test" {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("registration tag purpose=ca-sdk-test not found on %s", aws.ToString(out.CertificateArn))
+		}
 		return nil
 	}))
 
@@ -50,13 +87,23 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 		if out.CertificateDescription.CertificateId == nil || *out.CertificateDescription.CertificateId != caID {
 			return fmt.Errorf("expected certificateId=%s, got %v", caID, out.CertificateDescription.CertificateId)
 		}
+		if out.CertificateDescription.CertificateArn == nil || *out.CertificateDescription.CertificateArn == "" {
+			return fmt.Errorf("expected non-empty certificateArn in description")
+		}
+		if out.CertificateDescription.CertificatePem == nil || *out.CertificateDescription.CertificatePem == "" {
+			return fmt.Errorf("expected non-empty certificatePem in description")
+		}
+		if out.RegistrationConfig == nil || aws.ToString(out.RegistrationConfig.RoleArn) != "arn:aws:iam::123456789012:role/test-jitp" {
+			return fmt.Errorf("expected registrationConfig with the registered roleArn, got %v", out.RegistrationConfig)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "CACert_UpdateCACertificate", func() error {
 		if _, err := tc.client.UpdateCACertificate(tc.ctx, &iot.UpdateCACertificateInput{
-			CertificateId: aws.String(caID),
-			NewStatus:     iottypes.CACertificateStatusInactive,
+			CertificateId:             aws.String(caID),
+			NewStatus:                 iottypes.CACertificateStatusInactive,
+			NewAutoRegistrationStatus: iottypes.AutoRegistrationStatusDisable,
 		}); err != nil {
 			return fmt.Errorf("UpdateCACertificate failed: %w", err)
 		}
@@ -66,6 +113,29 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 		}
 		if out.CertificateDescription.Status != iottypes.CACertificateStatusInactive {
 			return fmt.Errorf("expected status INACTIVE, got %s", out.CertificateDescription.Status)
+		}
+		if out.CertificateDescription.AutoRegistrationStatus != iottypes.AutoRegistrationStatusDisable {
+			return fmt.Errorf("expected autoRegistrationStatus=DISABLE, got %s", out.CertificateDescription.AutoRegistrationStatus)
+		}
+		// removeAutoRegistration clears auto registration after re-enabling it.
+		if _, err := tc.client.UpdateCACertificate(tc.ctx, &iot.UpdateCACertificateInput{
+			CertificateId:             aws.String(caID),
+			NewAutoRegistrationStatus: iottypes.AutoRegistrationStatusEnable,
+		}); err != nil {
+			return fmt.Errorf("re-enabling auto registration failed: %w", err)
+		}
+		if _, err := tc.client.UpdateCACertificate(tc.ctx, &iot.UpdateCACertificateInput{
+			CertificateId:          aws.String(caID),
+			RemoveAutoRegistration: true,
+		}); err != nil {
+			return fmt.Errorf("UpdateCACertificate with removeAutoRegistration failed: %w", err)
+		}
+		out, err = tc.client.DescribeCACertificate(tc.ctx, &iot.DescribeCACertificateInput{CertificateId: aws.String(caID)})
+		if err != nil {
+			return fmt.Errorf("DescribeCACertificate after removeAutoRegistration failed: %w", err)
+		}
+		if out.CertificateDescription.AutoRegistrationStatus != iottypes.AutoRegistrationStatusDisable {
+			return fmt.Errorf("expected autoRegistrationStatus=DISABLE after removeAutoRegistration, got %s", out.CertificateDescription.AutoRegistrationStatus)
 		}
 		return nil
 	}))
@@ -77,10 +147,62 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 		}
 		for _, c := range out.Certificates {
 			if c.CertificateId != nil && *c.CertificateId == caID {
+				if c.CreationDate == nil {
+					return fmt.Errorf("expected non-nil creationDate in list entry")
+				}
 				return nil
 			}
 		}
 		return fmt.Errorf("CA certificate %s not found in list of %d", caID, len(out.Certificates))
+	}))
+
+	results = append(results, r.RunTest("iot", "CACert_UpdateCACertificate_InvalidStatusRejected", func() error {
+		if _, err := tc.client.UpdateCACertificate(tc.ctx, &iot.UpdateCACertificateInput{
+			CertificateId: aws.String(caID),
+			NewStatus:     iottypes.CACertificateStatus("GARBAGE"),
+		}); err == nil {
+			return fmt.Errorf("expected invalid newStatus to be rejected")
+		} else if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		_, err := tc.client.UpdateCACertificate(tc.ctx, &iot.UpdateCACertificateInput{
+			CertificateId:             aws.String(caID),
+			NewAutoRegistrationStatus: iottypes.AutoRegistrationStatus("GARBAGE"),
+		})
+		return expectValidationError(err)
+	}))
+
+	results = append(results, r.RunTest("iot", "CACert_RegisterCACertificate_ModePairingRejected", func() error {
+		sniPem := "-----BEGIN CERTIFICATE-----\nMIICXTCCAgegAwIBAgIJANtestcasnionly\n-----END CERTIFICATE-----"
+		// DEFAULT (or omitted mode) requires a verification certificate.
+		if _, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
+			CaCertificate: aws.String(sniPem),
+		}); err == nil {
+			return fmt.Errorf("expected omitted verificationCertificate with DEFAULT mode to be rejected")
+		} else if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		// SNI_ONLY forbids a verification certificate.
+		if _, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
+			CaCertificate:           aws.String(sniPem),
+			VerificationCertificate: aws.String("verification-cert"),
+			CertificateMode:         iottypes.CertificateModeSniOnly,
+		}); err == nil {
+			return fmt.Errorf("expected SNI_ONLY with verificationCertificate to be rejected")
+		} else if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		// SNI_ONLY without a verification certificate is the valid pairing.
+		out, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
+			CaCertificate:   aws.String(sniPem),
+			CertificateMode: iottypes.CertificateModeSniOnly,
+		})
+		if err != nil {
+			return fmt.Errorf("SNI_ONLY registration failed: %w", err)
+		}
+		// Registered INACTIVE by default, so it can be deleted right away.
+		_, _ = tc.client.DeleteCACertificate(tc.ctx, &iot.DeleteCACertificateInput{CertificateId: out.CertificateId})
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "CACert_DescribeCACertificate_NotFound", func() error {

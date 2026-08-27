@@ -2,12 +2,8 @@ package iot
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
-	vcrypto "vorpalstacks/internal/utils/crypto"
 )
 
 // CreateKeysAndCertificate generates a new key pair and certificate, storing
@@ -18,30 +14,22 @@ func (s *IoTService) CreateKeysAndCertificate(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	ca := s.caForReq(reqCtx)
-	if ca == nil {
-		return nil, fmt.Errorf("iot: certificate authority not available for the request region")
-	}
-	certPEM, keyPEM, pubKeyPEM, certID, err := ca.IssueCertificate()
+	result, err := s.createKeysAndCertificateCore(store, CreateKeysAndCertificateInput{
+		SetAsActive: request.GetBoolParam(req.Parameters, "setAsActive"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
-
-	created, err := store.CreateCertificate(cert)
-	if err != nil {
-		return nil, err
-	}
-
+	created := result.Certificate
 	return map[string]interface{}{
 		"certificateArn": created.CertificateARN,
 		"certificateId":  created.CertificateID,
 		"certificatePem": created.CertificatePEM,
 		"status":         created.Status,
 		"keyPair": map[string]interface{}{
-			"PublicKey":  pubKeyPEM,
-			"PrivateKey": keyPEM,
+			"PublicKey":  result.PublicKeyPEM,
+			"PrivateKey": result.PrivateKeyPEM,
 		},
 		"certificateMode":  created.CertificateMode,
 		"creationDate":     created.CreationDate.Unix(),
@@ -118,92 +106,47 @@ func (s *IoTService) ListCertificates(ctx context.Context, reqCtx *request.Reque
 
 // RegisterCertificate registers an existing PEM certificate without CA signing.
 func (s *IoTService) RegisterCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	certPEM := request.GetParamCaseInsensitive(req.Parameters, "certificatePem")
-	if certPEM == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	certID := vcrypto.FingerprintPEM(certPEM)
-
-	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
-
-	// When caCertificatePem is provided, link this certificate to the CA.
-	if caCertPem := request.GetParamCaseInsensitive(req.Parameters, "caCertificatePem"); caCertPem != "" {
-		cert.CaCertificateID = vcrypto.FingerprintPEM(caCertPem)
-		cert.CertificateMode = "SNI_ONLY"
-	}
-
-	created, err := store.CreateCertificate(cert)
+	status := request.GetParamCaseInsensitive(req.Parameters, "status")
+	result, err := s.registerCertificateCore(store, RegisterCertificateInput{
+		CertificatePEM:   request.GetParamCaseInsensitive(req.Parameters, "certificatePem"),
+		CACertificatePEM: request.GetParamCaseInsensitive(req.Parameters, "caCertificatePem"),
+		SetAsActive:      request.GetBoolParam(req.Parameters, "setAsActive"),
+		Status:           status,
+		StatusProvided:   status != "",
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"certificateArn": created.CertificateARN,
-		"certificateId":  created.CertificateID,
+		"certificateArn": result.Certificate.CertificateARN,
+		"certificateId":  result.Certificate.CertificateID,
 	}, nil
 }
 
 // CreateCertificateFromCsr signs a CSR and returns the resulting certificate.
 func (s *IoTService) CreateCertificateFromCsr(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	csrPEM := request.GetParamCaseInsensitive(req.Parameters, "certificateSigningRequest")
-	if csrPEM == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// If a CertificateProvider is registered for CreateCertificateFromCsr,
-	// invoke its Lambda function to sign the CSR instead of the internal CA.
-	// Per AWS spec, the provider fully replaces the default signing flow.
-	var certPEM string
-	var certID string
-	if providerCertPEM, invoked, pErr := s.tryInvokeCertProvider(ctx, reqCtx, store, csrPEM); invoked {
-		if pErr != nil {
-			return nil, pErr
-		}
-		certPEM = providerCertPEM
-		certID = vcrypto.FingerprintPEM(certPEM)
-	} else {
-		ca := s.caForReq(reqCtx)
-		if ca == nil {
-			return nil, fmt.Errorf("iot: certificate authority not available for the request region")
-		}
-		certPEM, certID, err = ca.IssueCertificateFromCSR(csrPEM)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	cert := buildCertificateRecord(certPEM, certID, request.GetBoolParam(req.Parameters, "setAsActive"))
-
-	created, err := store.CreateCertificate(cert)
+	result, err := s.createCertificateFromCsrCore(ctx, store, CreateCertificateFromCsrInput{
+		CertificateSigningRequest: request.GetParamCaseInsensitive(req.Parameters, "certificateSigningRequest"),
+		SetAsActive:               request.GetBoolParam(req.Parameters, "setAsActive"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"certificateArn": created.CertificateARN,
-		"certificateId":  created.CertificateID,
-		"certificatePem": certPEM,
+		"certificateArn": result.Certificate.CertificateARN,
+		"certificateId":  result.Certificate.CertificateID,
+		"certificatePem": result.CertificatePEM,
 	}, nil
-}
-
-func buildCertificateRecord(certPEM, certID string, setActive bool) *iotstore.Certificate {
-	return &iotstore.Certificate{
-		CertificateID:    certID,
-		CertificatePEM:   certPEM,
-		Status:           boolToActiveStatus(setActive),
-		CertificateMode:  "DEFAULT",
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
-	}
 }

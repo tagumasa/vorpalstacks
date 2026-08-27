@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"regexp"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -100,18 +98,15 @@ func (s *IoTService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 }
 
 func (s *IoTService) AttachPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	target := request.GetParamCaseInsensitive(req.Parameters, "target")
-	if policyName == "" || target == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.AttachPolicyToPrincipal(policyName, target); err != nil {
+	if err := s.attachPolicyCore(store, AttachPolicyInput{
+		PolicyName: request.GetParamCaseInsensitive(req.Parameters, "policyName"),
+		Target:     request.GetParamCaseInsensitive(req.Parameters, "target"),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -119,18 +114,15 @@ func (s *IoTService) AttachPolicy(ctx context.Context, reqCtx *request.RequestCo
 }
 
 func (s *IoTService) DetachPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	target := request.GetParamCaseInsensitive(req.Parameters, "target")
-	if policyName == "" || target == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.DetachPolicyFromPrincipal(policyName, target); err != nil {
+	if err := s.detachPolicyCore(store, AttachPolicyInput{
+		PolicyName: request.GetParamCaseInsensitive(req.Parameters, "policyName"),
+		Target:     request.GetParamCaseInsensitive(req.Parameters, "target"),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -138,18 +130,15 @@ func (s *IoTService) DetachPolicy(ctx context.Context, reqCtx *request.RequestCo
 }
 
 func (s *IoTService) AttachThingPrincipal(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
-	if thingName == "" || principal == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.AttachThingPrincipal(thingName, principal); err != nil {
+	if err := s.attachThingPrincipalCore(store, AttachThingPrincipalInput{
+		ThingName: request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		Principal: request.GetParamCaseInsensitive(req.Parameters, "principal"),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -157,18 +146,15 @@ func (s *IoTService) AttachThingPrincipal(ctx context.Context, reqCtx *request.R
 }
 
 func (s *IoTService) DetachThingPrincipal(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
-	if thingName == "" || principal == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.DetachThingPrincipal(thingName, principal); err != nil {
+	if err := s.detachThingPrincipalCore(store, AttachThingPrincipalInput{
+		ThingName: request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		Principal: request.GetParamCaseInsensitive(req.Parameters, "principal"),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -176,22 +162,17 @@ func (s *IoTService) DetachThingPrincipal(ctx context.Context, reqCtx *request.R
 }
 
 func (s *IoTService) ListPolicyPrincipals(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	if policyName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	principals, err := store.ListPrincipalsForPolicy(policyName)
+	principals, err := s.listPolicyPrincipalsCore(store, request.GetParamCaseInsensitive(req.Parameters, "policyName"))
 	if err != nil {
 		return nil, err
 	}
 
-	return paginatedStrings("principals", principals, req.Parameters), nil
+	return paginatedStrings("principals", principals, req.Parameters)
 }
 
 func (s *IoTService) ListPrincipalPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -205,7 +186,7 @@ func (s *IoTService) ListPrincipalPolicies(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	policyNames, err := store.ListPoliciesForPrincipal(principal)
+	policyNames, err := s.listPrincipalPoliciesCore(store, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -217,26 +198,21 @@ func (s *IoTService) ListPrincipalPolicies(ctx context.Context, reqCtx *request.
 		})
 	}
 
-	return paginatedMaps("policies", items, req.Parameters), nil
+	return paginatedMaps("policies", items, req.Parameters)
 }
 
 func (s *IoTService) ListThingPrincipals(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	principals, err := store.ListPrincipalsForThing(thingName)
+	principals, err := s.listThingPrincipalsCore(store, request.GetParamCaseInsensitive(req.Parameters, "thingName"))
 	if err != nil {
 		return nil, err
 	}
 
-	return paginatedStrings("principals", principals, req.Parameters), nil
+	return paginatedStrings("principals", principals, req.Parameters)
 }
 
 // ListPrincipalThings returns things attached to the specified principal (certificate).
@@ -251,203 +227,66 @@ func (s *IoTService) ListPrincipalThings(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	if principal == "" {
-		return map[string]interface{}{
-			"things": []string{},
-		}, nil
-	}
-
-	things, err := store.ListThingsForPrincipal(principal)
+	things, err := s.listPrincipalThingsCore(store, principal)
 	if err != nil {
 		return nil, err
 	}
 
-	return paginatedStrings("things", things, req.Parameters), nil
+	return paginatedStrings("things", things, req.Parameters)
 }
 
 func (s *IoTService) GetEffectivePolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	if principal == "" {
 		principal = request.GetParamCaseInsensitive(req.Parameters, "certificateArn")
 	}
 
-	if principal == "" {
-		return map[string]interface{}{
-			"effectivePolicies": []map[string]interface{}{},
-		}, nil
-	}
-
-	seen := make(map[string]bool)
-	var policies []map[string]interface{}
-
-	addPolicies := func(policyNames []string) {
-		for _, name := range policyNames {
-			if seen[name] {
-				continue
-			}
-			seen[name] = true
-			pol, err := store.GetPolicy(name)
-			if err != nil {
-				slog.Warn("GetEffectivePolicies: failed to load policy", "policy", name, "error", err)
-				continue
-			}
-			policies = append(policies, map[string]interface{}{
-				"policyName":     pol.PolicyName,
-				"policyArn":      pol.PolicyARN,
-				"policyDocument": pol.PolicyDocument,
-			})
-		}
-	}
-
-	principalPolicies, err := store.ListPoliciesForPrincipal(principal)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	addPolicies(principalPolicies)
 
-	region := reqCtx.GetRegion()
-	things, err := store.ListThingsForPrincipal(principal)
+	policies, err := s.getEffectivePoliciesCore(store, principal)
 	if err != nil {
-		slog.Warn("GetEffectivePolicies: failed to list things for principal", "principal", principal, "error", err)
-		return nil, fmt.Errorf("failed to list things for principal: %w", err)
-	}
-	for _, thingName := range things {
-		thingARN := iotstore.BuildThingARN(s.accountID, region, thingName)
-		thingPolicies, err := store.ListPoliciesForPrincipal(thingARN)
-		if err != nil {
-			slog.Warn("GetEffectivePolicies: failed to list policies for thing", "thing", thingARN, "error", err)
-			continue
-		}
-		addPolicies(thingPolicies)
-		groups, err := store.ListGroupsForThing(thingName)
-		if err != nil {
-			slog.Warn("GetEffectivePolicies: failed to list groups for thing", "thing", thingName, "error", err)
-			continue
-		}
-		for _, groupName := range groups {
-			groupARN := iotstore.BuildThingGroupARN(s.accountID, region, groupName)
-			groupPolicies, err := store.ListPoliciesForPrincipal(groupARN)
-			if err != nil {
-				slog.Warn("GetEffectivePolicies: failed to list policies for group", "group", groupARN, "error", err)
-				continue
-			}
-			addPolicies(groupPolicies)
-		}
+		return nil, err
 	}
 
-	if len(policies) == 0 {
-		return map[string]interface{}{
-			"effectivePolicies": []map[string]interface{}{},
-		}, nil
+	effective := make([]map[string]interface{}, 0, len(policies))
+	for _, p := range policies {
+		effective = append(effective, map[string]interface{}{
+			"policyName":     p.PolicyName,
+			"policyArn":      p.PolicyARN,
+			"policyDocument": p.PolicyDocument,
+		})
 	}
 
 	return map[string]interface{}{
-		"effectivePolicies": policies,
+		"effectivePolicies": effective,
 	}, nil
 }
 
 func (s *IoTService) ListPolicyVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	if policyName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	p, err := store.GetPolicy(policyName)
+	result, err := s.listPolicyVersionsCore(store, request.GetParamCaseInsensitive(req.Parameters, "policyName"))
 	if err != nil {
 		return nil, err
 	}
 
-	// The default version lives on the policy record; additional non-default
-	// versions are persisted in the generic-KV store by CreatePolicyVersion.
-	// Merge both so List reflects every version actually created.
-	versions := []map[string]interface{}{
-		{
-			"versionId":        fmt.Sprintf("%d", p.Version),
-			"isDefaultVersion": true,
-			"createDate":       p.CreationDate.Unix(),
-		},
-	}
-	for _, v := range loadPolicyVersions(store, policyName) {
-		isDefault, _ := v["isDefaultVersion"].(bool)
-		entry := map[string]interface{}{
-			"versionId":        v["versionId"],
-			"isDefaultVersion": isDefault,
-		}
-		// createDate must be a JSON number (unix seconds) for the SDK; older
-		// records may have stored an RFC3339 string, so coerce both shapes.
-		switch cd := v["createDate"].(type) {
-		case float64:
-			entry["createDate"] = int64(cd)
-		case int64:
-			entry["createDate"] = cd
-		case int:
-			entry["createDate"] = int64(cd)
-		case string:
-			if t, err := time.Parse(time.RFC3339Nano, cd); err == nil {
-				entry["createDate"] = t.Unix()
-			}
-		}
-		versions = append(versions, entry)
-	}
-
-	return paginatedMaps("policyVersions", versions, req.Parameters), nil
+	return paginatedMaps("policyVersions", result.PolicyVersions, req.Parameters)
 }
 
 func (s *IoTService) GetPolicyVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyName := request.GetParamCaseInsensitive(req.Parameters, "policyName")
-	versionId := request.GetParamCaseInsensitive(req.Parameters, "policyVersionId")
-	if policyName == "" || versionId == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	p, err := store.GetPolicy(policyName)
-	if err != nil {
-		return nil, err
-	}
-
-	// The default version lives on the policy record (numeric id); additional
-	// non-default versions ("vN") are persisted in the generic-KV store by
-	// CreatePolicyVersion. Check both so GetPolicyVersion resolves any version.
-	defaultID := fmt.Sprintf("%d", p.Version)
-	if versionId == defaultID {
-		return map[string]interface{}{
-			"policyName":       p.PolicyName,
-			"policyArn":        p.PolicyARN,
-			"policyDocument":   p.PolicyDocument,
-			"policyVersionId":  defaultID,
-			"isDefaultVersion": true,
-			"createDate":       p.CreationDate.Unix(),
-		}, nil
-	}
-
-	for _, v := range loadPolicyVersions(store, policyName) {
-		if id, _ := v["versionId"].(string); id == versionId {
-			return map[string]interface{}{
-				"policyName":       p.PolicyName,
-				"policyArn":        p.PolicyARN,
-				"policyDocument":   v["policyDocument"],
-				"policyVersionId":  v["versionId"],
-				"isDefaultVersion": v["isDefaultVersion"],
-				"createDate":       v["createDate"],
-			}, nil
-		}
-	}
-
-	return nil, iotstore.ErrPolicyVersionNotFound
+	return s.getPolicyVersionCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "policyName"),
+		request.GetParamCaseInsensitive(req.Parameters, "policyVersionId"),
+	)
 }

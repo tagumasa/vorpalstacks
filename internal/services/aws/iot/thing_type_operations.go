@@ -2,38 +2,27 @@ package iot
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // CreateThingType creates a new thing type with optional description and
 // property definitions. Returns ResourceAlreadyExistsException if the thing
 // type name is already taken.
 func (s *IoTService) CreateThingType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	props := unwrapProps(req.Parameters, "thingTypeProperties")
-
-	tt := &iotstore.ThingType{
-		ThingTypeName:        thingTypeName,
+	in := CreateThingTypeInput{
+		ThingTypeName:        request.GetParamCaseInsensitive(req.Parameters, "thingTypeName"),
 		Description:          request.GetParamCaseInsensitive(props, "thingTypeDescription"),
 		SearchableAttributes: parseSearchableAttributes(props),
-		Version:              1,
-		CreationDate:         time.Now().UTC(),
-		LastModifiedDate:     time.Now().UTC(),
 	}
 
-	created, err := store.CreateThingType(tt)
+	created, err := s.createThingTypeCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -45,16 +34,13 @@ func (s *IoTService) CreateThingType(ctx context.Context, reqCtx *request.Reques
 // properties and deprecation status.
 func (s *IoTService) DescribeThingType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	tt, err := store.GetThingType(thingTypeName)
+	tt, err := s.describeThingTypeCore(store, thingTypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -65,23 +51,19 @@ func (s *IoTService) DescribeThingType(ctx context.Context, reqCtx *request.Requ
 // UpdateThingType modifies the description or properties of an existing thing
 // type. Increments the version counter.
 func (s *IoTService) UpdateThingType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	props := unwrapProps(req.Parameters, "thingTypeProperties")
-	opts := iotstore.ThingTypeUpdateOpts{
+	in := UpdateThingTypeInput{
+		ThingTypeName:        request.GetParamCaseInsensitive(req.Parameters, "thingTypeName"),
 		Description:          request.GetParamCaseInsensitive(props, "thingTypeDescription"),
 		SearchableAttributes: parseSearchableAttributes(props),
 	}
 
-	updated, err := store.UpdateThingType(thingTypeName, opts)
+	updated, err := s.updateThingTypeCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -100,19 +82,13 @@ func (s *IoTService) UpdateThingType(ctx context.Context, reqCtx *request.Reques
 // ResourceNotFoundException if the thing type does not exist.
 func (s *IoTService) DeleteThingType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildThingTypeARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), thingTypeName)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteThingType(thingTypeName); err != nil {
+	if err := s.deleteThingTypeCore(store, thingTypeName); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +103,7 @@ func (s *IoTService) ListThingTypes(ctx context.Context, reqCtx *request.Request
 	}
 
 	opts := parseListOptions(req.Parameters)
-	result, err := store.ListThingTypes(opts)
+	result, err := s.listThingTypesCore(store, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +120,6 @@ func (s *IoTService) ListThingTypes(ctx context.Context, reqCtx *request.Request
 // cannot be associated with new things.
 func (s *IoTService) DeprecateThingType(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingTypeName := request.GetParamCaseInsensitive(req.Parameters, "thingTypeName")
-	if thingTypeName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -154,8 +127,7 @@ func (s *IoTService) DeprecateThingType(ctx context.Context, reqCtx *request.Req
 	}
 
 	undoDeprecate := request.GetBoolParam(req.Parameters, "undoDeprecate")
-	_, err = store.SetThingTypeDeprecation(thingTypeName, !undoDeprecate)
-	if err != nil {
+	if err := s.deprecateThingTypeCore(store, thingTypeName, undoDeprecate); err != nil {
 		return nil, err
 	}
 

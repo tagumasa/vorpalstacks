@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/auth"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
@@ -55,6 +56,16 @@ type IoTService struct {
 	// registration code so concurrent first callers cannot mint different
 	// codes when only the last write persists.
 	registrationCodeMu sync.Mutex
+	// reportCredentials supplies the SigV4 keys used to presign the
+	// thing-registration task report URLs.
+	reportCredentials auth.CredentialsProvider
+}
+
+// SetReportCredentialsProvider sets the credentials used to presign the
+// thing-registration task report URLs handed out by
+// ListThingRegistrationTaskReports.
+func (s *IoTService) SetReportCredentialsProvider(provider auth.CredentialsProvider) {
+	s.reportCredentials = provider
 }
 
 // throttleLimiter provides a simple sliding-window rate limiter for
@@ -193,9 +204,13 @@ func (s *IoTService) hydrateRulesForRegion(region string, executor *rules.Execut
 	}
 }
 
-// Shutdown stops every regional rule executor and MQTT broker. Safe to
-// call multiple times; executor.Stop and broker.Stop are themselves idempotent.
+// Shutdown waits (bounded) for in-flight bulk thing-registration workers,
+// then stops every regional rule executor and MQTT broker. Safe to call
+// multiple times; executor.Stop and broker.Stop are themselves idempotent.
 func (s *IoTService) Shutdown() {
+	if !waitRegistrationWorkers(registrationShutdownWait) {
+		slog.Warn("iot thing-registration workers still running at shutdown; their task records stay in progress")
+	}
 	if s.taskEngine != nil {
 		s.taskEngine.Stop()
 	}
@@ -246,7 +261,12 @@ func (s *IoTService) caForReq(reqCtx *request.RequestContext) *ca.CertificateAut
 	if reqCtx == nil {
 		return nil
 	}
-	return s.deps.CAs[reqCtx.GetRegion()]
+	return s.caForRegion(reqCtx.GetRegion())
+}
+
+// caForRegion returns the signing CA for the given region, or nil.
+func (s *IoTService) caForRegion(region string) *ca.CertificateAuthority {
+	return s.deps.CAs[region]
 }
 
 // brokerForReq returns the MQTT broker for the request's region, or nil.
@@ -254,7 +274,12 @@ func (s *IoTService) brokerForReq(reqCtx *request.RequestContext) *broker.Broker
 	if reqCtx == nil {
 		return nil
 	}
-	return s.brokers[reqCtx.GetRegion()]
+	return s.brokerForRegion(reqCtx.GetRegion())
+}
+
+// brokerForRegion returns the MQTT broker for the given region, or nil.
+func (s *IoTService) brokerForRegion(region string) *broker.Broker {
+	return s.brokers[region]
 }
 
 func (s *IoTService) makeActionDispatcher(region string, d *actions.Dispatcher) rules.ActionDispatcher {
@@ -391,7 +416,6 @@ func (s *IoTService) RegisterHandlers(d handler.Registrar) {
 
 	// Topic Rules
 	d.RegisterHandlerForService("iot", "CreateTopicRule", s.CreateTopicRule)
-	d.RegisterHandlerForService("iot", "DescribeTopicRule", s.DescribeTopicRule)
 	d.RegisterHandlerForService("iot", "ReplaceTopicRule", s.ReplaceTopicRule)
 	d.RegisterHandlerForService("iot", "DeleteTopicRule", s.DeleteTopicRule)
 	d.RegisterHandlerForService("iot", "ListTopicRules", s.ListTopicRules)

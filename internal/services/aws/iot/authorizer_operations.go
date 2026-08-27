@@ -2,48 +2,29 @@ package iot
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // CreateAuthorizer creates a custom authorizer for MQTT connections.
 func (s *IoTService) CreateAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "authorizerName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	auth := &iotstore.Authorizer{
-		AuthorizerName:         name,
+	status := request.GetParamCaseInsensitive(req.Parameters, "status")
+	created, err := s.createAuthorizerCore(store, CreateAuthorizerInput{
+		AuthorizerName:         request.GetParamCaseInsensitive(req.Parameters, "authorizerName"),
 		AuthorizerFunctionARN:  request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
-		TokenName:              request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
+		TokenKeyName:           request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
 		TokenSigningPublicKeys: request.ParseAttributes(req.Parameters, "tokenSigningPublicKeys"),
 		SigningDisabled:        request.GetBoolParam(req.Parameters, "signingDisabled"),
-		Status:                 true,
-		EnableCachingForHTTP:   true,
-		CreationDate:           time.Now().UTC(),
-		LastModifiedDate:       time.Now().UTC(),
-	}
-
-	if statusStr := request.GetParamCaseInsensitive(req.Parameters, "status"); statusStr != "" {
-		if err := ValidateAuthorizerStatus(statusStr); err != nil {
-			return nil, err
-		}
-		auth.Status = statusStr == "ACTIVE"
-	}
-
-	if request.HasParam(req.Parameters, "enableCachingForHttp") {
-		auth.EnableCachingForHTTP = request.GetBoolParam(req.Parameters, "enableCachingForHttp")
-	}
-
-	created, err := store.CreateAuthorizer(auth)
+		Status:                 status,
+		StatusProvided:         status != "",
+		EnableCachingForHTTP:   request.GetBoolParam(req.Parameters, "enableCachingForHttp"),
+		EnableCachingProvided:  request.HasParam(req.Parameters, "enableCachingForHttp"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -53,17 +34,12 @@ func (s *IoTService) CreateAuthorizer(ctx context.Context, reqCtx *request.Reque
 
 // DescribeAuthorizer retrieves details of a custom authorizer.
 func (s *IoTService) DescribeAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "authorizerName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	auth, err := store.GetAuthorizer(name)
+	auth, err := s.describeAuthorizerCore(store, request.GetParamCaseInsensitive(req.Parameters, "authorizerName"))
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +49,6 @@ func (s *IoTService) DescribeAuthorizer(ctx context.Context, reqCtx *request.Req
 
 // UpdateAuthorizer modifies a custom authorizer configuration.
 func (s *IoTService) UpdateAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "authorizerName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -89,23 +60,21 @@ func (s *IoTService) UpdateAuthorizer(ctx context.Context, reqCtx *request.Reque
 	if parsed := request.ParseAttributes(req.Parameters, "tokenSigningPublicKeys"); len(parsed) > 0 {
 		signingKeys = parsed
 	}
-	opts := iotstore.AuthorizerUpdateOpts{
-		FunctionARN:            request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
-		TokenName:              request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
-		TokenSigningPublicKeys: signingKeys,
-		Status:                 request.GetParamCaseInsensitive(req.Parameters, "status"),
-	}
-	if opts.Status != "" {
-		if err := ValidateAuthorizerStatus(opts.Status); err != nil {
-			return nil, err
-		}
-	}
+
+	var enableCaching *bool
 	if request.HasParam(req.Parameters, "enableCachingForHttp") {
 		v := request.GetBoolParam(req.Parameters, "enableCachingForHttp")
-		opts.EnableCaching = &v
+		enableCaching = &v
 	}
 
-	existing, err := store.UpdateAuthorizer(name, opts)
+	existing, err := s.updateAuthorizerCore(store, UpdateAuthorizerInput{
+		AuthorizerName:         request.GetParamCaseInsensitive(req.Parameters, "authorizerName"),
+		AuthorizerFunctionARN:  request.GetParamCaseInsensitive(req.Parameters, "authorizerFunctionArn"),
+		TokenKeyName:           request.GetParamCaseInsensitive(req.Parameters, "tokenKeyName"),
+		TokenSigningPublicKeys: signingKeys,
+		Status:                 request.GetParamCaseInsensitive(req.Parameters, "status"),
+		EnableCaching:          enableCaching,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -115,20 +84,12 @@ func (s *IoTService) UpdateAuthorizer(ctx context.Context, reqCtx *request.Reque
 
 // DeleteAuthorizer removes a custom authorizer.
 func (s *IoTService) DeleteAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "authorizerName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildAuthorizerARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteAuthorizer(name); err != nil {
+	if err := s.deleteAuthorizerCore(store, request.GetParamCaseInsensitive(req.Parameters, "authorizerName")); err != nil {
 		return nil, err
 	}
 
@@ -142,15 +103,67 @@ func (s *IoTService) ListAuthorizers(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	auths, err := store.ListAuthorizers(parseListOptions(req.Parameters))
+	opts := parseListOptions(req.Parameters)
+	result, err := s.listAuthorizersCore(store, opts.Marker, opts.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]map[string]interface{}, 0, len(auths.Items))
-	for _, a := range auths.Items {
-		result = append(result, authorizerResponse(a))
+	items := make([]map[string]interface{}, 0, len(result.Authorizers))
+	for _, a := range result.Authorizers {
+		items = append(items, authorizerResponse(a))
 	}
 
-	return listResponse("authorizers", result, auths.NextMarker), nil
+	return listResponse("authorizers", items, result.NextMarker), nil
+}
+
+// SetDefaultAuthorizer designates an existing authorizer as the account's
+// default.
+func (s *IoTService) SetDefaultAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.setDefaultAuthorizerCore(store, request.GetParamCaseInsensitive(req.Parameters, "authorizerName"))
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"authorizerName": result.AuthorizerName,
+		"authorizerArn":  result.AuthorizerARN,
+	}, nil
+}
+
+// ClearDefaultAuthorizer removes the default-authorizer designation.
+func (s *IoTService) ClearDefaultAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.clearDefaultAuthorizerCore(store); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{}, nil
+}
+
+// DescribeDefaultAuthorizer retrieves the default authorizer's full
+// description.
+func (s *IoTService) DescribeDefaultAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	auth, err := s.describeDefaultAuthorizerCore(store)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"authorizerDescription": authorizerResponse(auth),
+	}, nil
 }

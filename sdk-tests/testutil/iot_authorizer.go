@@ -78,17 +78,35 @@ func (r *TestRunner) runIoTAuthorizerTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "Authorizer_SetDefaultAuthorizer", func() error {
-		if _, err := tc.client.SetDefaultAuthorizer(tc.ctx, &iot.SetDefaultAuthorizerInput{AuthorizerName: aws.String(authName)}); err != nil {
+		out, err := tc.client.SetDefaultAuthorizer(tc.ctx, &iot.SetDefaultAuthorizerInput{AuthorizerName: aws.String(authName)})
+		if err != nil {
 			return fmt.Errorf("SetDefaultAuthorizer failed: %w", err)
+		}
+		if aws.ToString(out.AuthorizerArn) == "" {
+			return fmt.Errorf("expected non-empty authorizerArn")
 		}
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iot", "Authorizer_SetDefaultAuthorizer_NotFoundRejected", func() error {
+		_, err := tc.client.SetDefaultAuthorizer(tc.ctx, &iot.SetDefaultAuthorizerInput{AuthorizerName: aws.String(uniqueName("no-such-authorizer"))})
+		return expectNotFound(err)
+	}))
+
 	results = append(results, r.RunTest("iot", "Authorizer_DescribeDefaultAuthorizer", func() error {
-		// The platform tracks a single default authorizer; after SetDefault it
-		// must be describable without error.
-		_, err := tc.client.DescribeDefaultAuthorizer(tc.ctx, &iot.DescribeDefaultAuthorizerInput{})
-		return err
+		// The response shape is the authorizerDescription structure, the
+		// same as DescribeAuthorizer's output.
+		out, err := tc.client.DescribeDefaultAuthorizer(tc.ctx, &iot.DescribeDefaultAuthorizerInput{})
+		if err != nil {
+			return fmt.Errorf("DescribeDefaultAuthorizer failed: %w", err)
+		}
+		if out.AuthorizerDescription == nil {
+			return fmt.Errorf("expected non-nil authorizerDescription")
+		}
+		if aws.ToString(out.AuthorizerDescription.AuthorizerName) != authName {
+			return fmt.Errorf("expected authorizerName=%s, got %v", authName, out.AuthorizerDescription.AuthorizerName)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "Authorizer_TestInvokeAuthorizer", func() error {

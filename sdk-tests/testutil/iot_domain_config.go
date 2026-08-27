@@ -22,6 +22,9 @@ func (r *TestRunner) runIoTDomainConfigTests(tc *iotTestContext) []TestResult {
 			DomainConfigurationName: aws.String(domainName),
 			DomainName:              aws.String(domainName + ".example.com"),
 			ServiceType:             "DATA",
+			Tags: []types.Tag{
+				{Key: aws.String("purpose"), Value: aws.String("sdk-test")},
+			},
 		})
 		if err != nil {
 			return fmt.Errorf("CreateDomainConfiguration failed: %w", err)
@@ -31,6 +34,20 @@ func (r *TestRunner) runIoTDomainConfigTests(tc *iotTestContext) []TestResult {
 		}
 		if out.DomainConfigurationArn == nil || *out.DomainConfigurationArn == "" {
 			return fmt.Errorf("expected non-empty domainConfigurationArn")
+		}
+		// Create-time tags must be visible through ListTagsForResource.
+		tags, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.DomainConfigurationArn})
+		if err != nil {
+			return fmt.Errorf("ListTagsForResource failed: %w", err)
+		}
+		found := false
+		for _, t := range tags.Tags {
+			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", *out.DomainConfigurationArn)
 		}
 		return nil
 	}))
@@ -47,16 +64,61 @@ func (r *TestRunner) runIoTDomainConfigTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "DomainConfig_UpdateDomainConfiguration", func() error {
-		_, err := tc.client.UpdateDomainConfiguration(tc.ctx, &iot.UpdateDomainConfigurationInput{
+		authName := uniqueName("default-auth")
+		out, err := tc.client.UpdateDomainConfiguration(tc.ctx, &iot.UpdateDomainConfigurationInput{
 			DomainConfigurationName: aws.String(domainName),
 			AuthorizerConfig: &types.AuthorizerConfig{
-				DefaultAuthorizerName: aws.String(uniqueName("default-auth")),
+				DefaultAuthorizerName:   aws.String(authName),
+				AllowAuthorizerOverride: aws.Bool(true),
 			},
+			DomainConfigurationStatus: types.DomainConfigurationStatusDisabled,
 		})
 		if err != nil {
 			return fmt.Errorf("UpdateDomainConfiguration failed: %w", err)
 		}
+		if aws.ToString(out.DomainConfigurationName) != domainName {
+			return fmt.Errorf("expected domainConfigurationName=%s in update response", domainName)
+		}
+		if aws.ToString(out.DomainConfigurationArn) == "" {
+			return fmt.Errorf("expected non-empty domainConfigurationArn in update response")
+		}
+		desc, err := tc.client.DescribeDomainConfiguration(tc.ctx, &iot.DescribeDomainConfigurationInput{DomainConfigurationName: aws.String(domainName)})
+		if err != nil {
+			return fmt.Errorf("DescribeDomainConfiguration after update failed: %w", err)
+		}
+		if desc.AuthorizerConfig == nil {
+			return fmt.Errorf("expected authorizerConfig persisted by update")
+		}
+		if aws.ToString(desc.AuthorizerConfig.DefaultAuthorizerName) != authName {
+			return fmt.Errorf("expected defaultAuthorizerName=%s, got %v", authName, desc.AuthorizerConfig.DefaultAuthorizerName)
+		}
+		if aws.ToBool(desc.AuthorizerConfig.AllowAuthorizerOverride) != true {
+			return fmt.Errorf("expected allowAuthorizerOverride=true, got %v", desc.AuthorizerConfig.AllowAuthorizerOverride)
+		}
+		if desc.DomainConfigurationStatus != types.DomainConfigurationStatusDisabled {
+			return fmt.Errorf("expected domainConfigurationStatus=DISABLED, got %v", desc.DomainConfigurationStatus)
+		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "DomainConfig_CreateDomainConfiguration_InvalidServiceTypeRejected", func() error {
+		_, err := tc.client.CreateDomainConfiguration(tc.ctx, &iot.CreateDomainConfigurationInput{
+			DomainConfigurationName: aws.String(uniqueName("domain-bad-type")),
+			ServiceType:             "GARBAGE",
+		})
+		return expectValidationError(err)
+	}))
+
+	results = append(results, r.RunTest("iot", "DomainConfig_MultipleServerCertificateArnsRejected", func() error {
+		_, err := tc.client.CreateDomainConfiguration(tc.ctx, &iot.CreateDomainConfigurationInput{
+			DomainConfigurationName: aws.String(uniqueName("domain-two-certs")),
+			ServiceType:             "DATA",
+			ServerCertificateArns: []string{
+				"arn:aws:acm:us-east-1:123456789012:certificate/first",
+				"arn:aws:acm:us-east-1:123456789012:certificate/second",
+			},
+		})
+		return expectValidationError(err)
 	}))
 
 	results = append(results, r.RunTest("iot", "DomainConfig_ListDomainConfigurations_IncludesCreated", func() error {

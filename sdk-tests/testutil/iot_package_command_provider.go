@@ -220,6 +220,32 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	}))
 
 	// --- CertificateProvider lifecycle ---
+	results = append(results, r.RunTest("iot", "CertProvider_InvalidOperationsRejected", func() error {
+		badLambda := fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", reg, acct)
+		if _, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
+			CertificateProviderName: aws.String(uniqueName("bad-provider-two-ops")),
+			LambdaFunctionArn:       aws.String(badLambda),
+			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
+				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
+				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
+			},
+		}); err == nil {
+			return fmt.Errorf("expected two-entry operations list to be rejected")
+		} else if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		if _, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
+			CertificateProviderName:     aws.String(uniqueName("bad-provider-bogus-op")),
+			LambdaFunctionArn:           aws.String(badLambda),
+			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{iottypes.CertificateProviderOperation("Bogus")},
+		}); err == nil {
+			return fmt.Errorf("expected invalid operations value to be rejected")
+		} else if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("iot", "CertProvider_Create", func() error {
 		_, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
 			CertificateProviderName: aws.String(certProviderName),

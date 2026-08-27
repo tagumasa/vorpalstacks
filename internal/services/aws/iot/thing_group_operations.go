@@ -2,40 +2,29 @@ package iot
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // CreateThingGroup creates a new thing group with optional parent group and
 // attributes. Returns ResourceAlreadyExistsException if the group name is
 // already taken.
 func (s *IoTService) CreateThingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	parentGroupName := request.GetParamCaseInsensitive(req.Parameters, "parentGroupName")
-
 	props := unwrapProps(req.Parameters, "thingGroupProperties")
 	attrs, _, _ := parseAttributePayload(props)
-	group := &iotstore.ThingGroup{
-		GroupName:        groupName,
-		ParentGroupName:  parentGroupName,
-		Description:      request.GetParamCaseInsensitive(props, "thingGroupDescription"),
-		Attributes:       attrs,
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
+	in := CreateThingGroupInput{
+		GroupName:       request.GetParamCaseInsensitive(req.Parameters, "thingGroupName"),
+		ParentGroupName: request.GetParamCaseInsensitive(req.Parameters, "parentGroupName"),
+		Description:     request.GetParamCaseInsensitive(props, "thingGroupDescription"),
+		Attributes:      attrs,
 	}
 
-	created, err := store.CreateThingGroup(group)
+	created, err := s.createThingGroupCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -46,16 +35,13 @@ func (s *IoTService) CreateThingGroup(ctx context.Context, reqCtx *request.Reque
 // DescribeThingGroup retrieves the details of an existing thing group.
 func (s *IoTService) DescribeThingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := store.GetThingGroup(groupName)
+	group, err := s.describeThingGroupCore(store, groupName)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +52,6 @@ func (s *IoTService) DescribeThingGroup(ctx context.Context, reqCtx *request.Req
 // UpdateThingGroup modifies the attributes and description of an existing thing
 // group.
 func (s *IoTService) UpdateThingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -79,14 +60,15 @@ func (s *IoTService) UpdateThingGroup(ctx context.Context, reqCtx *request.Reque
 	props := unwrapProps(req.Parameters, "thingGroupProperties")
 	attrs, _, _ := parseAttributePayload(props)
 
-	expectedVersion := int64(request.GetIntParam(req.Parameters, "expectedVersion"))
-	opts := iotstore.ThingGroupUpdateOpts{
-		Description:     request.GetParamCaseInsensitive(props, "thingGroupDescription"),
-		Attributes:      attrs,
-		ExpectedVersion: expectedVersion,
+	in := UpdateThingGroupInput{
+		GroupName:          request.GetParamCaseInsensitive(req.Parameters, "thingGroupName"),
+		Description:        request.GetParamCaseInsensitive(props, "thingGroupDescription"),
+		Attributes:         attrs,
+		ExpectedVersion:    int64(request.GetIntParam(req.Parameters, "expectedVersion")),
+		PropertiesProvided: request.GetMapParamCaseInsensitive(req.Parameters, "thingGroupProperties") != nil,
 	}
 
-	updated, err := store.UpdateThingGroup(groupName, opts)
+	updated, err := s.updateThingGroupCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -100,19 +82,13 @@ func (s *IoTService) UpdateThingGroup(ctx context.Context, reqCtx *request.Reque
 // ResourceNotFoundException if the thing group does not exist.
 func (s *IoTService) DeleteThingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildThingGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), groupName)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteThingGroup(groupName); err != nil {
+	if err := s.deleteThingGroupCore(store, groupName); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +105,7 @@ func (s *IoTService) ListThingGroups(ctx context.Context, reqCtx *request.Reques
 
 	opts := parseListOptions(req.Parameters)
 	parentFilter := request.GetParamCaseInsensitive(req.Parameters, "parentGroupName")
-	result, err := store.ListThingGroups(opts, parentFilter)
+	result, err := s.listThingGroupsCore(store, opts, parentFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +127,8 @@ func (s *IoTService) AddThingToThingGroup(ctx context.Context, reqCtx *request.R
 
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if thingName == "" || groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
-	if err := store.AddThingToThingGroup(thingName, groupName); err != nil {
+	if err := s.addThingToThingGroupCore(store, thingName, groupName); err != nil {
 		return nil, err
 	}
 
@@ -171,11 +144,8 @@ func (s *IoTService) RemoveThingFromThingGroup(ctx context.Context, reqCtx *requ
 
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if thingName == "" || groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
-	if err := store.RemoveThingFromThingGroup(thingName, groupName); err != nil {
+	if err := s.removeThingFromThingGroupCore(store, thingName, groupName); err != nil {
 		return nil, err
 	}
 
@@ -190,16 +160,13 @@ func (s *IoTService) ListThingsInThingGroup(ctx context.Context, reqCtx *request
 	}
 
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "thingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
-	things, err := store.ListThingsInGroup(groupName)
+	things, err := s.listThingsInThingGroupCore(store, groupName)
 	if err != nil {
 		return nil, err
 	}
 
-	return paginatedStrings("things", things, req.Parameters), nil
+	return paginatedStrings("things", things, req.Parameters)
 }
 
 // ListThingGroupsForThing returns groups containing the specified thing.
@@ -210,11 +177,8 @@ func (s *IoTService) ListThingGroupsForThing(ctx context.Context, reqCtx *reques
 	}
 
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
-	groups, err := store.ListGroupsForThing(thingName)
+	groups, err := s.listThingGroupsForThingCore(store, thingName)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +190,7 @@ func (s *IoTService) ListThingGroupsForThing(ctx context.Context, reqCtx *reques
 		})
 	}
 
-	return paginatedMaps("thingGroups", result, req.Parameters), nil
+	return paginatedMaps("thingGroups", result, req.Parameters)
 }
 
 // ---------------------------------------------------------------------------
@@ -235,24 +199,14 @@ func (s *IoTService) ListThingGroupsForThing(ctx context.Context, reqCtx *reques
 
 func (s *IoTService) UpdateThingGroupsForThing(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	add := request.GetStringList(req.Parameters, "thingGroupsToAdd")
 	remove := request.GetStringList(req.Parameters, "thingGroupsToRemove")
-	for _, g := range add {
-		if err := store.AddThingToThingGroup(thingName, g); err != nil {
-			return nil, err
-		}
-	}
-	for _, g := range remove {
-		if err := store.RemoveThingFromThingGroup(thingName, g); err != nil {
-			return nil, err
-		}
+	if err := s.updateThingGroupsForThingCore(store, thingName, add, remove); err != nil {
+		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }

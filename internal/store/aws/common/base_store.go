@@ -280,11 +280,23 @@ func (it *pageIterator) result() (nextMarker string, isTruncated bool) {
 
 // ListProto retrieves a list of protobuf items from the store.
 func ListProto[T proto.Message](store *BaseStore, opts ListOptions, newFunc func() T, filter func(T) bool) (*ListProtoResult[T], error) {
+	return ListProtoFiltered(store, opts, newFunc, filter, nil)
+}
+
+// ListProtoFiltered retrieves a list of protobuf items whose store key is
+// accepted by keyFilter. Bases that keep sub-records (for example version
+// records under "<name>\x00<id>") share the namespace with their primary
+// records; the key filter scopes the list to the primary records so the
+// sub-record wire format is never unmarshalled as the primary type.
+func ListProtoFiltered[T proto.Message](store *BaseStore, opts ListOptions, newFunc func() T, filter func(T) bool, keyFilter func(string) bool) (*ListProtoResult[T], error) {
 	it := newPageIterator(store, opts)
 
 	var items []T
 	err := it.forEachPage(func(key string, value []byte) (bool, error) {
 		if len(key) > 0 && key[0] == '#' {
+			return false, nil
+		}
+		if keyFilter != nil && !keyFilter(key) {
 			return false, nil
 		}
 

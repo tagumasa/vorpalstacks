@@ -2,10 +2,17 @@ package testutil
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
 	"github.com/aws/aws-sdk-go-v2/service/iot/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"vorpalstacks-sdk-tests/config"
 )
 
 // runIoTThingTests covers the Thing resource lifecycle (Create/Describe/Update/
@@ -178,13 +185,211 @@ func (r *TestRunner) runIoTThingTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "Thing_StartThingRegistrationTask_Validation", func() error {
-		// StartThingRegistrationTask requires a registered ProvisioningTemplate
-		// and a valid template body; a minimal body must be rejected with a
-		// validation error, proving the handler is registered and validates.
+		// A minimal body must be rejected with a validation error, proving
+		// the handler is registered and validates.
 		_, err := tc.client.StartThingRegistrationTask(tc.ctx, &iot.StartThingRegistrationTaskInput{
 			TemplateBody: aws.String("{}"),
 		})
-		return expectValidationError(err)
+		if err == nil {
+			return fmt.Errorf("expected the empty template to be rejected")
+		}
+		// The documented member bounds: templateBody shares the 10240-byte
+		// TemplateBody bound; the input-file bucket carries its own pattern.
+		bigBody := `{"Resources":{"thing":{"Type":"AWS::IoT::Thing"}},"padding":"` +
+			strings.Repeat("x", 10240) + `"}`
+		_, err = tc.client.StartThingRegistrationTask(tc.ctx, &iot.StartThingRegistrationTaskInput{
+			TemplateBody:    aws.String(bigBody),
+			InputFileBucket: aws.String("valid-bucket"),
+			InputFileKey:    aws.String("devices.ndjson"),
+			RoleArn:         aws.String(tc.iamRoleARN("bulk-provisioning")),
+		})
+		if err == nil {
+			return fmt.Errorf("expected the over-length templateBody to be rejected")
+		}
+		if vErr := expectAWSErrorCode(err, "InvalidRequestException"); vErr != nil {
+			return vErr
+		}
+		_, err = tc.client.StartThingRegistrationTask(tc.ctx, &iot.StartThingRegistrationTaskInput{
+			TemplateBody:    aws.String(`{"Resources":{"thing":{"Type":"AWS::IoT::Thing"}}}`),
+			InputFileBucket: aws.String("bad:bucket!"),
+			InputFileKey:    aws.String("devices.ndjson"),
+			RoleArn:         aws.String(tc.iamRoleARN("bulk-provisioning")),
+		})
+		return expectAWSErrorCode(err, "InvalidRequestException")
+	}))
+
+	// The bulk task engine: the S3 input file's newline-delimited JSON lines
+	// provision one device each; Describe reports the real counts and echo
+	// members, and the RESULTS/ERRORS reports are downloadable through the
+	// presigned links from ListThingRegistrationTaskReports.
+	results = append(results, r.RunTest("iot", "ThingRegistrationTask_BulkProvision", func() error {
+		cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load config: %w", err)
+		}
+		s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true })
+		bucket := uniqueName("iot-bulkreg")
+		if _, err := s3Client.CreateBucket(tc.ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)}); err != nil {
+			return fmt.Errorf("create bucket: %w", err)
+		}
+		defer cleanupS3Bucket(tc.ctx, s3Client, bucket)
+
+		names := []string{uniqueName("bulk-a"), uniqueName("bulk-b"), uniqueName("bulk-c")}
+		for _, n := range names {
+			defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(n)})
+		}
+		var lines []string
+		for _, n := range names {
+			lines = append(lines, fmt.Sprintf(`{"ThingName":%q}`, n))
+		}
+		inputKey := "devices.ndjson"
+		if _, err := s3Client.PutObject(tc.ctx, &s3.PutObjectInput{
+			Bucket: aws.String(bucket), Key: aws.String(inputKey),
+			Body: strings.NewReader(strings.Join(lines, "\n") + "\n"),
+		}); err != nil {
+			return fmt.Errorf("put input file: %w", err)
+		}
+		templateBody := `{"Parameters":{"ThingName":{"Type":"String"}},"Resources":{"thing":{"Type":"AWS::IoT::Thing","Properties":{"ThingName":{"Ref":"{{ThingName}}"}}}}}`
+		start, err := tc.client.StartThingRegistrationTask(tc.ctx, &iot.StartThingRegistrationTaskInput{
+			TemplateBody:    aws.String(templateBody),
+			InputFileBucket: aws.String(bucket),
+			InputFileKey:    aws.String(inputKey),
+			RoleArn:         aws.String(tc.iamRoleARN("bulk-provisioning")),
+		})
+		if err != nil {
+			return fmt.Errorf("StartThingRegistrationTask failed: %w", err)
+		}
+		taskID := aws.ToString(start.TaskId)
+
+		// The task completes asynchronously; poll Describe to a terminal state.
+		var desc *iot.DescribeThingRegistrationTaskOutput
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			desc, err = tc.client.DescribeThingRegistrationTask(tc.ctx, &iot.DescribeThingRegistrationTaskInput{TaskId: aws.String(taskID)})
+			if err != nil {
+				return fmt.Errorf("DescribeThingRegistrationTask failed: %w", err)
+			}
+			if desc.Status == types.StatusCompleted ||
+				desc.Status == types.StatusFailed ||
+				desc.Status == types.StatusCancelled {
+				break
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("task did not reach a terminal state within 30s (status %s)", desc.Status)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		if desc.Status != types.StatusCompleted {
+			return fmt.Errorf("expected Completed, got %s (message %q)", desc.Status, aws.ToString(desc.Message))
+		}
+		if desc.SuccessCount != int32(len(names)) {
+			return fmt.Errorf("expected successCount=%d, got %d", len(names), desc.SuccessCount)
+		}
+		if desc.FailureCount != 0 {
+			return fmt.Errorf("expected failureCount=0, got %d", desc.FailureCount)
+		}
+		if desc.PercentageProgress != 100 {
+			return fmt.Errorf("expected percentageProgress=100, got %d", desc.PercentageProgress)
+		}
+		if aws.ToString(desc.TemplateBody) != templateBody || aws.ToString(desc.InputFileBucket) != bucket ||
+			aws.ToString(desc.InputFileKey) != inputKey || aws.ToString(desc.RoleArn) != tc.iamRoleARN("bulk-provisioning") {
+			return fmt.Errorf("describe echo mismatch: %+v", desc)
+		}
+		if desc.CreationDate == nil || desc.LastModifiedDate == nil {
+			return fmt.Errorf("expected creationDate and lastModifiedDate echo")
+		}
+		for _, n := range names {
+			if _, err := tc.client.DescribeThing(tc.ctx, &iot.DescribeThingInput{ThingName: aws.String(n)}); err != nil {
+				return fmt.Errorf("DescribeThing on provisioned %s failed: %w", n, err)
+			}
+		}
+
+		reports, err := tc.client.ListThingRegistrationTaskReports(tc.ctx, &iot.ListThingRegistrationTaskReportsInput{
+			TaskId: aws.String(taskID), ReportType: types.ReportTypeResults,
+		})
+		if err != nil {
+			return fmt.Errorf("ListThingRegistrationTaskReports failed: %w", err)
+		}
+		if len(reports.ResourceLinks) != 1 {
+			return fmt.Errorf("expected one RESULTS report link, got %v", reports.ResourceLinks)
+		}
+		// The presigned link must carry the endpoint the client dialled,
+		// not a server-side localhost fallback.
+		linkURL, err := url.Parse(reports.ResourceLinks[0])
+		if err != nil {
+			return fmt.Errorf("parse report link: %w", err)
+		}
+		endpointURL, err := url.Parse(r.endpoint)
+		if err != nil {
+			return fmt.Errorf("parse runner endpoint: %w", err)
+		}
+		if linkURL.Scheme != endpointURL.Scheme || linkURL.Host != endpointURL.Host {
+			return fmt.Errorf("report link must point at the dialled endpoint %s, got %s", r.endpoint, reports.ResourceLinks[0])
+		}
+		resp, err := http.Get(reports.ResourceLinks[0])
+		if err != nil {
+			return fmt.Errorf("fetch report link: %w", err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("report link returned %d: %s", resp.StatusCode, string(body))
+		}
+		if !strings.Contains(string(body), names[0]) || !strings.Contains(string(body), "Success") {
+			return fmt.Errorf("results report missing provisioned rows: %s", string(body))
+		}
+
+		errReports, err := tc.client.ListThingRegistrationTaskReports(tc.ctx, &iot.ListThingRegistrationTaskReportsInput{
+			TaskId: aws.String(taskID), ReportType: types.ReportTypeErrors,
+		})
+		if err != nil {
+			return fmt.Errorf("ListThingRegistrationTaskReports(ERRORS) failed: %w", err)
+		}
+		if len(errReports.ResourceLinks) != 1 {
+			return fmt.Errorf("expected one ERRORS report link, got %v", errReports.ResourceLinks)
+		}
+		return nil
+	}))
+
+	// A missing input file fails the task with a message, and stopping a
+	// terminal task is rejected as invalid.
+	results = append(results, r.RunTest("iot", "ThingRegistrationTask_MissingInputFileFails", func() error {
+		templateBody := `{"Resources":{"thing":{"Type":"AWS::IoT::Thing"}}}`
+		start, err := tc.client.StartThingRegistrationTask(tc.ctx, &iot.StartThingRegistrationTaskInput{
+			TemplateBody:    aws.String(templateBody),
+			InputFileBucket: aws.String(uniqueName("iot-bulkreg")),
+			InputFileKey:    aws.String("does-not-exist.ndjson"),
+			RoleArn:         aws.String(tc.iamRoleARN("bulk-provisioning")),
+		})
+		if err != nil {
+			return fmt.Errorf("StartThingRegistrationTask failed: %w", err)
+		}
+		taskID := aws.ToString(start.TaskId)
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			desc, dErr := tc.client.DescribeThingRegistrationTask(tc.ctx, &iot.DescribeThingRegistrationTaskInput{TaskId: aws.String(taskID)})
+			if dErr != nil {
+				return fmt.Errorf("DescribeThingRegistrationTask failed: %w", dErr)
+			}
+			if desc.Status == types.StatusFailed {
+				if aws.ToString(desc.Message) == "" {
+					return fmt.Errorf("expected a failure message on the failed task")
+				}
+				break
+			}
+			if desc.Status == types.StatusCompleted {
+				return fmt.Errorf("expected Failed for a missing input file, got Completed")
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("task did not fail within 30s (status %s)", desc.Status)
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		_, err = tc.client.StopThingRegistrationTask(tc.ctx, &iot.StopThingRegistrationTaskInput{TaskId: aws.String(taskID)})
+		return expectAWSErrorCode(err, "InvalidRequestException")
 	}))
 
 	results = append(results, r.RunTest("iot", "Thing_AttachDetachThingPrincipal", func() error {

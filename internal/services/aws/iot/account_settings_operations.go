@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // ---- Logging / Event / Encryption config --------------------------
 // Persisted via GenericKV under "config/<name>". A missing key means "not yet
-// configured"; the handlers return a default/empty shape for that case and
+// configured"; the Cores return a default/empty shape for that case and
 // propagate genuine store errors.
 
 func (s *IoTService) GetV2LoggingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -17,19 +16,9 @@ func (s *IoTService) GetV2LoggingOptions(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("config/v2Logging", &rec)
+	rec, err := s.getV2LoggingOptionsCore(store)
 	if err != nil {
 		return nil, err
-	}
-	if !exists {
-		return map[string]interface{}{
-			"defaultLogLevel": "DISABLED",
-			"disableAllLogs":  true,
-		}, nil
-	}
-	if rec["defaultLogLevel"] == nil || rec["defaultLogLevel"] == "" {
-		rec["defaultLogLevel"] = "INFO"
 	}
 	// GetV2LoggingOptions output shape is flat (roleArn, defaultLogLevel,
 	// disableAllLogs at the top level). Wrapping in "loggingOptions" causes
@@ -41,31 +30,24 @@ func (s *IoTService) SetV2LoggingOptions(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	defaultLogLevel := request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel")
-	if defaultLogLevel == "" {
-		defaultLogLevel = "INFO"
+	in := SetV2LoggingOptionsInput{
+		RoleArn:         request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		DefaultLogLevel: request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel"),
+		DisableAllLogs:  request.GetBoolParam(req.Parameters, "disableAllLogs"),
 	}
-	rec := map[string]interface{}{
-		"roleArn":         request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
-		"defaultLogLevel": defaultLogLevel,
-		"disableAllLogs":  request.GetBoolParam(req.Parameters, "disableAllLogs"),
-	}
-	if err := store.PutGeneric("config/v2Logging", rec); err != nil {
+	if err := s.setV2LoggingOptionsCore(store, in); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DeleteV2LoggingLevel(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	targetType := request.GetParamCaseInsensitive(req.Parameters, "targetType")
-	targetName := request.GetParamCaseInsensitive(req.Parameters, "targetName")
-	if targetType == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteGeneric("v2LoggingLevel/" + targetType + "/" + targetName); err != nil {
+	targetType := request.GetParamCaseInsensitive(req.Parameters, "targetType")
+	targetName := request.GetParamCaseInsensitive(req.Parameters, "targetName")
+	if err := s.deleteV2LoggingLevelCore(store, targetType, targetName); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -75,43 +57,20 @@ func (s *IoTService) ListV2LoggingLevels(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	prefix := "v2LoggingLevel/"
-	if tt := request.GetParamCaseInsensitive(req.Parameters, "targetType"); tt != "" {
-		prefix = "v2LoggingLevel/" + tt + "/"
-	}
-	items, err := store.ListGeneric(prefix)
+	configs, err := s.listV2LoggingLevelsCore(store, request.GetParamCaseInsensitive(req.Parameters, "targetType"))
 	if err != nil {
 		return nil, err
 	}
-	configs := make([]map[string]interface{}, 0, len(items))
-	for _, rec := range items {
-		logTarget, _ := rec["logTarget"].(map[string]interface{})
-		if logTarget == nil {
-			logTarget = map[string]interface{}{}
-		}
-		configs = append(configs, map[string]interface{}{
-			"logTarget": logTarget,
-			"logLevel":  rec["logLevel"],
-		})
-	}
-	return paginatedMaps("logTargetConfigurations", configs, req.Parameters), nil
+	return paginatedMaps("logTargetConfigurations", configs, req.Parameters)
 }
 func (s *IoTService) SetV2LoggingLevel(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	logTarget := request.GetMapParamCaseInsensitive(req.Parameters, "logTarget")
-	logLevel := request.GetParamCaseInsensitive(req.Parameters, "logLevel")
-	targetType, _ := logTarget["targetType"].(string)
-	targetName, _ := logTarget["targetName"].(string)
-	if targetType == "" || logLevel == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.PutGeneric("v2LoggingLevel/"+targetType+"/"+targetName, map[string]interface{}{
-		"logTarget": logTarget,
-		"logLevel":  logLevel,
-	}); err != nil {
+	logTarget := request.GetMapParamCaseInsensitive(req.Parameters, "logTarget")
+	logLevel := request.GetParamCaseInsensitive(req.Parameters, "logLevel")
+	if err := s.setV2LoggingLevelCore(store, logTarget, logLevel); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -121,19 +80,7 @@ func (s *IoTService) GetLoggingOptions(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("config/legacyLogging", &rec)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		// AWS returns an empty response when logging has never been configured.
-		return map[string]interface{}{}, nil
-	}
-	return map[string]interface{}{
-		"roleArn":  rec["roleArn"],
-		"logLevel": rec["logLevel"],
-	}, nil
+	return s.getLoggingOptionsCore(store)
 }
 func (s *IoTService) SetLoggingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -147,14 +94,8 @@ func (s *IoTService) SetLoggingOptions(ctx context.Context, reqCtx *request.Requ
 		props = req.Parameters
 	}
 	roleArn := request.GetParamCaseInsensitive(props, "roleArn")
-	if roleArn == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-	rec := map[string]interface{}{
-		"roleArn":  roleArn,
-		"logLevel": request.GetParamCaseInsensitive(props, "logLevel"),
-	}
-	if err := store.PutGeneric("config/legacyLogging", rec); err != nil {
+	logLevel := request.GetParamCaseInsensitive(props, "logLevel")
+	if err := s.setLoggingOptionsCore(store, roleArn, logLevel); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -164,8 +105,8 @@ func (s *IoTService) DescribeEventConfigurations(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	if _, err := store.GetGenericExists("config/eventConfigurations", &rec); err != nil {
+	rec, err := s.describeEventConfigurationsCore(store)
+	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{"eventConfigurations": rec}, nil
@@ -175,18 +116,8 @@ func (s *IoTService) UpdateEventConfigurations(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	if _, err := store.GetGenericExists("config/eventConfigurations", &rec); err != nil {
-		return nil, err
-	}
-	// Merge incoming configuration attributes into the persisted map so that
-	// partial updates behave like AWS IoT (per-event-type toggles).
-	if incoming, ok := req.Parameters["eventConfigurations"].(map[string]interface{}); ok {
-		for k, v := range incoming {
-			rec[k] = v
-		}
-	}
-	if err := store.PutGeneric("config/eventConfigurations", rec); err != nil {
+	incoming, _ := req.Parameters["eventConfigurations"].(map[string]interface{})
+	if err := s.updateEventConfigurationsCore(store, incoming); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -196,15 +127,9 @@ func (s *IoTService) DescribeEncryptionConfiguration(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists("config/encryptionConfiguration", &rec)
+	rec, err := s.describeEncryptionConfigurationCore(store)
 	if err != nil {
 		return nil, err
-	}
-	if !exists {
-		return map[string]interface{}{
-			"encryptionType": "TLS",
-		}, nil
 	}
 	// DescribeEncryptionConfiguration output shape is flat (encryptionType,
 	// kmsKeyArn at the top level). Wrapping in "encryptionConfiguration"
@@ -216,16 +141,12 @@ func (s *IoTService) UpdateEncryptionConfiguration(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
-	rec := map[string]interface{}{
-		"kmsKeyArn":        request.GetParamCaseInsensitive(req.Parameters, "kmsKeyArn"),
-		"kmsAccessRoleArn": request.GetParamCaseInsensitive(req.Parameters, "kmsAccessRoleArn"),
+	in := UpdateEncryptionConfigurationInput{
+		KmsKeyArn:        request.GetParamCaseInsensitive(req.Parameters, "kmsKeyArn"),
+		KmsAccessRoleArn: request.GetParamCaseInsensitive(req.Parameters, "kmsAccessRoleArn"),
+		EncryptionType:   request.GetParamCaseInsensitive(req.Parameters, "encryptionType"),
 	}
-	et := request.GetParamCaseInsensitive(req.Parameters, "encryptionType")
-	if et == "" {
-		et = "TLS"
-	}
-	rec["encryptionType"] = et
-	if err := store.PutGeneric("config/encryptionConfiguration", rec); err != nil {
+	if err := s.updateEncryptionConfigurationCore(store, in); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil

@@ -38,20 +38,20 @@ type CertificateUpdateOpts struct {
 }
 
 // JobUpdateOpts specifies partial updates for UpdateJob and CancelJob.
+// The reasonCode/comment members of CancelJobRequest reach the job record
+// through the CancelJob Core path using these fields.
 type JobUpdateOpts struct {
 	Description                string   // empty = no change
 	Status                     string   // empty = no change; "CANCELED" for CancelJob
 	Targets                    []string // nil = no change; set by AssociateTargetsWithJob
-	ReasonCode                 string
-	Comment                    string
 	NamespaceID                string
 	PresignedUrlConfig         string
 	JobExecutionsRolloutConfig string
 	AbortConfig                string
 	TimeoutConfig              string
 	JobExecutionsRetryConfig   string
-	SchedulingConfig           string
-	ScheduledJobRollouts       string
+	ReasonCode                 string // recorded by CancelJob; empty = no change
+	Comment                    string // recorded by CancelJob; empty = no change
 }
 
 // AuthorizerUpdateOpts specifies partial updates for UpdateAuthorizer.

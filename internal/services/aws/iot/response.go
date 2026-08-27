@@ -284,19 +284,45 @@ func roleAliasResponse(ra *iotstore.RoleAlias) map[string]interface{} {
 	}
 }
 
-func provisioningTemplateResponse(t *iotstore.ProvisioningTemplate) map[string]interface{} {
+// provisioningTemplateSummaryResponse renders the
+// ProvisioningTemplateSummary shape used by ListProvisioningTemplates.
+func provisioningTemplateSummaryResponse(t *iotstore.ProvisioningTemplate) map[string]interface{} {
+	return map[string]interface{}{
+		"templateArn":      t.TemplateARN,
+		"templateName":     t.TemplateName,
+		"description":      t.Description,
+		"creationDate":     t.CreationDate.Unix(),
+		"lastModifiedDate": t.LastModifiedDate.Unix(),
+		"enabled":          t.Enabled,
+		"type":             t.Type,
+	}
+}
+
+// provisioningTemplateDetailResponse renders the
+// DescribeProvisioningTemplate output: the model's eleven members including
+// defaultVersionId and the preProvisioningHook structure.
+func provisioningTemplateDetailResponse(t *iotstore.ProvisioningTemplate) map[string]interface{} {
 	resp := map[string]interface{}{
-		"templateName":        t.TemplateName,
 		"templateArn":         t.TemplateARN,
+		"templateName":        t.TemplateName,
 		"description":         t.Description,
-		"enabled":             t.Enabled,
-		"provisioningRoleArn": t.ProvisioningRoleARN,
 		"creationDate":        t.CreationDate.Unix(),
 		"lastModifiedDate":    t.LastModifiedDate.Unix(),
+		"defaultVersionId":    t.DefaultVersionID,
+		"enabled":             t.Enabled,
+		"provisioningRoleArn": t.ProvisioningRoleARN,
 		"type":                t.Type,
 	}
 	if t.TemplateBody != "" {
 		resp["templateBody"] = t.TemplateBody
+	}
+	if t.PreProvisioningHook != "" {
+		var hook interface{}
+		if err := json.Unmarshal([]byte(t.PreProvisioningHook), &hook); err == nil {
+			resp["preProvisioningHook"] = hook
+		} else {
+			resp["preProvisioningHook"] = t.PreProvisioningHook
+		}
 	}
 	return resp
 }
@@ -319,21 +345,62 @@ func domainConfigResponse(dc *iotstore.DomainConfiguration) map[string]interface
 	}
 }
 
+// domainConfigDetailResponse renders the DescribeDomainConfiguration
+// output: exactly the API model's member names (serverCertificates
+// summaries, the authorizerConfig structure, lastStatusChangeDate).
 func domainConfigDetailResponse(dc *iotstore.DomainConfiguration) map[string]interface{} {
 	resp := map[string]interface{}{
 		"domainConfigurationName":   dc.DomainConfigurationName,
 		"domainConfigurationArn":    dc.DomainConfigurationARN,
 		"domainName":                dc.DomainName,
-		"serverCertificateArns":     dc.ServerCertificateARNs,
 		"serviceType":               dc.ServiceType,
 		"domainConfigurationStatus": dc.DomainConfigurationStatus,
-		"authenticationType":        dc.AuthenticationType,
-		"applicationProtocol":       dc.ApplicationProtocol,
-		"creationDate":              dc.CreationDate.Unix(),
-		"lastModifiedDate":          dc.LastModifiedDate.Unix(),
+		"lastStatusChangeDate":      dc.LastModifiedDate.Unix(),
 	}
-	if dc.AuthorizerConfig != "" {
-		resp["authorizerConfig"] = dc.AuthorizerConfig
+	if dc.AuthenticationType != "" {
+		resp["authenticationType"] = dc.AuthenticationType
+	}
+	if dc.ApplicationProtocol != "" {
+		resp["applicationProtocol"] = dc.ApplicationProtocol
+	}
+	if len(dc.ServerCertificateARNs) > 0 {
+		summaries := make([]interface{}, 0, len(dc.ServerCertificateARNs))
+		for _, arn := range dc.ServerCertificateARNs {
+			summaries = append(summaries, map[string]interface{}{
+				"serverCertificateArn": arn,
+			})
+		}
+		resp["serverCertificates"] = summaries
+	}
+	if cfg := domainConfigAuthorizerConfigValue(dc.AuthorizerConfig); cfg != nil {
+		resp["authorizerConfig"] = cfg
+	}
+	return resp
+}
+
+// activeViolationResponse renders the ActiveViolation shape used by
+// ListActiveViolations: the most-recent violation members, without the
+// violationEventType/violationEventTime/metricValue members that belong to
+// the ViolationEvent shape.
+func activeViolationResponse(e *iotstore.ViolationEvent) map[string]interface{} {
+	resp := map[string]interface{}{
+		"violationId":         e.ViolationID,
+		"thingName":           e.ThingName,
+		"securityProfileName": e.SecurityProfileName,
+		"lastViolationTime":   e.ViolationEventTime.Unix(),
+		"violationStartTime":  e.ViolationEventTime.Unix(),
+	}
+	if e.VerificationState != "" {
+		resp["verificationState"] = e.VerificationState
+	}
+	if e.VerificationStateDescription != "" {
+		resp["verificationStateDescription"] = e.VerificationStateDescription
+	}
+	if e.Behavior != nil {
+		resp["behavior"] = behaviorResponse(e.Behavior)
+	}
+	if e.MetricValue != nil {
+		resp["lastViolationValue"] = metricValueResponse(e.MetricValue)
 	}
 	return resp
 }

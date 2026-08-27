@@ -2,42 +2,24 @@ package iot
 
 import (
 	"context"
-	"strconv"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 func (s *IoTService) CreateRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleAlias := request.GetParamCaseInsensitive(req.Parameters, "roleAlias")
-	roleARN := request.GetParamCaseInsensitive(req.Parameters, "roleArn")
-	if roleAlias == "" || roleARN == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
-	credentialDuration := int64(3600)
-	if cdStr := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds"); cdStr != "" {
-		if parsed, err := strconv.ParseInt(cdStr, 10, 64); err == nil {
-			credentialDuration = parsed
-		}
-	}
+	duration, durationProvided := parseOptionalInt64Param(req.Parameters, "credentialDurationSeconds")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	ra := &iotstore.RoleAlias{
-		RoleAlias:                 roleAlias,
-		RoleARN:                   roleARN,
-		CredentialDurationSeconds: credentialDuration,
-		Owner:                     s.accountID,
-		CreationDate:              time.Now().UTC(),
-		LastModifiedDate:          time.Now().UTC(),
-	}
-
-	created, err := store.CreateRoleAlias(ra)
+	created, err := s.createRoleAliasCore(store, CreateRoleAliasInput{
+		RoleAlias:                 request.GetParamCaseInsensitive(req.Parameters, "roleAlias"),
+		RoleARN:                   request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		CredentialDurationSeconds: duration,
+		DurationProvided:          durationProvided,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -46,17 +28,12 @@ func (s *IoTService) CreateRoleAlias(ctx context.Context, reqCtx *request.Reques
 }
 
 func (s *IoTService) DescribeRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleAlias := request.GetParamCaseInsensitive(req.Parameters, "roleAlias")
-	if roleAlias == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	ra, err := store.GetRoleAlias(roleAlias)
+	ra, err := s.describeRoleAliasCore(store, request.GetParamCaseInsensitive(req.Parameters, "roleAlias"))
 	if err != nil {
 		return nil, err
 	}
@@ -70,25 +47,19 @@ func (s *IoTService) DescribeRoleAlias(ctx context.Context, reqCtx *request.Requ
 }
 
 func (s *IoTService) UpdateRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleAlias := request.GetParamCaseInsensitive(req.Parameters, "roleAlias")
-	if roleAlias == "" {
-		return nil, iotstore.ErrMissingParam
-	}
+	duration, durationProvided := parseOptionalInt64Param(req.Parameters, "credentialDurationSeconds")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var opts iotstore.RoleAliasUpdateOpts
-	opts.RoleARN = request.GetParamCaseInsensitive(req.Parameters, "roleArn")
-	if cdStr := request.GetParamCaseInsensitive(req.Parameters, "credentialDurationSeconds"); cdStr != "" {
-		if parsed, err := strconv.ParseInt(cdStr, 10, 64); err == nil {
-			opts.DurationSeconds = parsed
-		}
-	}
-
-	ra, err := store.UpdateRoleAlias(roleAlias, opts)
+	ra, err := s.updateRoleAliasCore(store, UpdateRoleAliasInput{
+		RoleAlias:                 request.GetParamCaseInsensitive(req.Parameters, "roleAlias"),
+		RoleARN:                   request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		CredentialDurationSeconds: duration,
+		DurationProvided:          durationProvided,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -101,20 +72,12 @@ func (s *IoTService) UpdateRoleAlias(ctx context.Context, reqCtx *request.Reques
 }
 
 func (s *IoTService) DeleteRoleAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleAlias := request.GetParamCaseInsensitive(req.Parameters, "roleAlias")
-	if roleAlias == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildRoleAliasARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), roleAlias)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteRoleAlias(roleAlias); err != nil {
+	if err := s.deleteRoleAliasCore(store, request.GetParamCaseInsensitive(req.Parameters, "roleAlias")); err != nil {
 		return nil, err
 	}
 
@@ -127,21 +90,29 @@ func (s *IoTService) ListRoleAliases(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	aliases, err := store.ListRoleAliases(parseListOptions(req.Parameters))
+	opts := parseListOptions(req.Parameters)
+	result, err := s.listRoleAliasesCore(store, opts.Marker, opts.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	names := make([]string, 0, len(aliases.Items))
-	for _, a := range aliases.Items {
-		names = append(names, a.RoleAlias)
-	}
-
 	resp := map[string]interface{}{
-		"roleAliases": names,
+		"roleAliases": result.RoleAliases,
 	}
-	if aliases.NextMarker != "" {
-		resp["nextToken"] = aliases.NextMarker
+	if result.NextMarker != "" {
+		resp["nextToken"] = result.NextMarker
 	}
 	return resp, nil
+}
+
+// parseOptionalInt64Param parses an optional integer wire parameter,
+// reporting whether a valid number was supplied. Numeric wire values arrive
+// as JSON numbers, so the integer reader is required — the string reader
+// silently drops them.
+func parseOptionalInt64Param(params map[string]interface{}, key string) (int64, bool) {
+	v, ok := request.GetIntParamCaseInsensitive(params, key)
+	if !ok {
+		return 0, false
+	}
+	return int64(v), true
 }

@@ -295,7 +295,7 @@ func (r *ActionRegistry) initDefaults() {
 		"ListAttachedPolicies", "ListThingPrincipals", "ListPrincipalThings", "GetEffectivePolicies",
 		"ListPolicyVersions", "GetPolicyVersion",
 		// Rules
-		"CreateTopicRule", "DescribeTopicRule", "DeleteTopicRule", "ListTopicRules", "ReplaceTopicRule",
+		"CreateTopicRule", "DeleteTopicRule", "ListTopicRules", "ReplaceTopicRule",
 		"EnableTopicRule", "DisableTopicRule", "GetTopicRule",
 		// Jobs
 		"CreateJob", "DescribeJob", "DeleteJob", "ListJobs", "UpdateJob", "CancelJob", "GetJobDocument",

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
+	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 )
 
 // runIoTProvisioningTemplateTests covers the ProvisioningTemplate lifecycle
@@ -25,6 +26,7 @@ func (r *TestRunner) runIoTProvisioningTemplateTests(tc *iotTestContext) []TestR
 			ProvisioningRoleArn: aws.String(roleARN),
 			TemplateBody:        aws.String(`{"Parameters":{"ThingName":{"Type":"String"}}}`),
 			Enabled:             aws.Bool(true),
+			Tags:                []iottypes.Tag{{Key: aws.String("purpose"), Value: aws.String("sdk-test")}},
 		})
 		if err != nil {
 			return fmt.Errorf("CreateProvisioningTemplate failed: %w", err)
@@ -34,6 +36,47 @@ func (r *TestRunner) runIoTProvisioningTemplateTests(tc *iotTestContext) []TestR
 		}
 		if out.TemplateArn == nil || *out.TemplateArn == "" {
 			return fmt.Errorf("expected non-empty templateArn")
+		}
+		if out.DefaultVersionId == nil || *out.DefaultVersionId != 1 {
+			return fmt.Errorf("expected defaultVersionId=1, got %v", out.DefaultVersionId)
+		}
+		// Create-time tags must be visible through ListTagsForResource.
+		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.TemplateArn})
+		if err != nil {
+			return fmt.Errorf("ListTagsForResource failed: %w", err)
+		}
+		found := false
+		for _, t := range tagOut.Tags {
+			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(out.TemplateArn))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "ProvisioningTemplate_MissingRequiredRejected", func() error {
+		if _, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
+			TemplateName:        aws.String(uniqueName("prov-tmpl")),
+			ProvisioningRoleArn: aws.String(roleARN),
+		}); err == nil {
+			return fmt.Errorf("expected rejection without templateBody")
+		}
+		if _, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
+			TemplateName: aws.String(uniqueName("prov-tmpl")),
+			TemplateBody: aws.String(`{"Parameters":{"ThingName":{"Type":"String"}}}`),
+		}); err == nil {
+			return fmt.Errorf("expected rejection without provisioningRoleArn")
+		}
+		if _, err := tc.client.CreateProvisioningTemplate(tc.ctx, &iot.CreateProvisioningTemplateInput{
+			TemplateName:        aws.String(uniqueName("prov-tmpl")),
+			ProvisioningRoleArn: aws.String(roleARN),
+			TemplateBody:        aws.String(`{"Parameters":{"ThingName":{"Type":"String"}}}`),
+			Type:                iottypes.TemplateType("Bogus"),
+		}); err == nil {
+			return fmt.Errorf("expected rejection for off-enum type")
 		}
 		return nil
 	}))
@@ -45,6 +88,12 @@ func (r *TestRunner) runIoTProvisioningTemplateTests(tc *iotTestContext) []TestR
 		}
 		if out.TemplateName == nil || *out.TemplateName != tmplName {
 			return fmt.Errorf("expected templateName=%s, got %v", tmplName, out.TemplateName)
+		}
+		if out.DefaultVersionId == nil || *out.DefaultVersionId != 1 {
+			return fmt.Errorf("expected defaultVersionId=1 on describe, got %v", out.DefaultVersionId)
+		}
+		if out.ProvisioningRoleArn == nil || *out.ProvisioningRoleArn != roleARN {
+			return fmt.Errorf("expected provisioningRoleArn=%s, got %v", roleARN, out.ProvisioningRoleArn)
 		}
 		return nil
 	}))
@@ -66,6 +115,9 @@ func (r *TestRunner) runIoTProvisioningTemplateTests(tc *iotTestContext) []TestR
 		}
 		for _, t := range out.Templates {
 			if t.TemplateName != nil && *t.TemplateName == tmplName {
+				// The list carries summaries: the ProvisioningTemplateSummary
+				// type has no templateBody or provisioningRoleArn members, so
+				// the summary shape is pinned at compile time.
 				return nil
 			}
 		}

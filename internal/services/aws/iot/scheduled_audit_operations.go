@@ -4,77 +4,107 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
+	"vorpalstacks/internal/common/tags"
 )
 
 // ---- Scheduled Audits ----------------------------------------------
 
 func (s *IoTService) CreateScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, err := s.bulkCreate(reqCtx, "scheduledAudit", req, "scheduledAuditName", map[string]interface{}{
-		"frequency":        request.GetParamCaseInsensitive(req.Parameters, "frequency"),
-		"dayOfMonth":       request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
-		"dayOfWeek":        request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
-		"targetCheckNames": request.GetStringList(req.Parameters, "targetCheckNames"),
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	saTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		saTags[t.Key] = t.Value
+	}
+	arn, err := s.createScheduledAuditCore(store, ScheduledAuditInput{
+		Name:                     request.GetParamCaseInsensitive(req.Parameters, "scheduledAuditName"),
+		Frequency:                request.GetParamCaseInsensitive(req.Parameters, "frequency"),
+		FrequencyProvided:        true,
+		DayOfMonth:               request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
+		DayOfMonthProvided:       hasParam(req.Parameters, "dayOfMonth"),
+		DayOfWeek:                request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
+		DayOfWeekProvided:        hasParam(req.Parameters, "dayOfWeek"),
+		TargetCheckNames:         request.GetStringList(req.Parameters, "targetCheckNames"),
+		TargetCheckNamesProvided: true,
+		Tags:                     saTags,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"scheduledAuditArn": iotstore.BuildScheduledAuditARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
+		"scheduledAuditArn": arn,
 	}, nil
 }
 func (s *IoTService) DeleteScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.bulkDelete(reqCtx, "scheduledAudit", req, "scheduledAuditName"); err != nil {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.deleteScheduledAuditCore(store, request.GetParamCaseInsensitive(req.Parameters, "scheduledAuditName")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DescribeScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, _, exists, err := s.bulkGet(reqCtx, "scheduledAudit", req, "scheduledAuditName")
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrScheduledAuditNotFound
+	rec, err := s.describeScheduledAuditCore(store, request.GetParamCaseInsensitive(req.Parameters, "scheduledAuditName"))
+	if err != nil {
+		return nil, err
 	}
 	return map[string]interface{}{
-		"scheduledAuditName": rec["name"],
-		"scheduledAuditArn":  iotstore.BuildScheduledAuditARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"frequency":          rec["frequency"],
-		"targetCheckNames":   rec["targetCheckNames"],
-		"lastModifiedDate":   rec["lastModifiedDate"],
+		"scheduledAuditName": rec.Rec["name"],
+		"scheduledAuditArn":  rec.Arn,
+		"frequency":          rec.Rec["frequency"],
+		"dayOfMonth":         rec.Rec["dayOfMonth"],
+		"dayOfWeek":          rec.Rec["dayOfWeek"],
+		"targetCheckNames":   rec.Rec["targetCheckNames"],
 	}, nil
 }
 func (s *IoTService) ListScheduledAudits(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	items, err := s.bulkList(reqCtx, "scheduledAudit")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	items, err := s.listScheduledAuditsCore(store)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
-		name, _ := item["name"].(string)
 		out = append(out, map[string]interface{}{
-			"scheduledAuditName": name,
-			"scheduledAuditArn":  iotstore.BuildScheduledAuditARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
-			"frequency":          item["frequency"],
+			"scheduledAuditName": item.Name,
+			"scheduledAuditArn":  item.Arn,
+			"frequency":          item.Frequency,
 		})
 	}
-	return paginatedMaps("scheduledAudits", out, req.Parameters), nil
+	return paginatedMaps("scheduledAudits", out, req.Parameters)
 }
 func (s *IoTService) UpdateScheduledAudit(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, exists, err := s.bulkUpdate(reqCtx, "scheduledAudit", req, "scheduledAuditName", map[string]interface{}{
-		"frequency":        request.GetParamCaseInsensitive(req.Parameters, "frequency"),
-		"dayOfMonth":       request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
-		"dayOfWeek":        request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
-		"targetCheckNames": request.GetStringList(req.Parameters, "targetCheckNames"),
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	arn, err := s.updateScheduledAuditCore(store, ScheduledAuditInput{
+		Name:                     request.GetParamCaseInsensitive(req.Parameters, "scheduledAuditName"),
+		Frequency:                request.GetParamCaseInsensitive(req.Parameters, "frequency"),
+		FrequencyProvided:        hasParam(req.Parameters, "frequency"),
+		DayOfMonth:               request.GetParamCaseInsensitive(req.Parameters, "dayOfMonth"),
+		DayOfMonthProvided:       hasParam(req.Parameters, "dayOfMonth"),
+		DayOfWeek:                request.GetParamCaseInsensitive(req.Parameters, "dayOfWeek"),
+		DayOfWeekProvided:        hasParam(req.Parameters, "dayOfWeek"),
+		TargetCheckNames:         request.GetStringList(req.Parameters, "targetCheckNames"),
+		TargetCheckNamesProvided: hasParam(req.Parameters, "targetCheckNames"),
 	})
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrScheduledAuditNotFound
-	}
 	return map[string]interface{}{
-		"scheduledAuditArn": iotstore.BuildScheduledAuditARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
+		"scheduledAuditArn": arn,
 	}, nil
 }

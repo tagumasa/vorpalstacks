@@ -194,6 +194,10 @@ type PolicyAttachmentOps interface {
 
 type ThingPrincipalOps interface {
 	AttachThingPrincipal(thingName, principal string) error
+	// AttachThingPrincipalExclusive records an EXCLUSIVE_THING attachment
+	// (provisioning-template ThingPrincipalType): the principal may attach
+	// to this thing only.
+	AttachThingPrincipalExclusive(thingName, principal string) error
 	DetachThingPrincipal(thingName, principal string) error
 	ListPrincipalsForThing(thingName string) ([]string, error)
 	AddThingToThingGroup(thingName, groupName string) error

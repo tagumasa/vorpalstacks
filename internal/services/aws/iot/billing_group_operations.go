@@ -2,34 +2,24 @@ package iot
 
 import (
 	"context"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // CreateBillingGroup creates a new billing group.
 func (s *IoTService) CreateBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	props := unwrapProps(req.Parameters, "billingGroupProperties")
-
-	bg := &iotstore.BillingGroup{
-		GroupName:        groupName,
-		Description:      request.GetParamCaseInsensitive(props, "billingGroupDescription"),
-		CreationDate:     time.Now().UTC(),
-		LastModifiedDate: time.Now().UTC(),
+	in := CreateBillingGroupInput{
+		GroupName:   request.GetParamCaseInsensitive(req.Parameters, "billingGroupName"),
+		Description: request.GetParamCaseInsensitive(props, "billingGroupDescription"),
 	}
 
-	created, err := store.CreateBillingGroup(bg)
+	created, err := s.createBillingGroupCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -40,16 +30,13 @@ func (s *IoTService) CreateBillingGroup(ctx context.Context, reqCtx *request.Req
 // DescribeBillingGroup retrieves the details of an existing billing group.
 func (s *IoTService) DescribeBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	bg, err := store.GetBillingGroup(groupName)
+	bg, err := s.describeBillingGroupCore(store, groupName)
 	if err != nil {
 		return nil, err
 	}
@@ -60,25 +47,20 @@ func (s *IoTService) DescribeBillingGroup(ctx context.Context, reqCtx *request.R
 // UpdateBillingGroup modifies the description or attributes of an existing
 // billing group.
 func (s *IoTService) UpdateBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	groupName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
 	props := unwrapProps(req.Parameters, "billingGroupProperties")
-
-	expectedVersion := int64(request.GetIntParam(req.Parameters, "expectedVersion"))
-	opts := iotstore.BillingGroupUpdateOpts{
-		Description:     request.GetParamCaseInsensitive(props, "billingGroupDescription"),
-		ExpectedVersion: expectedVersion,
+	in := UpdateBillingGroupInput{
+		GroupName:          request.GetParamCaseInsensitive(req.Parameters, "billingGroupName"),
+		Description:        request.GetParamCaseInsensitive(props, "billingGroupDescription"),
+		ExpectedVersion:    int64(request.GetIntParam(req.Parameters, "expectedVersion")),
+		PropertiesProvided: request.GetMapParamCaseInsensitive(req.Parameters, "billingGroupProperties") != nil,
 	}
 
-	updated, err := store.UpdateBillingGroup(groupName, opts)
+	updated, err := s.updateBillingGroupCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -91,19 +73,13 @@ func (s *IoTService) UpdateBillingGroup(ctx context.Context, reqCtx *request.Req
 // DeleteBillingGroup removes a billing group from the registry.
 func (s *IoTService) DeleteBillingGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetParamCaseInsensitive(req.Parameters, "billingGroupName")
-	if groupName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildBillingGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), groupName)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteBillingGroup(groupName); err != nil {
+	if err := s.deleteBillingGroupCore(store, groupName); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +94,7 @@ func (s *IoTService) ListBillingGroups(ctx context.Context, reqCtx *request.Requ
 	}
 
 	opts := parseListOptions(req.Parameters)
-	result, err := store.ListBillingGroups(opts)
+	result, err := s.listBillingGroupsCore(store, opts)
 	if err != nil {
 		return nil, err
 	}

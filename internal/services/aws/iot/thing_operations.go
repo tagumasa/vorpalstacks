@@ -3,7 +3,6 @@ package iot
 import (
 	"context"
 	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	iotstore "vorpalstacks/internal/store/aws/iot"
@@ -48,11 +47,8 @@ func (s *IoTService) DescribeThing(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	resp := thingDescribeResponse(result.Thing)
-
-	// AWS: DescribeThing returns billingGroupName when the thing belongs to
-	// a billing group (at most one per AWS constraints).
-	if groups, _ := store.ListBillingGroupsForThing(thingName); len(groups) > 0 {
-		resp["billingGroupName"] = groups[0]
+	if result.BillingGroupName != "" {
+		resp["billingGroupName"] = result.BillingGroupName
 	}
 
 	return resp, nil
@@ -170,44 +166,22 @@ func (s *IoTService) store(reqCtx *request.RequestContext) (iotstore.IotStoreInt
 
 func (s *IoTService) GetThingConnectivityData(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetThing(thingName); err != nil {
+
+	result, err := s.getThingConnectivityCore(store, thingName)
+	if err != nil {
 		return nil, err
 	}
 
-	// Check if any certificate principal attached to this thing is currently
-	// connected to any MQTT broker (not just the request-region broker).
-	connected := false
-	connectedAt := int64(0)
-	principals, _ := store.ListPrincipalsForThing(thingName)
-	for _, principal := range principals {
-		certID := extractCertIDFromPrincipal(principal)
-		if certID == "" {
-			continue
-		}
-		for _, brk := range s.brokers {
-			if c, ts := brk.IsCertConnected(certID); c {
-				connected = true
-				connectedAt = ts
-				break
-			}
-		}
-		if connected {
-			break
-		}
-	}
-
 	return map[string]interface{}{
-		"thingName":        thingName,
-		"connected":        connected,
-		"timestamp":        time.Now().UTC().Unix(),
-		"connectTime":      connectedAt,
+		"thingName":        result.ThingName,
+		"connected":        result.Connected,
+		"timestamp":        result.TimestampSeconds,
+		"connectTime":      result.ConnectTime,
 		"disconnectReason": "",
 	}, nil
 }
@@ -218,14 +192,11 @@ func (s *IoTService) GetThingConnectivityData(ctx context.Context, reqCtx *reque
 
 func (s *IoTService) ListPrincipalThingsV2(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	principal := request.GetParamCaseInsensitive(req.Parameters, "principal")
-	if principal == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	things, err := store.ListThingsForPrincipal(principal)
+	things, err := s.listPrincipalThingsV2Core(store, principal)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +207,7 @@ func (s *IoTService) ListPrincipalThingsV2(ctx context.Context, reqCtx *request.
 			"thingPrincipalType": "EXCLUSIVE_THING",
 		})
 	}
-	return paginatedMaps("principalThingObjects", objects, req.Parameters), nil
+	return paginatedMaps("principalThingObjects", objects, req.Parameters)
 }
 
 // extractCertIDFromPrincipal extracts the certificate ID from an IoT
@@ -251,14 +222,11 @@ func extractCertIDFromPrincipal(principal string) string {
 
 func (s *IoTService) ListThingPrincipalsV2(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	thingName := request.GetParamCaseInsensitive(req.Parameters, "thingName")
-	if thingName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	principals, err := store.ListPrincipalsForThing(thingName)
+	principals, err := s.listThingPrincipalsV2Core(store, thingName)
 	if err != nil {
 		return nil, err
 	}
@@ -269,5 +237,5 @@ func (s *IoTService) ListThingPrincipalsV2(ctx context.Context, reqCtx *request.
 			"thingPrincipalType": "EXCLUSIVE_THING",
 		})
 	}
-	return paginatedMaps("thingPrincipalObjects", objects, req.Parameters), nil
+	return paginatedMaps("thingPrincipalObjects", objects, req.Parameters)
 }

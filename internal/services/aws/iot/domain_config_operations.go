@@ -3,10 +3,8 @@ package iot
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 func parseStringListParam(params map[string]interface{}, key string) []string {
@@ -36,56 +34,62 @@ func parseStringListParam(params map[string]interface{}, key string) []string {
 	return nil
 }
 
-func (s *IoTService) CreateDomainConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
+// parseDomainConfigAuthorizerParam extracts the wire authorizer-config
+// structure; ok is false when the member is absent.
+func parseDomainConfigAuthorizerParam(params map[string]interface{}) (DomainConfigAuthorizerConfig, bool) {
+	m := request.GetMapParamCaseInsensitive(params, "authorizerConfig")
+	if m == nil {
+		return DomainConfigAuthorizerConfig{}, false
 	}
+	cfg := DomainConfigAuthorizerConfig{
+		DefaultAuthorizerName: request.GetParamCaseInsensitive(m, "defaultAuthorizerName"),
+	}
+	if request.HasParam(m, "allowAuthorizerOverride") {
+		cfg.AllowAuthorizerOverride = request.GetBoolParam(m, "allowAuthorizerOverride")
+		cfg.OverrideProvided = true
+	}
+	return cfg, true
+}
 
+func (s *IoTService) CreateDomainConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetDomainConfiguration(name); err == nil {
-		return nil, iotstore.ErrDomainConfigurationAlreadyExists
-	}
+	authorizerConfig, authorizerProvided := parseDomainConfigAuthorizerParam(req.Parameters)
 
-	now := time.Now().UTC()
-	dc := &iotstore.DomainConfiguration{
-		DomainConfigurationName:   name,
-		DomainName:                request.GetParamCaseInsensitive(req.Parameters, "domainName"),
-		ServerCertificateARNs:     parseStringListParam(req.Parameters, "serverCertificateArns"),
-		AuthorizerConfig:          request.GetParamCaseInsensitive(req.Parameters, "authorizerConfig"),
-		ServiceType:               request.GetParamCaseInsensitive(req.Parameters, "serviceType"),
-		DomainConfigurationStatus: "ENABLED",
-		CreationDate:              now,
-		LastModifiedDate:          now,
-	}
-
-	created, err := store.CreateDomainConfiguration(dc)
+	result, err := s.createDomainConfigurationCore(store, CreateDomainConfigurationInput{
+		DomainConfigurationName:  request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName"),
+		DomainName:               request.GetParamCaseInsensitive(req.Parameters, "domainName"),
+		ServerCertificateARNs:    parseStringListParam(req.Parameters, "serverCertificateArns"),
+		ValidationCertificateARN: request.GetParamCaseInsensitive(req.Parameters, "validationCertificateArn"),
+		AuthorizerConfig:         authorizerConfig,
+		AuthorizerConfigProvided: authorizerProvided,
+		ServiceType:              request.GetParamCaseInsensitive(req.Parameters, "serviceType"),
+		AuthenticationType:       request.GetParamCaseInsensitive(req.Parameters, "authenticationType"),
+		ApplicationProtocol:      request.GetParamCaseInsensitive(req.Parameters, "applicationProtocol"),
+		Tags:                     tagListParam(req.Parameters),
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"domainConfigurationName": created.DomainConfigurationName,
-		"domainConfigurationArn":  created.DomainConfigurationARN,
+		"domainConfigurationName": result.DomainConfigurationName,
+		"domainConfigurationArn":  result.DomainConfigurationARN,
 	}, nil
 }
 
 func (s *IoTService) DescribeDomainConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName")
-	if name == "" {
-		name = "default"
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	dc, err := store.GetDomainConfiguration(name)
+	dc, err := s.describeDomainConfigurationCore(store, DescribeDomainConfigurationInput{
+		DomainConfigurationName: request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -94,57 +98,39 @@ func (s *IoTService) DescribeDomainConfiguration(ctx context.Context, reqCtx *re
 }
 
 func (s *IoTService) UpdateDomainConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	dc, err := store.GetDomainConfiguration(name)
+	authorizerConfig, authorizerProvided := parseDomainConfigAuthorizerParam(req.Parameters)
+
+	result, err := s.updateDomainConfigurationCore(store, UpdateDomainConfigurationInput{
+		DomainConfigurationName:   request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName"),
+		AuthorizerConfig:          authorizerConfig,
+		AuthorizerConfigProvided:  authorizerProvided,
+		DomainConfigurationStatus: request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationStatus"),
+		RemoveAuthorizerConfig:    request.HasParam(req.Parameters, "removeAuthorizerConfig") && request.GetBoolParam(req.Parameters, "removeAuthorizerConfig"),
+		AuthenticationType:        request.GetParamCaseInsensitive(req.Parameters, "authenticationType"),
+		ApplicationProtocol:       request.GetParamCaseInsensitive(req.Parameters, "applicationProtocol"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if domainName := request.GetParamCaseInsensitive(req.Parameters, "domainName"); domainName != "" {
-		dc.DomainName = domainName
-	}
-	if authCfg := request.GetParamCaseInsensitive(req.Parameters, "authorizerConfig"); authCfg != "" {
-		dc.AuthorizerConfig = authCfg
-	}
-	if svcType := request.GetParamCaseInsensitive(req.Parameters, "serviceType"); svcType != "" {
-		dc.ServiceType = svcType
-	}
-	if certARNs := parseStringListParam(req.Parameters, "serverCertificateArns"); certARNs != nil {
-		dc.ServerCertificateARNs = certARNs
-	}
-	dc.LastModifiedDate = time.Now().UTC()
-
-	if err := store.UpdateDomainConfiguration(name, dc); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{}, nil
+	return map[string]interface{}{
+		"domainConfigurationName": result.DomainConfigurationName,
+		"domainConfigurationArn":  result.DomainConfigurationARN,
+	}, nil
 }
 
 func (s *IoTService) DeleteDomainConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	arn := iotstore.BuildDomainConfigurationARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteDomainConfiguration(name); err != nil {
+	if err := s.deleteDomainConfigurationCore(store, request.GetParamCaseInsensitive(req.Parameters, "domainConfigurationName")); err != nil {
 		return nil, err
 	}
 
@@ -157,15 +143,16 @@ func (s *IoTService) ListDomainConfigurations(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	dcs, err := store.ListDomainConfigurations(parseListOptions(req.Parameters))
+	opts := parseListOptions(req.Parameters)
+	result, err := s.listDomainConfigurationsCore(store, opts.Marker, opts.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]map[string]interface{}, 0, len(dcs.Items))
-	for _, dc := range dcs.Items {
+	items := make([]map[string]interface{}, 0, len(result.DomainConfigurations))
+	for _, dc := range result.DomainConfigurations {
 		items = append(items, domainConfigResponse(dc))
 	}
 
-	return listResponse("domainConfigurations", items, dcs.NextMarker), nil
+	return listResponse("domainConfigurations", items, result.NextMarker), nil
 }

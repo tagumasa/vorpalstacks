@@ -75,6 +75,77 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 		return fmt.Errorf("%s not found in list of %d jobs", jobID, len(out.Jobs))
 	}))
 
+	results = append(results, r.RunTest("iot", "Job_ListJobExecutions_MemberShapes", func() error {
+		forThing, err := tc.client.ListJobExecutionsForThing(tc.ctx, &iot.ListJobExecutionsForThingInput{ThingName: aws.String(thingName)})
+		if err != nil {
+			return fmt.Errorf("ListJobExecutionsForThing failed: %w", err)
+		}
+		found := false
+		for _, sum := range forThing.ExecutionSummaries {
+			if sum.JobId != nil && *sum.JobId == jobID {
+				found = true
+				if sum.JobExecutionSummary == nil || sum.JobExecutionSummary.Status != iottypes.JobExecutionStatusQueued {
+					return fmt.Errorf("expected QUEUED summary status for %s", jobID)
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected execution summary with jobId=%s for thing %s", jobID, thingName)
+		}
+
+		forJob, err := tc.client.ListJobExecutionsForJob(tc.ctx, &iot.ListJobExecutionsForJobInput{JobId: aws.String(jobID)})
+		if err != nil {
+			return fmt.Errorf("ListJobExecutionsForJob failed: %w", err)
+		}
+		found = false
+		for _, sum := range forJob.ExecutionSummaries {
+			if sum.ThingArn != nil && *sum.ThingArn == target {
+				found = true
+				if sum.JobExecutionSummary == nil || sum.JobExecutionSummary.Status != iottypes.JobExecutionStatusQueued {
+					return fmt.Errorf("expected QUEUED summary status for %s", target)
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("expected execution summary with thingArn=%s", target)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "Job_CancelJob_RecordsReasonCodeAndComment", func() error {
+		out, err := tc.client.CancelJob(tc.ctx, &iot.CancelJobInput{
+			JobId:      aws.String(jobID),
+			ReasonCode: aws.String("DEV_TEST"),
+			Comment:    aws.String("cancelled by sdk test"),
+		})
+		if err != nil {
+			return fmt.Errorf("CancelJob failed: %w", err)
+		}
+		if aws.ToString(out.JobId) != jobID {
+			return fmt.Errorf("expected jobId=%s, got %v", jobID, out.JobId)
+		}
+		if aws.ToString(out.JobArn) == "" {
+			return fmt.Errorf("expected non-empty jobArn in cancel response")
+		}
+		desc, err := tc.client.DescribeJob(tc.ctx, &iot.DescribeJobInput{JobId: aws.String(jobID)})
+		if err != nil {
+			return fmt.Errorf("DescribeJob after cancel failed: %w", err)
+		}
+		if desc.Job == nil {
+			return fmt.Errorf("expected job in describe response")
+		}
+		if aws.ToString(desc.Job.ReasonCode) != "DEV_TEST" {
+			return fmt.Errorf("expected reasonCode=DEV_TEST, got %v", desc.Job.ReasonCode)
+		}
+		if aws.ToString(desc.Job.Comment) != "cancelled by sdk test" {
+			return fmt.Errorf("expected comment persisted, got %v", desc.Job.Comment)
+		}
+		if desc.Job.Status != iottypes.JobStatusCanceled {
+			return fmt.Errorf("expected status=CANCELED, got %v", desc.Job.Status)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("iot", "Job_DescribeJob_NotFound", func() error {
 		_, err := tc.client.DescribeJob(tc.ctx, &iot.DescribeJobInput{JobId: aws.String(uniqueName("nope-job"))})
 		return expectNotFound(err)
@@ -150,6 +221,9 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 		if out.OtaUpdateId == nil || *out.OtaUpdateId != otaID {
 			return fmt.Errorf("expected otaUpdateId=%s, got %v", otaID, out.OtaUpdateId)
 		}
+		if out.OtaUpdateStatus != iottypes.OTAUpdateStatusCreateComplete {
+			return fmt.Errorf("expected otaUpdateStatus=CREATE_COMPLETE, got %v", out.OtaUpdateStatus)
+		}
 		return nil
 	}))
 
@@ -163,6 +237,19 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 		if out.OtaUpdateInfo == nil || aws.ToString(out.OtaUpdateInfo.OtaUpdateId) != otaID {
 			return fmt.Errorf("expected otaUpdateInfo for %s", otaID)
 		}
+		info := out.OtaUpdateInfo
+		if info.OtaUpdateStatus != iottypes.OTAUpdateStatusCreateComplete {
+			return fmt.Errorf("expected otaUpdateStatus=CREATE_COMPLETE, got %v", info.OtaUpdateStatus)
+		}
+		if info.CreationDate == nil {
+			return fmt.Errorf("expected non-nil creationDate in otaUpdateInfo")
+		}
+		if info.LastModifiedDate == nil {
+			return fmt.Errorf("expected non-nil lastModifiedDate in otaUpdateInfo")
+		}
+		if aws.ToString(info.OtaUpdateArn) == "" {
+			return fmt.Errorf("expected non-empty otaUpdateArn in otaUpdateInfo")
+		}
 		return nil
 	}))
 
@@ -173,6 +260,9 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 		}
 		for _, o := range out.OtaUpdates {
 			if o.OtaUpdateId != nil && *o.OtaUpdateId == otaID {
+				if o.CreationDate == nil {
+					return fmt.Errorf("expected non-nil creationDate in OTA update summary")
+				}
 				return nil
 			}
 		}

@@ -29,7 +29,16 @@ func (r *TestRunner) runIoTMoreCRUDTests(tc *iotTestContext) []TestResult {
 	}
 
 	results = append(results, r.RunTest("iot", "AttachSecurityProfile", func() error {
+		// An unknown profile must be rejected before the association is
+		// recorded.
 		_, err := tc.client.AttachSecurityProfile(tc.ctx, &iot.AttachSecurityProfileInput{
+			SecurityProfileName:      aws.String(uniqueName("nope-profile")),
+			SecurityProfileTargetArn: aws.String(groupARN),
+		})
+		if err := expectNotFound(err); err != nil {
+			return fmt.Errorf("unknown profile attach: %w", err)
+		}
+		_, err = tc.client.AttachSecurityProfile(tc.ctx, &iot.AttachSecurityProfileInput{
 			SecurityProfileName:      aws.String(profileName),
 			SecurityProfileTargetArn: aws.String(groupARN),
 		})

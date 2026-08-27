@@ -2,6 +2,7 @@ package iot
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,17 @@ func (s *IotStore) CreateProvisioningTemplate(t *ProvisioningTemplate) (*Provisi
 		return nil, ErrTemplateAlreadyExists
 	}
 	t.TemplateARN = BuildProvisioningTemplateARN(s.accountID, s.region, t.TemplateName)
+	// Creating a template seeds version 1 as its default version, matching
+	// the documented create response's defaultVersionId member.
+	t.DefaultVersionID = 1
+	if _, err := s.putProvisioningTemplateVersionLocked(t.TemplateName, &ProvisioningTemplateVersion{
+		VersionID:        "1",
+		TemplateBody:     t.TemplateBody,
+		IsDefaultVersion: true,
+		CreationDate:     t.CreationDate,
+	}); err != nil {
+		return nil, err
+	}
 	return t, s.provisioningTplPS.Create(t)
 }
 
@@ -146,11 +158,17 @@ func (s *IotStore) DeleteProvisioningTemplate(name string) error {
 	return s.provisioningTplPS.DeleteIfExists(name)
 }
 
-// ListProvisioningTemplates returns all provisioning templates.
+// ListProvisioningTemplates returns all provisioning templates. Version
+// records share the templates namespace under keys containing the NUL
+// separator ("<name>\x00<versionId>"); the template list must scope itself
+// to template records only — unmarshalling a version record as a template
+// is a wire-format mismatch, not a corrupt store.
 func (s *IotStore) ListProvisioningTemplates(opts common.ListOptions) (*common.ListResult[ProvisioningTemplate], error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	result, err := common.ListProto(s.templatesBase, opts, func() *pb.ProvisioningTemplate { return &pb.ProvisioningTemplate{} }, nil)
+	result, err := common.ListProtoFiltered(s.templatesBase, opts,
+		func() *pb.ProvisioningTemplate { return &pb.ProvisioningTemplate{} }, nil,
+		func(key string) bool { return !strings.ContainsRune(key, '\x00') })
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +180,7 @@ func (s *IotStore) ListProvisioningTemplates(opts common.ListOptions) (*common.L
 		}
 		items = append(items, t)
 	}
-	return &common.ListResult[ProvisioningTemplate]{Items: items, NextMarker: result.NextMarker}, nil
+	return &common.ListResult[ProvisioningTemplate]{Items: items, NextMarker: result.NextMarker, IsTruncated: result.IsTruncated}, nil
 }
 
 func (s *IotStore) CreateProvisioningTemplateVersion(name string, v *ProvisioningTemplateVersion) (*ProvisioningTemplateVersion, error) {

@@ -7,7 +7,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/config"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // DescribeEndpoint returns a connectable local endpoint address for the
@@ -63,8 +62,8 @@ func (s *IoTService) GetIndexingConfiguration(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	ic, err := store.GetIndexingConfiguration()
-	if err != nil {
+	ic := s.getIndexingConfigurationCore(store)
+	if ic == nil {
 		return map[string]interface{}{
 			"thingIndexingConfiguration": map[string]interface{}{
 				"thingIndexingMode": "OFF",
@@ -88,26 +87,22 @@ func (s *IoTService) UpdateIndexingConfiguration(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	ic, err := store.GetIndexingConfiguration()
-	if err != nil {
-		ic = &iotstore.IndexingConfiguration{}
-	}
-
+	in := UpdateIndexingConfigurationInput{}
 	if tic, ok := req.Parameters["thingIndexingConfiguration"]; ok {
 		if ticMap, ok := tic.(map[string]interface{}); ok {
 			if v, ok := ticMap["thingIndexingMode"].(string); ok {
-				ic.ThingIndexingMode = v
+				in.ThingIndexingMode = &v
 			}
 			if v, ok := ticMap["thingGroupIndexingMode"].(string); ok {
-				ic.ThingGroupIndexingMode = v
+				in.ThingGroupIndexingMode = &v
 			}
 			if v, ok := ticMap["thingConnectivityIndexingMode"].(string); ok {
-				ic.ThingConnectivityIndexingMode = v
+				in.ThingConnectivityIndexingMode = &v
 			}
 		}
 	}
 
-	if err := store.UpdateIndexingConfiguration(ic); err != nil {
+	if err := s.updateIndexingConfigurationCore(store, in); err != nil {
 		return nil, err
 	}
 

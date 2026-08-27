@@ -157,7 +157,66 @@ func (r *TestRunner) runIoTCertTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected non-empty certificateId from RegisterCertificate")
 		}
 		regCertID = *out.CertificateId
+		// The status member is the documented control (setAsActive is its
+		// deprecated predecessor); an explicit ACTIVE must take effect.
+		desc, err := tc.client.DescribeCertificate(tc.ctx, &iot.DescribeCertificateInput{CertificateId: aws.String(regCertID)})
+		if err != nil {
+			return fmt.Errorf("DescribeCertificate after register failed: %w", err)
+		}
+		if desc.CertificateDescription == nil || desc.CertificateDescription.Status != types.CertificateStatusActive {
+			return fmt.Errorf("expected registered certificate status ACTIVE, got %v", desc.CertificateDescription)
+		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "Cert_RegisterCertificate_InvalidStatusRejected", func() error {
+		_, err := tc.client.RegisterCertificate(tc.ctx, &iot.RegisterCertificateInput{
+			CertificatePem: aws.String(selfSignedTestPEM),
+			Status:         "PENDING",
+		})
+		return expectValidationError(err)
+	}))
+
+	results = append(results, r.RunTest("iot", "Cert_TransferCertificate_OutgoingRoundTrip", func() error {
+		if regCertID == "" {
+			return fmt.Errorf("no registered certificate captured")
+		}
+		xfer, err := tc.client.TransferCertificate(tc.ctx, &iot.TransferCertificateInput{
+			CertificateId:    aws.String(regCertID),
+			TargetAwsAccount: aws.String("000000000001"),
+			TransferMessage:  aws.String("handoff"),
+		})
+		if err != nil {
+			return fmt.Errorf("TransferCertificate failed: %w", err)
+		}
+		if xfer.TransferredCertificateArn == nil || *xfer.TransferredCertificateArn == "" {
+			return fmt.Errorf("expected non-empty transferredCertificateArn")
+		}
+		list, err := tc.client.ListOutgoingCertificates(tc.ctx, &iot.ListOutgoingCertificatesInput{})
+		if err != nil {
+			return fmt.Errorf("ListOutgoingCertificates failed: %w", err)
+		}
+		for _, out := range list.OutgoingCertificates {
+			if aws.ToString(out.CertificateId) == regCertID {
+				if aws.ToString(out.TransferredTo) != "000000000001" {
+					return fmt.Errorf("expected transferredTo=000000000001, got %v", out.TransferredTo)
+				}
+				if aws.ToString(out.TransferMessage) != "handoff" {
+					return fmt.Errorf("expected transferMessage=handoff, got %v", out.TransferMessage)
+				}
+				if out.TransferDate == nil {
+					return fmt.Errorf("expected non-nil transferDate")
+				}
+				if out.CreationDate == nil {
+					return fmt.Errorf("expected non-nil creationDate")
+				}
+				if _, err := tc.client.CancelCertificateTransfer(tc.ctx, &iot.CancelCertificateTransferInput{CertificateId: aws.String(regCertID)}); err != nil {
+					return fmt.Errorf("CancelCertificateTransfer failed: %w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("transferred certificate %s not found in outgoing list", regCertID)
 	}))
 
 	// Delete the primary cert last; assert it can't be described afterwards.

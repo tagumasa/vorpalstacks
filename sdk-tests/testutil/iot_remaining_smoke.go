@@ -1,6 +1,8 @@
 package testutil
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
 	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
@@ -106,8 +108,10 @@ func (r *TestRunner) runIoTRemainingSmokeTests(tc *iotTestContext) []TestResult 
 		return expectNotFound(err)
 	}))
 	results = append(results, r.RunTest("iot", "DescribeThingRegistrationTask_Validation", func() error {
+		// An unknown, well-formed task ID yields the documented
+		// ResourceNotFoundException (404).
 		_, err := tc.client.DescribeThingRegistrationTask(tc.ctx, &iot.DescribeThingRegistrationTaskInput{TaskId: aws.String(fakeTask)})
-		return expectValidationError(err)
+		return expectNotFound(err)
 	}))
 	task("StopThingRegistrationTask", func() error {
 		_, err := tc.client.StopThingRegistrationTask(tc.ctx, &iot.StopThingRegistrationTaskInput{TaskId: aws.String(fakeTask)})
@@ -155,6 +159,39 @@ func (r *TestRunner) runIoTRemainingSmokeTests(tc *iotTestContext) []TestResult 
 		})
 		return expectValidationError(err)
 	})
+
+	results = append(results, r.RunTest("iot", "DetectMitigation_TaskSummaryShape", func() error {
+		taskId := uniqueName("detect-mit-shape")
+		defer tc.client.CancelDetectMitigationActionsTask(tc.ctx, &iot.CancelDetectMitigationActionsTaskInput{TaskId: aws.String(taskId)})
+		if _, err := tc.client.StartDetectMitigationActionsTask(tc.ctx, &iot.StartDetectMitigationActionsTaskInput{
+			TaskId:             aws.String(taskId),
+			Target:             &iottypes.DetectMitigationActionsTaskTarget{ViolationIds: []string{"violation-1"}},
+			Actions:            []string{"deviceCertMitigation"},
+			ClientRequestToken: aws.String("detect-mit-shape-token"),
+		}); err != nil {
+			return fmt.Errorf("StartDetectMitigationActionsTask failed: %w", err)
+		}
+		out, err := tc.client.DescribeDetectMitigationActionsTask(tc.ctx, &iot.DescribeDetectMitigationActionsTaskInput{TaskId: aws.String(taskId)})
+		if err != nil {
+			return err
+		}
+		if out.TaskSummary == nil {
+			return fmt.Errorf("expected taskSummary in response")
+		}
+		if aws.ToString(out.TaskSummary.TaskId) != taskId {
+			return fmt.Errorf("expected taskSummary.taskId=%s, got %v", taskId, out.TaskSummary.TaskId)
+		}
+		if out.TaskSummary.TaskStatus != iottypes.DetectMitigationActionsTaskStatusInProgress {
+			return fmt.Errorf("expected taskStatus=IN_PROGRESS, got %s", out.TaskSummary.TaskStatus)
+		}
+		if out.TaskSummary.TaskStartTime == nil {
+			return fmt.Errorf("expected non-nil taskStartTime")
+		}
+		if out.TaskSummary.Target == nil || len(out.TaskSummary.Target.ViolationIds) != 1 {
+			return fmt.Errorf("expected target.violationIds echoed")
+		}
+		return nil
+	}))
 
 	return results
 }

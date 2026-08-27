@@ -163,12 +163,6 @@ func (s *IotStore) UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error) {
 			return nil, ErrInvalidRequest
 		}
 	}
-	if opts.ReasonCode != "" {
-		existing.ReasonCode = opts.ReasonCode
-	}
-	if opts.Comment != "" {
-		existing.Comment = opts.Comment
-	}
 	if opts.NamespaceID != "" {
 		existing.NamespaceID = opts.NamespaceID
 	}
@@ -187,11 +181,11 @@ func (s *IotStore) UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error) {
 	if opts.JobExecutionsRetryConfig != "" {
 		existing.JobExecutionsRetryConfig = opts.JobExecutionsRetryConfig
 	}
-	if opts.SchedulingConfig != "" {
-		existing.SchedulingConfig = opts.SchedulingConfig
+	if opts.ReasonCode != "" {
+		existing.ReasonCode = opts.ReasonCode
 	}
-	if opts.ScheduledJobRollouts != "" {
-		existing.ScheduledJobRollouts = opts.ScheduledJobRollouts
+	if opts.Comment != "" {
+		existing.Comment = opts.Comment
 	}
 	existing.LastUpdatedAt = time.Now().UTC()
 	return existing, s.jobPS.Update(existing)

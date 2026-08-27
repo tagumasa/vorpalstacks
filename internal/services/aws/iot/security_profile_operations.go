@@ -3,7 +3,6 @@ package iot
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
@@ -11,151 +10,90 @@ import (
 )
 
 func (s *IoTService) CreateSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	behaviors, err := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam)
-	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
-	}
-
-	alertTargets, err := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam)
-	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
-	}
-
-	metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseStringList, parseMetricsParam)
-	additionalMetricsV1 := request.GetStringList(req.Parameters, "additionalMetricsToRetain")
-	metricsExportConfig := request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig")
+	behaviors, behaviorsErr := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam)
+	alertTargets, alertTargetsErr := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam)
 	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
 	spTags := make(map[string]string, len(tagList))
 	for _, t := range tagList {
 		spTags[t.Key] = t.Value
 	}
-
-	sp := &iotstore.SecurityProfile{
-		SecurityProfileName:         name,
-		SecurityProfileDescription:  request.GetParamCaseInsensitive(req.Parameters, "securityProfileDescription"),
+	in := CreateSecurityProfileInput{
+		Name:                        request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		Description:                 request.GetParamCaseInsensitive(req.Parameters, "securityProfileDescription"),
 		Behaviors:                   behaviors,
+		BehaviorsMalformed:          behaviorsErr != nil,
 		AlertTargets:                alertTargets,
-		AdditionalMetricsToRetainV2: metrics,
-		AdditionalMetricsToRetain:   additionalMetricsV1,
-		MetricsExportConfig:         metricsExportConfig,
+		AlertTargetsMalformed:       alertTargetsErr != nil,
+		AdditionalMetricsToRetainV2: parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseMetricsToRetainJSON, parseMetricsToRetainParam),
+		AdditionalMetricsToRetain:   request.GetStringList(req.Parameters, "additionalMetricsToRetain"),
+		MetricsExportConfig:         request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig"),
 		Tags:                        spTags,
-		Version:                     1,
-		CreationDate:                time.Now().UTC(),
-		LastModifiedDate:            time.Now().UTC(),
 	}
-
-	created, err := store.CreateSecurityProfile(sp)
+	created, err := s.createSecurityProfileCore(store, in)
 	if err != nil {
 		return nil, err
 	}
-
-	return securityProfileToResponse(created), nil
+	// CreateSecurityProfileResponse carries only the name and ARN.
+	return map[string]interface{}{
+		"securityProfileName": created.SecurityProfileName,
+		"securityProfileArn":  created.SecurityProfileARN,
+	}, nil
 }
 
 func (s *IoTService) DescribeSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	sp, err := store.GetSecurityProfile(name)
+	sp, err := s.describeSecurityProfileCore(store, request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"))
 	if err != nil {
 		return nil, err
 	}
-
 	return securityProfileToResponse(sp), nil
 }
 
 func (s *IoTService) UpdateSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	existing, err := store.GetSecurityProfile(name)
+	behaviors, behaviorsErr := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam)
+	alertTargets, alertTargetsErr := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam)
+	in := UpdateSecurityProfileInput{
+		Name:                            request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		ExpectedVersion:                 int64(request.GetIntParam(req.Parameters, "expectedVersion")),
+		Description:                     request.GetParamCaseInsensitive(req.Parameters, "securityProfileDescription"),
+		Behaviors:                       behaviors,
+		BehaviorsMalformed:              behaviorsErr != nil,
+		DeleteBehaviors:                 request.GetBoolParam(req.Parameters, "deleteBehaviors"),
+		AlertTargets:                    alertTargets,
+		AlertTargetsMalformed:           alertTargetsErr != nil,
+		DeleteAlertTargets:              request.GetBoolParam(req.Parameters, "deleteAlertTargets"),
+		AdditionalMetricsToRetainV2:     parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseMetricsToRetainJSON, parseMetricsToRetainParam),
+		AdditionalMetricsToRetain:       request.GetStringList(req.Parameters, "additionalMetricsToRetain"),
+		DeleteAdditionalMetricsToRetain: request.GetBoolParam(req.Parameters, "deleteAdditionalMetricsToRetain"),
+		MetricsExportConfig:             request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig"),
+		DeleteMetricsExportConfig:       request.GetBoolParam(req.Parameters, "deleteMetricsExportConfig"),
+	}
+	updated, err := s.updateSecurityProfileCore(store, in)
 	if err != nil {
 		return nil, err
 	}
-
-	if expVer := request.GetIntParam(req.Parameters, "expectedVersion"); expVer > 0 && int64(expVer) != existing.Version {
-		return nil, iotstore.ErrVersionConflict
-	}
-
-	desc := request.GetParamCaseInsensitive(req.Parameters, "securityProfileDescription")
-	if desc != "" {
-		existing.SecurityProfileDescription = desc
-	}
-
-	if behaviors, err := parseDualForm(req.Parameters, "behaviors", parseBehaviors, parseBehaviorsParam); err != nil {
-		return nil, iotstore.ErrInvalidRequest
-	} else if behaviors != nil {
-		existing.Behaviors = behaviors
-	}
-
-	if alertTargets, err := parseDualForm(req.Parameters, "alertTargets", parseAlertTargets, parseAlertTargetsParam); err != nil {
-		return nil, iotstore.ErrInvalidRequest
-	} else if alertTargets != nil {
-		existing.AlertTargets = alertTargets
-	}
-
-	if metrics := parseDualFormNoError(req.Parameters, "additionalMetricsToRetainV2", parseStringList, parseMetricsParam); metrics != nil {
-		existing.AdditionalMetricsToRetainV2 = metrics
-	}
-	if metricsV1 := request.GetStringList(req.Parameters, "additionalMetricsToRetain"); metricsV1 != nil {
-		existing.AdditionalMetricsToRetain = metricsV1
-	}
-	if mec := request.GetParamCaseInsensitive(req.Parameters, "metricsExportConfig"); mec != "" {
-		existing.MetricsExportConfig = mec
-	}
-
-	existing.Version++
-	existing.LastModifiedDate = time.Now().UTC()
-
-	if err := store.UpdateSecurityProfile(name, existing); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{}, nil
+	return securityProfileToResponse(updated), nil
 }
 
 func (s *IoTService) DeleteSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	if name == "" {
-		return nil, iotstore.ErrMissingParam
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	arn := iotstore.BuildSecurityProfileARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name)
-	_ = store.DeleteAllTags(arn)
-
-	if err := store.DeleteSecurityProfile(name); err != nil {
+	if err := s.deleteSecurityProfileCore(store, request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")); err != nil {
 		return nil, err
 	}
-
 	return map[string]interface{}{}, nil
 }
 
@@ -164,18 +102,15 @@ func (s *IoTService) ListSecurityProfiles(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-
-	profiles, err := store.ListSecurityProfiles(parseListOptions(req.Parameters))
+	items, nextMarker, err := s.listSecurityProfilesCore(store, parseListOptions(req.Parameters))
 	if err != nil {
 		return nil, err
 	}
-
-	items := make([]map[string]interface{}, 0, len(profiles.Items))
-	for _, sp := range profiles.Items {
-		items = append(items, securityProfileIdentifierResponse(sp.SecurityProfileName, sp.SecurityProfileARN))
+	identifiers := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		identifiers = append(identifiers, securityProfileIdentifierResponse(item.Name, item.Arn))
 	}
-
-	return listResponse("securityProfileIdentifiers", items, profiles.NextMarker), nil
+	return listResponse("securityProfileIdentifiers", identifiers, nextMarker), nil
 }
 
 func (s *IoTService) ValidateSecurityProfileBehaviors(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -199,8 +134,8 @@ func (s *IoTService) ValidateSecurityProfileBehaviors(ctx context.Context, reqCt
 	if err != nil {
 		return map[string]interface{}{
 			"valid": false,
-			"validationMessages": []map[string]interface{}{
-				{"message": "failed to parse behaviors JSON: " + err.Error()},
+			"validationErrors": []map[string]interface{}{
+				{"errorMessage": "failed to parse behaviors JSON: " + err.Error()},
 			},
 		}, nil
 	}
@@ -218,34 +153,37 @@ func (s *IoTService) ValidateSecurityProfileBehaviors(ctx context.Context, reqCt
 		if b.Name == "" {
 			valid = false
 			msgs = append(msgs, map[string]interface{}{
-				"message": "behavior name must not be empty",
+				"errorMessage": "behavior name must not be empty",
 			})
 			continue
 		}
 		if b.Criteria == nil {
 			valid = false
 			msgs = append(msgs, map[string]interface{}{
-				"message": "behavior '" + b.Name + "' must have criteria",
+				"errorMessage": "behavior '" + b.Name + "' must have criteria",
 			})
 			continue
 		}
 		if !validOperators[b.Criteria.ComparisonOperator] {
 			valid = false
 			msgs = append(msgs, map[string]interface{}{
-				"message": "behavior '" + b.Name + "' has invalid comparisonOperator '" + b.Criteria.ComparisonOperator + "'",
+				"errorMessage": "behavior '" + b.Name + "' has invalid comparisonOperator '" + b.Criteria.ComparisonOperator + "'",
 			})
 		}
 		if b.Criteria.DurationSeconds < 0 {
 			valid = false
 			msgs = append(msgs, map[string]interface{}{
-				"message": "behavior '" + b.Name + "' has negative durationSeconds",
+				"errorMessage": "behavior '" + b.Name + "' has negative durationSeconds",
 			})
 		}
 	}
 
+	// ValidateSecurityProfileBehaviorsResponse carries valid plus
+	// validationErrors, each a ValidationError whose only member is
+	// errorMessage.
 	result := map[string]interface{}{"valid": valid}
 	if len(msgs) > 0 {
-		result["validationMessages"] = msgs
+		result["validationErrors"] = msgs
 	}
 	return result, nil
 }
@@ -377,21 +315,50 @@ func parseStringList(jsonStr string) []string {
 	return nil
 }
 
-func parseMetricsParam(v interface{}) []string {
+// parseMetricsToRetainJSON parses the JSON form of the
+// additionalMetricsToRetainV2 member: a list of MetricToRetain objects.
+func parseMetricsToRetainJSON(jsonStr string) []*iotstore.MetricToRetain {
+	if jsonStr == "" {
+		return nil
+	}
+	var list []interface{}
+	if json.Unmarshal([]byte(jsonStr), &list) != nil {
+		return nil
+	}
+	return metricsToRetainFromList(list)
+}
+
+// parseMetricsToRetainParam parses the structured form of the
+// additionalMetricsToRetainV2 member.
+func parseMetricsToRetainParam(v interface{}) []*iotstore.MetricToRetain {
 	switch val := v.(type) {
 	case string:
-		return parseStringList(val)
+		return parseMetricsToRetainJSON(val)
 	case []interface{}:
-		var list []string
-		for _, item := range val {
-			if s, ok := item.(string); ok {
-				list = append(list, s)
-			}
-		}
-		return list
+		return metricsToRetainFromList(val)
 	default:
 		return nil
 	}
+}
+
+func metricsToRetainFromList(list []interface{}) []*iotstore.MetricToRetain {
+	entries := make([]*iotstore.MetricToRetain, 0, len(list))
+	for _, item := range list {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		entry := &iotstore.MetricToRetain{
+			Metric:       strVal(m["metric"]),
+			ExportMetric: boolVal(m["exportMetric"]),
+		}
+		if dim, ok := m["metricDimension"].(map[string]interface{}); ok {
+			entry.MetricDimension = strVal(dim["dimensionName"])
+			entry.Operator = strVal(dim["operator"])
+		}
+		entries = append(entries, entry)
+	}
+	return entries
 }
 
 func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interface{} {
@@ -410,9 +377,22 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 		}
 	}
 
-	metrics := sp.AdditionalMetricsToRetainV2
-	if metrics == nil {
-		metrics = []string{}
+	metricsV2 := make([]interface{}, 0, len(sp.AdditionalMetricsToRetainV2))
+	for _, m := range sp.AdditionalMetricsToRetainV2 {
+		entry := map[string]interface{}{
+			"metric":       m.Metric,
+			"exportMetric": m.ExportMetric,
+		}
+		if m.MetricDimension != "" {
+			dimension := map[string]interface{}{
+				"dimensionName": m.MetricDimension,
+			}
+			if m.Operator != "" {
+				dimension["operator"] = m.Operator
+			}
+			entry["metricDimension"] = dimension
+		}
+		metricsV2 = append(metricsV2, entry)
 	}
 
 	metricsV1 := sp.AdditionalMetricsToRetain
@@ -427,7 +407,7 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 		"behaviors":                   behaviors,
 		"alertTargets":                alertTargets,
 		"additionalMetricsToRetain":   metricsV1,
-		"additionalMetricsToRetainV2": metrics,
+		"additionalMetricsToRetainV2": metricsV2,
 		"version":                     sp.Version,
 		"creationDate":                sp.CreationDate.Unix(),
 		"lastModifiedDate":            sp.LastModifiedDate.Unix(),
@@ -450,83 +430,41 @@ func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interfac
 // return empty responses per the Smithy output shapes.
 
 func (s *IoTService) AttachSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
-	if profileName == "" || targetArn == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// Forward mapping: profile -> target. Reverse mapping: target -> profile.
-	// Both are stored so that ListSecurityProfilesForTarget (target->profile)
-	// and ListTargetsForSecurityProfile (profile->target) can scan a single
-	// prefix.
-	forwardKey := "secProfileTarget/" + profileName + "/" + targetArn
-	reverseKey := "secTargetProfile/" + targetArn + "/" + profileName
-	assocValue := map[string]interface{}{
-		"securityProfileName":      profileName,
-		"securityProfileTargetArn": targetArn,
-	}
-	if err := store.PutGeneric(forwardKey, assocValue); err != nil {
-		return nil, err
-	}
-	if err := store.PutGeneric(reverseKey, assocValue); err != nil {
-		// Rollback forward write to maintain bidirectional consistency.
-		_ = store.DeleteGeneric(forwardKey)
+	if err := s.attachSecurityProfileCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DetachSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
-	if profileName == "" || targetArn == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	forwardKey := "secProfileTarget/" + profileName + "/" + targetArn
-	reverseKey := "secTargetProfile/" + targetArn + "/" + profileName
-	exists, err := store.GetGenericExists(forwardKey, &map[string]interface{}{})
-	if err != nil {
+	if err := s.detachSecurityProfileCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")); err != nil {
 		return nil, err
-	}
-	if !exists {
-		return nil, iotstore.ErrSecurityProfileAttachmentNotFound
-	}
-	// Attempt both deletes so a partial failure does not leave stale mappings
-	// that block subsequent retries (the existence check above would reject
-	// a retry after a partial delete).
-	errForward := store.DeleteGeneric(forwardKey)
-	errReverse := store.DeleteGeneric(reverseKey)
-	if errForward != nil {
-		return nil, errForward
-	}
-	if errReverse != nil {
-		return nil, errReverse
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) ListSecurityProfilesForTarget(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
-	if targetArn == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("secTargetProfile/" + targetArn + "/")
+	targetArn := request.GetParamCaseInsensitive(req.Parameters, "securityProfileTargetArn")
+	names, err := s.listSecurityProfilesForTargetCore(store, targetArn)
 	if err != nil {
 		return nil, err
 	}
-	mappings := make([]map[string]interface{}, 0, len(items))
-	for _, rec := range items {
-		profileName, _ := rec["securityProfileName"].(string)
+	mappings := make([]map[string]interface{}, 0, len(names))
+	for _, profileName := range names {
 		mappings = append(mappings, map[string]interface{}{
 			"securityProfileIdentifier": map[string]interface{}{
 				"name": profileName,
@@ -536,58 +474,34 @@ func (s *IoTService) ListSecurityProfilesForTarget(ctx context.Context, reqCtx *
 			},
 		})
 	}
-	return paginatedMaps("securityProfileTargetMappings", mappings, req.Parameters), nil
+	return paginatedMaps("securityProfileTargetMappings", mappings, req.Parameters)
 }
 func (s *IoTService) ListTargetsForSecurityProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	profileName := request.GetParamCaseInsensitive(req.Parameters, "securityProfileName")
-	if profileName == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	items, err := store.ListGeneric("secProfileTarget/" + profileName + "/")
+	targets, err := s.listTargetsForSecurityProfileCore(store, request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"))
 	if err != nil {
 		return nil, err
 	}
-	targets := make([]map[string]interface{}, 0, len(items))
-	for _, rec := range items {
-		targetArn, _ := rec["securityProfileTargetArn"].(string)
-		targets = append(targets, map[string]interface{}{
+	items := make([]map[string]interface{}, 0, len(targets))
+	for _, targetArn := range targets {
+		items = append(items, map[string]interface{}{
 			"arn": targetArn,
 		})
 	}
-	return paginatedMaps("securityProfileTargets", targets, req.Parameters), nil
+	return paginatedMaps("securityProfileTargets", items, req.Parameters)
 }
 func (s *IoTService) PutVerificationStateOnViolation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	violationId := request.GetParamCaseInsensitive(req.Parameters, "violationId")
-	verificationState := request.GetParamCaseInsensitive(req.Parameters, "verificationState")
-	if violationId == "" || verificationState == "" {
-		return nil, iotstore.ErrMissingParam
-	}
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key := "violation/" + violationId
-	rec := map[string]interface{}{}
-	exists, err := store.GetGenericExists(key, &rec)
-	if err != nil {
-		return nil, err
-	}
-	// No Device Defender engine generates violations, so the record usually
-	// does not exist. AWS lists only InvalidRequestException in the Smithy
-	// errors trait (not ResourceNotFoundException), so return InvalidRequest
-	// for an unknown violation id rather than 404.
-	if !exists {
-		return nil, iotstore.ErrInvalidRequest
-	}
-	rec["verificationState"] = verificationState
-	if desc := request.GetParamCaseInsensitive(req.Parameters, "verificationStateDescription"); desc != "" {
-		rec["verificationStateDescription"] = desc
-	}
-	if err := store.PutGeneric(key, rec); err != nil {
+	if err := s.putVerificationStateOnViolationCore(store,
+		request.GetParamCaseInsensitive(req.Parameters, "violationId"),
+		request.GetParamCaseInsensitive(req.Parameters, "verificationState"),
+		request.GetParamCaseInsensitive(req.Parameters, "verificationStateDescription")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil

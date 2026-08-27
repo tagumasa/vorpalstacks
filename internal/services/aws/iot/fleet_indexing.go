@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
@@ -340,89 +339,20 @@ func tokenizeQuery(query string) []string {
 	return tokens
 }
 
-// ---------------------------------------------------------------------------
-// Fleet indexing search helpers
-// ---------------------------------------------------------------------------
-
-// searchThings loads all things from the store and filters them by the
-// parsed query. Returns the full matching slice; pagination is applied by
-// the caller.
-func (s *IoTService) searchThings(reqCtx *request.RequestContext, queryString string) ([]*iotstore.Thing, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	qNode, err := parseQuery(queryString)
-	if err != nil {
-		return nil, iotstore.ErrInvalidRequest
-	}
-
-	// Pre-compute the set of connected thing names from all brokers in
-	// the current region.  This is used by the isConnected query filter.
-	conn := s.buildConnectedSet(reqCtx, store)
-
-	// Paginate through ALL things, applying the query filter.
-	var matched []*iotstore.Thing
-	var opts storecommon.ListOptions
-	for {
-		result, err := store.ListThings(opts, "", "")
-		if err != nil {
-			return nil, err
-		}
-		for i := range result.Items {
-			if qNode.match(result.Items[i], conn) {
-				matched = append(matched, result.Items[i])
-			}
-		}
-		if result.NextMarker == "" {
-			break
-		}
-		opts.Marker = result.NextMarker
-	}
-	return matched, nil
-}
-
-// buildConnectedSet returns a set of thing names that have at least one
-// principal certificate currently connected to any broker. The account and
-// region are required to construct the full certificate ARN that
-// ListThingsForPrincipal uses as a PebbleDB key prefix.
-func (s *IoTService) buildConnectedSet(reqCtx *request.RequestContext, store iotstore.IotStoreInterface) connectedSet {
-	conn := connectedSet{}
-	accountID := ""
-	region := ""
-	if reqCtx != nil {
-		accountID = reqCtx.GetAccountID()
-		region = reqCtx.GetRegion()
-	}
-	for _, b := range s.brokers {
-		for _, certID := range b.ConnectedCertIDs() {
-			// ListThingsForPrincipal keys on the full certificate ARN,
-			// not the raw SHA-256 hash.
-			principal := iotstore.BuildCertificateARN(accountID, region, certID)
-			thingNames, err := store.ListThingsForPrincipal(principal)
-			if err != nil {
-				continue
-			}
-			for _, tn := range thingNames {
-				conn[tn] = true
-			}
-		}
-	}
-	return conn
-}
-
-// ---------------------------------------------------------------------------
-// SearchIndex handler — replaces the previous stub.
-// ---------------------------------------------------------------------------
-
+// searchIndexImpl serves SearchIndex: it evaluates the fleet-indexing
+// query string against the thing store through searchThingsCore and
+// returns the matched page of things with a continuation token.
 func (s *IoTService) searchIndexImpl(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryString := request.GetParamCaseInsensitive(req.Parameters, "queryString")
 	if queryString == "" {
 		return nil, iotstore.ErrMissingParam
 	}
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -466,7 +396,11 @@ func (s *IoTService) getStatisticsImpl(ctx context.Context, reqCtx *request.Requ
 		return nil, iotstore.ErrMissingParam
 	}
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +452,11 @@ func (s *IoTService) getCardinalityImpl(ctx context.Context, reqCtx *request.Req
 	}
 	aggField := request.GetParamCaseInsensitive(req.Parameters, "aggregationField")
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +494,11 @@ func (s *IoTService) getPercentilesImpl(ctx context.Context, reqCtx *request.Req
 		return map[string]interface{}{"percentiles": []map[string]interface{}{}}, nil
 	}
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -605,7 +547,11 @@ func (s *IoTService) getBucketsAggregationImpl(ctx context.Context, reqCtx *requ
 		return nil, iotstore.ErrMissingParam
 	}
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -764,7 +710,11 @@ func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.Reque
 	if metricName == "" {
 		return nil, iotstore.ErrMissingParam
 	}
-	rec, _, exists, err := s.bulkGet(reqCtx, "fleetMetric", req, "metricName")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	rec, exists, err := s.bulkGetCore(store, "fleetMetric", request.GetParamCaseInsensitive(req.Parameters, "metricName"))
 	if err != nil {
 		return nil, err
 	}
@@ -777,7 +727,7 @@ func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.Reque
 	aggField, _ := rec["aggregationField"].(string)
 	aggType, _ := rec["aggregationType"].(string)
 
-	matched, err := s.searchThings(reqCtx, queryString)
+	matched, err := s.searchThingsCore(store, queryString)
 	if err != nil {
 		return nil, err
 	}
@@ -834,5 +784,5 @@ func (s *IoTService) ListMetricValues(ctx context.Context, reqCtx *request.Reque
 			"value":     value,
 		},
 	}
-	return paginatedMaps("metricValues", values, req.Parameters), nil
+	return paginatedMaps("metricValues", values, req.Parameters)
 }

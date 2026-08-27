@@ -4,45 +4,61 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	iotstore "vorpalstacks/internal/store/aws/iot"
+	"vorpalstacks/internal/common/tags"
 )
 
 // ---- Dimensions ----------------------------------------------------
 
 func (s *IoTService) CreateDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, err := s.bulkCreate(reqCtx, "dimension", req, "name", map[string]interface{}{
-		"type":         request.GetParamCaseInsensitive(req.Parameters, "type"),
-		"stringValues": request.GetStringList(req.Parameters, "stringValues"),
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
+	recTags := make(map[string]string, len(tagList))
+	for _, t := range tagList {
+		recTags[t.Key] = t.Value
+	}
+	result, err := s.createDimensionCore(store, CreateDimensionInput{
+		Name:         request.GetParamCaseInsensitive(req.Parameters, "name"),
+		Type:         request.GetParamCaseInsensitive(req.Parameters, "type"),
+		StringValues: request.GetStringList(req.Parameters, "stringValues"),
+		Tags:         recTags,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"name": rec["name"],
-		"arn":  iotstore.BuildDimensionARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
+		"name": result.Name,
+		"arn":  result.Arn,
 	}, nil
 }
 func (s *IoTService) DeleteDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.bulkDelete(reqCtx, "dimension", req, "name"); err != nil {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.deleteDimensionCore(store, request.GetParamCaseInsensitive(req.Parameters, "name")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DescribeDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, _, exists, err := s.bulkGet(reqCtx, "dimension", req, "name")
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrDimensionNotFound
+	rec, err := s.describeDimensionCore(store, request.GetParamCaseInsensitive(req.Parameters, "name"))
+	if err != nil {
+		return nil, err
 	}
 	return map[string]interface{}{
-		"name":             rec["name"],
-		"arn":              iotstore.BuildDimensionARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"type":             rec["type"],
-		"stringValues":     rec["stringValues"],
-		"creationDate":     rec["creationDate"],
-		"lastModifiedDate": rec["lastModifiedDate"],
+		"name":             rec.Rec["name"],
+		"arn":              rec.Arn,
+		"type":             rec.Rec["type"],
+		"stringValues":     rec.Rec["stringValues"],
+		"creationDate":     rec.Rec["creationDate"],
+		"lastModifiedDate": rec.Rec["lastModifiedDate"],
 	}, nil
 }
 func (s *IoTService) ListDimensions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -57,22 +73,26 @@ func (s *IoTService) ListDimensions(ctx context.Context, reqCtx *request.Request
 			names = append(names, name)
 		}
 	}
-	return paginatedStrings("dimensionNames", names, req.Parameters), nil
+	return paginatedStrings("dimensionNames", names, req.Parameters)
 }
 func (s *IoTService) UpdateDimension(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, exists, err := s.bulkUpdate(reqCtx, "dimension", req, "name", map[string]interface{}{
-		"stringValues": request.GetStringList(req.Parameters, "stringValues"),
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.updateDimensionCore(store, UpdateDimensionInput{
+		Name:         request.GetParamCaseInsensitive(req.Parameters, "name"),
+		StringValues: request.GetStringList(req.Parameters, "stringValues"),
 	})
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrDimensionNotFound
-	}
 	return map[string]interface{}{
-		"name":             rec["name"],
-		"arn":              iotstore.BuildDimensionARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"stringValues":     rec["stringValues"],
-		"lastModifiedDate": rec["lastModifiedDate"],
+		"name":             result.Rec["name"],
+		"arn":              result.Arn,
+		"type":             result.Rec["type"],
+		"stringValues":     result.Rec["stringValues"],
+		"creationDate":     result.Rec["creationDate"],
+		"lastModifiedDate": result.Rec["lastModifiedDate"],
 	}, nil
 }

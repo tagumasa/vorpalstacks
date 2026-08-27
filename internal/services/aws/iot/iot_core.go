@@ -87,6 +87,9 @@ type ListCertificatesResult struct {
 // DescribeThingResult is the transport-agnostic result of DescribeThing.
 type DescribeThingResult struct {
 	Thing *iotstore.Thing
+	// BillingGroupName carries the thing's billing group, if any (at most
+	// one per AWS constraints).
+	BillingGroupName string
 }
 
 // GetPolicyResult is the transport-agnostic result of GetPolicy.
@@ -235,6 +238,21 @@ func (s *IoTService) createPolicyCore(store iotstore.IotStoreInterface, in Creat
 		return nil, err
 	}
 
+	// The persisted version set is the single source of version identity:
+	// version "1" (the initial default) is recorded alongside the policy so
+	// list/get/default resolution never needs a record-side synthesis.
+	v1 := map[string]interface{}{
+		"versionId":        "1",
+		"policyDocument":   created.PolicyDocument,
+		"isDefaultVersion": true,
+		"createDate":       created.CreationDate.Unix(),
+	}
+	if err := store.PutGeneric("policyVersions/"+in.PolicyName, map[string]interface{}{
+		"versions": []interface{}{v1},
+	}); err != nil {
+		return nil, err
+	}
+
 	return &CreatePolicyResult{Policy: created}, nil
 }
 
@@ -266,6 +284,9 @@ func (s *IoTService) deletePolicyCore(store iotstore.IotStoreInterface, policyNa
 
 	arn := iotstore.BuildPolicyARN(accountID, region, policyName)
 	_ = store.DeleteAllTags(arn)
+	// A policy's versions cannot outlive the policy; a recreated policy
+	// starts with only its default version.
+	_ = store.DeleteGeneric("policyVersions/" + policyName)
 	return nil
 }
 
@@ -339,7 +360,13 @@ func (s *IoTService) describeThingCore(store iotstore.IotStoreInterface, thingNa
 	if err != nil {
 		return nil, err
 	}
-	return &DescribeThingResult{Thing: thing}, nil
+	// AWS: DescribeThing returns billingGroupName when the thing belongs to
+	// a billing group (at most one per AWS constraints).
+	result := &DescribeThingResult{Thing: thing}
+	if groups, _ := store.ListBillingGroupsForThing(thingName); len(groups) > 0 {
+		result.BillingGroupName = groups[0]
+	}
+	return result, nil
 }
 
 // getPolicyCore retrieves a single policy by name.

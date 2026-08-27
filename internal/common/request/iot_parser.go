@@ -223,7 +223,7 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		case len(parts) == 2 && method == http.MethodPost:
 			return "CreateTopicRule"
 		case len(parts) == 2 && method == http.MethodGet:
-			return "DescribeTopicRule"
+			return "GetTopicRule"
 		case len(parts) == 2 && method == http.MethodPatch:
 			return "ReplaceTopicRule"
 		case len(parts) == 2 && method == http.MethodDelete:
@@ -362,7 +362,7 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 			return "CreateDomainConfiguration"
 		case len(parts) == 2 && method == http.MethodGet:
 			return "DescribeDomainConfiguration"
-		case len(parts) == 2 && method == http.MethodPatch:
+		case len(parts) == 2 && method == http.MethodPut:
 			return "UpdateDomainConfiguration"
 		case len(parts) == 2 && method == http.MethodDelete:
 			return "DeleteDomainConfiguration"
@@ -722,8 +722,6 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "GetRegistrationCode"
 	case strings.HasPrefix(path, "/reject-certificate-transfer/") && method == http.MethodPatch:
 		return "RejectCertificateTransfer"
-	case strings.HasPrefix(path, "/rules/") && method == http.MethodGet:
-		return "GetTopicRule"
 	case path == "/security-profiles-for-target" && method == http.MethodGet:
 		return "ListSecurityProfilesForTarget"
 	case strings.HasPrefix(path, "/security-profiles/") && method == http.MethodDelete:
@@ -750,12 +748,12 @@ func (p *iotRESTParser) ExtractOperation(r *http.Request) string {
 		return "ListThingRegistrationTasks"
 	case path == "/thing-registration-tasks" && method == http.MethodPost:
 		return "StartThingRegistrationTask"
+	case strings.HasPrefix(path, "/thing-registration-tasks/") && method == http.MethodGet && strings.HasSuffix(path, "/reports"):
+		return "ListThingRegistrationTaskReports"
 	case strings.HasPrefix(path, "/thing-registration-tasks/") && method == http.MethodGet:
 		return "DescribeThingRegistrationTask"
 	case strings.HasPrefix(path, "/thing-registration-tasks/") && method == http.MethodPut:
 		return "StopThingRegistrationTask"
-	case strings.HasPrefix(path, "/thing-registration-tasks/") && method == http.MethodGet:
-		return "ListThingRegistrationTaskReports"
 	case path == "/things" && method == http.MethodPost:
 		return "RegisterThing"
 	case strings.HasPrefix(path, "/things/") && method == http.MethodPost:
@@ -936,8 +934,8 @@ func (p *iotRESTParser) ExtractPathParams(r *http.Request, params map[string]int
 		params["streamId"] = parts[1]
 	case strings.HasPrefix(path, "/indices/") && len(parts) >= 2:
 		params["indexName"] = parts[1]
-	case strings.HasPrefix(path, "/thing-registration-tasks/") && len(parts) >= 3:
-		params["taskId"] = parts[2]
+	case strings.HasPrefix(path, "/thing-registration-tasks/") && len(parts) >= 2:
+		params["taskId"] = parts[1]
 	case strings.HasPrefix(path, "/violations/") && len(parts) >= 2:
 		params["violationId"] = parts[1]
 	case strings.HasPrefix(path, "/certificates-by-ca/") && len(parts) >= 3:

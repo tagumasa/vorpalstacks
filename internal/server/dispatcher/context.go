@@ -14,6 +14,8 @@ func (d *Dispatcher) buildParsedRequest(r *http.Request, dispatchCtx *DispatchCo
 			QueryParams: r.URL.Query(),
 			PathParams:  make(map[string]string),
 			Parameters:  make(map[string]interface{}),
+			Host:        r.Host,
+			IsTLS:       r.TLS != nil,
 		}
 	}
 	if parsedReq.Parameters == nil {

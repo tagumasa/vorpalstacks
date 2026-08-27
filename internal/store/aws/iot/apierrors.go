@@ -88,6 +88,11 @@ var (
 	ErrInvalidStateTransition = awserrors.NewAWSError("InvalidStateTransitionException", "An invalid state transition was attempted.", 400)
 	ErrInternalFailure        = awserrors.NewAWSError("InternalFailureException", "An internal error occurred.", 500)
 
+	// Provisioning-template outcomes (RegisterThing and the bulk
+	// thing-registration tasks).
+	ErrResourceConflicts           = awserrors.NewAWSError("ResourceConflictsException", "The provisioning template references a resource that already exists and the override settings do not permit replacing it.", 409)
+	ErrResourceRegistrationFailure = awserrors.NewAWSError("ResourceRegistrationFailureException", "The resource registration failed.", 400)
+
 	ErrCertificateValidation      = awserrors.NewAWSError("CertificateValidationException", "The certificate is not valid.", 400)
 	ErrConflictingUpdate          = awserrors.NewAWSError("ConflictingResourceUpdateException", "A conflicting resource update is in progress.", 409)
 	ErrIndexNotReady              = awserrors.NewAWSError("IndexNotReadyException", "The fleet index is not ready.", 400)

@@ -190,7 +190,7 @@ func (r *TestRunner) runIoTLoggingConfigGapTests(tc *iotTestContext) []TestResul
 	results = append(results, r.RunTest("iot", "Gap_DeleteV2LoggingLevel", func() error {
 		_, err := tc.client.DeleteV2LoggingLevel(tc.ctx, &iot.DeleteV2LoggingLevelInput{
 			TargetType: iottypes.LogTargetTypeDefault,
-			TargetName: aws.String(""),
+			TargetName: aws.String("some-target"),
 		})
 		return err
 	}))
@@ -250,11 +250,27 @@ func (r *TestRunner) runIoTTopicRuleJobSecGapTests(tc *iotTestContext) []TestRes
 			return err
 		}
 		// Now update
-		_, err = tc.client.UpdateSecurityProfile(tc.ctx, &iot.UpdateSecurityProfileInput{
+		out, err := tc.client.UpdateSecurityProfile(tc.ctx, &iot.UpdateSecurityProfileInput{
 			SecurityProfileName:        aws.String(secProfileName),
 			SecurityProfileDescription: aws.String("updated"),
+			AdditionalMetricsToRetainV2: []iottypes.MetricToRetain{{
+				Metric: aws.String("aws:num-messages-received"),
+			}},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		// UpdateSecurityProfileResponse carries the updated profile.
+		if aws.ToString(out.SecurityProfileName) != secProfileName {
+			return fmt.Errorf("expected securityProfileName=%s on update response", secProfileName)
+		}
+		if out.Version != 2 {
+			return fmt.Errorf("expected version=2 after first update, got %d", out.Version)
+		}
+		if len(out.AdditionalMetricsToRetainV2) != 1 || aws.ToString(out.AdditionalMetricsToRetainV2[0].Metric) != "aws:num-messages-received" {
+			return fmt.Errorf("expected updated retained metric on update response, got %v", out.AdditionalMetricsToRetainV2)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "Gap_ValidateSecurityProfileBehaviors", func() error {
@@ -274,6 +290,65 @@ func (r *TestRunner) runIoTTopicRuleJobSecGapTests(tc *iotTestContext) []TestRes
 		}
 		if !out.Valid {
 			return fmt.Errorf("expected valid=true, got false")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "SecProfile_ValidateErrorsShape", func() error {
+		// An invalid behavior reports through validationErrors (a
+		// ValidationError carrying errorMessage), which the SDK can only
+		// decode when the documented member is used.
+		out, err := tc.client.ValidateSecurityProfileBehaviors(tc.ctx, &iot.ValidateSecurityProfileBehaviorsInput{
+			Behaviors: []iottypes.Behavior{{
+				Name: aws.String("criteria-less"),
+			}},
+		})
+		if err != nil {
+			return err
+		}
+		if out.Valid {
+			return fmt.Errorf("expected valid=false for a behavior without criteria")
+		}
+		if len(out.ValidationErrors) == 0 {
+			return fmt.Errorf("expected non-empty validationErrors")
+		}
+		if aws.ToString(out.ValidationErrors[0].ErrorMessage) == "" {
+			return fmt.Errorf("expected non-empty validationErrors[0].errorMessage")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "SecProfile_DeleteBehaviorsFlag", func() error {
+		// A delete flag plus a replacement value in the same invocation is
+		// rejected; the flag alone clears the stored behaviors.
+		_, err := tc.client.UpdateSecurityProfile(tc.ctx, &iot.UpdateSecurityProfileInput{
+			SecurityProfileName: aws.String(secProfileName),
+			DeleteBehaviors:     true,
+			Behaviors: []iottypes.Behavior{{
+				Name: aws.String("conflicting"),
+				Criteria: &iottypes.BehaviorCriteria{
+					ComparisonOperator: iottypes.ComparisonOperatorLessThan,
+					Value:              &iottypes.MetricValue{Count: aws.Int64(1)},
+				},
+			}},
+		})
+		if err := expectAWSErrorCode(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("delete+replace conflict: %w", err)
+		}
+		if _, err := tc.client.UpdateSecurityProfile(tc.ctx, &iot.UpdateSecurityProfileInput{
+			SecurityProfileName: aws.String(secProfileName),
+			DeleteBehaviors:     true,
+		}); err != nil {
+			return fmt.Errorf("deleteBehaviors alone failed: %w", err)
+		}
+		desc, err := tc.client.DescribeSecurityProfile(tc.ctx, &iot.DescribeSecurityProfileInput{
+			SecurityProfileName: aws.String(secProfileName),
+		})
+		if err != nil {
+			return err
+		}
+		if len(desc.Behaviors) != 0 {
+			return fmt.Errorf("expected behaviors cleared, got %d", len(desc.Behaviors))
 		}
 		return nil
 	}))
@@ -318,7 +393,17 @@ func (r *TestRunner) runIoTTopicRuleJobSecGapTests(tc *iotTestContext) []TestRes
 			JobId:       aws.String(jobID),
 			Description: aws.String("updated description"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		desc, err := tc.client.DescribeJob(tc.ctx, &iot.DescribeJobInput{JobId: aws.String(jobID)})
+		if err != nil {
+			return err
+		}
+		if desc.Job == nil || aws.ToString(desc.Job.Description) != "updated description" {
+			return fmt.Errorf("expected updated description to persist, got %v", desc.Job)
+		}
+		return nil
 	}))
 
 	// Teardown
@@ -388,6 +473,14 @@ func (r *TestRunner) runIoTProvTemplateVersionGapTests(tc *iotTestContext) []Tes
 		}
 		if len(out.Versions) < 1 {
 			return fmt.Errorf("expected at least 1 version")
+		}
+		for _, v := range out.Versions {
+			if v.CreationDate == nil || v.CreationDate.IsZero() {
+				return fmt.Errorf("expected non-zero creationDate on version summary")
+			}
+			if v.IsDefaultVersion && (v.VersionId == nil || *v.VersionId != 1) {
+				return fmt.Errorf("expected version 1 to be the default, got %v", v.VersionId)
+			}
 		}
 		return nil
 	}))

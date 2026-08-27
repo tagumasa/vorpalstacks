@@ -5,52 +5,61 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // ---- Custom Metrics -----------------------------------------------
 
 func (s *IoTService) CreateCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 	tagList := tags.ParseTagsWithQueryFallback(req.Parameters, "tags")
 	recTags := make(map[string]string, len(tagList))
 	for _, t := range tagList {
 		recTags[t.Key] = t.Value
 	}
-	rec, err := s.bulkCreate(reqCtx, "customMetric", req, "metricName", map[string]interface{}{
-		"metricType":         request.GetParamCaseInsensitive(req.Parameters, "metricType"),
-		"displayName":        request.GetParamCaseInsensitive(req.Parameters, "displayName"),
-		"clientRequestToken": request.GetParamCaseInsensitive(req.Parameters, "clientRequestToken"),
-		"tags":               recTags,
+	result, err := s.createCustomMetricCore(store, CreateCustomMetricInput{
+		MetricName:         request.GetParamCaseInsensitive(req.Parameters, "metricName"),
+		MetricType:         request.GetParamCaseInsensitive(req.Parameters, "metricType"),
+		DisplayName:        request.GetParamCaseInsensitive(req.Parameters, "displayName"),
+		ClientRequestToken: request.GetParamCaseInsensitive(req.Parameters, "clientRequestToken"),
+		Tags:               recTags,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"metricName": rec["name"],
-		"metricArn":  iotstore.BuildCustomMetricARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
+		"metricName": result.MetricName,
+		"metricArn":  result.MetricArn,
 	}, nil
 }
 func (s *IoTService) DeleteCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.bulkDelete(reqCtx, "customMetric", req, "metricName"); err != nil {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.deleteCustomMetricCore(store, request.GetParamCaseInsensitive(req.Parameters, "metricName")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
 }
 func (s *IoTService) DescribeCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, _, exists, err := s.bulkGet(reqCtx, "customMetric", req, "metricName")
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrCustomMetricNotFound
+	rec, err := s.describeCustomMetricCore(store, request.GetParamCaseInsensitive(req.Parameters, "metricName"))
+	if err != nil {
+		return nil, err
 	}
 	return map[string]interface{}{
-		"metricName":       rec["name"],
-		"metricArn":        iotstore.BuildCustomMetricARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"metricType":       rec["metricType"],
-		"displayName":      rec["displayName"],
-		"creationDate":     rec["creationDate"],
-		"lastModifiedDate": rec["lastModifiedDate"],
+		"metricName":       rec.Rec["name"],
+		"metricArn":        rec.Arn,
+		"metricType":       rec.Rec["metricType"],
+		"displayName":      rec.Rec["displayName"],
+		"creationDate":     rec.Rec["creationDate"],
+		"lastModifiedDate": rec.Rec["lastModifiedDate"],
 	}, nil
 }
 func (s *IoTService) ListCustomMetrics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -65,23 +74,26 @@ func (s *IoTService) ListCustomMetrics(ctx context.Context, reqCtx *request.Requ
 			names = append(names, name)
 		}
 	}
-	return paginatedStrings("metricNames", names, req.Parameters), nil
+	return paginatedStrings("metricNames", names, req.Parameters)
 }
 func (s *IoTService) UpdateCustomMetric(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	rec, exists, err := s.bulkUpdate(reqCtx, "customMetric", req, "metricName", map[string]interface{}{
-		"displayName": request.GetParamCaseInsensitive(req.Parameters, "displayName"),
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.updateCustomMetricCore(store, UpdateCustomMetricInput{
+		MetricName:  request.GetParamCaseInsensitive(req.Parameters, "metricName"),
+		DisplayName: request.GetParamCaseInsensitive(req.Parameters, "displayName"),
 	})
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, iotstore.ErrCustomMetricNotFound
-	}
 	return map[string]interface{}{
-		"metricName":       rec["name"],
-		"metricArn":        iotstore.BuildCustomMetricARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), bulkName(rec)),
-		"metricType":       rec["metricType"],
-		"displayName":      rec["displayName"],
-		"lastModifiedDate": rec["lastModifiedDate"],
+		"metricName":       result.Rec["name"],
+		"metricArn":        result.Arn,
+		"metricType":       result.Rec["metricType"],
+		"displayName":      result.Rec["displayName"],
+		"creationDate":     result.Rec["creationDate"],
+		"lastModifiedDate": result.Rec["lastModifiedDate"],
 	}, nil
 }

@@ -2,12 +2,14 @@ package iot
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/iot/iotutil"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 // parseAttributePayload extracts the attributes map from an attributePayload parameter.
@@ -116,12 +118,26 @@ func listResponse(key string, items []map[string]interface{}, nextMarker string)
 	return iotutil.ListResponse(key, items, nextMarker)
 }
 
-func paginatedStrings(key string, items []string, params map[string]interface{}) map[string]interface{} {
-	return pagination.PaginateOffsetStrings(key, items, params)
+func paginatedStrings(key string, items []string, params map[string]interface{}) (interface{}, error) {
+	resp, err := pagination.PaginateOffsetStrings(key, items, params)
+	if errors.Is(err, pagination.ErrInvalidOffsetToken) {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
-func paginatedMaps(key string, items []map[string]interface{}, params map[string]interface{}) map[string]interface{} {
-	return pagination.PaginateOffsetMaps(key, items, params)
+func paginatedMaps(key string, items []map[string]interface{}, params map[string]interface{}) (interface{}, error) {
+	resp, err := pagination.PaginateOffsetMaps(key, items, params)
+	if errors.Is(err, pagination.ErrInvalidOffsetToken) {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func boolToActiveStatus(active bool) string {

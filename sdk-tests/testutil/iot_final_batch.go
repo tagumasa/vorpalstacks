@@ -97,6 +97,16 @@ func (r *TestRunner) runIoTFinalBatchTests(tc *iotTestContext) []TestResult {
 		return expectValidationError(err)
 	}))
 
+	results = append(results, r.RunTest("iot", "PutVerificationStateOnViolation_Enum", func() error {
+		// The VerificationState member is an enum; a non-member value is
+		// rejected before the unknown-violation path.
+		_, err := tc.client.PutVerificationStateOnViolation(tc.ctx, &iot.PutVerificationStateOnViolationInput{
+			ViolationId:       aws.String(uniqueName("violation-enum")),
+			VerificationState: iottypes.VerificationState("NOT_A_STATE"),
+		})
+		return expectAWSErrorCode(err, "InvalidRequestException")
+	}))
+
 	results = append(results, r.RunTest("iot", "ListPrincipalThingsV2", func() error {
 		_, err := tc.client.ListPrincipalThingsV2(tc.ctx, &iot.ListPrincipalThingsV2Input{
 			Principal: aws.String(tc.arn("iot", "cert", "nonexistent")),
