@@ -14,8 +14,8 @@ import (
 
 // AdminHandler provides Timestream Query service administration functionality.
 // It implements the TimestreamQueryServiceHandler interface for gRPC-Web
-// communication. This file contains zero store package imports per AGENTS.md
-// rule #29. All store access and proto conversion is delegated to
+// communication. This file contains zero store package imports; all store
+// access and proto conversion is delegated to
 // admin_handler_convert.go.
 type AdminHandler struct {
 	timestreamqueryconnect.UnimplementedTimestreamQueryServiceHandler

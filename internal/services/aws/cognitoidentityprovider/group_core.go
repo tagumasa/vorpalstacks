@@ -1,8 +1,10 @@
 package cognitoidentityprovider
 
 import (
+	"context"
 	"errors"
 
+	"vorpalstacks/internal/common/iam"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -280,4 +282,38 @@ func (s *CognitoService) adminListGroupsForUserCore(region string, in AdminListG
 		Groups:    result.Items,
 		NextToken: result.NextMarker,
 	}, nil
+}
+
+// createGroupValidatedCore reproduces the HTTP CreateGroup contract: the
+// required members, the group-name pattern, the precedence range and the IAM
+// role validation for the group role, followed by the shared create path.
+// The admin plane keeps createGroupFromInputCore, which applies none of
+// these validations.
+func (s *CognitoService) createGroupValidatedCore(ctx context.Context, region string, in CreateGroupInput, iamValidator *iam.IAMValidator) (*cognitostore.Group, error) {
+	if in.UserPoolID == "" || in.GroupName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !validateUsernamePattern(in.GroupName) {
+		return nil, ErrInvalidParameter
+	}
+
+	group := cognitostore.NewGroup(in.UserPoolID, in.GroupName)
+	group.Description = in.Description
+	group.RoleArn = in.RoleArn
+	group.Precedence = in.Precedence
+	if in.Precedence != nil && !validatePrecedence(*in.Precedence) {
+		return nil, ErrInvalidParameter
+	}
+
+	if in.RoleArn != "" {
+		if err := iamValidator.ValidateRoleForServiceWithErrors(ctx, in.RoleArn, iam.ServicePrincipalCognito, &iam.RoleErrorFactories{
+			RoleNotFoundError:        iam.NewCognitoRoleError,
+			RoleCannotBeAssumedError: iam.NewCognitoRoleError,
+			InvalidArnError:          iam.NewCognitoRoleError,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.createGroupCore(region, group)
 }

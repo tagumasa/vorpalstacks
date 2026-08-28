@@ -560,6 +560,10 @@ type ChallengeSession struct {
 	// WEB_AUTHN_REGISTRATION: the WebAuthn challenge that the client must sign
 	// with their authenticator).
 	ChallengeData string `json:"challengeData,omitempty"`
+	// RelyingPartyID stores the user pool relying party id under which a
+	// WEB_AUTHN_REGISTRATION challenge was issued, so the completion verifies
+	// origin and rpIdHash against the exact value offered at Start.
+	RelyingPartyID string `json:"relyingPartyId,omitempty"`
 	// FailedAttempts counts wrong verification answers accepted for this
 	// session. Sessions exceeding the attempt budget are invalidated so
 	// short numeric codes cannot be brute-forced within one session.
@@ -830,8 +834,8 @@ type Terms struct {
 	UserPoolID       string                 `json:"userPoolId"`
 	ClientID         string                 `json:"clientId,omitempty"`
 	TermsName        string                 `json:"termsName"`
-	TermsSource      map[string]interface{} `json:"termsSource,omitempty"`
-	Enforcement      map[string]interface{} `json:"enforcement,omitempty"`
+	TermsSource      string                 `json:"termsSource,omitempty"`
+	Enforcement      string                 `json:"enforcement,omitempty"`
 	Links            map[string]interface{} `json:"links,omitempty"`
 	CreationDate     time.Time              `json:"creationDate,omitempty"`
 	LastModifiedDate time.Time              `json:"lastModifiedDate,omitempty"`

@@ -140,24 +140,37 @@ func (s *CognitoService) CreateTokens(reqCtx *request.RequestContext, userPoolID
 
 // ValidateAccessToken validates an access token and returns the user ID.
 func (s *CognitoService) ValidateAccessToken(reqCtx *request.RequestContext, tokenString string) (string, error) {
-	store, err := s.store(reqCtx)
+	record, err := s.validateAccessTokenRecord(reqCtx, tokenString)
 	if err != nil {
 		return "", err
+	}
+	return record.UserID, nil
+}
+
+// validateAccessTokenRecord validates an access token and returns the stored
+// token record, whose ClientID pins the app client that was issued the token.
+func (s *CognitoService) validateAccessTokenRecord(reqCtx *request.RequestContext, tokenString string) (*cognitostore.AccessToken, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	// The stored token record pins the owning pool, so the signature can be
 	// verified against that pool's key alone instead of scanning every pool.
 	record, err := store.GetAccessTokenByValue(tokenString)
 	if err != nil {
-		return "", ErrNotAuthorized
+		return nil, ErrNotAuthorized
 	}
 
 	pool, err := store.GetUserPool(record.UserPoolID)
 	if err != nil {
-		return "", ErrNotAuthorized
+		return nil, ErrNotAuthorized
 	}
 
-	return validateAccessTokenSignature(pool, reqCtx.GetRegion(), tokenString)
+	if _, err := validateAccessTokenSignature(pool, reqCtx.GetRegion(), tokenString); err != nil {
+		return nil, err
+	}
+	return record, nil
 }
 
 // validateAccessTokenSignature verifies an access token against a specific

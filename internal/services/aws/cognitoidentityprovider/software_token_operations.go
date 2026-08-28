@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 const totpSecretSize = 20
@@ -67,128 +66,20 @@ func validateTOTPCode(secret, code string) bool {
 }
 
 // AssociateSoftwareToken generates a TOTP secret and associates it with the user for MFA setup.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AssociateSoftwareToken.html
 func (s *CognitoService) AssociateSoftwareToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := req.GetParam("AccessToken")
-	session := req.GetParam("Session")
-
-	if accessToken == "" && session == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	var user *cognitostore.User
-	if accessToken != "" {
-		userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-		if err != nil {
-			return nil, ErrNotAuthorized
-		}
-		user, err = store.GetUserByID(userID)
-		if err != nil {
-			return nil, ErrNotAuthorized
-		}
-	} else if session != "" {
-		// Session-based flow: the Amazon Cognito API accepts a Session in
-		// place of an AccessToken for the mid-sign-in MFA enrolment path. The
-		// session must carry the MFA_SETUP challenge type so a session minted
-		// for any other challenge cannot overwrite an existing (possibly
-		// verified) MFA configuration. The service currently issues no
-		// MFA_SETUP-typed sessions (the Lambda-facing designation path is
-		// closed, see customFlowChallengeNames), so a session reaching this
-		// branch cannot validate — the parameter handling remains because it
-		// is part of the API contract.
-		challengeSession, err := validateChallengeSession(store, session, "MFA_SETUP", "", "", "")
-		if err != nil {
-			return nil, ErrNotAuthorized
-		}
-		user, err = store.GetUser(challengeSession.UserPoolID, challengeSession.Username)
-		if err != nil {
-			return nil, ErrNotAuthorized
-		}
-	}
-	if user == nil {
-		return nil, ErrNotAuthorized
-	}
-
-	secret, err := generateTOTPSecret()
-	if err != nil {
-		return nil, ErrInternalError
-	}
-	user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{
-		Enabled:      false,
-		PreferredMfa: false,
-		SecretKey:    secret,
-		Verified:     false,
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, err
-	}
-
-	result := map[string]interface{}{
-		"SecretCode": secret,
-	}
-	if session != "" {
-		result["Session"] = session
-	}
-	return result, nil
+	return s.associateSoftwareTokenCore(ctx, reqCtx, AssociateSoftwareTokenInput{
+		AccessToken: req.GetParam("AccessToken"),
+		Session:     req.GetParam("Session"),
+	})
 }
 
 // VerifySoftwareToken verifies a TOTP code provided by the user during MFA setup.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_VerifySoftwareToken.html
 func (s *CognitoService) VerifySoftwareToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := req.GetParam("AccessToken")
-	userCode := req.GetParam("UserCode")
-	session := req.GetParam("Session")
-
-	if accessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-	if userCode == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !totpCodePattern.MatchString(userCode) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	user, err := store.GetUserByID(userID)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	if user.SoftwareTokenMfa == nil || user.SoftwareTokenMfa.SecretKey == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	if !validateTOTPCode(user.SoftwareTokenMfa.SecretKey, userCode) {
-		return nil, ErrCodeMismatch
-	}
-
-	user.SoftwareTokenMfa.Verified = true
-	user.SoftwareTokenMfa.Enabled = true
-	if err := store.UpdateUser(user); err != nil {
-		return nil, err
-	}
-
-	result := map[string]interface{}{
-		"Status": "SUCCESS",
-	}
-
-	if session != "" {
-		result["Session"] = session
-	}
-
-	return result, nil
+	return s.verifySoftwareTokenCore(ctx, reqCtx, VerifySoftwareTokenInput{
+		AccessToken: req.GetParam("AccessToken"),
+		UserCode:    req.GetParam("UserCode"),
+		Session:     req.GetParam("Session"),
+	})
 }

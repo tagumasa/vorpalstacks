@@ -12,12 +12,6 @@ func (r *TestRunner) iamSAMLTests(tc *iamTestContext) []TestResult {
 	var results []TestResult
 
 	samlProviderName := fmt.Sprintf("TestSAML-%s", tc.ts)
-	testSAMLPrivateKey := `-----BEGIN RSA PRIVATE KEY-----
-MIIBOgIBAAJBALRHCgVZU65BMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRl
-c3QgY2EwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjARMQ8wDQYDVQQD
-DAZ0ZXN0IGNhMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC0g+Z+s+Z+s+Z+
-s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+sIDAQAB
------END RSA PRIVATE KEY-----`
 
 	results = append(results, r.RunTest("iam", "CreateSAMLProvider", func() error {
 		resp, err := tc.client.CreateSAMLProvider(tc.ctx, &iam.CreateSAMLProviderInput{
@@ -113,7 +107,7 @@ s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+s+Z+sIDAQAB
 		// Add a second key via Update
 		_, err := tc.client.UpdateSAMLProvider(tc.ctx, &iam.UpdateSAMLProviderInput{
 			SAMLProviderArn: aws.String(tc.samlProviderArn),
-			AddPrivateKey:   aws.String(testSAMLPrivateKey),
+			AddPrivateKey:   aws.String(testSAMLPrivateKeySecond),
 		})
 		if err != nil {
 			return fmt.Errorf("UpdateSAMLProvider AddPrivateKey failed: %w", err)

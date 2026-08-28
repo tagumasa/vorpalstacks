@@ -2,85 +2,36 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"fmt"
-	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/config"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-	"vorpalstacks/internal/store/aws/common"
 )
 
 // CreateUserPoolDomain creates a new domain for a user pool.
 func (s *CognitoService) CreateUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := req.GetParam("Domain")
-	userPoolID := getUserPoolID(req)
-	if domain == "" || userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
-	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", reqCtx.GetRegion(), 1))
-	domainEntry := &cognitostore.UserPoolDomain{
-		Domain:           domain,
-		UserPoolID:       userPoolID,
-		CloudFrontDomain: cfDomain,
-		CreatedDate:      time.Now().UTC(),
-		Status:           "ACTIVE",
+	in := CreateUserPoolDomainInput{
+		Region:     reqCtx.GetRegion(),
+		Domain:     req.GetParam("Domain"),
+		UserPoolID: getUserPoolID(req),
 	}
 	if v, ok := req.Parameters["ManagedLoginVersion"]; ok {
-		switch n := v.(type) {
-		case int:
-			mlv := n
-			domainEntry.ManagedLoginVersion = &mlv
-		case float64:
-			mlv := int(n)
-			domainEntry.ManagedLoginVersion = &mlv
-		}
+		in.ManagedLoginVersion = v
 	}
-	if cdc, ok := req.Parameters["CustomDomainConfig"].(map[string]interface{}); ok {
-		cfg := &cognitostore.CustomDomainConfig{}
-		if v, ok := cdc["CertificateArn"].(string); ok {
-			cfg.CertificateArn = v
-		}
-		if v, ok := cdc["SecurityPolicy"].(string); ok {
-			if !validateSecurityPolicy(v) {
-				return nil, ErrInvalidParameter
-			}
-			cfg.SecurityPolicy = v
-		}
-		domainEntry.CustomDomainConfig = cfg
+	if m, ok := req.Parameters["CustomDomainConfig"].(map[string]interface{}); ok {
+		in.CustomDomainConfig = m
 	}
-	if rt, ok := req.Parameters["Routing"].(map[string]interface{}); ok {
-		routing := &cognitostore.Routing{}
-		if fo, ok := rt["Failover"].(map[string]interface{}); ok {
-			failover := &cognitostore.FailoverType{}
-			if v, ok := fo["SecondaryRegion"].(string); ok {
-				failover.SecondaryRegion = v
-			}
-			if v, ok := fo["PrimaryRoute53HealthCheckId"].(string); ok {
-				failover.PrimaryRoute53HealthCheckId = v
-			}
-			routing.Failover = failover
-		}
-		domainEntry.Routing = routing
+	if m, ok := req.Parameters["Routing"].(map[string]interface{}); ok {
+		in.Routing = m
 	}
-	if err := store.SetUserPoolDomain(domain, domainEntry); err != nil {
+
+	domainEntry, err := s.createUserPoolDomainCore(in)
+	if err != nil {
 		return nil, err
 	}
 
 	resp := map[string]interface{}{
-		"CloudFrontDomain": cfDomain,
+		"CloudFrontDomain": domainEntry.CloudFrontDomain,
 	}
 	if domainEntry.ManagedLoginVersion != nil {
 		resp["ManagedLoginVersion"] = *domainEntry.ManagedLoginVersion
@@ -133,19 +84,9 @@ func buildDomainDescription(d *cognitostore.UserPoolDomain) map[string]interface
 
 // DescribeUserPoolDomain returns information about a user pool domain.
 func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := req.GetParam("Domain")
-	if domain == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	domainEntry, err := s.describeUserPoolDomainCore(reqCtx.GetRegion(), req.GetParam("Domain"))
 	if err != nil {
 		return nil, err
-	}
-
-	domainEntry, err := store.GetUserPoolDomain(domain)
-	if err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	return map[string]interface{}{
@@ -155,17 +96,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 
 // DeleteUserPoolDomain deletes a domain from a user pool.
 func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := req.GetParam("Domain")
-	if domain == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := store.DeleteUserPoolDomain(domain); err != nil {
+	if err := s.deleteUserPoolDomainCore(reqCtx.GetRegion(), req.GetParam("Domain")); err != nil {
 		return nil, err
 	}
 
@@ -174,83 +105,48 @@ func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *reque
 
 // UpdateUserPoolDomain updates the configuration for a user pool domain.
 func (s *CognitoService) UpdateUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	domain := req.GetParam("Domain")
-	userPoolID := getUserPoolID(req)
-	if domain == "" || userPoolID == "" {
-		return nil, ErrInvalidParameter
+	in := UpdateUserPoolDomainInput{
+		Region:     reqCtx.GetRegion(),
+		Domain:     req.GetParam("Domain"),
+		UserPoolID: getUserPoolID(req),
+	}
+	if v, ok := req.Parameters["ManagedLoginVersion"]; ok {
+		in.ManagedLoginVersion = v
+	}
+	if m, ok := req.Parameters["CustomDomainConfig"].(map[string]interface{}); ok {
+		in.CustomDomainConfig = m
+	}
+	if m, ok := req.Parameters["Routing"].(map[string]interface{}); ok {
+		in.Routing = m
 	}
 
-	store, err := s.store(reqCtx)
+	domainEntry, err := s.updateUserPoolDomainCore(in)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
+
+	resp := map[string]interface{}{
+		"CloudFrontDomain": domainEntry.CloudFrontDomain,
+	}
+	if domainEntry.ManagedLoginVersion != nil {
+		resp["ManagedLoginVersion"] = *domainEntry.ManagedLoginVersion
+	}
+	if domainEntry.Routing != nil && domainEntry.Routing.Failover != nil {
+		resp["Routing"] = routingToMap(domainEntry.Routing)
 	}
 
-	existing, err := store.GetUserPoolDomain(domain)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
-	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", reqCtx.GetRegion(), 1))
-	domainEntry := &cognitostore.UserPoolDomain{
-		Domain:           domain,
-		UserPoolID:       userPoolID,
-		CloudFrontDomain: cfDomain,
-		CreatedDate:      existing.CreatedDate,
-	}
-	if err := store.SetUserPoolDomain(domain, domainEntry); err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"CloudFrontDomain": cfDomain,
-	}, nil
+	return resp, nil
 }
 
 // CreateResourceServer creates a new resource server for a user pool.
 func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	identifier := req.GetParam("Identifier")
-	name := req.GetParam("Name")
-	if userPoolID == "" || identifier == "" || name == "" {
-		return nil, ErrInvalidParameter
+	var scopes []interface{}
+	if v, ok := req.Parameters["Scopes"].([]interface{}); ok {
+		scopes = v
 	}
 
-	store, err := s.store(reqCtx)
+	rs, err := s.createResourceServerCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("Identifier"), req.GetParam("Name"), scopes)
 	if err != nil {
-		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	rs := &cognitostore.ResourceServer{
-		UserPoolID: userPoolID,
-		Identifier: identifier,
-		Name:       name,
-		Scopes:     []cognitostore.ResourceServerScope{},
-	}
-
-	if scopes, ok := req.Parameters["Scopes"].([]interface{}); ok {
-		for _, sc := range scopes {
-			if m, ok := sc.(map[string]interface{}); ok {
-				scopeName, _ := m["ScopeName"].(string)
-				scopeDesc, _ := m["ScopeDescription"].(string)
-				if scopeName == "" {
-					return nil, ErrInvalidParameter
-				}
-				rs.Scopes = append(rs.Scopes, cognitostore.ResourceServerScope{
-					ScopeName:        scopeName,
-					ScopeDescription: scopeDesc,
-				})
-			}
-		}
-	}
-
-	if err := store.CreateResourceServer(rs); err != nil {
 		return nil, err
 	}
 
@@ -261,20 +157,9 @@ func (s *CognitoService) CreateResourceServer(ctx context.Context, reqCtx *reque
 
 // DescribeResourceServer returns details of a specified resource server in a user pool.
 func (s *CognitoService) DescribeResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	identifier := req.GetParam("Identifier")
-	if userPoolID == "" || identifier == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	rs, err := s.describeResourceServerCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("Identifier"))
 	if err != nil {
 		return nil, err
-	}
-
-	rs, err := store.GetResourceServer(userPoolID, identifier)
-	if err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	return map[string]interface{}{
@@ -284,46 +169,20 @@ func (s *CognitoService) DescribeResourceServer(ctx context.Context, reqCtx *req
 
 // UpdateResourceServer updates the name and scopes of a specified resource server in a user pool.
 func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	identifier := req.GetParam("Identifier")
-	if userPoolID == "" || identifier == "" {
-		return nil, ErrInvalidParameter
+	in := UpdateResourceServerInput{
+		Region:     reqCtx.GetRegion(),
+		UserPoolID: getUserPoolID(req),
+		Identifier: req.GetParam("Identifier"),
+		Name:       req.GetParam("Name"),
+	}
+	if v, ok := req.Parameters["Scopes"].([]interface{}); ok {
+		in.Scopes = v
+		in.ScopesPresent = true
 	}
 
-	store, err := s.store(reqCtx)
+	rs, err := s.updateResourceServerCore(in)
 	if err != nil {
 		return nil, err
-	}
-
-	rs, err := store.GetResourceServer(userPoolID, identifier)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if name := req.GetParam("Name"); name != "" {
-		rs.Name = name
-	}
-
-	if scopes, ok := req.Parameters["Scopes"].([]interface{}); ok {
-		var newScopes []cognitostore.ResourceServerScope
-		for _, sc := range scopes {
-			if m, ok := sc.(map[string]interface{}); ok {
-				scopeName, _ := m["ScopeName"].(string)
-				scopeDesc, _ := m["ScopeDescription"].(string)
-				if scopeName == "" {
-					return nil, ErrInvalidParameter
-				}
-				newScopes = append(newScopes, cognitostore.ResourceServerScope{
-					ScopeName:        scopeName,
-					ScopeDescription: scopeDesc,
-				})
-			}
-		}
-		rs.Scopes = newScopes
-	}
-
-	if err := store.UpdateResourceServer(rs); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
@@ -333,19 +192,8 @@ func (s *CognitoService) UpdateResourceServer(ctx context.Context, reqCtx *reque
 
 // DeleteResourceServer deletes a specified resource server from a user pool.
 func (s *CognitoService) DeleteResourceServer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	identifier := req.GetParam("Identifier")
-	if userPoolID == "" || identifier == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteResourceServerCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("Identifier")); err != nil {
 		return nil, err
-	}
-
-	if err := store.DeleteResourceServer(userPoolID, identifier); err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	return response.EmptyResponse(), nil
@@ -353,28 +201,10 @@ func (s *CognitoService) DeleteResourceServer(ctx context.Context, reqCtx *reque
 
 // ListResourceServers lists all resource servers in a user pool.
 func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-	if maxResults <= 0 || maxResults > 50 {
-		maxResults = 50
-	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
-	opts := common.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}
-
-	result, err := store.ListResourceServersPaginated(userPoolID, opts)
+	result, err := s.listResourceServersCore(reqCtx.GetRegion(), getUserPoolID(req), maxResults, nextToken)
 	if err != nil {
 		return nil, err
 	}
@@ -532,17 +362,10 @@ func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *requ
 // GetCSVHeader returns the CSV headers for importing users into a user pool.
 func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
 
-	store, err := s.store(reqCtx)
+	pool, err := s.getCSVHeaderCore(reqCtx.GetRegion(), userPoolID)
 	if err != nil {
 		return nil, err
-	}
-	pool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	return map[string]interface{}{
@@ -553,39 +376,13 @@ func (s *CognitoService) GetCSVHeader(ctx context.Context, reqCtx *request.Reque
 
 // DescribeRiskConfiguration describes the risk configuration for a user pool.
 func (s *CognitoService) DescribeRiskConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	cfg, err := s.describeRiskConfigurationCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("ClientId"))
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	clientID := req.GetParam("ClientId")
-
-	cfg, err := store.GetRiskConfiguration(userPoolID, clientID)
-	if err == nil && cfg != nil {
-		return map[string]interface{}{
-			"RiskConfiguration": formatRiskConfiguration(cfg),
-		}, nil
-	}
-
-	if clientID != "" {
-		cfg, err = store.GetRiskConfiguration(userPoolID, "")
-		if err == nil && cfg != nil {
-			return map[string]interface{}{
-				"RiskConfiguration": formatRiskConfiguration(cfg),
-			}, nil
-		}
-	}
 
 	return map[string]interface{}{
-		"RiskConfiguration": formatRiskConfiguration(&cognitostore.RiskConfiguration{UserPoolID: userPoolID}),
+		"RiskConfiguration": formatRiskConfiguration(cfg),
 	}, nil
 }
 

@@ -8,30 +8,8 @@ import (
 
 // DeleteUser deletes the authenticated user from the user pool.
 func (s *CognitoService) DeleteUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getAccessToken(req)
-	if accessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteUserByAccessTokenCore(reqCtx, getAccessToken(req)); err != nil {
 		return nil, err
-	}
-	user, err := store.GetUserByID(userID)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if err := store.DeleteUser(user.UserPoolID, user.Username); err != nil {
-		return nil, ErrInternalError
-	}
-	if err := store.DeleteUserTokens(user.UserPoolID, user.ID); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
@@ -39,36 +17,8 @@ func (s *CognitoService) DeleteUser(ctx context.Context, reqCtx *request.Request
 
 // DeleteUserAttributes deletes the specified user attributes for the authenticated user.
 func (s *CognitoService) DeleteUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getAccessToken(req)
-	if accessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.deleteUserAttributesByAccessTokenCore(reqCtx, getAccessToken(req), getStringSliceParam(req, "UserAttributeNames")); err != nil {
 		return nil, err
-	}
-	user, err := store.GetUserByID(userID)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.Attributes == nil {
-		return response.EmptyResponse(), nil
-	}
-
-	attrNames := getStringSliceParam(req, "UserAttributeNames")
-	for _, name := range attrNames {
-		delete(user.Attributes, name)
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
@@ -76,23 +26,9 @@ func (s *CognitoService) DeleteUserAttributes(ctx context.Context, reqCtx *reque
 
 // GetUser returns the user attributes for the authenticated user.
 func (s *CognitoService) GetUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getAccessToken(req)
-	if accessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	store, err := s.store(reqCtx)
+	user, err := s.getUserByAccessTokenCore(reqCtx, getAccessToken(req))
 	if err != nil {
 		return nil, err
-	}
-	user, err := store.GetUserByID(userID)
-	if err != nil {
-		return nil, ErrUserNotFound
 	}
 
 	result := formatUser(user)
@@ -102,36 +38,8 @@ func (s *CognitoService) GetUser(ctx context.Context, reqCtx *request.RequestCon
 
 // UpdateUserAttributes updates the user attributes for the authenticated user.
 func (s *CognitoService) UpdateUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessToken := getAccessToken(req)
-	if accessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
-	if err != nil {
-		return nil, ErrNotAuthorized
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.updateUserAttributesByAccessTokenCore(reqCtx, getAccessToken(req), parseUserAttributes(req)); err != nil {
 		return nil, err
-	}
-	user, err := store.GetUserByID(userID)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.Attributes == nil {
-		user.Attributes = make(map[string]string)
-	}
-
-	newAttrs := parseUserAttributes(req)
-	for k, v := range newAttrs {
-		user.Attributes[k] = v
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil

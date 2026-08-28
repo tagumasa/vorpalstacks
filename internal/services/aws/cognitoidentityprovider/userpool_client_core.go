@@ -158,3 +158,21 @@ func (s *CognitoService) updateUserPoolClientCore(region string, client *cognito
 	}
 	return nil
 }
+
+// newUserPoolClientCore validates the create-path required members and
+// constructs the store object. Store constructors are store-package calls,
+// so construction lives behind Core.
+func (s *CognitoService) newUserPoolClientCore(userPoolID, clientName string) (*cognitostore.UserPoolClient, error) {
+	if userPoolID == "" || clientName == "" {
+		return nil, ErrInvalidParameter
+	}
+	return cognitostore.NewUserPoolClient(userPoolID, clientName), nil
+}
+
+// suppressClientSecretCore clears the client secret when the client was not
+// configured to generate one, so the stored record carries no secret.
+func (s *CognitoService) suppressClientSecretCore(client *cognitostore.UserPoolClient) {
+	if !client.GenerateSecret {
+		client.ClientSecret = ""
+	}
+}

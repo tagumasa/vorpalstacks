@@ -297,5 +297,103 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 		return nil
 	}))
 
+	// Choice-based sign-in: USER_AUTH issues a SELECT_CHALLENGE session, the
+	// client selects PASSWORD via ANSWER inside ChallengeResponses (the
+	// documented carrier), and completing the PASSWORD challenge must return
+	// the full AuthenticationResult including the refresh token.
+	results = append(results, r.RunTest("cognito", "RespondToAuthChallenge_SelectChallengePasswordFlow", func() error {
+		selectClientID, cleanupSelectClient, err := tc.createPoolClient(tc.userPoolID, tc.unique("select-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupSelectClient()
+
+		selectUser := tc.unique("select-user")
+		selectPassword := "SelectPassword123!"
+		cleanupSelectUser, err := tc.adminCreateUser(selectUser,
+			func(input *cognitoidentityprovider.AdminCreateUserInput) {
+				input.MessageAction = ""
+			})
+		if err != nil {
+			return fmt.Errorf("admin create user: %v", err)
+		}
+		defer cleanupSelectUser()
+		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Username:   aws.String(selectUser),
+			Password:   aws.String(selectPassword),
+			Permanent:  true,
+		})
+		if err != nil {
+			return fmt.Errorf("admin set user password: %v", err)
+		}
+
+		// USER_AUTH takes USERNAME inside AuthParameters per the AWS API
+		// reference.
+		initResp, err := tc.client.InitiateAuth(tc.ctx, &cognitoidentityprovider.InitiateAuthInput{
+			AuthFlow: "USER_AUTH",
+			ClientId: aws.String(selectClientID),
+			AuthParameters: map[string]string{
+				"USERNAME": selectUser,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("InitiateAuth USER_AUTH: %v", err)
+		}
+		// Without PREFERRED_CHALLENGE the documented USER_AUTH response
+		// carries AvailableChallenges and a session (no ChallengeName).
+		if initResp.Session == nil || *initResp.Session == "" {
+			return fmt.Errorf("expected a session from InitiateAuth USER_AUTH")
+		}
+		hasPassword := false
+		for _, c := range initResp.AvailableChallenges {
+			if c == "PASSWORD" {
+				hasPassword = true
+			}
+		}
+		if !hasPassword {
+			return fmt.Errorf("expected PASSWORD among available challenges, got %v", initResp.AvailableChallenges)
+		}
+
+		selectResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "SELECT_CHALLENGE",
+			ClientId:      aws.String(selectClientID),
+			Session:       initResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME": selectUser,
+				"ANSWER":   "PASSWORD",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge SELECT_CHALLENGE: %v", err)
+		}
+		if selectResp.ChallengeName != "PASSWORD" {
+			return fmt.Errorf("expected PASSWORD challenge after selection, got %q", selectResp.ChallengeName)
+		}
+
+		authResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "PASSWORD",
+			ClientId:      aws.String(selectClientID),
+			Session:       selectResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME": selectUser,
+				"PASSWORD": selectPassword,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge PASSWORD: %v", err)
+		}
+		if authResp.AuthenticationResult == nil {
+			return fmt.Errorf("expected AuthenticationResult after PASSWORD challenge")
+		}
+		if aws.ToString(authResp.AuthenticationResult.AccessToken) == "" || aws.ToString(authResp.AuthenticationResult.IdToken) == "" {
+			return fmt.Errorf("expected access and ID tokens in the challenge sign-in result")
+		}
+		if aws.ToString(authResp.AuthenticationResult.RefreshToken) == "" {
+			return fmt.Errorf("expected refresh token in the challenge sign-in result")
+		}
+		return nil
+	}))
+
 	return results
 }

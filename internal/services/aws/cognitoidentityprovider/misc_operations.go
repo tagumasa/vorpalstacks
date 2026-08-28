@@ -2,7 +2,6 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"encoding/base64"
 	"sync"
 
 	"vorpalstacks/internal/common/request"
@@ -15,23 +14,9 @@ import (
 // GetUICustomization retrieves the UI customisation for a user pool/client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetUICustomization.html
 func (s *CognitoService) GetUICustomization(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	clientID := req.GetParam("ClientId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	ui, err := s.getUICustomizationCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), req.GetParam("ClientId"))
 	if err != nil {
 		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	ui, err := store.GetUICustomization(userPoolID, clientID)
-	if err != nil {
-		ui = &cognitostore.UICustomization{UserPoolID: userPoolID, ClientID: clientID}
 	}
 
 	return map[string]interface{}{
@@ -42,41 +27,20 @@ func (s *CognitoService) GetUICustomization(ctx context.Context, reqCtx *request
 // SetUICustomization sets the UI customisation for a user pool/client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_SetUICustomization.html
 func (s *CognitoService) SetUICustomization(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	clientID := req.GetParam("ClientId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
+	in := SetUICustomizationInput{
+		Region:     reqCtx.GetRegion(),
+		UserPoolID: req.GetParam("UserPoolId"),
+		ClientID:   req.GetParam("ClientId"),
+		CSS:        req.GetParam("CSS"),
+	}
+	if v, ok := req.Parameters["ImageFile"].(string); ok && v != "" {
+		in.ImageFile = v
+		in.ImageFileProvided = true
 	}
 
-	store, err := s.store(reqCtx)
+	ui, err := s.setUICustomizationCore(in)
 	if err != nil {
 		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	ui, err := store.GetUICustomization(userPoolID, clientID)
-	if err != nil {
-		ui = &cognitostore.UICustomization{UserPoolID: userPoolID, ClientID: clientID}
-	}
-
-	if css := req.GetParam("CSS"); css != "" {
-		ui.CSS = css
-	}
-	if imageFile, ok := req.Parameters["ImageFile"].(string); ok && imageFile != "" {
-		decoded, err := base64.StdEncoding.DecodeString(imageFile)
-		if err != nil {
-			return nil, ErrInvalidParameter
-		}
-		if !validateImageFileSize(decoded) {
-			return nil, ErrInvalidParameter
-		}
-		ui.ImageFile = decoded
-	}
-
-	if err := store.SaveUICustomization(ui); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{
@@ -107,37 +71,10 @@ func formatUICustomization(ui *cognitostore.UICustomization) map[string]interfac
 // AdminDisableProviderForUser disables a federated provider for a user.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminDisableProviderForUser.html
 func (s *CognitoService) AdminDisableProviderForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
+	user, _ := req.Parameters["User"].(map[string]interface{})
 
-	userRaw, ok := req.Parameters["User"].(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	providerName := getStringParam(userRaw, "ProviderName")
-	providerAttrValue := getStringParam(userRaw, "ProviderAttributeValue")
-	if providerName == "" || providerAttrValue == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.adminDisableProviderForUserCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), user); err != nil {
 		return nil, err
-	}
-
-	user, err := store.GetUserByProvider(userPoolID, providerName, providerAttrValue)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	user.ProviderName = ""
-	user.ProviderAttributeName = ""
-	user.ProviderAttributeValue = ""
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
@@ -146,45 +83,11 @@ func (s *CognitoService) AdminDisableProviderForUser(ctx context.Context, reqCtx
 // AdminLinkProviderForUser links a federated provider to an existing user.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminLinkProviderForUser.html
 func (s *CognitoService) AdminLinkProviderForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
+	destinationUser, _ := req.Parameters["DestinationUser"].(map[string]interface{})
+	sourceUser, _ := req.Parameters["SourceUser"].(map[string]interface{})
 
-	destRaw, ok := req.Parameters["DestinationUser"].(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	srcRaw, ok := req.Parameters["SourceUser"].(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	destUsername := getStringParam(destRaw, "ProviderAttributeValue")
-	destProviderName := getStringParam(destRaw, "ProviderName")
-	if destProviderName == "" {
-		return nil, ErrInvalidParameter
-	}
-	srcProviderName := getStringParam(srcRaw, "ProviderName")
-	srcProviderAttrName := getStringParam(srcRaw, "ProviderAttributeName")
-	srcProviderAttrValue := getStringParam(srcRaw, "ProviderAttributeValue")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.adminLinkProviderForUserCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), destinationUser, sourceUser); err != nil {
 		return nil, err
-	}
-
-	user, err := store.GetUser(userPoolID, destUsername)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	user.ProviderName = srcProviderName
-	user.ProviderAttributeName = srcProviderAttrName
-	user.ProviderAttributeValue = srcProviderAttrValue
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
@@ -195,82 +98,13 @@ func (s *CognitoService) AdminLinkProviderForUser(ctx context.Context, reqCtx *r
 // AddCustomAttributes adds custom schema attributes to a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AddCustomAttributes.html
 func (s *CognitoService) AddCustomAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
+	var attrs []interface{}
+	if v, ok := req.Parameters["CustomAttributes"].([]interface{}); ok {
+		attrs = v
 	}
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.addCustomAttributesCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), attrs); err != nil {
 		return nil, err
-	}
-
-	pool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if attrs, ok := req.Parameters["CustomAttributes"].([]interface{}); ok {
-		for _, a := range attrs {
-			m, ok := a.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			attrName := getStringParam(m, "Name")
-			attrType := getStringParam(m, "AttributeDataType")
-			if attrName == "" || attrType == "" {
-				return nil, ErrInvalidParameter
-			}
-			if err := validateCustomAttributeName(attrName); err != nil {
-				return nil, err
-			}
-			if !validateAttributeDataType(attrType) {
-				return nil, ErrInvalidParameter
-			}
-			for _, existing := range pool.SchemaAttributes {
-				if existing.Name == attrName {
-					return nil, ErrInvalidParameter
-				}
-			}
-			newAttr := cognitostore.SchemaAttributeType{
-				Name:              attrName,
-				AttributeDataType: attrType,
-			}
-			if dev, ok := m["DeveloperOnlyAttribute"].(bool); ok {
-				newAttr.DeveloperOnlyAttribute = dev
-			}
-			if mut, ok := m["Mutable"].(bool); ok {
-				newAttr.Mutable = mut
-			}
-			if reqVal, ok := m["Required"].(bool); ok {
-				newAttr.Required = reqVal
-			}
-			if nac, ok := m["NumberAttributeConstraints"].(map[string]interface{}); ok {
-				nc := &cognitostore.NumberAttributeConstraints{}
-				if v, ok := nac["MinValue"].(string); ok {
-					nc.MinValue = v
-				}
-				if v, ok := nac["MaxValue"].(string); ok {
-					nc.MaxValue = v
-				}
-				newAttr.NumberAttributeConstraints = nc
-			}
-			if sac, ok := m["StringAttributeConstraints"].(map[string]interface{}); ok {
-				sc := &cognitostore.StringAttributeConstraints{}
-				if v, ok := sac["MinLength"].(string); ok {
-					sc.MinLength = v
-				}
-				if v, ok := sac["MaxLength"].(string); ok {
-					sc.MaxLength = v
-				}
-				newAttr.StringAttributeConstraints = sc
-			}
-			pool.SchemaAttributes = append(pool.SchemaAttributes, newAttr)
-		}
-	}
-
-	if err := store.UpdateUserPool(pool); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
@@ -279,53 +113,24 @@ func (s *CognitoService) AddCustomAttributes(ctx context.Context, reqCtx *reques
 // GetIdentityProviderByIdentifier retrieves an IdP by its identifier (domain or DNS name).
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetIdentityProviderByIdentifier.html
 func (s *CognitoService) GetIdentityProviderByIdentifier(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	idpIdentifier := req.GetParam("IdpIdentifier")
-	if userPoolID == "" || idpIdentifier == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	idp, err := s.getIdentityProviderByIdentifierCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), req.GetParam("IdpIdentifier"))
 	if err != nil {
 		return nil, err
 	}
 
-	providers, err := store.ListIdentityProviders(userPoolID)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	for _, idp := range providers {
-		for _, ident := range idp.IdpIdentifiers {
-			if ident == idpIdentifier {
-				return map[string]interface{}{"IdentityProvider": formatIdentityProvider(idp)}, nil
-			}
-		}
-	}
-
-	return nil, ErrResourceNotFound
+	return map[string]interface{}{"IdentityProvider": formatIdentityProvider(idp)}, nil
 }
 
 // GetSigningCertificate returns the user pool's signing certificate.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetSigningCertificate.html
 func (s *CognitoService) GetSigningCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	certificate, err := s.getSigningCertificateCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"))
 	if err != nil {
 		return nil, err
 	}
 
-	pool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
 	return map[string]interface{}{
-		"Certificate": pool.JwtPublicKey,
+		"Certificate": certificate,
 	}, nil
 }
 

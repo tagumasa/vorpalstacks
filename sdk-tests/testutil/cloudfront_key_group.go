@@ -20,7 +20,7 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 		resp, cerr := client.CreatePublicKey(ctx, &cloudfront.CreatePublicKeyInput{
 			PublicKeyConfig: &types.PublicKeyConfig{
 				Name:            aws.String(tc.uniquePrefix(tag)),
-				EncodedKey:      aws.String("aGVsbG8="),
+				EncodedKey:      aws.String(cloudfrontEncodedKeyB64),
 				CallerReference: aws.String(tc.uniqueCallerRef(tag + "-ref")),
 			},
 		})

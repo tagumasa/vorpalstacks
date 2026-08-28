@@ -328,29 +328,34 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributions_ContainsCreated", func() error {
-		resp, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
-			MaxItems: aws.Int32(100),
+		items, err := paginate(func(next *string) ([]types.DistributionSummary, *string, error) {
+			resp, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
+				MaxItems: aws.Int32(100),
+				Marker:   next,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			if resp.DistributionList == nil {
+				return nil, nil, nil
+			}
+			return resp.DistributionList.Items, resp.DistributionList.NextMarker, nil
 		})
 		if err != nil {
 			return err
 		}
-		if resp.DistributionList == nil || resp.DistributionList.Quantity == nil || *resp.DistributionList.Quantity < 1 {
+		if len(items) < 1 {
 			return fmt.Errorf("expected at least 1 distribution, got 0")
 		}
-		found := false
-		for _, d := range resp.DistributionList.Items {
+		for _, d := range items {
 			if d.Id != nil && *d.Id == distID {
-				found = true
 				if d.ARN == nil || *d.ARN == "" {
 					return fmt.Errorf("distribution ARN is nil or empty in list")
 				}
-				break
+				return nil
 			}
 		}
-		if !found {
-			return fmt.Errorf("created distribution %q not found in list", distID)
-		}
-		return nil
+		return fmt.Errorf("created distribution %q not found in list", distID)
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributionsByWebACLId_UnknownACL_Rejected", func() error {

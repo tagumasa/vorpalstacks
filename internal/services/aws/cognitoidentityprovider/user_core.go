@@ -3,6 +3,7 @@ package cognitoidentityprovider
 import (
 	"errors"
 
+	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -146,4 +147,108 @@ func (s *CognitoService) setUserEnabledCore(region, userPoolID, username string,
 
 	user.Enabled = enabled
 	return store.UpdateUser(user)
+}
+
+// userByAccessToken resolves the caller's user record from an access token:
+// the token is required, validated, and the user must exist. It is the
+// shared resolution step of the token-authenticated user operations.
+func (s *CognitoService) userByAccessToken(reqCtx *request.RequestContext, accessToken string) (*cognitostore.User, error) {
+	if accessToken == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	userID, err := s.ValidateAccessToken(reqCtx, accessToken)
+	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	user, err := store.GetUserByID(userID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return user, nil
+}
+
+// getUserByAccessTokenCore resolves the caller for GetUser.
+func (s *CognitoService) getUserByAccessTokenCore(reqCtx *request.RequestContext, accessToken string) (*cognitostore.User, error) {
+	return s.userByAccessToken(reqCtx, accessToken)
+}
+
+// deleteUserByAccessTokenCore removes the caller's user record and every
+// token minted for it.
+func (s *CognitoService) deleteUserByAccessTokenCore(reqCtx *request.RequestContext, accessToken string) error {
+	user, err := s.userByAccessToken(reqCtx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+	if err := store.DeleteUser(user.UserPoolID, user.Username); err != nil {
+		return ErrInternalError
+	}
+	if err := store.DeleteUserTokens(user.UserPoolID, user.ID); err != nil {
+		return ErrInternalError
+	}
+	return nil
+}
+
+// deleteUserAttributesByAccessTokenCore removes the named attributes from
+// the caller's record; a record without attributes is a no-op.
+func (s *CognitoService) deleteUserAttributesByAccessTokenCore(reqCtx *request.RequestContext, accessToken string, attrNames []string) error {
+	user, err := s.userByAccessToken(reqCtx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+
+	if user.Attributes == nil {
+		return nil
+	}
+
+	for _, name := range attrNames {
+		delete(user.Attributes, name)
+	}
+
+	if err := store.UpdateUser(user); err != nil {
+		return ErrInternalError
+	}
+	return nil
+}
+
+// updateUserAttributesByAccessTokenCore merges the supplied attributes into
+// the caller's record.
+func (s *CognitoService) updateUserAttributesByAccessTokenCore(reqCtx *request.RequestContext, accessToken string, attrs map[string]string) error {
+	user, err := s.userByAccessToken(reqCtx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+
+	if user.Attributes == nil {
+		user.Attributes = make(map[string]string)
+	}
+
+	for k, v := range attrs {
+		user.Attributes[k] = v
+	}
+
+	if err := store.UpdateUser(user); err != nil {
+		return ErrInternalError
+	}
+	return nil
 }

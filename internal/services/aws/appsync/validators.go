@@ -128,7 +128,7 @@ var validEnabledDisabled = map[string]bool{
 }
 
 // ============================================================================
-// Runtime validation (moved from helpers.go)
+// Runtime validation
 // ============================================================================
 
 // validAppSyncRuntimeVersions maps runtime name to valid versions.
@@ -157,7 +157,7 @@ func validateAppSyncRuntime(rt *appsyncstore.AppSyncRuntime) error {
 }
 
 // ============================================================================
-// Caching config validation (moved from helpers.go)
+// Caching config validation
 // ============================================================================
 
 // validateCachingConfig validates the TTL range per Smithy TTL shape
@@ -177,7 +177,7 @@ func validateCachingConfig(cc *appsyncstore.CachingConfig) error {
 }
 
 // ============================================================================
-// API key expiry validation (moved from api_key_operations.go)
+// API key expiry validation
 // ============================================================================
 
 // validateApiKeyExpiry validates that the expiry timestamp falls within the

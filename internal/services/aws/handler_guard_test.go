@@ -1,11 +1,11 @@
 package aws
 
-// The handler Core guard enforces the AGENTS.md #29 rule on the AWS API HTTP
-// plane: every registered operation handler is a thin transport adapter whose
-// closure may only parse the wire request, build a DTO, call a Core function
-// and serialise the result. Handlers — and the private helpers they reach —
-// must not call into internal/store/aws packages; validation and persistence
-// live in *_core.go Core functions alone.
+// The handler Core guard enforces the thin-handler architecture rule on the
+// AWS API HTTP plane: every registered operation handler is a thin transport
+// adapter whose closure may only parse the wire request, build a DTO, call a
+// Core function and serialise the result. Handlers — and the private helpers
+// they reach — must not call into internal/store/aws packages; validation
+// and persistence live in *_core.go Core functions alone.
 //
 // Detection is purely syntactic (go/parser) and hermetic: it reads only
 // git-tracked source under internal/services/aws/, never the Smithy models.

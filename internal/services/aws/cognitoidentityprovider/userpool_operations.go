@@ -12,14 +12,11 @@ import (
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPool.html
 func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolName := req.GetParam("PoolName")
-	if poolName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateUserPoolNamePattern(poolName) {
-		return nil, ErrInvalidParameter
-	}
 
-	userPool := cognitostore.NewUserPool(poolName, reqCtx.GetRegion())
+	userPool, err := s.newUserPoolCore(poolName, reqCtx.GetRegion())
+	if err != nil {
+		return nil, err
+	}
 	// CreateUserPool is the only operation that carries the Schema member;
 	// apply it before the shared update path so the whole-pool validation
 	// still sees the schema definitions.
@@ -75,25 +72,18 @@ func (s *CognitoService) DeleteUserPool(ctx context.Context, reqCtx *request.Req
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_UpdateUserPool.html
 func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
 
-	store, err := s.store(reqCtx)
+	userPool, err := s.getUserPoolCore(reqCtx.GetRegion(), userPoolID)
 	if err != nil {
 		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	if err := applyUserPoolUpdates(userPool, req); err != nil {
 		return nil, err
 	}
 
-	if err := store.UpdateUserPool(userPool); err != nil {
-		return nil, ErrInternalError
+	if err := s.updateUserPoolPersistCore(reqCtx.GetRegion(), userPool); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -140,17 +130,10 @@ func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.Requ
 // GetUserPoolMfaConfig retrieves the multi-factor authentication configuration for a Cognito user pool.
 func (s *CognitoService) GetUserPoolMfaConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
 
-	store, err := s.store(reqCtx)
+	userPool, err := s.getUserPoolCore(reqCtx.GetRegion(), userPoolID)
 	if err != nil {
 		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
 	}
 
 	return formatMfaConfigResponse(userPool), nil
@@ -158,77 +141,27 @@ func (s *CognitoService) GetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 
 // SetUserPoolMfaConfig updates the multi-factor authentication configuration for a Cognito user pool.
 func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
+	in := SetUserPoolMfaConfigInput{
+		Region:           reqCtx.GetRegion(),
+		UserPoolID:       getUserPoolID(req),
+		MfaConfiguration: req.GetParam("MfaConfiguration"),
 	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if mfaConfig := req.GetParam("MfaConfiguration"); mfaConfig != "" {
-		if !validateUserPoolMfaConfig(mfaConfig) {
-			return nil, ErrInvalidParameter
-		}
-		userPool.MfaConfiguration = mfaConfig
-	}
-
 	if m, ok := req.Parameters["SmsMfaConfiguration"].(map[string]interface{}); ok {
-		smsMfa := &cognitostore.SmsMfaConfig{}
-		if v, ok := m["SmsAuthenticationMessage"].(string); ok {
-			smsMfa.SmsAuthenticationMessage = v
-		}
-		if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
-			poolSmsConfig := &cognitostore.SmsConfiguration{}
-			if v, ok := smsConfig["SnsCallerArn"].(string); ok {
-				poolSmsConfig.SnsCallerArn = v
-			}
-			if v, ok := smsConfig["ExternalId"].(string); ok {
-				poolSmsConfig.ExternalId = v
-			}
-			if v, ok := smsConfig["SnsRegion"].(string); ok {
-				poolSmsConfig.SnsRegion = v
-			}
-			smsMfa.SmsConfiguration = poolSmsConfig
-		}
-		userPool.MfaConfigurationSms = smsMfa
+		in.SmsMfaConfiguration = m
 	}
 	if m, ok := req.Parameters["SoftwareTokenMfaConfiguration"].(map[string]interface{}); ok {
-		swMfa := &cognitostore.MfaConfigurationType{}
-		if enabled, ok := m["Enabled"].(bool); ok {
-			swMfa.Enabled = enabled
-		}
-		userPool.MfaConfigurationSoftwareToken = swMfa
+		in.SoftwareTokenMfaConfiguration = m
 	}
 	if m, ok := req.Parameters["EmailMfaConfiguration"].(map[string]interface{}); ok {
-		emailMfa := &cognitostore.EmailMfaConfig{}
-		if v, ok := m["Message"].(string); ok {
-			emailMfa.Message = v
-		}
-		if v, ok := m["Subject"].(string); ok {
-			emailMfa.Subject = v
-		}
-		userPool.EmailMfaConfig = emailMfa
+		in.EmailMfaConfiguration = m
 	}
 	if m, ok := req.Parameters["WebAuthnConfiguration"].(map[string]interface{}); ok {
-		wa := &cognitostore.WebAuthnConfiguration{}
-		if v, ok := m["RelyingPartyId"].(string); ok {
-			wa.RelyingPartyId = v
-		}
-		if v, ok := m["UserVerification"].(string); ok {
-			wa.UserVerification = v
-		}
-		userPool.WebAuthnConfiguration = wa
+		in.WebAuthnConfiguration = m
 	}
 
-	if err := store.UpdateUserPool(userPool); err != nil {
-		return nil, ErrInternalError
+	userPool, err := s.setUserPoolMfaConfigCore(in)
+	if err != nil {
+		return nil, err
 	}
 
 	return formatMfaConfigResponse(userPool), nil

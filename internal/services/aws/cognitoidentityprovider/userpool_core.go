@@ -216,3 +216,138 @@ func (s *CognitoService) describeUserPoolCore(region, userPoolID string) (*cogni
 
 	return userPool, nil
 }
+
+// getUserPoolCore loads a user pool without the tag side effect of
+// describeUserPoolCore; mutation flows (UpdateUserPool, MFA configuration)
+// must not bake tags into the persisted pool record.
+func (s *CognitoService) getUserPoolCore(region, userPoolID string) (*cognitostore.UserPool, error) {
+	if userPoolID == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+
+	userPool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+	return userPool, nil
+}
+
+// newUserPoolCore validates the create-path required members and constructs
+// the store object. Store constructors are store-package calls, so
+// construction lives behind Core.
+func (s *CognitoService) newUserPoolCore(poolName, region string) (*cognitostore.UserPool, error) {
+	if poolName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !validateUserPoolNamePattern(poolName) {
+		return nil, ErrInvalidParameter
+	}
+	return cognitostore.NewUserPool(poolName, region), nil
+}
+
+// updateUserPoolPersistCore persists an already-mutated user pool record.
+func (s *CognitoService) updateUserPoolPersistCore(region string, userPool *cognitostore.UserPool) error {
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return err
+	}
+	if err := store.UpdateUserPool(userPool); err != nil {
+		return ErrInternalError
+	}
+	return nil
+}
+
+// SetUserPoolMfaConfigInput carries the raw nested wire members of
+// SetUserPoolMfaConfig; absent members arrive as nil maps.
+type SetUserPoolMfaConfigInput struct {
+	Region                        string
+	UserPoolID                    string
+	MfaConfiguration              string
+	SmsMfaConfiguration           map[string]interface{}
+	SoftwareTokenMfaConfiguration map[string]interface{}
+	EmailMfaConfiguration         map[string]interface{}
+	WebAuthnConfiguration         map[string]interface{}
+}
+
+// setUserPoolMfaConfigCore applies the MFA configuration members onto the
+// stored pool and returns the updated record for response serialisation.
+func (s *CognitoService) setUserPoolMfaConfigCore(in SetUserPoolMfaConfigInput) (*cognitostore.UserPool, error) {
+	if in.UserPoolID == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.GetStoreForRegion(in.Region)
+	if err != nil {
+		return nil, err
+	}
+	userPool, err := store.GetUserPool(in.UserPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	if in.MfaConfiguration != "" {
+		if !validateUserPoolMfaConfig(in.MfaConfiguration) {
+			return nil, ErrInvalidParameter
+		}
+		userPool.MfaConfiguration = in.MfaConfiguration
+	}
+
+	if m := in.SmsMfaConfiguration; m != nil {
+		smsMfa := &cognitostore.SmsMfaConfig{}
+		if v, ok := m["SmsAuthenticationMessage"].(string); ok {
+			smsMfa.SmsAuthenticationMessage = v
+		}
+		if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
+			poolSmsConfig := &cognitostore.SmsConfiguration{}
+			if v, ok := smsConfig["SnsCallerArn"].(string); ok {
+				poolSmsConfig.SnsCallerArn = v
+			}
+			if v, ok := smsConfig["ExternalId"].(string); ok {
+				poolSmsConfig.ExternalId = v
+			}
+			if v, ok := smsConfig["SnsRegion"].(string); ok {
+				poolSmsConfig.SnsRegion = v
+			}
+			smsMfa.SmsConfiguration = poolSmsConfig
+		}
+		userPool.MfaConfigurationSms = smsMfa
+	}
+	if m := in.SoftwareTokenMfaConfiguration; m != nil {
+		swMfa := &cognitostore.MfaConfigurationType{}
+		if enabled, ok := m["Enabled"].(bool); ok {
+			swMfa.Enabled = enabled
+		}
+		userPool.MfaConfigurationSoftwareToken = swMfa
+	}
+	if m := in.EmailMfaConfiguration; m != nil {
+		emailMfa := &cognitostore.EmailMfaConfig{}
+		if v, ok := m["Message"].(string); ok {
+			emailMfa.Message = v
+		}
+		if v, ok := m["Subject"].(string); ok {
+			emailMfa.Subject = v
+		}
+		userPool.EmailMfaConfig = emailMfa
+	}
+	if m := in.WebAuthnConfiguration; m != nil {
+		wa := &cognitostore.WebAuthnConfiguration{}
+		if v, ok := m["RelyingPartyId"].(string); ok {
+			wa.RelyingPartyId = v
+		}
+		if v, ok := m["UserVerification"].(string); ok {
+			wa.UserVerification = v
+		}
+		userPool.WebAuthnConfiguration = wa
+	}
+
+	if err := store.UpdateUserPool(userPool); err != nil {
+		return nil, ErrInternalError
+	}
+
+	return userPool, nil
+}

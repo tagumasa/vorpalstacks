@@ -13,7 +13,7 @@ import (
 // the assertions target a known resource instead of ListCACertificates[0].
 func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
-	const caPem = "-----BEGIN CERTIFICATE-----\nMIICXTCCAgegAwIBAgIJANtestcacetemplate\n-----END CERTIFICATE-----"
+	caPem := iotCACertPEM
 	var caID string
 
 	defer func() {
@@ -25,7 +25,7 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 	results = append(results, r.RunTest("iot", "CACert_RegisterCACertificate", func() error {
 		out, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
 			CaCertificate:           aws.String(caPem),
-			VerificationCertificate: aws.String("verification-cert"),
+			VerificationCertificate: aws.String(iotCAVerificationCertPEM),
 			SetAsActive:             true,
 			AllowAutoRegistration:   true,
 			CertificateMode:         iottypes.CertificateModeDefault,
@@ -173,7 +173,7 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "CACert_RegisterCACertificate_ModePairingRejected", func() error {
-		sniPem := "-----BEGIN CERTIFICATE-----\nMIICXTCCAgegAwIBAgIJANtestcasnionly\n-----END CERTIFICATE-----"
+		sniPem := iotSniCACertPEM
 		// DEFAULT (or omitted mode) requires a verification certificate.
 		if _, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
 			CaCertificate: aws.String(sniPem),
@@ -185,7 +185,7 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 		// SNI_ONLY forbids a verification certificate.
 		if _, err := tc.client.RegisterCACertificate(tc.ctx, &iot.RegisterCACertificateInput{
 			CaCertificate:           aws.String(sniPem),
-			VerificationCertificate: aws.String("verification-cert"),
+			VerificationCertificate: aws.String(iotCAVerificationCertPEM),
 			CertificateMode:         iottypes.CertificateModeSniOnly,
 		}); err == nil {
 			return fmt.Errorf("expected SNI_ONLY with verificationCertificate to be rejected")

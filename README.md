@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While all supported AWS services (list in [docs/services.md](docs/services.md)) are implemented, with 3,292 passing SDK tests, 50 cross-service integration tests, and 17 WebSocket tests (3,359 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While all supported AWS services (list in [docs/services.md](docs/services.md)) are implemented, with 3,301 passing SDK tests, 50 cross-service integration tests, and 17 WebSocket tests (3,368 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 

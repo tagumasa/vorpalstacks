@@ -240,16 +240,3 @@ func (r *TestRunner) runIoTCertTests(tc *iotTestContext) []TestResult {
 
 	return results
 }
-
-// selfSignedTestPEM is a throwaway self-signed certificate PEM used only to
-// exercise RegisterCertificate. It is never used for TLS authentication.
-const selfSignedTestPEM = `-----BEGIN CERTIFICATE-----
-MIIBcDCCARagAwIBAgIJAJxY8kK3J9L5MA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV
-BAMMBHRlc3QwHhcNMjQwMTAxMDAwMDAwWhcNMzQwMTAxMDAwMDAwWjAPMQ0wCwYD
-VQQDDAR0ZXN0MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDd1xY8kK3J9L5
-cGFxq3Zr7vQ2k0Xm9pP5qGH8K3NfH6s9wJ5L2bN8pA4dT7kQwV3rHgY9vJ8kK3J
-9L5cGFxq3Zr7vQ2k0Xm9pP5qGH8K3NfH6s9wJ5L2bN8pA4dT7kQwV3rHgY9vJ8k
-K3N9L5cGFxq3Zr7vQ2k0Xm9pP5qGH8K3NfH6s9wJ5L2bN8pAwIDAQABoyEwHzAd
-BgNVHQ4EFgQUdGVzdDBBgNVHSMEGAQwgeykdGVzdDANBgkqhkiG9w0BAQsFAAOB
-gQAEtestregistercertnopemdatahereforvalidationonly
------END CERTIFICATE-----`

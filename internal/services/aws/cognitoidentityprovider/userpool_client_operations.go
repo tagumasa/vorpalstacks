@@ -12,22 +12,16 @@ import (
 // CreateUserPoolClient creates a user pool client for a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPoolClient.html
 func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	clientName := req.GetParam("ClientName")
-	if userPoolID == "" || clientName == "" {
-		return nil, ErrInvalidParameter
+	client, err := s.newUserPoolClientCore(getUserPoolID(req), req.GetParam("ClientName"))
+	if err != nil {
+		return nil, err
 	}
-
-	client := cognitostore.NewUserPoolClient(userPoolID, clientName)
 	if err := applyUserPoolClientParams(req, client); err != nil {
 		return nil, err
 	}
 
 	// Suppress the client secret when GenerateSecret is explicitly false.
-	// The value may arrive as a JSON bool or a query-string string.
-	if !client.GenerateSecret {
-		client.ClientSecret = ""
-	}
+	s.suppressClientSecretCore(client)
 
 	if _, err := s.createUserPoolClientCore(reqCtx.GetRegion(), client); err != nil {
 		return nil, err

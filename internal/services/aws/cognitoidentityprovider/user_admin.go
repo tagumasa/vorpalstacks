@@ -2,121 +2,26 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"errors"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 // AdminCreateUser creates a new user in the specified user pool with admin privileges.
 // This operation bypasses the invitation email and sets the user status to FORCE_CHANGE_PASSWORD
 // unless MessageAction is set to SUPPRESS.
 func (s *CognitoService) AdminCreateUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateUsernamePattern(username) {
-		return nil, ErrInvalidParameter
-	}
-	if ma := req.GetParam("MessageAction"); ma != "" {
-		if !validateMessageAction(ma) {
-			return nil, ErrInvalidParameter
-		}
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	userAttrs := parseUserAttributes(req)
-	userAttrs["sub"] = ""
-
-	validationData := parseValidationData(req)
-	forceAliasCreation := getBoolParam(req, "ForceAliasCreation")
-
-	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, userAttrs, validationData, parseClientMetadata(req))
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	if preSignUpResult.UserAttributes != nil {
-		userAttrs = preSignUpResult.UserAttributes
-	}
-	delete(userAttrs, "sub")
-
-	user := cognitostore.NewUser(userPoolID, username)
-	user.Attributes = userAttrs
-	user.UserStatus = "FORCE_CHANGE_PASSWORD"
-
-	tempPassword := req.GetParam("TemporaryPassword")
-	if tempPassword == "" && req.GetParam("MessageAction") != "SUPPRESS" {
-		// AWS generates a temporary password when none is supplied and the
-		// invitation is not suppressed; the CustomMessage trigger below then
-		// receives it in the code parameter.
-		generated, gerr := generateTemporaryPassword(userPool.PasswordPolicy)
-		if gerr != nil {
-			return nil, ErrInternalError
-		}
-		tempPassword = generated
-	}
-	if tempPassword != "" {
-		if err := validatePassword(tempPassword, userPool.PasswordPolicy); err != nil {
-			return nil, ErrPasswordPolicyViolation
-		}
-		if err := setNativePasswordCredentials(user, userPoolID, username, tempPassword); err != nil {
-			return nil, ErrInternalError
-		}
-	}
-
-	if preSignUpResult.AutoConfirmUser {
-		user.UserStatus = "CONFIRMED"
-		markAutoVerifiedAttributes(user, userPool)
-	} else if forceAliasCreation {
-		markAutoVerifiedAttributes(user, userPool)
-	}
-
-	// DesiredDeliveryMediums controls how the invitation is delivered.
-	// Valid values are SMS and EMAIL per the Smithy DeliveryMediumType enum.
-	for _, dm := range getStringSliceParam(req, "DesiredDeliveryMediums") {
-		if !validDeliveryMediums[dm] {
-			return nil, ErrInvalidParameter
-		}
-	}
-
-	if err := store.CreateUser(user); err != nil {
-		if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
-			return nil, ErrUserAlreadyExists
-		}
-		return nil, ErrInternalError
-	}
-
-	attrs := userAttributesMap(user)
-	if preSignUpResult.AutoConfirmUser || req.GetParam("MessageAction") == "SUPPRESS" {
-		if err := invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, attrs); err != nil {
-			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
-		}
-	} else {
-		code := "####"
-		if tempPassword != "" {
-			code = tempPassword
-		}
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageAdminCreateUser, userPoolID, username, "", userPool.LambdaConfig, code, attrs, parseClientMetadata(req)); err != nil {
-			logs.Warn("CustomMessage trigger failed", logs.Err(err))
-		}
-	}
-
-	return map[string]interface{}{
-		"User": formatUser(user),
-	}, nil
+	return s.adminCreateUserCore(ctx, reqCtx, AdminCreateUserInput{
+		UserPoolID:             getUserPoolID(req),
+		Username:               getUsername(req),
+		MessageAction:          req.GetParam("MessageAction"),
+		TemporaryPassword:      req.GetParam("TemporaryPassword"),
+		ForceAliasCreation:     getBoolParam(req, "ForceAliasCreation"),
+		DesiredDeliveryMediums: getStringSliceParam(req, "DesiredDeliveryMediums"),
+		UserAttributes:         parseUserAttributes(req),
+		ValidationData:         parseValidationData(req),
+		ClientMetadata:         parseClientMetadata(req),
+	})
 }
 
 // AdminDeleteUser permanently deletes the specified user from the user pool.
@@ -142,35 +47,11 @@ func (s *CognitoService) AdminGetUser(ctx context.Context, reqCtx *request.Reque
 
 // AdminUpdateUserAttributes updates the specified user's attributes in the user pool.
 func (s *CognitoService) AdminUpdateUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.Attributes == nil {
-		user.Attributes = make(map[string]string)
-	}
-
-	newAttrs := parseUserAttributes(req)
-	for k, v := range newAttrs {
-		user.Attributes[k] = v
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminUpdateUserAttributesCore(reqCtx, AdminUpdateUserAttributesInput{
+		UserPoolID:     getUserPoolID(req),
+		Username:       getUsername(req),
+		UserAttributes: parseUserAttributes(req),
+	})
 }
 
 // ListUsers returns a list of users in the specified user pool.
@@ -223,142 +104,38 @@ func (s *CognitoService) AdminDisableUser(ctx context.Context, reqCtx *request.R
 
 // AdminDeleteUserAttributes deletes the specified user attributes from the user.
 func (s *CognitoService) AdminDeleteUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.Attributes == nil {
-		return response.EmptyResponse(), nil
-	}
-
-	attrNames := getStringSliceParam(req, "UserAttributeNames")
-	for _, name := range attrNames {
-		delete(user.Attributes, name)
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminDeleteUserAttributesCore(reqCtx, AdminDeleteUserAttributesInput{
+		UserPoolID:         getUserPoolID(req),
+		Username:           getUsername(req),
+		UserAttributeNames: getStringSliceParam(req, "UserAttributeNames"),
+	})
 }
 
 // AdminResetUserPassword forces the specified user to change their password on their next sign-in.
 // Sets the user status to RESET_REQUIRED.
 func (s *CognitoService) AdminResetUserPassword(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	user.UserStatus = "RESET_REQUIRED"
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	// AdminResetUserPassword always sends a reset code via the CustomMessage
-	// trigger. The AWS API does not accept a MessageAction parameter for this
-	// operation, so suppression is not an option.
-	clientMetadata := parseClientMetadata(req)
-	if _, err := invokeCustomMessage(ctx, s, CustomMessageForgotPassword, userPoolID, username, "", userPool.LambdaConfig, "####", userAttributesMap(user), clientMetadata); err != nil {
-		logs.Warn("CustomMessage trigger failed for AdminResetUserPassword", logs.Err(err))
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminResetUserPasswordCore(ctx, reqCtx, AdminResetUserPasswordInput{
+		UserPoolID:     getUserPoolID(req),
+		Username:       getUsername(req),
+		ClientMetadata: parseClientMetadata(req),
+	})
 }
 
 // AdminSetUserPassword sets the password for the specified user as an administrator.
 // If Permanent is true, the password does not expire. Otherwise, the user must change it on next sign-in.
 func (s *CognitoService) AdminSetUserPassword(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	password := getPassword(req)
-	permanent := getBoolParam(req, "Permanent")
-
-	if userPoolID == "" || username == "" || password == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if err := validatePassword(password, userPool.PasswordPolicy); err != nil {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	if err := setNativePasswordCredentials(user, userPoolID, username, password); err != nil {
-		return nil, ErrInternalError
-	}
-
-	if permanent {
-		user.UserStatus = "CONFIRMED"
-	} else {
-		user.UserStatus = "FORCE_CHANGE_PASSWORD"
-	}
-
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminSetUserPasswordCore(reqCtx, AdminSetUserPasswordInput{
+		UserPoolID: getUserPoolID(req),
+		Username:   getUsername(req),
+		Password:   getPassword(req),
+		Permanent:  getBoolParam(req, "Permanent"),
+	})
 }
 
 // AdminUserGlobalSignOut signs out the specified user from all devices by invalidating their refresh tokens.
 func (s *CognitoService) AdminUserGlobalSignOut(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if err := store.DeleteUserTokens(userPoolID, user.ID); err != nil {
-		return nil, ErrInternalError
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminUserGlobalSignOutCore(reqCtx, AdminUserGlobalSignOutInput{
+		UserPoolID: getUserPoolID(req),
+		Username:   getUsername(req),
+	})
 }

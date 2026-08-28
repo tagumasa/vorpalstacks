@@ -2,213 +2,36 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"crypto/subtle"
-	"os"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // SignUp registers a new user in the specified user pool.
 func (s *CognitoService) SignUp(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	clientID := getClientId(req)
-	username := getUsername(req)
-	password := getPassword(req)
-
-	if clientID == "" || username == "" || password == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	targetPool, err := store.GetUserPoolByClientID(clientID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	// Reject self-registration when admin-only creation is enforced.
-	if targetPool.AdminCreateUserConfig != nil && targetPool.AdminCreateUserConfig.AllowAdminCreateUserOnly {
-		return nil, ErrNotAuthorized
-	}
-
-	if err := validatePassword(password, targetPool.PasswordPolicy); err != nil {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	userAttrs := parseUserAttributes(req)
-	userAttrs["sub"] = ""
-
-	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, userAttrs, parseValidationData(req), parseClientMetadata(req))
-	if err != nil {
-		return nil, ErrInternalError
-	}
-
-	if preSignUpResult.UserAttributes != nil {
-		userAttrs = preSignUpResult.UserAttributes
-	}
-	delete(userAttrs, "sub")
-
-	user := cognitostore.NewUser(targetPool.ID, username)
-	user.Attributes = userAttrs
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, ErrInternalError
-	}
-	user.PasswordHash = string(hash)
-	saltHex, verifierHex, verr := computeSrpVerifier(targetPool.ID, username, password)
-	if verr != nil {
-		return nil, ErrInternalError
-	}
-	user.SrpSalt = saltHex
-	user.SrpVerifier = verifierHex
-
-	if preSignUpResult.AutoConfirmUser {
-		user.UserStatus = "CONFIRMED"
-	} else {
-		code, codeErr := generateConfirmationCode()
-		if codeErr != nil {
-			return nil, ErrInternalError
-		}
-		user.ConfirmationCode = code
-		user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
-	}
-
-	if err := store.CreateUser(user); err != nil {
-		return nil, ErrUserAlreadyExists
-	}
-
-	if preSignUpResult.AutoConfirmUser {
-		attrs := userAttributesMap(user)
-		if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs); err != nil {
-			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
-		}
-	} else {
-		if _, err := invokeCustomMessage(ctx, s, CustomMessageSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, user.ConfirmationCode, userAttributesMap(user), parseClientMetadata(req)); err != nil {
-			logs.Warn("CustomMessage trigger failed", logs.Err(err))
-		}
-	}
-
-	result := map[string]interface{}{
-		"UserConfirmed": preSignUpResult.AutoConfirmUser,
-		"UserSub":       user.ID,
-	}
-
-	if !preSignUpResult.AutoConfirmUser {
-		medium, attrName := determineDeliveryMedium(targetPool, user)
-		result["CodeDeliveryDetails"] = map[string]interface{}{
-			"Destination":    "***",
-			"DeliveryMedium": medium,
-			"AttributeName":  attrName,
-		}
-	}
-
-	return result, nil
+	return s.signUpCore(ctx, reqCtx, SignUpInput{
+		ClientID:       getClientId(req),
+		Username:       getUsername(req),
+		Password:       getPassword(req),
+		UserAttributes: parseUserAttributes(req),
+		ValidationData: parseValidationData(req),
+		ClientMetadata: parseClientMetadata(req),
+	})
 }
 
 // ConfirmSignUp confirms a user's registration with the confirmation code.
 func (s *CognitoService) ConfirmSignUp(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	clientID := getClientId(req)
-	username := getUsername(req)
-	confirmationCode := getConfirmationCode(req)
-
-	if clientID == "" || username == "" || confirmationCode == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	targetPool, err := store.GetUserPoolByClientID(clientID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	user, err := store.GetUser(targetPool.ID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.UserStatus == "CONFIRMED" {
-		return nil, ErrUserAlreadyConfirmed
-	}
-
-	if user.ConfirmationCode == "" || subtle.ConstantTimeCompare([]byte(user.ConfirmationCode), []byte(confirmationCode)) != 1 {
-		if os.Getenv("TEST_MODE") != "true" {
-			return nil, ErrCodeMismatch
-		}
-		if confirmationCode == "" {
-			return nil, ErrCodeMismatch
-		}
-	}
-
-	if !user.ConfirmationCodeExpiry.IsZero() && time.Now().After(user.ConfirmationCodeExpiry) {
-		return nil, ErrExpiredCode
-	}
-
-	user.UserStatus = "CONFIRMED"
-	user.ConfirmationCode = ""
-	user.ConfirmationCodeExpiry = time.Time{}
-	markAutoVerifiedAttributes(user, targetPool)
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	attrs := userAttributesMap(user)
-	if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, targetPool.ID, username, clientID, targetPool.LambdaConfig, attrs); err != nil {
-		logs.Warn("PostConfirmation trigger failed", logs.Err(err))
-	}
-
-	return response.EmptyResponse(), nil
+	return s.confirmSignUpCore(ctx, reqCtx, ConfirmSignUpInput{
+		ClientID:         getClientId(req),
+		Username:         getUsername(req),
+		ConfirmationCode: getConfirmationCode(req),
+	})
 }
 
 // AdminConfirmSignUp confirms a user's registration as an administrator.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminConfirmSignUp.html
 func (s *CognitoService) AdminConfirmSignUp(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	username := getUsername(req)
-
-	if userPoolID == "" || username == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	userPool, err := store.GetUserPool(userPoolID)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	user, err := store.GetUser(userPoolID, username)
-	if err != nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.UserStatus == "CONFIRMED" {
-		return nil, ErrUserAlreadyConfirmed
-	}
-
-	user.UserStatus = "CONFIRMED"
-	markAutoVerifiedAttributes(user, userPool)
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
-
-	attrs := userAttributesMap(user)
-	if err := invokePostConfirmation(ctx, s, PostConfirmationConfirmSignUp, userPoolID, username, "", userPool.LambdaConfig, attrs); err != nil {
-		logs.Warn("PostConfirmation trigger failed", logs.Err(err))
-	}
-
-	return response.EmptyResponse(), nil
+	return s.adminConfirmSignUpCore(ctx, reqCtx, AdminConfirmSignUpInput{
+		UserPoolID: getUserPoolID(req),
+		Username:   getUsername(req),
+	})
 }

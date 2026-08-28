@@ -10,122 +10,24 @@ import (
 // SetRiskConfiguration sets the risk configuration for a user pool or client.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_SetRiskConfiguration.html
 func (s *CognitoService) SetRiskConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	clientID := req.GetParam("ClientId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
+	in := SetRiskConfigurationInput{
+		Region:     reqCtx.GetRegion(),
+		UserPoolID: req.GetParam("UserPoolId"),
+		ClientID:   req.GetParam("ClientId"),
+	}
+	if m, ok := req.Parameters["CompromisedCredentialsRiskConfiguration"].(map[string]interface{}); ok {
+		in.CompromisedCredentialsRiskConfiguration = m
+	}
+	if m, ok := req.Parameters["AccountTakeoverRiskConfiguration"].(map[string]interface{}); ok {
+		in.AccountTakeoverRiskConfiguration = m
+	}
+	if m, ok := req.Parameters["RiskExceptionConfiguration"].(map[string]interface{}); ok {
+		in.RiskExceptionConfiguration = m
 	}
 
-	store, err := s.store(reqCtx)
+	cfg, err := s.setRiskConfigurationCore(in)
 	if err != nil {
 		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	cfg := &cognitostore.RiskConfiguration{
-		UserPoolID: userPoolID,
-		ClientID:   clientID,
-	}
-
-	if ccRaw, ok := req.Parameters["CompromisedCredentialsRiskConfiguration"]; ok {
-		if m, ok := ccRaw.(map[string]interface{}); ok {
-			if actions, ok := m["Actions"].(map[string]interface{}); ok {
-				action := getStringParam(actions, "EventAction")
-				if action != "BLOCK" && action != "NO_ACTION" {
-					return nil, ErrInvalidParameter
-				}
-				cfg.CompromisedCredentialsEventAction = action
-			}
-			if ef, ok := m["EventFilter"].([]interface{}); ok {
-				for _, v := range ef {
-					if s, ok := v.(string); ok {
-						if !validateEventFilter(s) {
-							return nil, ErrInvalidParameter
-						}
-						cfg.CompromisedCredentialsEventFilter = append(cfg.CompromisedCredentialsEventFilter, s)
-					}
-				}
-			}
-		}
-	}
-
-	if atRaw, ok := req.Parameters["AccountTakeoverRiskConfiguration"]; ok {
-		if m, ok := atRaw.(map[string]interface{}); ok {
-			if actions, ok := m["Actions"].(map[string]interface{}); ok {
-				if low, ok := actions["LowAction"].(map[string]interface{}); ok {
-					action := getStringParam(low, "EventAction")
-					if !isValidAccountTakeoverAction(action) {
-						return nil, ErrInvalidParameter
-					}
-					cfg.AccountTakeoverLowAction = action
-					if notify, ok := low["Notify"].(bool); ok {
-						cfg.AccountTakeoverLowNotify = notify
-					}
-				}
-				if med, ok := actions["MediumAction"].(map[string]interface{}); ok {
-					action := getStringParam(med, "EventAction")
-					if !isValidAccountTakeoverAction(action) {
-						return nil, ErrInvalidParameter
-					}
-					cfg.AccountTakeoverMediumAction = action
-					if notify, ok := med["Notify"].(bool); ok {
-						cfg.AccountTakeoverMediumNotify = notify
-					}
-				}
-				if high, ok := actions["HighAction"].(map[string]interface{}); ok {
-					action := getStringParam(high, "EventAction")
-					if !isValidAccountTakeoverAction(action) {
-						return nil, ErrInvalidParameter
-					}
-					cfg.AccountTakeoverHighAction = action
-					if notify, ok := high["Notify"].(bool); ok {
-						cfg.AccountTakeoverHighNotify = notify
-					}
-				}
-			}
-			if notify, ok := m["NotifyConfiguration"].(map[string]interface{}); ok {
-				cfg.NotifyFrom = getStringParam(notify, "From")
-				cfg.NotifyReplyTo = getStringParam(notify, "ReplyTo")
-				cfg.NotifySourceArn = getStringParam(notify, "SourceArn")
-				if blockEmail, ok := notify["BlockEmail"].(map[string]interface{}); ok {
-					cfg.NotifyBlockEmailSubject = getStringParam(blockEmail, "Subject")
-					cfg.NotifyBlockEmailHtml = getStringParam(blockEmail, "HtmlBody")
-				}
-				if noAction, ok := notify["NoActionEmail"].(map[string]interface{}); ok {
-					cfg.NotifyNoActionEmailSubject = getStringParam(noAction, "Subject")
-					cfg.NotifyNoActionEmailHtml = getStringParam(noAction, "HtmlBody")
-				}
-				if mfa, ok := notify["MfaEmail"].(map[string]interface{}); ok {
-					cfg.NotifyMfaEmailSubject = getStringParam(mfa, "Subject")
-					cfg.NotifyMfaEmailHtml = getStringParam(mfa, "HtmlBody")
-				}
-			}
-		}
-	}
-
-	if reRaw, ok := req.Parameters["RiskExceptionConfiguration"]; ok {
-		if m, ok := reRaw.(map[string]interface{}); ok {
-			if blocked, ok := m["BlockedIPRangeList"].([]interface{}); ok {
-				for _, v := range blocked {
-					if s, ok := v.(string); ok {
-						cfg.BlockedIPRangeList = append(cfg.BlockedIPRangeList, s)
-					}
-				}
-			}
-			if skipped, ok := m["SkippedIPRangeList"].([]interface{}); ok {
-				for _, v := range skipped {
-					if s, ok := v.(string); ok {
-						cfg.SkippedIPRangeList = append(cfg.SkippedIPRangeList, s)
-					}
-				}
-			}
-		}
-	}
-
-	if err := store.SaveRiskConfiguration(cfg); err != nil {
-		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{

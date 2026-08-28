@@ -177,8 +177,18 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 	results = append(results, r.RunTest("cognito", "UpdateUserPoolDomain", func() error {
 		udDomain := tc.unique("ud-domain")
 		_, err := tc.client.CreateUserPoolDomain(tc.ctx, &cognitoidentityprovider.CreateUserPoolDomainInput{
-			Domain:     aws.String(udDomain),
-			UserPoolId: aws.String(tc.userPoolID),
+			Domain:              aws.String(udDomain),
+			UserPoolId:          aws.String(tc.userPoolID),
+			ManagedLoginVersion: aws.Int32(1),
+			CustomDomainConfig: &types.CustomDomainConfigType{
+				CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/ud-test"),
+			},
+			Routing: &types.RoutingType{
+				Failover: &types.FailoverType{
+					SecondaryRegion:             aws.String("us-west-2"),
+					PrimaryRoute53HealthCheckId: aws.String("hc-ud-test"),
+				},
+			},
 		})
 		if err != nil {
 			return fmt.Errorf("create domain: %v", err)
@@ -188,8 +198,9 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 			UserPoolId: aws.String(tc.userPoolID),
 		})
 		resp, err := tc.client.UpdateUserPoolDomain(tc.ctx, &cognitoidentityprovider.UpdateUserPoolDomainInput{
-			Domain:     aws.String(udDomain),
-			UserPoolId: aws.String(tc.userPoolID),
+			Domain:              aws.String(udDomain),
+			UserPoolId:          aws.String(tc.userPoolID),
+			ManagedLoginVersion: aws.Int32(2),
 		})
 		if err != nil {
 			return fmt.Errorf("UpdateUserPoolDomain failed: %v", err)
@@ -197,7 +208,58 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 		if resp.CloudFrontDomain == nil || *resp.CloudFrontDomain == "" {
 			return fmt.Errorf("CloudFrontDomain is nil or empty")
 		}
+		if resp.ManagedLoginVersion == nil || *resp.ManagedLoginVersion != 2 {
+			return fmt.Errorf("ManagedLoginVersion mismatch: got %v, want 2", resp.ManagedLoginVersion)
+		}
+		if resp.Routing == nil || resp.Routing.Failover == nil || resp.Routing.Failover.SecondaryRegion == nil || *resp.Routing.Failover.SecondaryRegion != "us-west-2" {
+			return fmt.Errorf("Routing not preserved in update response: %v", resp.Routing)
+		}
+		desc, err := tc.client.DescribeUserPoolDomain(tc.ctx, &cognitoidentityprovider.DescribeUserPoolDomainInput{
+			Domain: aws.String(udDomain),
+		})
+		if err != nil {
+			return fmt.Errorf("describe after update: %v", err)
+		}
+		d := desc.DomainDescription
+		if d == nil {
+			return fmt.Errorf("DomainDescription is nil after update")
+		}
+		if d.ManagedLoginVersion == nil || *d.ManagedLoginVersion != 2 {
+			return fmt.Errorf("stored ManagedLoginVersion mismatch: got %v, want 2", d.ManagedLoginVersion)
+		}
+		if d.CustomDomainConfig == nil || d.CustomDomainConfig.CertificateArn == nil || *d.CustomDomainConfig.CertificateArn == "" {
+			return fmt.Errorf("create-time CustomDomainConfig not preserved by update")
+		}
+		if d.Routing == nil || d.Routing.Failover == nil || d.Routing.Failover.SecondaryRegion == nil || *d.Routing.Failover.SecondaryRegion != "us-west-2" {
+			return fmt.Errorf("create-time Routing not preserved by update")
+		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito", "UpdateUserPoolDomain_SecurityPolicyEnumRejected", func() error {
+		spDomain := tc.unique("sp-domain")
+		_, err := tc.client.CreateUserPoolDomain(tc.ctx, &cognitoidentityprovider.CreateUserPoolDomainInput{
+			Domain:     aws.String(spDomain),
+			UserPoolId: aws.String(tc.userPoolID),
+		})
+		if err != nil {
+			return fmt.Errorf("create domain: %v", err)
+		}
+		defer tc.client.DeleteUserPoolDomain(tc.ctx, &cognitoidentityprovider.DeleteUserPoolDomainInput{
+			Domain:     aws.String(spDomain),
+			UserPoolId: aws.String(tc.userPoolID),
+		})
+		_, err = tc.client.UpdateUserPoolDomain(tc.ctx, &cognitoidentityprovider.UpdateUserPoolDomainInput{
+			Domain:     aws.String(spDomain),
+			UserPoolId: aws.String(tc.userPoolID),
+			CustomDomainConfig: &types.CustomDomainConfigType{
+				// CertificateArn is SDK-required; the off-enum SecurityPolicy is
+				// the member under test (the SDK does not validate enum values).
+				CertificateArn: aws.String("arn:aws:acm:us-east-1:123456789012:certificate/sp-test"),
+				SecurityPolicy: types.SecurityPolicyType("not-a-policy"),
+			},
+		})
+		return expectAWSErrorCode(err, "InvalidParameterException")
 	}))
 
 	results = append(results, r.RunTest("cognito", "DeleteUserPoolDomain", func() error {

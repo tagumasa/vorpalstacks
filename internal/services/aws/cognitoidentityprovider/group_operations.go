@@ -5,43 +5,23 @@ import (
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 // CreateGroup creates a group in a Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateGroup.html
 func (s *CognitoService) CreateGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	groupName := getGroupName(req)
-	if userPoolID == "" || groupName == "" {
-		return nil, ErrInvalidParameter
+	in := CreateGroupInput{
+		UserPoolID:  getUserPoolID(req),
+		GroupName:   getGroupName(req),
+		Description: req.GetParam("Description"),
+		RoleArn:     req.GetParam("RoleArn"),
 	}
-	if !validateUsernamePattern(groupName) {
-		return nil, ErrInvalidParameter
-	}
-
-	group := cognitostore.NewGroup(userPoolID, groupName)
-	group.Description = req.GetParam("Description")
-	group.RoleArn = req.GetParam("RoleArn")
 	if precedence, ok := getIntParamOK(req, "Precedence"); ok {
-		if !validatePrecedence(precedence) {
-			return nil, ErrInvalidParameter
-		}
-		group.Precedence = &precedence
+		in.Precedence = &precedence
 	}
 
-	if group.RoleArn != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForServiceWithErrors(ctx, group.RoleArn, iam.ServicePrincipalCognito, &iam.RoleErrorFactories{
-			RoleNotFoundError:        iam.NewCognitoRoleError,
-			RoleCannotBeAssumedError: iam.NewCognitoRoleError,
-			InvalidArnError:          iam.NewCognitoRoleError,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if _, err := s.createGroupCore(reqCtx.GetRegion(), group); err != nil {
+	group, err := s.createGroupValidatedCore(ctx, reqCtx.GetRegion(), in, reqCtx.GetIAMValidator())
+	if err != nil {
 		return nil, err
 	}
 

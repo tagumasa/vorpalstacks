@@ -11,24 +11,6 @@ import (
 	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
 )
 
-// testCSRPEM is a fixture certificate signing request for the
-// provisioning-template tests.
-const testCSRPEM = `-----BEGIN CERTIFICATE REQUEST-----
-MIICVDCCATwCAQAwDzENMAsGA1UEAwwEdGVzdDCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBAO10oYxFUymZkylNzfIAsSZwUmrNEKGuzcTrk4Fxko2S7Jw7
-28NcpeRbj9W3vNE43L9CwJOnL8j29YbcaloEarZ0ZPBk65SNTglonHRmMfcD46tu
-+ZF5wbvBkxiwmtCFgYuXKJApr6aIhSNHkukI7OcJNb/aZCzo7iq7Z75ZynLr5zXc
-PS3zGQv1C08xHozwRdv6OCiuBjiUP1U6Tbc5nwec8oJ4hhCziQaoEHEMvGh+Dr51
-/4EqKoOau5mespY/Fi8FiebF+8Y9/1tzsDCLXiHwA1rX7J2iX1JLuZvdjKJQcLao
-NlWt0i9vXwsAqulrYhn3o8ZrkjVcNkUxoYgH/58CAwEAAaAAMA0GCSqGSIb3DQEB
-CwUAA4IBAQDUx2DemSBE9HbVGv4cbydNelDEH7lO2duxAnkDsS78c+3bwuXNt0B8
-phM2yxEt1sPPRxaeBvkKHtAplQAeU7xNkaJ1wYmnDMsYm+qfGlcfRJL4ZMkD90r0
-yb4Jz1iw3AC7C4rEy3rJd70Jtsqt9DA2+nObq0HgbDkKPE6Abj9lURpqXnnoU+eO
-wsEOldC5/vHN6ezAWr9mxu6GKXP9d3tdlJDP6JXC72cKztlcyczPRYHXGZawjkfF
-9oBZ2D/oxmhrE0CP/KV8GvA0usn4WYB7karC4/irCd/EnRbV0eED+4LBytntfAIf
-8fT2Q3JQCWnKmEmfwtyQ/HB29OypTjKZ
------END CERTIFICATE REQUEST-----`
-
 // certIDFromARN extracts the certificate ID from an IoT certificate ARN
 // (arn:aws:iot:<region>:<account>:cert/<id>).
 func certIDFromARN(arn string) string {

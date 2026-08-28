@@ -9,9 +9,9 @@ import (
 	pb "vorpalstacks/internal/pb/aws/timestreamquery"
 )
 
-// This file is the sole exception to the #29 rule: it imports store packages
-// and provides conversion functions so that admin_handler.go stays free of
-// store imports.
+// This file is the sole exception to the admin-handler store-import
+// prohibition: it imports store packages and provides conversion functions
+// so that admin_handler.go stays free of store imports.
 
 // getStores retrieves the store group for the request region from the shared
 // service cache.

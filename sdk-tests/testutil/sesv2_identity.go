@@ -170,7 +170,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 			SigningAttributesOrigin: types.DkimSigningAttributesOriginExternal,
 			SigningAttributes: &types.DkimSigningAttributes{
 				DomainSigningSelector:   aws.String("byodkimSelector"),
-				DomainSigningPrivateKey: aws.String("MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDdbyodkim"),
+				DomainSigningPrivateKey: aws.String(sesv2DkimSigningPrivateKeyB64),
 			},
 		})
 		if err != nil {

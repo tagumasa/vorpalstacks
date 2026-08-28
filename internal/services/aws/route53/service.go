@@ -18,7 +18,7 @@ import (
 )
 
 // route53Stores is a type alias so that admin_handler.go can reference
-// the store type without importing the store package directly (#29).
+// the store type without importing the store package directly.
 type route53Stores = route53store.Route53Stores
 
 // Route53Service provides AWS Route 53 DNS operations.

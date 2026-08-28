@@ -16,62 +16,16 @@ import (
 // SetLogDeliveryConfiguration configures log delivery for a user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_SetLogDeliveryConfiguration.html
 func (s *CognitoService) SetLogDeliveryConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if _, err := store.GetUserPool(userPoolID); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	cfg := &cognitostore.LogDeliveryConfiguration{
-		UserPoolID: userPoolID,
-	}
-
-	if rawConfigs, ok := req.Parameters["LogConfigurations"]; ok {
-		if slice, ok := rawConfigs.([]interface{}); ok {
-			for _, c := range slice {
-				m, ok := c.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				lc := cognitostore.LogConfiguration{
-					LogLevel:    getStringParam(m, "LogLevel"),
-					EventSource: getStringParam(m, "EventSource"),
-				}
-				if lc.LogLevel != "" && lc.LogLevel != "ERROR" && lc.LogLevel != "INFO" {
-					return nil, ErrInvalidParameter
-				}
-				if lc.EventSource != "" && lc.EventSource != "userNotification" && lc.EventSource != "userAuthEvents" {
-					return nil, ErrInvalidParameter
-				}
-				if cw, ok := m["CloudWatchLogsConfiguration"].(map[string]interface{}); ok {
-					lc.CloudWatchLogsConfiguration = &cognitostore.CloudWatchLogsConfig{
-						LogGroupArn: getStringParam(cw, "LogGroupArn"),
-					}
-				}
-				if s3, ok := m["S3Configuration"].(map[string]interface{}); ok {
-					lc.S3Configuration = &cognitostore.S3Config{
-						BucketArn: getStringParam(s3, "BucketArn"),
-					}
-				}
-				if fh, ok := m["FirehoseConfiguration"].(map[string]interface{}); ok {
-					lc.FirehoseConfiguration = &cognitostore.FirehoseConfig{
-						StreamArn: getStringParam(fh, "StreamArn"),
-					}
-				}
-				cfg.LogConfigurations = append(cfg.LogConfigurations, lc)
-			}
+	var logConfigs []interface{}
+	if raw, ok := req.Parameters["LogConfigurations"]; ok {
+		if slice, ok := raw.([]interface{}); ok {
+			logConfigs = slice
 		}
 	}
 
-	if err := store.SaveLogDeliveryConfiguration(cfg); err != nil {
-		return nil, ErrInternalError
+	cfg, err := s.setLogDeliveryConfigurationCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), logConfigs)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -83,17 +37,12 @@ func (s *CognitoService) SetLogDeliveryConfiguration(ctx context.Context, reqCtx
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetLogDeliveryConfiguration.html
 func (s *CognitoService) GetLogDeliveryConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := req.GetParam("UserPoolId")
-	if userPoolID == "" {
-		return nil, ErrInvalidParameter
-	}
 
-	store, err := s.store(reqCtx)
+	cfg, err := s.getLogDeliveryConfigurationCore(reqCtx.GetRegion(), userPoolID)
 	if err != nil {
 		return nil, err
 	}
-
-	cfg, err := store.GetLogDeliveryConfiguration(userPoolID)
-	if err != nil {
+	if cfg == nil {
 		return map[string]interface{}{
 			"LogDeliveryConfiguration": map[string]interface{}{
 				"UserPoolId":        userPoolID,
@@ -110,25 +59,7 @@ func (s *CognitoService) GetLogDeliveryConfiguration(ctx context.Context, reqCtx
 // publishAuthEventLog checks whether userAuthEvents logging is configured and
 // publishes the event to the appropriate delivery targets via EventBus.
 func (s *CognitoService) publishAuthEventLog(reqCtx *request.RequestContext, userPoolID string, event *cognitostore.AuthEvent) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return
-	}
-
-	cfg, err := store.GetLogDeliveryConfiguration(userPoolID)
-	if err != nil || cfg == nil {
-		return
-	}
-
-	for _, lc := range cfg.LogConfigurations {
-		if lc.EventSource != "userAuthEvents" {
-			continue
-		}
-		message := formatAuthEventLogMessage(event)
-		if lc.CloudWatchLogsConfiguration != nil && lc.CloudWatchLogsConfiguration.LogGroupArn != "" {
-			s.publishToCloudWatchLogs(lc.CloudWatchLogsConfiguration.LogGroupArn, userPoolID, message)
-		}
-	}
+	s.publishAuthEventLogCore(reqCtx, userPoolID, event)
 }
 
 func (s *CognitoService) publishToCloudWatchLogs(logGroupArn, userPoolID, message string) {

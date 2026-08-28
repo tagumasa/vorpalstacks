@@ -1363,24 +1363,35 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		return nil, awserrors.NewAWSError("InvalidWebACLId", "The specified Web ACL does not exist: "+webACLId, 400)
 	}
 
-	allDistributions, err := store.distributions.List("", 0)
-	if err != nil {
-		return nil, err
-	}
-
+	// The association match must run over every stored distribution: the
+	// shared iterator replaces a zero MaxItems with the platform default
+	// page size, so a single unbounded-looking List call would silently
+	// stop after the first page and miss associations whose records sit
+	// beyond it. Page with NextMarker until the store is exhausted.
 	var matched []interface{}
-	for _, d := range allDistributions.Distributions {
-		if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == webACLId {
-			matched = append(matched, map[string]interface{}{
-				"Id":               d.ID,
-				"ARN":              d.ARN,
-				"Status":           d.Status,
-				"DomainName":       d.DomainName,
-				"Enabled":          d.Enabled,
-				"CallerReference":  d.CallerReference,
-				"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
-			})
+	scanMarker := ""
+	for {
+		page, err := store.distributions.List(scanMarker, 0)
+		if err != nil {
+			return nil, err
 		}
+		for _, d := range page.Distributions {
+			if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == webACLId {
+				matched = append(matched, map[string]interface{}{
+					"Id":               d.ID,
+					"ARN":              d.ARN,
+					"Status":           d.Status,
+					"DomainName":       d.DomainName,
+					"Enabled":          d.Enabled,
+					"CallerReference":  d.CallerReference,
+					"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
+				})
+			}
+		}
+		if !page.IsTruncated || page.NextMarker == "" {
+			break
+		}
+		scanMarker = page.NextMarker
 	}
 
 	skipCount := 0

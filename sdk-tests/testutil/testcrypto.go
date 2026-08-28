@@ -1,0 +1,294 @@
+package testutil
+
+// Embedded crypto fixtures for the SDK test suite.
+//
+// Every certificate, key and CSR below is throwaway RSA-2048 material
+// generated with the openssl CLI and unified per format:
+//   - X.509 certificates: PEM ("CERTIFICATE")
+//   - private keys: unencrypted PKCS#8 PEM ("PRIVATE KEY")
+//   - signing requests: PKCS#10 PEM ("CERTIFICATE REQUEST")
+//   - SESv2 BYODKIM private key: base64-encoded unencrypted PKCS#8 DER (no armour)
+//   - CloudFront EncodedKey: base64-encoded SPKI DER of an RSA public key (no armour)
+//
+// Regeneration recipe (any openssl 3.x; generate fresh values, then paste
+// them over the constants below — never share material across slots):
+//
+//	openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ca.key
+//	openssl req -x509 -new -key ca.key -subj /CN=testca -days 3650 -out ca.pem
+//	openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out leaf.key
+//	openssl req -new -key leaf.key -subj /CN=testcert -out leaf.csr
+//	openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -days 365 -out leaf.pem
+//	openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=testregistercert -days 3650 -out iotss.pem
+//	openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=testcacetemplate -days 3650 -out caA.pem
+//	openssl req -new -newkey rsa:2048 -nodes -subj /CN=testcacetemplate-verify -out caAverify.csr
+//	openssl x509 -req -in caAverify.csr -CA caA.pem -CAkey caA.key -days 365 -out caAverify.pem
+//	openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=testcasnionly -days 3650 -out caB.pem
+//	openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out samlA.key
+//	openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out samlB.key
+//	openssl req -new -newkey rsa:2048 -nodes -subj /CN=test -out csrA.pem
+//	openssl req -new -newkey rsa:2048 -nodes -subj /CN=test -out csrB.pem
+//	openssl pkcs8 -topk8 -nocrypt -in <dkim key> -outform DER | base64 -w0
+//	openssl pkey -in <cf key> -pubout -outform DER | base64 -w0
+
+// testCertPEM is the leaf certificate of a real two-certificate chain: it is
+// signed by the CA certificate in testChainPEM and pairs with testKeyPEM.
+// Consumed by the ACM import tests and the API Gateway custom-domain tests.
+var testCertPEM = []byte(`-----BEGIN CERTIFICATE-----
+MIICqzCCAZMCFFY7kTu92tnoVo0sRRGegeAgKk2DMA0GCSqGSIb3DQEBCwUAMBEx
+DzANBgNVBAMMBnRlc3RjYTAeFw0yNjA4MjcxODAwMzZaFw0yNzA4MjcxODAwMzZa
+MBMxETAPBgNVBAMMCHRlc3RjZXJ0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAqZa62UmpMHDzNAbVzsBtdII3kSjLPX5Nai8r0UG47bSR9QBQepEmxMv8
+i0Uoigo6vyJvx63BVpIzd8pidbNzw6i0T5fhFGf3TqZeF3XHKdCjB3RhWAKoLe1Z
+p5Thb9ULPyOw3ho6lMoWcGqPDI60vzLTFdKRcmNzgZmU1FbANlOvQ7uejuy6+/k1
+nZsorWHNp/dtFyqwJsKhFPsn1Hs4ke3gCip/QU7nOGshQHdXCUmVTc5Eag6hHwvk
+R2sZhR02MFIolmo2r7EWh4DHmhMe4Cvravaxpxq4Y2jpNxuEuJbku8ngX6NzqVfx
+Dd7AmRI8EE1LA0+yj6OyfoDSurz0gwIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAZ
+4spZm6OGVjdjtl0zuY/lTh8koSjY7RFY+DIGntqTXm8E2Xaq82qwLMm1D1LxcdhE
+IU5iD/Is3u1ozXB3h8RlY/Ml+nh9VOaOs0Ms1KqzAlZ1TddYpZGRPwhrRCTPRh6S
+MThL2e7LsT8KYIrutNLUsGwP1cIIbRypBeuh55AkWN41kRJ+UWdbST9HJOsDfLyG
+ItVMYuz4kvUGJRFui1mO5NwPAKP+mYEO9PcijXo2WJzVLqCEXJ7ZMrZRLhRbRZVT
+FfHfLIfq7AM6FfVw63O4qBA38LC0zi4LPnEmrEt/3JsLOVseYs7mLNnYodt7crki
+QeGj+7eonMATJifQZOEo
+-----END CERTIFICATE-----`)
+
+// testKeyPEM is the unencrypted PKCS#8 private key matching testCertPEM.
+var testKeyPEM = []byte(`-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCplrrZSakwcPM0
+BtXOwG10gjeRKMs9fk1qLyvRQbjttJH1AFB6kSbEy/yLRSiKCjq/Im/HrcFWkjN3
+ymJ1s3PDqLRPl+EUZ/dOpl4Xdccp0KMHdGFYAqgt7VmnlOFv1Qs/I7DeGjqUyhZw
+ao8MjrS/MtMV0pFyY3OBmZTUVsA2U69Du56O7Lr7+TWdmyitYc2n920XKrAmwqEU
++yfUeziR7eAKKn9BTuc4ayFAd1cJSZVNzkRqDqEfC+RHaxmFHTYwUiiWajavsRaH
+gMeaEx7gK+tq9rGnGrhjaOk3G4S4luS7yeBfo3OpV/EN3sCZEjwQTUsDT7KPo7J+
+gNK6vPSDAgMBAAECggEARliY3yM4BDkGGRGwxNd7T7XoONV0IOjwUdiJU37wp+Gc
+HcXonD7zlvSKqHaij0gZAEnXljuUFEYHBWy1FN/AaGvlh5KXsfBCXKSUKSUY3VaH
+GcOD0Y8glhR7eRE/xjTYOnOinS7CGBAP6Me62NmlTh5WAxpabNmmAx9i5gWqK54z
+U5YcSC87R1WAeC8GKNeCyefq0sQCgzW5h2yPc3DmjLnFY1RFd+P1z6GSpbifqqXD
+BrSwtY20il7wRPW8oOx0Bh8m5wKCZb7jqUDH0kbHa7asbksgw6EWV++2+V+ile46
+RI6Yck/fUUHgP2wq7WN0CzGxKKLv3AYPmO8pTpAO4QKBgQDlJuEiabE+HXNQoyxz
+si88TOia+t6SJdkSu0nSS51EtvMAjW3xzDSKFaoFJTDOf1nDdjBRA3T/Z5LnFVyo
+LhrI+z36qDqfo8dIxdR0WvjGHM4H2Qqv3TqYdgUNp/3Vdr//AHM+AaMn4RvXN6x7
+6V8CIy51p3a1VftCMPSx63cv8QKBgQC9dVTBhtzQkj0CUKZDhukedwKcCCzD+bJb
+NwJb2niWqMZwNMQUILkW5gVQbw4+mo2+wlPyy7mVIon2N/EkGu2zStb6dxhdLUsw
+qVhQ2Dn2We8AvnpJieXoMCffWm6HkZy8hAsXZIFZeSPRum5m1h4iB4JeCvbm9FmT
+Qjr/sVxfswKBgQDUrR38S232AW1aJOeHxZNzesnTtQxHRhtO+EZOiGFBOi8Ujy7A
+YM9ObUbsGZVPwgB0mcfEGNpIhT9he4EQkiHH8O6YKfSm32GBGCLTju8fJ/LMc9Mo
+X8IXaEnOX+EFcn5FVIyguvJLe/DT8VcDdhf4quBez/sr184no7onOyvWcQKBgDdN
+WnIrJaWUKk7Ur9OiO8Xyw0Y8dKS37EIH6p5ZRT3lAhear2mYq65tcjuqTyQjBSEb
+pFmI8iEANfkzFyaM3bmqLNprjScVo48Ov4LJuxGX6tXyw8tXf06pT9o4kW7tKC02
+9e3cHo25eKUtoDBQa/dO7dT5qlx8EvGTMZmVcftVAoGANeeWkZMlJnZnm7WyBYHZ
+wv1KuDwFYU/1b+U9gFEe2+FOv57BV9X37l1L2Q3ZoWSCGa+LVuzxwP89PEOaW5y/
+4kE1Bv0YeEAlORhCpgEenuTO/0F53YJ8hZKuZnqZ3TGFMLN/GhI0p5O0J7iurU4g
+qbAwuJRVlCsjVe4nLEQ60lw=
+-----END PRIVATE KEY-----`)
+
+// testChainPEM is the issuing CA certificate of testCertPEM.
+var testChainPEM = []byte(`-----BEGIN CERTIFICATE-----
+MIIDAzCCAeugAwIBAgIUD3JrGphZVpx/SYZlpZf1Ef/jHNAwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGdGVzdGNhMB4XDTI2MDgyNzE4MDAzNloXDTM2MDgyNDE4
+MDAzNlowETEPMA0GA1UEAwwGdGVzdGNhMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAjqljVhCREeCWhL2UpGbk5rYRYFXV1H1xLN8S33estbsiOL3BDewm
+rLvlKz8kKEJb8np9hdmJS+wQjzXRs/d1oycxbpq08koObPaoVHfDbQ3fc+x8iOfp
++nLNV1OVTHUoWppIBsJu9iZfGmdaPRWUTkkb8AZioxXxDxTNQbXpOOHnG4bm5ynd
+zrkAkLynCAYjRVUIilA748SF3Fqv8bU4hkdJbXfO9elNV0SnrGqzQQzaJ6JoeBWg
+InDS7ZjtBaxMu+wQ0wyimXePXZFiZeTxzxVHcjVGP4Gfez1F6K6bpUTefwQXXNKU
+/E+v+PwFAxuVpZAxFQUR+JPwm7YDKtGbfwIDAQABo1MwUTAdBgNVHQ4EFgQUhBTt
+EOzHTE1RtXP0ZLY6Lorjt+UwHwYDVR0jBBgwFoAUhBTtEOzHTE1RtXP0ZLY6Lorj
+t+UwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAiOAb2I3O5+2I
+Tr7CtS4S4VD78yx/nuGvkEhdyrKP3VGV6fbL/eJPmamORiejGk8DcUB5ntPkCRqh
+AXGGZDRnyUPVWunrGaY4ze4KAd88wNCq6ON2tXbNP99qYfhT3JXNSyK4FNsZ1NZc
+BSuNZ6ckY1b2MY0pbtp8X32DFl58yQaTv2Hw9po0551ZgJ6hhWXXJxD6gNJRQf2t
+tenpCqBqDnbJAdPChU9ylSxcVngOectBP+vfgl3qwusG4gABjfl0G59WKdKPcVI6
+Bgdlg/y7vrYS8k6GzFAg8z27kPotxe8i3GhK6nb3/3IF5pfgEBPXjf/hJFnsKgPz
+IXRjT6Sfbw==
+-----END CERTIFICATE-----`)
+
+// selfSignedTestPEM is a genuinely self-signed certificate, as the
+// RegisterCertificate (without a CA) contract expects.
+const selfSignedTestPEM = `-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIUItAzXxy7Ihym+sDsLCDod59TZvMwDQYJKoZIhvcNAQEL
+BQAwGzEZMBcGA1UEAwwQdGVzdHJlZ2lzdGVyY2VydDAeFw0yNjA4MjcxODAwMzZa
+Fw0zNjA4MjQxODAwMzZaMBsxGTAXBgNVBAMMEHRlc3RyZWdpc3RlcmNlcnQwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCqC5xcwKyvYMXnvaqxB/2cG3Wz
+QWBmWKN8sB38JyZ/HynBPPRMp+8yt+uIgwu6yJAnVDNbMr7DkS+ZINLXKGimiI2O
+6+46FJEoYMvYazIpwyhJspX1NpiWTCE/GkgQT83W0cZwAcrNYFKkBhBNP7Sa51Dh
+LRhkDNwrCRO1Quw9OIoMoZqZRVrDt0721faf7PijndbCUUY3O9oVCmQVd8EZUI8B
+/lWWoxkeYZ+y0ooquQ+sbbs2kdRp1xdmE7FuL5Y6KO+0JlXyNlNBfQpo8Q82KYtg
+BVl2Hxr2cThSs2Ynm2EyXLRyXbpXxag3rKpLSRkx+q8Jvq4topawrJG9S511AgMB
+AAGjUzBRMB0GA1UdDgQWBBTVi7mW81yUAKUix+1JiPxD9Fg2RTAfBgNVHSMEGDAW
+gBTVi7mW81yUAKUix+1JiPxD9Fg2RTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+DQEBCwUAA4IBAQAUS89wm++v1syCe05PwIXhSfV61Y/yuc0lJ/1ic+HeTrpHL4dJ
+0li2VMsEYxtDIf3BOnkIjp2ebnZs8IV/P+C95V4MW5vVR+JNVA/uE/ir1pPi2XpV
+1JgxpLE5iAaaMclhv67UorowiDHgT+v3BSkO8eqGaG21gs9MQEd1SrDFIwXdgKr9
+3vjuea91KjRDWCSqK3kv3jJHlfT/SOppyjVieTSgJ1jylKeO8AgQAJee+w2NgRuW
+HQP+DDvq5gVXPvzRcVIfJV9duDgAUqiupNIpgblQDc4Qog+fAIXfNFiVBtmR/xBz
+yEWujNJYQsa39DNqE8tMLqPBssU9jepRooI6
+-----END CERTIFICATE-----`
+
+// iotCACertPEM is the CA registered by the CA-certificate lifecycle tests
+// (DEFAULT mode, paired with iotCAVerificationCertPEM).
+const iotCACertPEM = `-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIUWd8n3vqXjnkaeYg3hObbLIjduXAwDQYJKoZIhvcNAQEL
+BQAwGzEZMBcGA1UEAwwQdGVzdGNhY2V0ZW1wbGF0ZTAeFw0yNjA4MjcxODAwMzZa
+Fw0zNjA4MjQxODAwMzZaMBsxGTAXBgNVBAMMEHRlc3RjYWNldGVtcGxhdGUwggEi
+MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCjuejmXkyv+hnWEJiSMA8IqCyp
+fbQQWxzEx3kdqG0ZQGUdMbjzFslGLUNSHpWaCxrbMg7bhUeIRfvRKeYrUa5715Q+
+jwEalZbWGVw6wVlcUyYrvgzt57bBPdvrIW1Ns1CQxoGwviZUPY0r9jrZk/qZRkB9
+PmXJAeZ3XY2hGqMAHU4paJYl3sMVYVB2pWoiOoXnDZvsn/b5ecQFAJiiGo9Ln+29
+LEJH4JxyAlixd9aKMrg62e0rLRbSl8vtHDOKUlcAVfEClTRL2EMrpzKrruqCd65G
+DWs2tsywwC7b/f9fvUCbTEfIVbzHIYOaY4PmzCd2lCcG2zrFN1orHK7SPbjPAgMB
+AAGjUzBRMB0GA1UdDgQWBBTDEk180rLXTt01MxiqiKzrwcEShDAfBgNVHSMEGDAW
+gBTDEk180rLXTt01MxiqiKzrwcEShDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3
+DQEBCwUAA4IBAQAY4m6Z4EMh5s4VVWXZp/JaafsoUUBrtFC2zUDBcbzyZ6yuxYp+
+ikVbSEHBT1Vb+JLqMWC/6JxsgxUPIin5u5yqGa6AdjtSR/9aTiJstVNQptZ2mw/Z
+O9kKqStmzH4/WDiG0r48eSCQlFqmDkeU7x5mJVbBpjzmXg3h1/aclLsHN68oCbWJ
+iR3t8gw/Dn2ybGY9n+CJHOkfvJRMaZhBgPc/MSMhuSqTteXUijvpzvvH39haKHtP
+iLcEkw2ZwNrZEoNVjTwz6RkdLm047216PWMvXzu8/taTZmVUrlK5fTIAfuIYspzC
+saXkOsls7Af+ep3ho+L3zEotBvJL57h1QMPB
+-----END CERTIFICATE-----`
+
+// iotCAVerificationCertPEM proves control of the registration CSR for
+// iotCACertPEM. It is deliberately reused by the SNI_ONLY rejected pairing,
+// where the request is refused on the mode-pairing rule and the value is inert.
+const iotCAVerificationCertPEM = `-----BEGIN CERTIFICATE-----
+MIICxDCCAawCFDVVvvyCbevntOMbBaI1xO/EF4VeMA0GCSqGSIb3DQEBCwUAMBsx
+GTAXBgNVBAMMEHRlc3RjYWNldGVtcGxhdGUwHhcNMjYwODI3MTgwMDM2WhcNMjcw
+ODI3MTgwMDM2WjAiMSAwHgYDVQQDDBd0ZXN0Y2FjZXRlbXBsYXRlLXZlcmlmeTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOKqmYCEowYHvU3XVpuc9olP
+86B7UkqI1d4KAU2up/obewHpTesUqWrxkQQGqZNF7iA79J8iicWiZ+iCD5m9sFHt
+7lIC2EAAVpURfgxHKQOHk94lZgiMbvSMRvPqpn7noKfROowS2PyNZv+py8UBt412
+M+1sulZrjGIAyqWfCm1eP8wTWA+I06kCAMjgtfXir/RTPW/ZGKdNjlZMVwvlqYEb
+d6IHTqm6W2X68oiQJCponsZNI06Hc7UqFtncmWaoe3BlUvteFL7v4CxYfamGV3VH
+BtfHTIhfwwuM8yZrj0pegvX0q9kVBGwCEr2z82c2A409xotrWJvvpdgIYqCbdFUC
+AwEAATANBgkqhkiG9w0BAQsFAAOCAQEAgHZmIvoO6L5YzkUTK4t3qQOSinF65rGc
+0P3zGJzru8b8Vki58VZMJSF83jN9imJvYNkBPjdSMSL0hHAZHO5dtZfmLe3M4Do8
+mzstQ9iczUvrCnmrV5/lc67S2zCBrGl3uOY1tnDs6etemjrp/z4kvA+lDYMg4knY
+CuIE9fnclraWqk7h4+Mdcg7s4O/JK+HrnyaKWBGvpWX2F6f8rc3CEI8Rlg+7nFDP
+kVDe8IwI7q4SR6jxrv2lMrJLhDBJXyVRgywUKCLVbm3IA/UP9r9WaTXL4OECpQ99
+/+RFAq97bYhK0xxXIb3mCxPsikTSWDJ62o1KUC+5vcaQMtwzvy4erQ==
+-----END CERTIFICATE-----`
+
+// iotSniCACertPEM is a second CA, distinct from iotCACertPEM so the two live
+// CA registrations inside one suite can never collide on the same material.
+const iotSniCACertPEM = `-----BEGIN CERTIFICATE-----
+MIIDETCCAfmgAwIBAgIUQBeziLPM27WpamF7kyi10Bk/04AwDQYJKoZIhvcNAQEL
+BQAwGDEWMBQGA1UEAwwNdGVzdGNhc25pb25seTAeFw0yNjA4MjcxODAwMzdaFw0z
+NjA4MjQxODAwMzdaMBgxFjAUBgNVBAMMDXRlc3RjYXNuaW9ubHkwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQCuBrqXu8ito+3AEyXEjRxHe98N0M24aG3I
+qcUta7UGU5x0C3li8jQTc8MXDR2UiJ9MDBN3pr3h+SSZCoL/PrqZYHwr7Iwlnr+a
+XKpjqec/2detcG6B0twtyOaNb4PEET+tFffgmnm7ji/9a2cgtl85ALohqN8Sp5jg
+eGuIrE3MWWgcrNhcCB0A0iN8nimCe4eCCuO9mls9E9D/alna5S9wy5BZIeBQ3Lg/
+k8fR5qCJFQZ63RhxpVuutE/wrJBqlWk8qGNfoiJySic5iRkqSsk0niauD0hxDAZa
+/LwgRoNGCtnj02zGKD9dV1Lvuz2C6o7lMjOsP5bgGR3c20RL31GTAgMBAAGjUzBR
+MB0GA1UdDgQWBBRctgRI2C9xmSvwtItEhmPtkBHZqDAfBgNVHSMEGDAWgBRctgRI
+2C9xmSvwtItEhmPtkBHZqDAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA
+A4IBAQAvGqWVtkSX1y7Iq6cvs20IXioeVKI7/8oHbsQRAtxWb816AYdeJTvuA1Ca
+ZxGt4RtA9aYkcKiTL1zRZBHwcxwboHYW+Pt1Lh7+1LRGktFH+2OUm/8ajBuCfh6Y
+gDoPUOcwke+PdkTyXLqHLw4I+Ie/Byx9HFpeHTff/acg7mGFnHAvlLVEpbqnN0ob
+GyUgsLPsqsD70S4huw5hxXYmeaQrSTnPIuUL08IpeaATy9zuIjRhtePiE/a+sRsn
+f0XKKK5x5nIA8wcs7qwAhq0fIboud7tXtrDa4OOdiBiRa1S86vz1XHpEgQJflvjp
+hvSOGEXPXIsffeK4Cylne3dMDk0S
+-----END CERTIFICATE-----`
+
+// testCSRPEM is consumed through the RegisterThing provisioning-template path.
+const testCSRPEM = `-----BEGIN CERTIFICATE REQUEST-----
+MIICVDCCATwCAQAwDzENMAsGA1UEAwwEdGVzdDCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAL5Fn5xFIsV41TQSVY03cf57NzCjCLKf+K9pLBRB0J0JNxg6
+AnQPsF5fKUvAmcyEroGNwwCQ7jWdZU35By4KmuDNoroC8abAaEmSdZNKRQF7jw0b
+v68HrGFl7tRM3tVQlr2Ip7gNgA4KxnJpw1oPkniCCJfZNIpjpvxYg7AkrCfZ8QlD
+im9JlKtbZPF3Z70OsFkFGAuZEJ/sNJGZxZMzxRwvDOdt3iH23Y9PY+K6pP7A9h9E
+WLLRx7k74JhXPlTEIgcfYQkuL8t+cT2g0Nm7dWdym6zisXXxNwEakbfo7DrTBYUY
+hIbX2MReY9DU+EOmnNZevjcM4ikIzeT9kRwX3aMCAwEAAaAAMA0GCSqGSIb3DQEB
+CwUAA4IBAQC0SRRyqii51s4bgFkOE8BysYYzWwVzAkwZ59YpSqemZYzLcdcQT+uL
+Pcdkr1MmMCfb+CutAcoA3PqpQScVGVvexdgYJ4+kBeCKbtWVDaYNNeiPM1MoABiU
+C6X48svuVKHGmxMwdIvVqsVkWZRWKPoPDjQ67Q/Lz18Z1YIjV2JJUFhEY1tn3FGT
+Tm5UNvesro7b8o5qE7sXAXVLWDnKCjOD+xiU6mQe/mYcCsfsT93EC3mRLyyT2cHG
+Cg+jAo5qxVQtuqgk9W/l/fJaZ8fZ8sfpP9j3baxTX9vQRT2ahXXMfvrUmw5bQ9tz
+T5wlPK85r5LaQyCJtNZdUQUSKXaP/w2l
+-----END CERTIFICATE REQUEST-----`
+
+// testCreateCertificateCSRPEM is deliberately distinct from testCSRPEM: the
+// server parses and signs CSRs, and per-CSR idempotency must not couple the
+// provisioning path with the direct CreateCertificateFromCsr call.
+const testCreateCertificateCSRPEM = `-----BEGIN CERTIFICATE REQUEST-----
+MIICVDCCATwCAQAwDzENMAsGA1UEAwwEdGVzdDCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAKtIxrKTNcAlnQRdSsCAQt57rIoK7FEtFoHX4zP/kVsvxP/y
+EEdxcUO4Bdy9nZ3wfIuPQsj46/CN/t/FNBJ8NkbWRoOUkTsjugZsmY3q7gwY8YAK
+ZWgU23CyCC9ELur7Dw1Ow2E+AiF8hy2qEpaeUovDs/Py03o+rWvlE9k6T8JKjYI1
+22tL1gLKo14GEmfW2ObN+OzsmyXdiIHgK4VdRMD25pQRgurGVgVO3Xsx+5AsaH+J
+u7bHT7N0cyyozAVkx6nswskIGeWEpK+BikMVUIT37z0qPVtnwbLO7zAlPuxHZJiy
+CJricpKFXILyGfGLK5fJo86f8qWa2//D3OCmV5MCAwEAAaAAMA0GCSqGSIb3DQEB
+CwUAA4IBAQBGRg5v1Vyl8lt2mUaLXSRizSZWFeuZjFNR3F+OsvXd077MjzgLlXc6
+xCs/BVPOPQTGg9CDTe27YIh8AC1DhbUhtXckS/3B2ERLQsjnVS4odfKhxwYarXsu
+OW1w6jMBXaenA8dF5HzcFmHO46coxJJwrWrc9mJV8/FwzKysmCj55PfK4CKmSbzF
+122/F2N91rQkRxcZYSvBUXx5VsIC57VzV8wyYHgZoGFbbtpqkGrzvbNbXMUxaknb
++MMw/qfvcX4fsNJ8AisQsH5hWP5t71adXhZ4E5XT18GzJt9ekm6jKJNXGixDbziE
+vAzUedToFnP4xDjNW8wHyV9tUQx/+ZNd
+-----END CERTIFICATE REQUEST-----`
+
+// testSAMLPrivateKey and testSAMLPrivateKeySecond are deliberately distinct:
+// the SAML suite adds both and then removes the first by KeyId, and identical
+// content would weaken that selective-removal assertion.
+const testSAMLPrivateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDy3G/8sJ9+Efug
+s1GfYcA9rzMehpSEY7F3LmTUnDi7Lw0ltjOC1zr1NC5OCu46TYNcpI3kHAhn6rxg
+TbJQBsyVE2Ajw1ZyVoYWpElTo04zM50lt8jDIy2UDkF4N7Wm5pg2jPVaa2mOfaPh
+37iJ2MXyQSCEV+werD0zJdJ/YIUkbbcTGa8q8TlrSwtKEGBhxF568M99QN9S++Ig
+7EITWJo5EGgq2/EssFt4miQuuaAn7zwuziQRVnTWVZ81Houja5MCXn2wqx+35uF1
+OJp2Aljxyt1moD9Mk03lRcf9jOLV1xyMnM9kyBzXV2ZfT0OETFPHs2vC3OzKW6MK
+XGjUUegXAgMBAAECggEAH3HeSBwAUpz2dRyyrU3FS9dS6ZloQmn8EN/fa03c5JOX
+grIAImlGt3ftpOoyZTcjEow12PquNfJFOLzmoQj4VTcAhDDnEP/V9bmIyv0Cg4uj
+xb3xjx6PaLOd03h3GyiRPcLrg60TqkDnRrgmVybLnm3DTY9qwZ/wfp5fjmGLa6dO
+bYPKsWtoX9+fn25PecLCYLCPt3zOiwRCBn2mCVO/QG7gyV6NnKMg7Ry+3nmBWv7h
+c4sJRbv7tyC8xGCIQ5268TWx9CeZE+KZkzJKvvLG3Vsozs+Avmm5pL1KtM9/ZcUa
+DhW6yZEWgCU4WxHXKIGfLATxwmQiEJ893Pn6QBr3aQKBgQD/rfUqDf4W/e4dG/7v
+xVxHLBqkEInO0fXjQvKGS57wqHGYk9+g45eGeIM64v8sYShYs3i1a8OHhjgxMa5Y
+9wodLtbA9KUEr1glfCndkyFnJs6jcHfAXugbC2MwDuZoIUcoXgqhfe/r3SNoHxgz
+Yao2nBRzSdIwZnqw5O/YI5yxXwKBgQDzKl3ZoB87nCPpL3FdirxJ8scDMVOUtdsE
+tl+Ri02UQpWDHmOwSwFnX6UdLhdJqQ2fJqobfhcGI4bEs2+TQVsfe+4Ympwo5Yp7
+S+QQu+oi+smZAp+tYFPP5cI1ZZX8UZ9ruK029WekttBQe6woVeWv+BLToE9uqrTe
+h5ljwDksSQKBgQDNH2DLJoKtK3e2/tjev/WyW93btjD5LlUYyIMN3ulapajNAgWt
+bCoKhfCyc57ImgHmd8Xlttkdhz7ZqMP5N+hzVTqRfzRMt+f92skzrHBl8ypg0UAh
+o4KO/+nJioqrC9esuRXKTeEH11gqlpex0S7ftQRrIdRxZCYWePU68Acr/QKBgAwT
+w5uGd2anh6USRSgnNtjZZQcEkSkmqx0dzbtV1uGROQnNHZho8UXoGzRK0L9I1TNd
+YT+CULRuWUg1vUnsChGTPy0bqLvjQrCDAW3PV36rRA4EclfTG/aMa8vpIrzodOmN
+v5SmNaKZrdkBe3h5Y7IMuSqnoKpXcipHQ9gPeQd5AoGAZASh4nPuRv5exDxiAqMv
+6z+F9HAIQ3FlLgfWY940gh4VUc6C9KNTW3ME8i/pGx0ver6fnhnUZdm5NI+4L2ry
+5mm8jNngrHtwWwFp+mC08KN+jmqmjyoqsD+BfS1fOo+2T5dznpKdcT6cy9AuyfNI
+gbP/bSr5xIc+ju2o2a1QLXI=
+-----END PRIVATE KEY-----`
+
+const testSAMLPrivateKeySecond = `-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCY1Er9nY3eKA5E
+sk5dWyWW91ntZO6FVDE/ZnSifrQ2L5w1It5kxIs8ajLEH0QFV4qmWDsJrktgJ+DB
+7XdEodrsZyXttATBSxY9M5QkIi/VlNrmI2/QEoFwP05D+7dOYS8Sn9i28BJqBTpY
+1shQH0kok+s/zp/AlAm1wmAqveN2LUaxGVWBmMWYNEv22mPZpkIOqFap9kogb4Tq
+Vh62VmJ0K8kr9Fcr4CuIDSndwWoh0OaWq0x3xpZh1nX9taEcPBOH6x9BLz5f83pc
+dpNAZ0kJM4Y4ur7Zad69xkkBUGc+DqRC8UO5lq4HfE9ldA4C6Ee72AekH/UG0SYJ
+KecCsCk3AgMBAAECggEACAO4tl8bpab/xI4oj5BsQrlQVSOMt0o91j98ZgRzVT90
+QicaIY+wZj0tfLJ6YeCq4TlRnfAu0hPqn1DhhyRec4pJ52ggMwt0gZt3AoQWcm1p
+eKsqvcR9VufC+3azsLUQ/7mJPGK6Rya6CMGkD0DswxIqwpWxNACvbQGMrdZ3xhEv
+W0WrNjSo1n4SV7iIB9ygEx4AwkzkUznFfRTla+bSw9LiVa3q/w7oHQ2SG5ZnPGik
+e6V368bIyxGorKgO0KexM6z6b4a6DEQqt1+Tfd82IMLMKL64+jbLuMJr4Qq6B2z5
+ZTIkg74jYofiLaAGc9AHRcEEjszBCuBIFYCSDiEB9QKBgQDIeKNmtcjw71J1ayyl
+m7aGHD8GcwjZdPyBos+Aq8DGKlAkO9TrLM3IvlaWo9LC2a5sCYtFrdw82XaZOuR+
+F14fYrGofZx+AoE6vCanprSz8qvPAfvQ0YADx1ns09vsT9NGPtg9fnDSN+m3Pnck
+We6n85bb21wpdiIQ1/jKVYmbrQKBgQDDKWAI5pyqzIsfWPMr2GlG8l5MZ9Es4Kzy
+p6XQmJBFstlV9uUJIPut6Ugyrdu41mbdsm8zjLipXnqfUqWTinWO49Lf1xbWJAAs
+OCUZqYLPr8fXuW4R4FpV8v+l7C8XEbZfDv6wmqqSpt7HdqMGmRX/VzYJbAem/qPc
+7uYvoYN08wKBgAgHlPvrMhY8b8AWP96OQxxSC1A10VfscKS8obUUrA8D6NvaraeR
+zthIj21POITndS4Mn9B1q0mgqDhw/G/0faeiK12FUnxVm1l/6chzS++dO7Z57N0r
+VwZPuNFclwV7GQpKQB0OcHRrGuhlDx6cn4uInTVHLwTWH30vOV7ZWD6tAoGALkCk
+Dff5sVEAt9Ew8Hc9nB7c0mbYYDZvRqMM3T8LEjms4H6/EUbL3w+mmLwzkr7dajVb
+vW/gY+OMVC4WJ71s1wyPcZVcSCwIDnLP+CEAa5BRYIMF3x64yh3pEL3E+0arXiQD
+oH9HZbI+oi8vu+SUHgvhNqJvvdgjpbzIuQkiSpkCgYAA2g9pZKpkSL7/MjYqPmyb
+YuBI9WJzgNef0o1/erL8YR3IF1i4czpE5VEPboyTNvjephCvmVD93SAkfxQmod50
+STFk+PC6aN0yge/Lmg/J0EiWDVlNR0eM7FWch9CVyRBa8sXjbxsftsHj9Um6uvcN
+sajAtCF0WOyCmvUjl0LLSQ==
+-----END PRIVATE KEY-----`
+
+// sesv2DkimSigningPrivateKeyB64 is the BYODKIM private key in the documented
+// form: unencrypted PKCS#8 DER, base64-encoded, without PEM armour.
+const sesv2DkimSigningPrivateKeyB64 = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCXyCieX3BFJyp14NCB2ehQ5f5aQBZWRQGNCVXQrsd7re6aM6n+0eStSCSa0eaVG4vZZ+wFmXv4YTvvtdamCnnyM1wSz7zennHTozvhcvlCVPwibxadgfwRG4LIrti7BK8FXSmWoA27Z/sQ3Epv4MZ6S4d2QJ6CKr94lM1EAdCXhekhPk0OqI9ysc9EIh+SDJvQfh1DBBnaHVswb5mRl5V19rI8W0pt+/mwjYYfYhwO6CSCL/bz/g6bFe2CeGMeu8zqzPl7IuRU8j0e9ED5hrYMEiLHb6xd5xbvTa+BD7Hi5DpgAWt0sKXncYmMXjbkOSH9AyQZDCVTkd94f7mw2iqnAgMBAAECggEAKIdCTVOnm1eDb3lpw5qHfX6ERd4B+OQxL1M0TmY1DvHZGeS8ujWajaiLWam9m8gAtjsZGz+qCh8QjYfs+mYmvMT5C27b/EerljrqhN8Z7pvZvWoTTFiGkZzadbK2XW25PEHtlnJDaGyx7gUcfTY0WThswecsTA6VFOIK02N2qtamLJyL7dm+G32JE9Jk1UyT+8RyAVR4oQvfmoCmU5iVtTaG8vRTNOQXUM+YnZfKPGHRqkF527T6m2PQMwKTcEVY1RossfMxKhmF3jqL2sIA3Z8M1nFqJisHsQmdae5wETRvgCCpBwI/GIUBeSku5yu1YpozkmL+WKodx3jGUumHOQKBgQDG/5SMMt2Ywrm/d5+89SuD2t7EF6OwvUfvzOc0w9m6crMjuYFThrtlGDWqoIfknT4b1egrKo/WEnKeLME/4VZzrlw8644F7bv1ljG5thVs/rJHxBY2iD5neHKKr0hmB3tz/+XPJGIWXR+B2PvHIoYJZymMBN2UZfCSN6rtAFDanwKBgQDDQjlX9oC6u//OiKGYCPljYaiY3+nOgYKlfzjFSvtQlOJ9sCVlgK0/tjlkw40wrPKG8wYwz9zEe+AT0cID2wbBiqHZWzB/YjTHykqr/g1PHTgHWKl6wYx7lsHjOO3/UOyFRKd54cQngJr0qJ2DyS5BtdAkJI7fZzRw41+HfeK6+QKBgQDC1qT0LC1pj2bcv9xH32iOvjKUnmyn9HvFn8LUl9nLQtiA5vVn+afrUKvi9zB2tzqDeInMEe0o9YEBu+IukIvb0eD/yMaSqXT5/OeM5GnQAQQ/Xg89r2IiXv0PKpXhR/wo1GmGyiG7scvSj8fc7sF73WUBchYdYT4Ne7HAQSnpEwKBgC//YXU8BRziBdnRQFfNLPC/GuCpeiHnOCRSh7QH4ItIbfyThj3TScM1mhoo79YdTWja6JSrJAuwn75/e3/TIXAGEg8KGXvWuj66fWyWANOHzTQRGWgxl8TxpCuk3Ow8CkggPkL5umwzcuPdZwr0M0i31rhrvCsyhXOSkPMPgOKRAoGBAKMzbcazgfWO8LKkMzFdda5vYDqogaegDMqW8imhVz7tNHiShisn0/uA0mLPyTzAOlhYMngFyXPuPdg9T/N6/1Q0OU3x7EbSbSXESP/yE4vsiqozB+AX6eLmRgLfRSc9VCQ+pEI1+LEp2s4r3K3AV2yq3eRW9YeKWuvGXAoGasdr"
+
+// cloudfrontEncodedKeyB64 is an RSA public key as base64-encoded SPKI DER.
+const cloudfrontEncodedKeyB64 = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmVhcrtpwxTIFdCK1qZhI32LySlBn5QkesHuaHl5parVHl/eKnV3UYvjXDonNwnsNVYU+/arQhyq8Bhx9ekbeR/v2DkqnsS3Xl+5dz6ei3P8LIKtP0i3JFafKyJLnfcYoLYOH+2rYRgYmIfRji0FX+GeI+WpU37DViqLZMb52xtTpg2NmHrQOJdU3is8JNeoxim+T7U/gBG5vNda8K1j7nhjP4jaN+NMTqv0hOqtKUWEG9Bzvyvr0rsJcPY4da2aAPk5GY8n9cXbP+QDB9mJ42p7XaqCnFq3bvnOrGtvIXZGWh1tgECWGdDn5qNc+StaY0CHxR4TR93NmK+uBrE1dbQIDAQAB"
