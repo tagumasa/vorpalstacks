@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -26,15 +25,8 @@ func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	key, err := store.AccessKeys().CreateWithLimit(userName, iamstore.MaxAccessKeysPerUser)
+	key, err := s.createAccessKeyCore(store, userName)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrAccessKeyLimitExceeded) {
-			return nil, ErrAccessKeyLimitExceeded
-		}
 		return nil, err
 	}
 
@@ -52,26 +44,13 @@ func (s *IAMService) CreateAccessKey(ctx context.Context, reqCtx *request.Reques
 // DeleteAccessKey deletes the specified access key.
 func (s *IAMService) DeleteAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
-	if accessKeyId == "" {
-		return nil, NewValidationError("AccessKeyId")
-	}
-
 	userName := request.GetStringParam(req.Parameters, "UserName")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key, err := store.AccessKeys().Get(accessKeyId)
-	if err != nil {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
-	}
-
-	if userName != "" && key.UserName != userName {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
-	}
-
-	if err := store.AccessKeys().Delete(accessKeyId); err != nil {
+	if err := s.deleteAccessKeyCore(store, accessKeyId, userName); err != nil {
 		return nil, err
 	}
 
@@ -86,108 +65,81 @@ func (s *IAMService) ListAccessKeys(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
-
-	keys, err := store.AccessKeys().ListByUserName(userName)
+	result, err := s.listAccessKeysCore(store, userName, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	result := pagination.PaginateSlice(keys, marker, maxItems, func(k *iamstore.AccessKey) string {
-		return k.AccessKeyId
-	})
-
-	accessKeyMetadata := make([]interface{}, len(result.Items))
-	for i, key := range result.Items {
+	accessKeyMetadata := make([]interface{}, len(result.Keys))
+	for i, key := range result.Keys {
 		accessKeyMetadata[i] = s.accessKeyToMetadata(key)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"AccessKeyMetadata": accessKeyMetadata,
 		"IsTruncated":       result.IsTruncated,
 	}
 
-	if result.IsTruncated && len(result.Items) > 0 {
-		response["Marker"] = result.NextMarker
+	if result.IsTruncated && len(result.Keys) > 0 {
+		resp["Marker"] = result.NextMarker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // GetAccessKeyLastUsed returns information about when the access key was last used.
 func (s *IAMService) GetAccessKeyLastUsed(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
-	if accessKeyId == "" {
-		return nil, NewValidationError("AccessKeyId")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key, err := store.AccessKeys().Get(accessKeyId)
+	key, err := s.getAccessKeyLastUsedCore(store, accessKeyId)
 	if err != nil {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
+		return nil, err
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"UserName": key.UserName,
 	}
 
 	if key.LastUsedDate != nil {
-		response["AccessKeyLastUsed"] = map[string]interface{}{
+		resp["AccessKeyLastUsed"] = map[string]interface{}{
 			"LastUsedDate": key.LastUsedDate.Format(timeutils.ISO8601SimpleFormat),
 			"Region":       key.LastUsedRegion,
 			"ServiceName":  key.LastUsedService,
 		}
 	} else {
-		response["AccessKeyLastUsed"] = map[string]interface{}{
+		resp["AccessKeyLastUsed"] = map[string]interface{}{
 			"Region":      "N/A",
 			"ServiceName": "N/A",
 		}
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // UpdateAccessKey updates the status of the specified access key.
 func (s *IAMService) UpdateAccessKey(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accessKeyId := request.GetStringParam(req.Parameters, "AccessKeyId")
-	if accessKeyId == "" {
-		return nil, NewValidationError("AccessKeyId")
+	input := &UpdateAccessKeyInput{
+		AccessKeyId: request.GetStringParam(req.Parameters, "AccessKeyId"),
+		UserName:    request.GetStringParam(req.Parameters, "UserName"),
+		Status:      request.GetStringParam(req.Parameters, "Status"),
 	}
-
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	status := request.GetStringParam(req.Parameters, "Status")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	key, err := store.AccessKeys().Get(accessKeyId)
-	if err != nil {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
-	}
-
-	if userName != "" && key.UserName != userName {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
-	}
-
-	newStatus := iamstore.AccessKeyStatus(status)
-	if newStatus != iamstore.AccessKeyStatusActive && newStatus != iamstore.AccessKeyStatusInactive {
-		return nil, NewInvalidInputError("Status", "must be Active or Inactive")
-	}
-
-	if err := store.AccessKeys().UpdateStatus(accessKeyId, newStatus); err != nil {
+	if err := s.updateAccessKeyCore(store, input); err != nil {
 		return nil, err
 	}
 

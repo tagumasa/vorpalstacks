@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -17,91 +16,52 @@ import (
 // An instance profile is a container for an IAM role that you can use to
 // pass role information to an EC2 instance.
 func (s *IAMService) CreateInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, NewInvalidInputError("InstanceProfileName", "cannot be empty")
-	}
-	if err := validateEntityName128(instanceProfileName, "InstanceProfileName"); err != nil {
-		return nil, err
-	}
-
-	path := request.GetStringParam(req.Parameters, "Path")
-	if path == "" {
-		path = "/"
-	}
-	if !validatePath(path) {
-		return nil, NewInvalidInputError("Path", "must be a valid path starting and ending with /")
-	}
-
-	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if err := validateNewTags(newTags); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := store.InstanceProfiles().Create(instanceProfileName, path, s.accountID, newTags)
+	input := &CreateInstanceProfileInput{
+		InstanceProfileName: request.GetStringParam(req.Parameters, "InstanceProfileName"),
+		Path:                request.GetStringParam(req.Parameters, "Path"),
+		Tags:                tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	profile, err := s.createInstanceProfileCore(store, input)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrInstanceProfileAlreadyExists) {
-			return nil, NewInstanceProfileAlreadyExistsError(instanceProfileName)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"InstanceProfile": s.instanceProfileToResponse(reqCtx, profile),
+		"InstanceProfile": instanceProfileToResponse(profile),
 	}, nil
 }
 
 // GetInstanceProfile retrieves information about an instance profile,
 // including the roles attached to the instance profile.
 func (s *IAMService) GetInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, NewValidationError("InstanceProfileName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
+	result, err := s.getInstanceProfileCore(store, request.GetStringParam(req.Parameters, "InstanceProfileName"))
 	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"InstanceProfile": s.instanceProfileToResponseWithRoles(reqCtx, profile, store),
+		"InstanceProfile": s.instanceProfileToResponseWithRoles(result.Profile, result.Roles),
 	}, nil
 }
 
 // DeleteInstanceProfile deletes an instance profile.
 // Returns an error if roles are still attached to the instance profile.
 func (s *IAMService) DeleteInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	if instanceProfileName == "" {
-		return nil, NewValidationError("InstanceProfileName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	profile, err := store.InstanceProfiles().Get(instanceProfileName)
-	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	if len(profile.Roles) > 0 {
-		return nil, NewDeleteInstanceProfileConflictError(instanceProfileName)
-	}
-
-	if err := store.InstanceProfiles().Delete(instanceProfileName); err != nil {
+	if err := s.deleteInstanceProfileCore(store, request.GetStringParam(req.Parameters, "InstanceProfileName")); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -116,26 +76,26 @@ func (s *IAMService) ListInstanceProfiles(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.InstanceProfiles().List(pathPrefix, marker, maxItems)
+	result, err := s.listInstanceProfilesCore(store, pathPrefix, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	profiles := make([]interface{}, len(result.InstanceProfiles))
-	for i, profile := range result.InstanceProfiles {
-		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile, store)
+	profiles := make([]interface{}, len(result.Profiles))
+	for i, entry := range result.Profiles {
+		profiles[i] = s.instanceProfileToResponseWithRoles(entry.Profile, entry.Roles)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"InstanceProfiles": profiles,
 		"IsTruncated":      result.IsTruncated,
 	}
 
 	if result.Marker != "" {
-		response["Marker"] = result.Marker
+		resp["Marker"] = result.Marker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // AddRoleToInstanceProfile adds a role to an instance profile.
@@ -143,70 +103,30 @@ func (s *IAMService) ListInstanceProfiles(ctx context.Context, reqCtx *request.R
 // maximum of one role per instance profile; the limit is enforced
 // atomically inside the store layer.
 func (s *IAMService) AddRoleToInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-
-	if instanceProfileName == "" {
-		return nil, NewValidationError("InstanceProfileName")
-	}
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.InstanceProfiles().Exists(instanceProfileName) {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
-	}
-
-	if !store.Roles().Exists(roleName) {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	if err := store.InstanceProfiles().AddRole(instanceProfileName, roleName); err != nil {
-		if errors.Is(err, iamstore.ErrRoleAlreadyInInstanceProfile) {
-			return nil, NewRoleAlreadyInInstanceProfileError(roleName, instanceProfileName)
-		}
-		if errors.Is(err, iamstore.ErrInstanceProfileRoleLimit) {
-			return nil, ErrInstanceProfileRoleLimit
-		}
+	if err := s.addRoleToInstanceProfileCore(store,
+		request.GetStringParam(req.Parameters, "InstanceProfileName"),
+		request.GetStringParam(req.Parameters, "RoleName")); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // RemoveRoleFromInstanceProfile removes a role from an instance profile.
 // Returns an error if the role is not attached to the instance profile.
 func (s *IAMService) RemoveRoleFromInstanceProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	instanceProfileName := request.GetStringParam(req.Parameters, "InstanceProfileName")
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-
-	if instanceProfileName == "" {
-		return nil, NewValidationError("InstanceProfileName")
-	}
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.InstanceProfiles().Exists(instanceProfileName) {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
+	if err := s.removeRoleFromInstanceProfileCore(store,
+		request.GetStringParam(req.Parameters, "InstanceProfileName"),
+		request.GetStringParam(req.Parameters, "RoleName")); err != nil {
+		return nil, err
 	}
-
-	if !store.Roles().Exists(roleName) {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	if err := store.InstanceProfiles().RemoveRole(instanceProfileName, roleName); err != nil {
-		return nil, NewRoleNotInInstanceProfileError(roleName, instanceProfileName)
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -236,7 +156,7 @@ func (s *IAMService) UntagInstanceProfile(ctx context.Context, reqCtx *request.R
 	return untagResource(ctx, s, reqCtx, req, instanceProfileTagOps)
 }
 
-func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile) map[string]interface{} {
+func instanceProfileToResponse(profile *iamstore.InstanceProfile) map[string]interface{} {
 	resp := map[string]interface{}{
 		"InstanceProfileId":   profile.ID,
 		"Path":                profile.Path,
@@ -252,16 +172,14 @@ func (s *IAMService) instanceProfileToResponse(reqCtx *request.RequestContext, p
 	return resp
 }
 
-func (s *IAMService) instanceProfileToResponseWithRoles(reqCtx *request.RequestContext, profile *iamstore.InstanceProfile, store *iamstore.IAMStore) map[string]interface{} {
-	resp := s.instanceProfileToResponse(reqCtx, profile)
+func (s *IAMService) instanceProfileToResponseWithRoles(profile *iamstore.InstanceProfile, roles []*iamstore.Role) map[string]interface{} {
+	resp := instanceProfileToResponse(profile)
 
-	roles := make([]interface{}, 0, len(profile.Roles))
-	for _, roleName := range profile.Roles {
-		if role, err := store.Roles().Get(roleName); err == nil {
-			roles = append(roles, s.roleToResponse(reqCtx, role))
-		}
+	roleList := make([]interface{}, 0, len(roles))
+	for _, role := range roles {
+		roleList = append(roleList, roleToResponse(role))
 	}
-	resp["Roles"] = roles
+	resp["Roles"] = roleList
 
 	return resp
 }

@@ -39,6 +39,7 @@ type ServiceLastAccessed struct {
 	ServiceNamespace           string                      `json:"serviceNamespace"`
 	LastAuthenticated          *time.Time                  `json:"lastAuthenticated,omitempty"`
 	LastAuthenticatedRegion    string                      `json:"lastAuthenticatedRegion,omitempty"`
+	LastAuthenticatedEntity    string                      `json:"lastAuthenticatedEntity,omitempty"`
 	TotalAuthenticatedEntities int                         `json:"totalAuthenticatedEntities"`
 	TrackedActionsLastAccessed []TrackedActionLastAccessed `json:"trackedActionsLastAccessed,omitempty"`
 }

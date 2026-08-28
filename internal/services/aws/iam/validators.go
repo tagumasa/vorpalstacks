@@ -3,6 +3,7 @@ package iam
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strconv"
 	"unicode"
@@ -147,6 +148,25 @@ const (
 	maxSSHPublicKeyLength     = 16384
 	maxCertificateChainLength = 2097152
 )
+
+// Parameter length bounds shared by the ARN-carrying operations.  arnType is
+// @length(20, 2048); jobIDType is a fixed @length(36, 36); DeletionTaskIdType
+// is @length(1, 1000).  Raw numbers appear only here.
+const (
+	MinARNLength                   = 20
+	MaxARNLength                   = 2048
+	ServiceLastAccessedJobIDLength = 36
+	MaxDeletionTaskIdLength        = 1000
+)
+
+// validateARNParameter checks that an ARN parameter conforms to the arnType
+// @length(20, 2048) constraint shared by every IAM ARN input member.
+func validateARNParameter(parameter, value string) error {
+	if len(value) < MinARNLength || len(value) > MaxARNLength {
+		return NewInvalidInputError(parameter, fmt.Sprintf("must be %d to %d characters", MinARNLength, MaxARNLength))
+	}
+	return nil
+}
 
 // Role MaxSessionDuration bounds per Smithy roleMaxSessionDurationType
 // (@range 3600-43200). The default applied when the field is unset is

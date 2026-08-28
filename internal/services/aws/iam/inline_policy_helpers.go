@@ -6,18 +6,15 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
-// inlinePolicyOps encapsulates the principal-type-specific parameters needed
-// for inline policy operations. This eliminates the copy-paste duplication
-// across User/Group/Role variants.
+// inlinePolicyOps encapsulates the principal-type-specific wire parameters
+// needed for inline policy operations. This eliminates the copy-paste
+// duplication across User/Group/Role variants.
 type inlinePolicyOps struct {
 	paramName         string
 	principalType     string
 	emptyErr          error
-	notFoundFn        func(string) error
-	existsFn          func(*iamstore.IAMStore, string) bool
 	responseParamName string
 }
 
@@ -26,56 +23,35 @@ var (
 		paramName:         "UserName",
 		principalType:     PrincipalTypeUser,
 		emptyErr:          ErrNoSuchUser,
-		notFoundFn:        func(n string) error { return NewNoSuchUserError(n) },
-		existsFn:          func(st *iamstore.IAMStore, n string) bool { return st.Users().Exists(n) },
 		responseParamName: "UserName",
 	}
 	groupInlinePolicyOps = inlinePolicyOps{
 		paramName:         "GroupName",
 		principalType:     PrincipalTypeGroup,
 		emptyErr:          ErrNoSuchGroup,
-		notFoundFn:        func(n string) error { return NewNoSuchGroupError(n) },
-		existsFn:          func(st *iamstore.IAMStore, n string) bool { return st.Groups().Exists(n) },
 		responseParamName: "GroupName",
 	}
 	roleInlinePolicyOps = inlinePolicyOps{
 		paramName:         "RoleName",
 		principalType:     PrincipalTypeRole,
 		emptyErr:          ErrNoSuchRole,
-		notFoundFn:        func(n string) error { return NewNoSuchRoleError(n) },
-		existsFn:          func(st *iamstore.IAMStore, n string) bool { return st.Roles().Exists(n) },
 		responseParamName: "RoleName",
 	}
 )
 
 // putInlinePolicy creates or updates an inline policy for a principal.
 func putInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.RequestContext, req *request.ParsedRequest, ops inlinePolicyOps) (interface{}, error) {
-	principalName := request.GetStringParam(req.Parameters, ops.paramName)
-	policyName := request.GetStringParam(req.Parameters, "PolicyName")
-	policyDocument := request.GetStringParam(req.Parameters, "PolicyDocument")
-
-	if principalName == "" {
-		return nil, ops.emptyErr
-	}
-	if policyName == "" {
-		return nil, NewValidationError("PolicyName")
-	}
-	if err := validateEntityName128(policyName, "PolicyName"); err != nil {
-		return nil, err
-	}
-	if !validatePolicyDocument(policyDocument) {
-		return nil, ErrMalformedPolicyDocument
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !ops.existsFn(store, principalName) {
-		return nil, ops.notFoundFn(principalName)
+	input := &PutInlinePolicyInput{
+		PrincipalType:  ops.principalType,
+		PrincipalName:  request.GetStringParam(req.Parameters, ops.paramName),
+		PolicyName:     request.GetStringParam(req.Parameters, "PolicyName"),
+		PolicyDocument: request.GetStringParam(req.Parameters, "PolicyDocument"),
 	}
-
-	if err := store.InlinePolicies().Put(ops.principalType, principalName, policyName, policyDocument); err != nil {
+	if err := s.putInlinePolicyCore(store, input); err != nil {
 		return nil, err
 	}
 
@@ -87,24 +63,13 @@ func getInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Request
 	principalName := request.GetStringParam(req.Parameters, ops.paramName)
 	policyName := request.GetStringParam(req.Parameters, "PolicyName")
 
-	if principalName == "" {
-		return nil, ops.emptyErr
-	}
-	if policyName == "" {
-		return nil, NewValidationError("PolicyName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !ops.existsFn(store, principalName) {
-		return nil, ops.notFoundFn(principalName)
-	}
-
-	policy, err := store.InlinePolicies().Get(ops.principalType, principalName, policyName)
+	policy, err := s.getInlinePolicyCore(store, ops.principalType, principalName, policyName)
 	if err != nil {
-		return nil, NewNoSuchPolicyError(policyName)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -116,28 +81,15 @@ func getInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Request
 
 // deleteInlinePolicy deletes an inline policy from a principal.
 func deleteInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.RequestContext, req *request.ParsedRequest, ops inlinePolicyOps) (interface{}, error) {
-	principalName := request.GetStringParam(req.Parameters, ops.paramName)
-	policyName := request.GetStringParam(req.Parameters, "PolicyName")
-
-	if principalName == "" {
-		return nil, ops.emptyErr
-	}
-	if policyName == "" {
-		return nil, NewValidationError("PolicyName")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !ops.existsFn(store, principalName) {
-		return nil, ops.notFoundFn(principalName)
-	}
-	if !store.InlinePolicies().Exists(ops.principalType, principalName, policyName) {
-		return nil, NewNoSuchPolicyError(policyName)
-	}
-
-	if err := store.InlinePolicies().Delete(ops.principalType, principalName, policyName); err != nil {
+	if err := s.deleteInlinePolicyCore(store,
+		ops.principalType,
+		request.GetStringParam(req.Parameters, ops.paramName),
+		request.GetStringParam(req.Parameters, "PolicyName"),
+	); err != nil {
 		return nil, err
 	}
 
@@ -147,30 +99,19 @@ func deleteInlinePolicy(ctx context.Context, s *IAMService, reqCtx *request.Requ
 // listInlinePolicies lists inline policies for a principal.
 // Supports pagination via Marker and MaxItems.
 func listInlinePolicies(ctx context.Context, s *IAMService, reqCtx *request.RequestContext, req *request.ParsedRequest, ops inlinePolicyOps) (interface{}, error) {
-	principalName := request.GetStringParam(req.Parameters, ops.paramName)
-	if principalName == "" {
-		return nil, ops.emptyErr
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !ops.existsFn(store, principalName) {
-		return nil, ops.notFoundFn(principalName)
-	}
-
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
-
-	allNames, err := store.InlinePolicies().List(ops.principalType, principalName)
+	result, err := s.listInlinePoliciesCore(store,
+		ops.principalType,
+		request.GetStringParam(req.Parameters, ops.paramName),
+		request.GetStringParam(req.Parameters, "Marker"),
+		pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	result := pagination.PaginateSlice(allNames, marker, maxItems, func(name string) string {
-		return name
-	})
 
 	resp := map[string]interface{}{
 		"PolicyNames": result.Items,

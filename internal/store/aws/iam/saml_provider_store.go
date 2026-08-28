@@ -55,9 +55,14 @@ func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *ti
 			return NewStoreError("create_saml_provider", ErrSAMLProviderAlreadyExists)
 		}
 		now := time.Now().UTC()
+		providerUUID, err := generatePrivateKeyID()
+		if err != nil {
+			return NewStoreError("create_saml_provider", err)
+		}
 		provider = &SAMLProvider{
 			Arn:                     arn,
 			AccountId:               s.arnBuilder.AccountID(),
+			UUID:                    providerUUID,
 			SAMLMetadataDocument:    metadataDocument,
 			ValidUntil:              validUntil,
 			CreateDate:              now,
@@ -65,7 +70,7 @@ func (s *SAMLProviderStore) Create(name, metadataDocument string, validUntil *ti
 			Tags:                    tags,
 		}
 		if addPrivateKey != "" {
-			keyId, err := generateSAMLPrivateKeyID()
+			keyId, err := generatePrivateKeyID()
 			if err != nil {
 				return NewStoreError("create_saml_provider", err)
 			}
@@ -102,7 +107,7 @@ func (s *SAMLProviderStore) Update(arn, metadataDocument string, validUntil *tim
 			provider.AssertionEncryptionMode = assertionEncryptionMode
 		}
 		if addPrivateKey != "" {
-			keyId, err := generateSAMLPrivateKeyID()
+			keyId, err := generatePrivateKeyID()
 			if err != nil {
 				return NewStoreError("update_saml_provider", err)
 			}

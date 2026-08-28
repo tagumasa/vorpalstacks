@@ -12,7 +12,6 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	"vorpalstacks/internal/utils/crypto"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -20,27 +19,21 @@ import (
 // Tags are optional.
 // Returns the virtual MFA device with base32 seed and secret.
 func (s *IAMService) CreateVirtualMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	deviceName := request.GetStringParam(req.Parameters, "VirtualMFADeviceName")
-	if deviceName == "" {
-		return nil, ErrInvalidInput
-	}
-
-	newTags := tags.ParseTagsWithQueryFallback(req.Parameters, "Tags")
-	if err := validateNewTags(newTags); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	device, err := store.MFADevices().Create(s.accountID, deviceName, newTags)
+	input := &CreateVirtualMFADeviceInput{
+		VirtualMFADeviceName: request.GetStringParam(req.Parameters, "VirtualMFADeviceName"),
+		Tags:                 tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	device, err := s.createVirtualMFADeviceCore(store, input)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"VirtualMFADevice": s.mfaDeviceToResponse(reqCtx, device, true),
+		"VirtualMFADevice": mfaDeviceToResponse(device, nil, true),
 	}, nil
 }
 
@@ -48,83 +41,32 @@ func (s *IAMService) CreateVirtualMFADevice(ctx context.Context, reqCtx *request
 // SerialNumber is required.
 // Returns an error if the device is still assigned to a user.
 func (s *IAMService) DeleteVirtualMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	if serialNumber == "" {
-		return nil, NewValidationError("SerialNumber")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.MFADevices().Exists(serialNumber) {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
+	if err := s.deleteVirtualMFADeviceCore(store, request.GetStringParam(req.Parameters, "SerialNumber")); err != nil {
 		return nil, err
 	}
-
-	if device.UserAssignment != nil {
-		return nil, NewMFADeviceStillAssignedError(serialNumber)
-	}
-
-	if err := store.MFADevices().Delete(serialNumber); err != nil {
-		return nil, err
-	}
-
 	return response.EmptyResponse(), nil
 }
 
 // EnableMFADevice enables an MFA device for a user.
 // UserName, SerialNumber, AuthenticationCode1, and AuthenticationCode2 are required.
 func (s *IAMService) EnableMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	authCode1 := request.GetStringParam(req.Parameters, "AuthenticationCode1")
-	authCode2 := request.GetStringParam(req.Parameters, "AuthenticationCode2")
-
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-	if serialNumber == "" {
-		return nil, NewValidationError("SerialNumber")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
+	input := &EnableMFADeviceInput{
+		UserName:            request.GetStringParam(req.Parameters, "UserName"),
+		SerialNumber:        request.GetStringParam(req.Parameters, "SerialNumber"),
+		AuthenticationCode1: request.GetStringParam(req.Parameters, "AuthenticationCode1"),
+		AuthenticationCode2: request.GetStringParam(req.Parameters, "AuthenticationCode2"),
 	}
-
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	if device.UserAssignment != nil {
-		return nil, NewMFADeviceAlreadyAssignedError(serialNumber)
-	}
-
-	if device.Base32StringSeed == "" {
-		return nil, ErrInvalidAuthenticationCode
-	}
-
-	if authCode1 == "" || authCode2 == "" {
-		return nil, ErrInvalidAuthenticationCode
-	}
-
-	if err := crypto.ValidateConsecutiveTOTPCodes(device.Base32StringSeed, authCode1, authCode2); err != nil {
-		return nil, ErrInvalidAuthenticationCode
-	}
-
-	if err := store.MFADevices().EnableForUser(serialNumber, userName); err != nil {
+	if err := s.enableMFADeviceCore(store, input); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -138,31 +80,14 @@ func (s *IAMService) DeactivateMFADevice(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	if serialNumber == "" {
-		return nil, NewValidationError("SerialNumber")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	if device.UserAssignment == nil || device.UserAssignment.UserName != userName {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	if err := store.MFADevices().Deactivate(serialNumber); err != nil {
+	if err := s.deactivateMFADeviceCore(store, userName, serialNumber); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -178,42 +103,32 @@ func (s *IAMService) ListMFADevices(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	if userName != "" && !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	result, err := store.MFADevices().ListForUser(userName, marker, maxItems)
+	result, err := s.listMFADevicesCore(store, userName, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	devices := make([]interface{}, len(result.MFADevices))
-	for i, device := range result.MFADevices {
-		devices[i] = s.mfaDeviceToListResponse(device)
+	devices := make([]interface{}, len(result.Devices))
+	for i, device := range result.Devices {
+		devices[i] = mfaDeviceToListResponse(device)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"MFADevices":  devices,
 		"IsTruncated": result.IsTruncated,
 	}
 
 	if result.Marker != "" {
-		response["Marker"] = result.Marker
+		resp["Marker"] = result.Marker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // ListVirtualMFADevices lists all virtual MFA devices.
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	assignmentStatus := request.GetStringParam(req.Parameters, "AssignmentStatus")
-	if assignmentStatus == "" {
-		assignmentStatus = "Any"
-	}
-	if assignmentStatus != "Any" && assignmentStatus != "Assigned" && assignmentStatus != "Unassigned" {
-		return nil, NewInvalidInputError("AssignmentStatus", "must be one of: Any, Assigned, Unassigned")
-	}
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
@@ -221,26 +136,26 @@ func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.MFADevices().ListVirtual(assignmentStatus, marker, maxItems)
+	result, err := s.listVirtualMFADevicesCore(store, assignmentStatus, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	devices := make([]interface{}, len(result.MFADevices))
-	for i, device := range result.MFADevices {
-		devices[i] = s.mfaDeviceToResponse(reqCtx, device, false)
+	devices := make([]interface{}, len(result.Devices))
+	for i, device := range result.Devices {
+		devices[i] = mfaDeviceToResponse(device, result.UsersBySerial[device.SerialNumber], false)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"VirtualMFADevices": devices,
 		"IsTruncated":       result.IsTruncated,
 	}
 
 	if result.Marker != "" {
-		response["Marker"] = result.Marker
+		resp["Marker"] = result.Marker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // GetMFADevice retrieves information about an MFA device.
@@ -248,18 +163,13 @@ func (s *IAMService) ListVirtualMFADevices(ctx context.Context, reqCtx *request.
 // Since only virtual MFA devices are supported, returns device info if the
 // serial number matches a virtual MFA device.
 func (s *IAMService) GetMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	if serialNumber == "" {
-		return nil, NewValidationError("SerialNumber")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	device, err := store.MFADevices().Get(serialNumber)
+	device, err := s.getMFADeviceCore(store, request.GetStringParam(req.Parameters, "SerialNumber"))
 	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
+		return nil, err
 	}
 
 	resp := map[string]interface{}{
@@ -282,43 +192,19 @@ func (s *IAMService) GetMFADevice(ctx context.Context, reqCtx *request.RequestCo
 // ResyncMFADevice resynchronises an MFA device for a user.
 // UserName, SerialNumber, AuthenticationCode1, and AuthenticationCode2 are required.
 func (s *IAMService) ResyncMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	serialNumber := request.GetStringParam(req.Parameters, "SerialNumber")
-	authCode1 := request.GetStringParam(req.Parameters, "AuthenticationCode1")
-	authCode2 := request.GetStringParam(req.Parameters, "AuthenticationCode2")
-
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-	if serialNumber == "" {
-		return nil, NewValidationError("SerialNumber")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
+	input := &ResyncMFADeviceInput{
+		UserName:            request.GetStringParam(req.Parameters, "UserName"),
+		SerialNumber:        request.GetStringParam(req.Parameters, "SerialNumber"),
+		AuthenticationCode1: request.GetStringParam(req.Parameters, "AuthenticationCode1"),
+		AuthenticationCode2: request.GetStringParam(req.Parameters, "AuthenticationCode2"),
 	}
-
-	device, err := store.MFADevices().Get(serialNumber)
-	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	if device.UserAssignment == nil || device.UserAssignment.UserName != userName {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
-	}
-
-	if err := crypto.ValidateConsecutiveTOTPCodesForResync(device.Base32StringSeed, authCode1, authCode2); err != nil {
-		return nil, ErrInvalidAuthenticationCode
-	}
-
-	if err := store.MFADevices().Resync(serialNumber); err != nil {
+	if err := s.resyncMFADeviceCore(store, input); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -329,17 +215,13 @@ func (s *IAMService) GetAccountPasswordPolicy(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	if !store.PasswordPolicy().Exists() {
-		return nil, NewNoSuchPasswordPolicyError()
-	}
-
-	policy, err := store.PasswordPolicy().Get()
+	policy, err := s.getAccountPasswordPolicyCore(store)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"PasswordPolicy": s.passwordPolicyToResponse(reqCtx, policy),
+		"PasswordPolicy": passwordPolicyToResponse(policy),
 	}, nil
 }
 
@@ -352,56 +234,44 @@ func (s *IAMService) UpdateAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	// The operation replaces the whole policy: every parameter the request
-	// omits reverts to its documented default value instead of being
-	// merged with the previously stored policy.
-	policy := store.PasswordPolicy().ParameterDefaults()
-
-	minLength := request.GetIntParam(req.Parameters, "MinimumPasswordLength")
-	if minLength != 0 {
-		if minLength < 6 || minLength > 128 {
-			return nil, NewInvalidInputError("MinimumPasswordLength", "must be between 6 and 128")
-		}
-		policy.MinimumPasswordLength = minLength
+	input := &UpdateAccountPasswordPolicyInput{
+		MinimumPasswordLength: request.GetIntParam(req.Parameters, "MinimumPasswordLength"),
 	}
-
-	if requireSymbols, ok := req.Parameters["RequireSymbols"]; ok {
-		policy.RequireSymbols = toBool(requireSymbols)
+	if v, ok := req.Parameters["RequireSymbols"]; ok {
+		b := toBool(v)
+		input.RequireSymbols = &b
 	}
-	if requireNumbers, ok := req.Parameters["RequireNumbers"]; ok {
-		policy.RequireNumbers = toBool(requireNumbers)
+	if v, ok := req.Parameters["RequireNumbers"]; ok {
+		b := toBool(v)
+		input.RequireNumbers = &b
 	}
-	if requireUppercase, ok := req.Parameters["RequireUppercaseCharacters"]; ok {
-		policy.RequireUppercaseCharacters = toBool(requireUppercase)
+	if v, ok := req.Parameters["RequireUppercaseCharacters"]; ok {
+		b := toBool(v)
+		input.RequireUppercaseCharacters = &b
 	}
-	if requireLowercase, ok := req.Parameters["RequireLowercaseCharacters"]; ok {
-		policy.RequireLowercaseCharacters = toBool(requireLowercase)
+	if v, ok := req.Parameters["RequireLowercaseCharacters"]; ok {
+		b := toBool(v)
+		input.RequireLowercaseCharacters = &b
 	}
-	if allowChange, ok := req.Parameters["AllowUsersToChangePassword"]; ok {
-		policy.AllowUsersToChangePassword = toBool(allowChange)
+	if v, ok := req.Parameters["AllowUsersToChangePassword"]; ok {
+		b := toBool(v)
+		input.AllowUsersToChangePassword = &b
 	}
-	if hardExpiry, ok := req.Parameters["HardExpiry"]; ok {
-		policy.HardExpiry = toBool(hardExpiry)
+	if v, ok := req.Parameters["HardExpiry"]; ok {
+		b := toBool(v)
+		input.HardExpiry = &b
 	}
-	if maxAge, ok := req.Parameters["MaxPasswordAge"]; ok {
-		ageVal := toInt(maxAge)
-		if ageVal < 1 || ageVal > 1095 {
-			return nil, NewInvalidInputError("MaxPasswordAge", "must be between 1 and 1095")
-		}
-		policy.MaxPasswordAge = ageVal
+	if v, ok := req.Parameters["MaxPasswordAge"]; ok {
+		n := toInt(v)
+		input.MaxPasswordAge = &n
 	}
-	if reusePrevention, ok := req.Parameters["PasswordReusePrevention"]; ok {
-		reuseVal := toInt(reusePrevention)
-		if reuseVal < 1 || reuseVal > 24 {
-			return nil, NewInvalidInputError("PasswordReusePrevention", "must be between 1 and 24")
-		}
-		policy.PasswordReusePrevention = reuseVal
+	if v, ok := req.Parameters["PasswordReusePrevention"]; ok {
+		n := toInt(v)
+		input.PasswordReusePrevention = &n
 	}
-
-	if err := store.PasswordPolicy().Put(policy); err != nil {
+	if err := s.updateAccountPasswordPolicyCore(store, input); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -440,14 +310,9 @@ func (s *IAMService) DeleteAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	if !store.PasswordPolicy().Exists() {
-		return nil, NewNoSuchPasswordPolicyError()
-	}
-
-	if err := store.PasswordPolicy().Delete(); err != nil {
+	if err := s.deleteAccountPasswordPolicyCore(store); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -480,7 +345,7 @@ func (s *IAMService) ListMFADeviceTags(ctx context.Context, reqCtx *request.Requ
 	return listResourceTags(ctx, s, reqCtx, req, mfaDeviceTagOps)
 }
 
-func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device *iamstore.VirtualMFADevice, includeSecret bool) map[string]interface{} {
+func mfaDeviceToResponse(device *iamstore.VirtualMFADevice, user *iamstore.User, includeSecret bool) map[string]interface{} {
 	resp := map[string]interface{}{
 		"SerialNumber": device.SerialNumber,
 	}
@@ -502,18 +367,13 @@ func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device 
 		resp["EnableDate"] = device.EnableDate.Format(timeutils.ISO8601SimpleFormat)
 	}
 
-	if device.UserAssignment != nil {
-		store, err := s.store(reqCtx)
-		if err == nil {
-			if user, err := store.Users().Get(device.UserAssignment.UserName); err == nil {
-				resp["User"] = map[string]interface{}{
-					"UserName":   user.UserName,
-					"UserId":     user.ID,
-					"Arn":        user.Arn,
-					"Path":       user.Path,
-					"CreateDate": user.CreateDate.Format(timeutils.ISO8601SimpleFormat),
-				}
-			}
+	if device.UserAssignment != nil && user != nil {
+		resp["User"] = map[string]interface{}{
+			"UserName":   user.UserName,
+			"UserId":     user.ID,
+			"Arn":        user.Arn,
+			"Path":       user.Path,
+			"CreateDate": user.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 		}
 	}
 
@@ -524,7 +384,7 @@ func (s *IAMService) mfaDeviceToResponse(reqCtx *request.RequestContext, device 
 	return resp
 }
 
-func (s *IAMService) mfaDeviceToListResponse(device *iamstore.VirtualMFADevice) map[string]interface{} {
+func mfaDeviceToListResponse(device *iamstore.VirtualMFADevice) map[string]interface{} {
 	resp := map[string]interface{}{
 		"SerialNumber": device.SerialNumber,
 	}
@@ -540,7 +400,7 @@ func (s *IAMService) mfaDeviceToListResponse(device *iamstore.VirtualMFADevice) 
 	return resp
 }
 
-func (s *IAMService) passwordPolicyToResponse(reqCtx *request.RequestContext, policy *iamstore.AccountPasswordPolicy) map[string]interface{} {
+func passwordPolicyToResponse(policy *iamstore.AccountPasswordPolicy) map[string]interface{} {
 	return map[string]interface{}{
 		"MinimumPasswordLength":      policy.MinimumPasswordLength,
 		"RequireSymbols":             policy.RequireSymbols,
@@ -563,29 +423,9 @@ func (s *IAMService) GetAccountSummary(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	users := store.Users().Count()
-	groups := store.Groups().Count()
-	roles := store.Roles().Count()
-	policies := store.Policies().Count()
-	instanceProfiles := store.InstanceProfiles().Count()
-	mfaDevices := store.MFADevices().Count()
-	serverCertificates := store.ServerCertificates().Count()
-
-	summaryMap := map[string]string{
-		"Users":                     strconv.Itoa(users),
-		"Groups":                    strconv.Itoa(groups),
-		"Roles":                     strconv.Itoa(roles),
-		"LocalManagedPolicies":      strconv.Itoa(policies),
-		"InstanceProfiles":          strconv.Itoa(instanceProfiles),
-		"MFADevices":                strconv.Itoa(mfaDevices),
-		"ServerCertificates":        strconv.Itoa(serverCertificates),
-		"UsersQuota":                strconv.Itoa(iamstore.QuotaUsersPerAccount),
-		"GroupsQuota":               strconv.Itoa(iamstore.QuotaGroupsPerAccount),
-		"RolesQuota":                strconv.Itoa(iamstore.QuotaRolesPerAccount),
-		"InstanceProfilesQuota":     strconv.Itoa(iamstore.QuotaInstanceProfilesPerAccount),
-		"LocalManagedPoliciesQuota": strconv.Itoa(iamstore.QuotaLocalManagedPoliciesPerAccount),
-		"MFADevicesQuota":           strconv.Itoa(iamstore.QuotaMFADevicesPerAccount),
-		"ServerCertificatesQuota":   strconv.Itoa(iamstore.QuotaServerCertificatesPerAccount),
+	summaryMap, err := s.getAccountSummaryCore(store)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

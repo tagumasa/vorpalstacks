@@ -37,6 +37,9 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 		return nil, NewValidationError("GroupName")
 	}
 
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
+
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -45,20 +48,14 @@ func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContex
 	if err != nil {
 		return nil, err
 	}
-
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
-
-	users, err := store.UserGroups().ListUsersInGroup(groupName)
+	users, err := s.listUsersInGroupCore(store, groupName)
 	if err != nil {
 		return nil, err
 	}
 
 	userList := make([]interface{}, 0, len(users))
-	for _, userName := range users {
-		if user, err := store.Users().Get(userName); err == nil {
-			userList = append(userList, s.userToResponse(reqCtx, user))
-		}
+	for _, user := range users {
+		userList = append(userList, s.userToResponse(reqCtx, user))
 	}
 
 	paged := pagination.PaginateSlice(userList, marker, maxItems, func(item interface{}) string {

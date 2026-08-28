@@ -34,6 +34,16 @@ func (r *TestRunner) iamSAMLTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "GetSAMLProvider", func() error {
+		// An ARN shorter than the documented 20-character minimum is
+		// malformed input, not a missing provider.
+		if _, err := tc.client.GetSAMLProvider(tc.ctx, &iam.GetSAMLProviderInput{
+			SAMLProviderArn: aws.String("x"),
+		}); err == nil {
+			return fmt.Errorf("a malformed provider ARN must be rejected")
+		} else if !containsErrorCode(err, "InvalidInput") {
+			return fmt.Errorf("malformed provider ARN: got %v, want InvalidInput", err)
+		}
+
 		resp, err := tc.client.GetSAMLProvider(tc.ctx, &iam.GetSAMLProviderInput{
 			SAMLProviderArn: aws.String(tc.samlProviderArn),
 		})
@@ -60,6 +70,20 @@ func (r *TestRunner) iamSAMLTests(tc *iamTestContext) []TestResult {
 		for _, c := range firstKeyId {
 			if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
 				return fmt.Errorf("PrivateKey KeyId contains non-alphanumeric char: %q", firstKeyId)
+			}
+		}
+		// SAMLProviderUUID must be returned and satisfy the same
+		// privateKeyIdType constraints (len [22,64], ^[A-Z0-9]+$).
+		providerUUID := aws.ToString(resp.SAMLProviderUUID)
+		if providerUUID == "" {
+			return fmt.Errorf("SAMLProviderUUID is empty")
+		}
+		if len(providerUUID) < 22 || len(providerUUID) > 64 {
+			return fmt.Errorf("SAMLProviderUUID length %d outside [22,64]: %q", len(providerUUID), providerUUID)
+		}
+		for _, c := range providerUUID {
+			if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+				return fmt.Errorf("SAMLProviderUUID contains non-alphanumeric char: %q", providerUUID)
 			}
 		}
 		tc.samlPrivateKeyId = firstKeyId

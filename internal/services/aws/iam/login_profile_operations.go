@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -25,21 +24,13 @@ func (s *IAMService) GetLoginProfile(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	profile, err := store.LoginProfiles().Get(userName)
+	profile, err := s.getLoginProfileCore(store, userName)
 	if err != nil {
-		return nil, NewNoSuchLoginProfileError(userName)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"LoginProfile": map[string]interface{}{
-			"UserName":              profile.UserName,
-			"CreateDate":            profile.CreateDate.Format(timeutils.ISO8601SimpleFormat),
-			"PasswordResetRequired": profile.PasswordResetRequired,
-		},
+		"LoginProfile": loginProfileToResponse(profile),
 	}, nil
 }
 
@@ -47,45 +38,23 @@ func (s *IAMService) GetLoginProfile(ctx context.Context, reqCtx *request.Reques
 // The password must comply with the account password policy.
 // Returns the created login profile details.
 func (s *IAMService) CreateLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	input := &CreateLoginProfileInput{
+		UserName:              request.GetStringParam(req.Parameters, "UserName"),
+		Password:              request.GetStringParam(req.Parameters, "Password"),
+		PasswordResetRequired: request.GetBoolParam(req.Parameters, "PasswordResetRequired"),
 	}
-
-	password := request.GetStringParam(req.Parameters, "Password")
-	if password == "" {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	passwordResetRequired := request.GetBoolParam(req.Parameters, "PasswordResetRequired")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	passwordPolicy := store.PasswordPolicy().GetOrDefault()
-	if !validatePasswordAgainstPolicy(password, passwordPolicy) {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	profile, err := store.LoginProfiles().Create(userName, password, passwordResetRequired)
+	profile, err := s.createLoginProfileCore(store, input)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrLoginProfileExists) {
-			return nil, NewLoginProfileAlreadyExistsError(userName)
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"LoginProfile": map[string]interface{}{
-			"UserName":              profile.UserName,
-			"CreateDate":            profile.CreateDate.Format(timeutils.ISO8601SimpleFormat),
-			"PasswordResetRequired": profile.PasswordResetRequired,
-		},
+		"LoginProfile": loginProfileToResponse(profile),
 	}, nil
 }
 
@@ -102,15 +71,7 @@ func (s *IAMService) DeleteLoginProfile(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	if !store.LoginProfiles().Exists(userName) {
-		return nil, NewNoSuchLoginProfileError(userName)
-	}
-
-	if err := store.LoginProfiles().Delete(userName); err != nil {
+	if err := s.deleteLoginProfileCore(store, userName); err != nil {
 		return nil, err
 	}
 
@@ -121,69 +82,32 @@ func (s *IAMService) DeleteLoginProfile(ctx context.Context, reqCtx *request.Req
 // Can update the password and/or password reset requirement.
 // The new password must comply with the account password policy.
 func (s *IAMService) UpdateLoginProfile(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
+	input := &UpdateLoginProfileInput{
+		UserName: request.GetStringParam(req.Parameters, "UserName"),
+		Password: request.GetStringParam(req.Parameters, "Password"),
 	}
-
-	password := request.GetStringParam(req.Parameters, "Password")
-	passwordResetRequired, hasPasswordResetRequired := req.Parameters["PasswordResetRequired"]
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	if !store.LoginProfiles().Exists(userName) {
-		return nil, NewNoSuchLoginProfileError(userName)
-	}
-
-	if password != "" {
-		passwordPolicy := store.PasswordPolicy().GetOrDefault()
-		if !validatePasswordAgainstPolicy(password, passwordPolicy) {
-			return nil, ErrPasswordPolicyViolation
-		}
-		if passwordPolicy.PasswordReusePrevention > 0 {
-			reused, err := store.LoginProfiles().CheckPasswordReuse(userName, password, passwordPolicy.PasswordReusePrevention)
-			if err != nil {
-				return nil, err
-			}
-			if reused {
-				return nil, ErrPasswordPolicyViolation
-			}
-		}
-		if err := store.LoginProfiles().UpdatePassword(userName, password); err != nil {
-			return nil, err
-		}
-	}
-
-	if hasPasswordResetRequired {
+	if raw, ok := req.Parameters["PasswordResetRequired"]; ok {
 		required := false
-		switch v := passwordResetRequired.(type) {
+		switch v := raw.(type) {
 		case bool:
 			required = v
 		case string:
 			required = v == "true"
 		}
-		if err := store.LoginProfiles().UpdatePasswordResetRequired(userName, required); err != nil {
-			return nil, err
-		}
+		input.PasswordResetRequired = &required
 	}
 
-	profile, err := store.LoginProfiles().Get(userName)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := s.updateLoginProfileCore(store, input)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"LoginProfile": map[string]interface{}{
-			"UserName":              profile.UserName,
-			"CreateDate":            profile.CreateDate.Format(timeutils.ISO8601SimpleFormat),
-			"PasswordResetRequired": profile.PasswordResetRequired,
-		},
+		"LoginProfile": loginProfileToResponse(profile),
 	}, nil
 }
 
@@ -191,58 +115,26 @@ func (s *IAMService) UpdateLoginProfile(ctx context.Context, reqCtx *request.Req
 // Requires the old password to be verified before setting the new password.
 // The new password must comply with the account password policy.
 func (s *IAMService) ChangePassword(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	oldPassword := request.GetStringParam(req.Parameters, "OldPassword")
-	newPassword := request.GetStringParam(req.Parameters, "NewPassword")
-
-	if oldPassword == "" || newPassword == "" {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	// The operation targets the authenticated caller itself; the request
-	// carries no UserName member on the wire.
-	userName, err := resolveUserName(reqCtx, "")
-	if err != nil {
-		return nil, err
+	input := &ChangePasswordInput{
+		OldPassword: request.GetStringParam(req.Parameters, "OldPassword"),
+		NewPassword: request.GetStringParam(req.Parameters, "NewPassword"),
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
-	}
-
-	if !store.LoginProfiles().Exists(userName) {
-		return nil, NewNoSuchLoginProfileError(userName)
-	}
-
-	valid, err := store.LoginProfiles().VerifyPassword(userName, oldPassword)
-	if err != nil {
-		return nil, err
-	}
-	if !valid {
-		return nil, ErrNotAuthorized
-	}
-
-	passwordPolicy := store.PasswordPolicy().GetOrDefault()
-	if !validatePasswordAgainstPolicy(newPassword, passwordPolicy) {
-		return nil, ErrPasswordPolicyViolation
-	}
-
-	if passwordPolicy.PasswordReusePrevention > 0 {
-		reused, err := store.LoginProfiles().CheckPasswordReuse(userName, newPassword, passwordPolicy.PasswordReusePrevention)
-		if err != nil {
-			return nil, err
-		}
-		if reused {
-			return nil, ErrPasswordPolicyViolation
-		}
-	}
-
-	if err := store.LoginProfiles().UpdatePassword(userName, newPassword); err != nil {
+	if err := s.changePasswordCore(reqCtx, store, input); err != nil {
 		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+func loginProfileToResponse(profile *iamstore.LoginProfile) map[string]interface{} {
+	return map[string]interface{}{
+		"UserName":              profile.UserName,
+		"CreateDate":            profile.CreateDate.Format(timeutils.ISO8601SimpleFormat),
+		"PasswordResetRequired": profile.PasswordResetRequired,
+	}
 }

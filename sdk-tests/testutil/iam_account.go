@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -465,7 +466,46 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("iam", "GenerateServiceLastAccessedDetails_ArnLengthRejected", func() error {
+		for _, arn := range []string{"a", fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, strings.Repeat("x", 2100))} {
+			_, err := tc.client.GenerateServiceLastAccessedDetails(tc.ctx, &iam.GenerateServiceLastAccessedDetailsInput{
+				Arn: aws.String(arn),
+			})
+			if err == nil {
+				return fmt.Errorf("Arn of length %d must be rejected", len(arn))
+			}
+			if !containsErrorCode(err, "InvalidInput") {
+				return fmt.Errorf("Arn length %d: got %v, want InvalidInput", len(arn), err)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "GenerateServiceLastAccessedDetails_InvalidGranularityRejected", func() error {
+		_, err := tc.client.GenerateServiceLastAccessedDetails(tc.ctx, &iam.GenerateServiceLastAccessedDetailsInput{
+			Arn:         aws.String(fmt.Sprintf("arn:aws:iam::%s:user/granularity-invalid", tc.accountID)),
+			Granularity: types.AccessAdvisorUsageGranularityType("P30D"),
+		})
+		if err == nil {
+			return fmt.Errorf("an ISO-duration granularity must be rejected")
+		}
+		if !containsErrorCode(err, "InvalidInput") {
+			return fmt.Errorf("invalid granularity: got %v, want InvalidInput", err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("iam", "GetServiceLastAccessedDetails", func() error {
+		// A job id of any length other than the fixed 36 characters is
+		// malformed input, not a missing report.
+		if _, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
+			JobId: aws.String("short"),
+		}); err == nil {
+			return fmt.Errorf("a malformed job id must be rejected")
+		} else if !containsErrorCode(err, "InvalidInput") {
+			return fmt.Errorf("malformed job id: got %v, want InvalidInput", err)
+		}
+
 		user := fmt.Sprintf("SLA-%s", tc.ts)
 		cleanupUser, err := tc.createUser(user)
 		if err != nil {
@@ -486,6 +526,7 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 
 		// The report generation is asynchronous; poll until completion.
 		var status string
+		var completed *iam.GetServiceLastAccessedDetailsOutput
 		for i := 0; i < 20; i++ {
 			resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
 				JobId: gen.JobId,
@@ -493,6 +534,7 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			if err != nil {
 				return err
 			}
+			completed = resp
 			if resp.JobStatus == types.JobStatusTypeCompleted {
 				status = string(resp.JobStatus)
 				break
@@ -504,6 +546,15 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 		if status == "" {
 			return fmt.Errorf("service last accessed job did not complete in time")
+		}
+
+		// A generate call without Granularity defaults to SERVICE_LEVEL, and
+		// the completed response reports the granularity through JobType.
+		if completed.JobType != types.AccessAdvisorUsageGranularityTypeServiceLevel {
+			return fmt.Errorf("defaulted report JobType: got %q, want SERVICE_LEVEL", completed.JobType)
+		}
+		if completed.ServicesLastAccessed == nil {
+			return fmt.Errorf("completed report must carry the ServicesLastAccessed member")
 		}
 		return nil
 	}))
@@ -541,12 +592,85 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			time.Sleep(500 * time.Millisecond)
 		}
 
-		_, err = tc.client.GetServiceLastAccessedDetailsWithEntities(tc.ctx, &iam.GetServiceLastAccessedDetailsWithEntitiesInput{
+		resp, err := tc.client.GetServiceLastAccessedDetailsWithEntities(tc.ctx, &iam.GetServiceLastAccessedDetailsWithEntitiesInput{
 			JobId:            gen.JobId,
 			ServiceNamespace: aws.String("s3"),
 		})
 		if err != nil {
 			return fmt.Errorf("GetServiceLastAccessedDetailsWithEntities: %w", err)
+		}
+		if resp.JobStatus != types.JobStatusTypeCompleted {
+			return fmt.Errorf("entity-level report JobStatus: got %q, want COMPLETED", resp.JobStatus)
+		}
+		if resp.EntityDetailsList == nil {
+			return fmt.Errorf("entity-level report must carry the EntityDetailsList member")
+		}
+		// Each entity detail carries the documented EntityInfo shape.
+		for _, detail := range resp.EntityDetailsList {
+			if detail.EntityInfo == nil {
+				return fmt.Errorf("entity detail must carry EntityInfo")
+			}
+			if detail.EntityInfo.Arn == nil || *detail.EntityInfo.Arn == "" {
+				return fmt.Errorf("entity EntityInfo must carry the entity ARN")
+			}
+			if detail.EntityInfo.Type != types.PolicyOwnerEntityTypeUser && detail.EntityInfo.Type != types.PolicyOwnerEntityTypeRole && detail.EntityInfo.Type != types.PolicyOwnerEntityTypeGroup {
+				return fmt.Errorf("entity EntityInfo Type: got %q, want USER/ROLE/GROUP", detail.EntityInfo.Type)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "ServiceLastAccessed_ActionLevelGranularity", func() error {
+		user := fmt.Sprintf("SLAAct-%s", tc.ts)
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
+			return err
+		}
+		defer cleanupUser()
+		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
+
+		gen, err := tc.client.GenerateServiceLastAccessedDetails(tc.ctx, &iam.GenerateServiceLastAccessedDetailsInput{
+			Arn:         aws.String(userArn),
+			Granularity: types.AccessAdvisorUsageGranularityTypeActionLevel,
+		})
+		if err != nil {
+			return err
+		}
+		if gen.JobId == nil || *gen.JobId == "" {
+			return fmt.Errorf("generate returned an empty job id")
+		}
+
+		var completed *iam.GetServiceLastAccessedDetailsOutput
+		for i := 0; i < 20; i++ {
+			resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
+				JobId: gen.JobId,
+			})
+			if err != nil {
+				return err
+			}
+			completed = resp
+			if resp.JobStatus == types.JobStatusTypeCompleted {
+				break
+			}
+			if resp.JobStatus == types.JobStatusTypeFailed {
+				return fmt.Errorf("service last accessed job failed")
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if completed == nil || completed.JobStatus != types.JobStatusTypeCompleted {
+			return fmt.Errorf("action-level job did not complete in time")
+		}
+		if completed.JobType != types.AccessAdvisorUsageGranularityTypeActionLevel {
+			return fmt.Errorf("action-level report JobType: got %q, want ACTION_LEVEL", completed.JobType)
+		}
+
+		// The entity-level view scoped to a namespace stays callable on the
+		// action-level job.
+		if _, err := tc.client.GetServiceLastAccessedDetailsWithEntities(tc.ctx, &iam.GetServiceLastAccessedDetailsWithEntitiesInput{
+			JobId:            gen.JobId,
+			ServiceNamespace: aws.String("iam"),
+		}); err != nil {
+			return fmt.Errorf("entity view on action-level job: %w", err)
 		}
 		return nil
 	}))

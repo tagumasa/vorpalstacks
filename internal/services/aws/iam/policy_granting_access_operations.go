@@ -81,7 +81,11 @@ func (s *IAMService) ListPoliciesGrantingServiceAccess(ctx context.Context, reqC
 		}
 	}
 
-	records, err := s.gatherPrincipalPolicyRecords(reqCtx, arn, "Arn")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	records, err := s.gatherPrincipalPolicyRecordsCore(store, arn, "Arn")
 	if err != nil {
 		return nil, err
 	}

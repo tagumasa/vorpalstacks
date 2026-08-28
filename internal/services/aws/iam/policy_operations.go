@@ -3,7 +3,6 @@ package iam
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -134,40 +133,17 @@ func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestCo
 // SetAsDefault specifies whether this version should be the default.
 // Returns an error if the policy has reached the maximum number of versions.
 func (s *IAMService) CreatePolicyVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
-
-	document := request.GetStringParam(req.Parameters, "PolicyDocument")
-	if !validatePolicyDocument(document) {
-		return nil, ErrMalformedPolicyDocument
-	}
-	setAsDefault := request.GetBoolParam(req.Parameters, "SetAsDefault")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	// A missing policy is reported before modifiability so that an
-	// AWS-managed ARN that is not present yields NoSuchEntity.
-	if !store.Policies().Exists(policyArn) {
-		return nil, NewNoSuchPolicyError(policyArn)
+	input := &CreatePolicyVersionInput{
+		PolicyArn:      request.GetStringParam(req.Parameters, "PolicyArn"),
+		PolicyDocument: request.GetStringParam(req.Parameters, "PolicyDocument"),
+		SetAsDefault:   request.GetBoolParam(req.Parameters, "SetAsDefault"),
 	}
-	// The permissions defined in AWS managed policies cannot be changed.
-	if iamstore.IsAWSManagedPolicyARN(policyArn) {
-		return nil, NewInvalidInputError("PolicyArn", "AWS managed policies cannot be modified")
-	}
-
-	// CreateVersion atomically enforces the policy version quota and
-	// performs the default-version swap inside a single lock scope,
-	// eliminating the race condition where concurrent requests could both
-	// observe a version count below the limit.
-	version, err := store.Policies().CreateVersion(policyArn, document, setAsDefault, iamstore.MaxPolicyVersions)
+	version, err := s.createPolicyVersionCore(store, input)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrPolicyVersionLimitExceeded) {
-			return nil, ErrLimitExceededPolicyVersions
-		}
 		return nil, err
 	}
 
@@ -401,7 +377,11 @@ func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *reques
 	}
 
 	// Gather all applicable policies for the principal.
-	policyDocs, err := s.gatherPrincipalPolicies(reqCtx, policySourceArn)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	policyDocs, err := s.gatherPrincipalPoliciesCore(store, policySourceArn)
 	if err != nil {
 		return nil, err
 	}
@@ -502,140 +482,6 @@ func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *reques
 		"IsTruncated":       false,
 		"Marker":            "",
 	}, nil
-}
-
-// gatherPrincipalPolicies collects all identity-based policies applicable to the given principal.
-func (s *IAMService) gatherPrincipalPolicies(reqCtx *request.RequestContext, principalArn string) ([]*policy.Document, error) {
-	records, err := s.gatherPrincipalPolicyRecords(reqCtx, principalArn, "PolicySourceArn")
-	if err != nil {
-		return nil, err
-	}
-	docs := make([]*policy.Document, 0, len(records))
-	for _, rec := range records {
-		docs = append(docs, rec.Document)
-	}
-	return docs, nil
-}
-
-// gatherPrincipalPolicyRecords collects the permissions policies that apply
-// to the principal identified by the ARN, preserving where each policy is
-// attached. For a user this includes the managed and inline policies of
-// every group the user belongs to. Permissions boundaries are stored
-// separately from permission attachments, so they are never collected.
-// paramName names the request parameter the ARN was taken from, for error
-// messages.
-func (s *IAMService) gatherPrincipalPolicyRecords(reqCtx *request.RequestContext, principalArn, paramName string) ([]principalPolicy, error) {
-	entityType := resolveEntityType(principalArn)
-	entityName := resolveEntityName(principalArn)
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	var records []principalPolicy
-
-	switch entityType {
-	case "User":
-		if !store.Users().Exists(entityName) {
-			return nil, NewNoSuchUserError(entityName)
-		}
-		records = append(records, collectInlinePolicies(store, PrincipalTypeUser, entityName)...)
-		records = append(records, collectAttachedPolicies(store, PrincipalTypeUser, entityName)...)
-		groupNames, err := store.UserGroups().ListGroupsForUser(entityName)
-		if err != nil {
-			return nil, err
-		}
-		for _, groupName := range groupNames {
-			records = append(records, collectInlinePolicies(store, PrincipalTypeGroup, groupName)...)
-			records = append(records, collectAttachedPolicies(store, PrincipalTypeGroup, groupName)...)
-		}
-
-	case "Role":
-		if !store.Roles().Exists(entityName) {
-			return nil, NewNoSuchRoleError(entityName)
-		}
-		records = append(records, collectInlinePolicies(store, PrincipalTypeRole, entityName)...)
-		records = append(records, collectAttachedPolicies(store, PrincipalTypeRole, entityName)...)
-
-	case "Group":
-		if !store.Groups().Exists(entityName) {
-			return nil, NewNoSuchGroupError(entityName)
-		}
-		records = append(records, collectInlinePolicies(store, PrincipalTypeGroup, entityName)...)
-		records = append(records, collectAttachedPolicies(store, PrincipalTypeGroup, entityName)...)
-
-	default:
-		// Unknown or non-principal ARN (e.g. policy, server-certificate).
-		// Fail-closed instead of silently returning an empty policy list.
-		return nil, NewInvalidInputError(paramName, "must be a user, role, or group ARN")
-	}
-
-	return records, nil
-}
-
-// principalPolicy pairs a parsed permissions policy with the identity of
-// its attachment point: the managed policy ARN for attached policies, or
-// the owning entity for inline policies.
-type principalPolicy struct {
-	Document   *policy.Document
-	PolicyName string
-	PolicyArn  string // empty for inline policies
-	EntityType string // PrincipalTypeUser, PrincipalTypeGroup, or PrincipalTypeRole
-	EntityName string
-}
-
-func collectInlinePolicies(store *iamstore.IAMStore, principalType, principalName string) []principalPolicy {
-	policyNames, err := store.InlinePolicies().List(principalType, principalName)
-	if err != nil {
-		return nil
-	}
-	var records []principalPolicy
-	for _, pn := range policyNames {
-		ip, err := store.InlinePolicies().Get(principalType, principalName, pn)
-		if err != nil || ip == nil {
-			continue
-		}
-		doc, err := policy.ParseDocument(ip.PolicyDocument)
-		if err != nil {
-			continue
-		}
-		records = append(records, principalPolicy{
-			Document:   doc,
-			PolicyName: pn,
-			EntityType: principalType,
-			EntityName: principalName,
-		})
-	}
-	return records
-}
-
-func collectAttachedPolicies(store *iamstore.IAMStore, principalType, principalName string) []principalPolicy {
-	arns, err := store.AttachedPolicies().ListAttachedPolicies(principalType, principalName)
-	if err != nil {
-		return nil
-	}
-	var records []principalPolicy
-	for _, arn := range arns {
-		version, err := store.Policies().GetDefaultVersion(arn)
-		if err != nil || version == nil {
-			continue
-		}
-		doc, err := policy.ParseDocument(version.Document)
-		if err != nil {
-			continue
-		}
-		policyName := arn
-		if p, err := store.Policies().Get(arn); err == nil && p != nil {
-			policyName = p.PolicyName
-		}
-		records = append(records, principalPolicy{
-			Document:   doc,
-			PolicyName: policyName,
-			PolicyArn:  arn,
-		})
-	}
-	return records
 }
 
 func extractPrincipalNameFromARN(arn string) string {

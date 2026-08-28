@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -330,6 +331,16 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "GetServiceLinkedRoleDeletionStatus", func() error {
+		// A task id longer than the documented 1000-character maximum is
+		// malformed input, not a missing task.
+		if _, err := tc.client.GetServiceLinkedRoleDeletionStatus(tc.ctx, &iam.GetServiceLinkedRoleDeletionStatusInput{
+			DeletionTaskId: aws.String(strings.Repeat("t", 1001)),
+		}); err == nil {
+			return fmt.Errorf("an over-length task id must be rejected")
+		} else if !containsErrorCode(err, "InvalidInput") {
+			return fmt.Errorf("over-length task id: got %v, want InvalidInput", err)
+		}
+
 		resp, err := tc.client.GetServiceLinkedRoleDeletionStatus(tc.ctx, &iam.GetServiceLinkedRoleDeletionStatusInput{
 			DeletionTaskId: aws.String(tc.deletionTaskId),
 		})

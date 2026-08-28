@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	awsarn "vorpalstacks/internal/utils/aws/arn"
@@ -92,7 +92,7 @@ const lookupAllEventsPageSize int32 = 50
 
 // lookupAllEventsMaxPages caps the total number of pages fetched to avoid
 // unbounded work in busy accounts. 20 pages × 50 events = 1000 events,
-// which is ample for the ServiceLastAccessed report's 90-day window.
+// which is ample for the ServiceLastAccessed report window.
 const lookupAllEventsMaxPages = 20
 
 // lookupAllEvents paginates through CloudTrail LookupEvents results until
@@ -114,21 +114,6 @@ func lookupAllEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker, re
 		nextToken = nt
 	}
 	return all, nil
-}
-
-// parseGranularity converts an ISO 8601 duration string to a time.Duration.
-// Supported values are P7D, P30D, and P90D; defaults to P30D.
-func parseGranularity(granularity string) time.Duration {
-	switch granularity {
-	case "P7D":
-		return 7 * 24 * time.Hour
-	case "P30D":
-		return 30 * 24 * time.Hour
-	case "P90D":
-		return 90 * 24 * time.Hour
-	default:
-		return 30 * 24 * time.Hour
-	}
 }
 
 // parseIAMARNResource splits an IAM ARN into entity type and name.
@@ -193,222 +178,87 @@ func resolveEntityType(arn string) string {
 	return entityType
 }
 
-// generateLastAccessedReport queries CloudTrail events for the given entity within the
-// specified time granularity and produces a ServiceLastAccessedJob with aggregated results.
-func (s *IAMService) generateLastAccessedReport(arn, granularity, jobType, region string) *iamstore.ServiceLastAccessedJob {
-	now := time.Now().UTC()
-	duration := parseGranularity(granularity)
-	startTime := now.Add(-duration)
-	entityName := resolveEntityName(arn)
-
-	var filteredEvents []eventbus.CloudTrailEventInfo
-	if s.cloudTrailInvoker != nil {
-		events, err := lookupAllEvents(context.Background(), s.cloudTrailInvoker, region, entityName, startTime, now)
-		if err == nil {
-			filteredEvents = events
-		}
-	}
-
-	serviceMap := make(map[string]*iamstore.ServiceLastAccessed)
-	actionMap := make(map[string]*iamstore.TrackedActionLastAccessed)
-
-	// Build a per-service unique-entity count from an unfiltered event
-	// query so that TotalAuthenticatedEntities reflects the actual number
-	// of distinct entities that accessed each service (not just the
-	// requested principal).
-	entityCountMap := make(map[string]map[string]bool)
-	if s.cloudTrailInvoker != nil {
-		allEvents, err := lookupAllEvents(context.Background(), s.cloudTrailInvoker, region, "", startTime, now)
-		if err == nil {
-			for _, event := range allEvents {
-				ns := eventSourceToServiceNamespace[event.EventSource]
-				if ns == "" && event.EventSource != "" {
-					parts := strings.SplitN(event.EventSource, ".", 2)
-					ns = parts[0]
-				}
-				if entityCountMap[ns] == nil {
-					entityCountMap[ns] = make(map[string]bool)
-				}
-				if event.Username != "" {
-					entityCountMap[ns][event.Username] = true
-				}
-			}
-		}
-	}
-
-	for _, event := range filteredEvents {
-		eventRegion := region
-
-		serviceNamespace := eventSourceToServiceNamespace[event.EventSource]
-		if serviceNamespace == "" && event.EventSource != "" {
-			parts := strings.SplitN(event.EventSource, ".", 2)
-			serviceNamespace = parts[0]
-		}
-
-		serviceName := namespaceToDisplayName[serviceNamespace]
-		if serviceName == "" {
-			serviceName = serviceNamespace
-		}
-
-		svc, ok := serviceMap[serviceNamespace]
-		if !ok {
-			totalEntities := 1
-			if users, ok := entityCountMap[serviceNamespace]; ok && len(users) > 0 {
-				totalEntities = len(users)
-			}
-			svc = &iamstore.ServiceLastAccessed{
-				ServiceName:                serviceName,
-				ServiceNamespace:           serviceNamespace,
-				TotalAuthenticatedEntities: totalEntities,
-			}
-			serviceMap[serviceNamespace] = svc
-		}
-
-		if svc.LastAuthenticated == nil || event.EventTime.After(svc.LastAuthenticated.UTC()) {
-			t := event.EventTime
-			svc.LastAuthenticated = &t
-			svc.LastAuthenticatedRegion = eventRegion
-		}
-
-		actionKey := serviceNamespace + ":" + event.EventName
-		action, ok := actionMap[actionKey]
-		if !ok {
-			action = &iamstore.TrackedActionLastAccessed{
-				ActionName:       event.EventName,
-				ServiceNamespace: serviceNamespace,
-				EntityPath:       arn,
-			}
-			actionMap[actionKey] = action
-		}
-
-		if action.LastAccessedDate == nil || event.EventTime.After(action.LastAccessedDate.UTC()) {
-			t := event.EventTime
-			action.LastAccessedDate = &t
-			action.LastAccessedRegion = eventRegion
-		}
-	}
-
-	services := make([]iamstore.ServiceLastAccessed, 0, len(serviceMap))
-	for _, svc := range serviceMap {
-		actions := make([]iamstore.TrackedActionLastAccessed, 0)
-		for _, a := range actionMap {
-			if a.ServiceNamespace == svc.ServiceNamespace {
-				actions = append(actions, *a)
-			}
-		}
-		svc.TrackedActionsLastAccessed = actions
-		services = append(services, *svc)
-	}
-
-	actions := make([]iamstore.TrackedActionLastAccessed, 0, len(actionMap))
-	for _, a := range actionMap {
-		actions = append(actions, *a)
-	}
-
-	completionTime := now
-	job := &iamstore.ServiceLastAccessedJob{
-		JobID:                      generateJobID(),
-		Arn:                        arn,
-		JobType:                    jobType,
-		JobStatus:                  "COMPLETED",
-		JobCreationTime:            now,
-		JobCompletionTime:          &completionTime,
-		Granularity:                granularity,
-		TrackedActionsLastAccessed: actions,
-		ServicesLastAccessed:       services,
-	}
-
-	return job
-}
-
-// GenerateServiceLastAccessedDetails generates a report of the last time the specified IAM entity
-// accessed each AWS service. The report is generated synchronously and stored for retrieval via
-// GetServiceLastAccessedDetails.
+// GenerateServiceLastAccessedDetails generates a report of the last time
+// the specified IAM entity accessed each AWS service.  The report is
+// generated asynchronously and stored for retrieval via
+// GetServiceLastAccessedDetails; the documented response carries the
+// JobId only.
 func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	arn := request.GetStringParam(req.Parameters, "Arn")
-	if arn == "" {
-		return nil, NewValidationError("Arn")
-	}
-	granularity := request.GetStringParam(req.Parameters, "Granularity")
-	if granularity == "" {
-		granularity = "P30D"
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	now := time.Now().UTC()
-	jobID := generateJobID()
-
-	pendingJob := &iamstore.ServiceLastAccessedJob{
-		JobID:           jobID,
-		Arn:             arn,
-		JobType:         "SERVICE_LAST_ACCESSED",
-		JobStatus:       "IN_PROGRESS",
-		JobCreationTime: now,
-		Granularity:     granularity,
+	input := &GenerateServiceLastAccessedDetailsInput{
+		Arn:         request.GetStringParam(req.Parameters, "Arn"),
+		Granularity: request.GetStringParam(req.Parameters, "Granularity"),
 	}
-	if err := store.ServiceLastAccessed().Put(pendingJob); err != nil {
+	pendingJob, err := s.generateServiceLastAccessedDetailsCore(reqCtx.GetRegion(), store, input)
+	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("PANIC in ServiceLastAccessed report generation", logs.Any("panic", r))
-			}
-		}()
-		completedJob := s.generateLastAccessedReport(arn, granularity, "SERVICE_LAST_ACCESSED", reqCtx.GetRegion())
-		completedJob.JobID = jobID
-		_ = store.ServiceLastAccessed().Put(completedJob)
-	}()
-
 	return map[string]interface{}{
-		"JobId":     jobID,
-		"JobType":   pendingJob.JobType,
-		"JobStatus": "IN_PROGRESS",
+		"JobId": pendingJob.JobID,
 	}, nil
 }
 
 // GetServiceLastAccessedDetails retrieves a previously generated report containing the last time
-// each AWS service was accessed by the specified entity.
+// each AWS service was accessed by the specified entity.  Supports
+// pagination via Marker and MaxItems over the service list.
 func (s *IAMService) GetServiceLastAccessedDetails(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	jobID := request.GetStringParam(req.Parameters, "JobId")
 	if jobID == "" {
 		jobID = request.GetStringParam(req.Parameters, "jobId")
 	}
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	job, err := store.ServiceLastAccessed().Get(jobID)
+	job, err := s.getServiceLastAccessedDetailsCore(store, jobID)
 	if err != nil {
 		return nil, err
 	}
-	if job == nil {
-		return nil, ErrNoSuchJob
-	}
+
+	paged := pagination.PaginateSlice(job.ServicesLastAccessed, marker, maxItems, func(svc iamstore.ServiceLastAccessed) string {
+		return svc.ServiceNamespace
+	})
 
 	result := map[string]interface{}{
-		"JobCreationDate": job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
-		"JobStatus":       job.JobStatus,
-		"JobType":         job.JobType,
-		"JobId":           job.JobID,
+		"JobCreationDate":      job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
+		"JobStatus":            job.JobStatus,
+		"JobType":              job.Granularity,
+		"ServicesLastAccessed": serialiseServicesLastAccessed(paged.Items),
+		"IsTruncated":          paged.IsTruncated,
+	}
+	if paged.NextMarker != "" {
+		result["Marker"] = paged.NextMarker
 	}
 
 	if job.JobCompletionTime != nil {
 		result["JobCompletionDate"] = job.JobCompletionTime.Format(timeutils.ISO8601SimpleFormat)
 	}
 	if job.Error != "" {
-		result["Error"] = job.Error
+		result["Error"] = map[string]interface{}{
+			"Message": job.Error,
+			"Code":    "InternalError",
+		}
 	}
 
-	services := make([]map[string]interface{}, 0, len(job.ServicesLastAccessed))
-	for _, svc := range job.ServicesLastAccessed {
+	return result, nil
+}
+
+// serialiseServicesLastAccessed projects the ServiceLastAccessed entries
+// onto the documented response members, including the ARN of the entity
+// that last attempted access — the report entity for user/role reports and
+// the accessing member for group/policy reports.
+func serialiseServicesLastAccessed(services []iamstore.ServiceLastAccessed) []map[string]interface{} {
+	entries := make([]map[string]interface{}, 0, len(services))
+	for _, svc := range services {
 		entry := map[string]interface{}{
 			"ServiceName":                svc.ServiceName,
 			"ServiceNamespace":           svc.ServiceNamespace,
@@ -416,6 +266,9 @@ func (s *IAMService) GetServiceLastAccessedDetails(_ context.Context, reqCtx *re
 		}
 		if svc.LastAuthenticated != nil {
 			entry["LastAuthenticated"] = svc.LastAuthenticated.Format(timeutils.ISO8601SimpleFormat)
+			if svc.LastAuthenticatedEntity != "" {
+				entry["LastAuthenticatedEntity"] = svc.LastAuthenticatedEntity
+			}
 		}
 		if svc.LastAuthenticatedRegion != "" {
 			entry["LastAuthenticatedRegion"] = svc.LastAuthenticatedRegion
@@ -438,111 +291,73 @@ func (s *IAMService) GetServiceLastAccessedDetails(_ context.Context, reqCtx *re
 		if len(actions) > 0 {
 			entry["TrackedActionsLastAccessed"] = actions
 		}
-		services = append(services, entry)
+		entries = append(entries, entry)
 	}
-	result["ServicesLastAccessed"] = services
-
-	return result, nil
+	return entries
 }
 
-// GetServiceLastAccessedDetailsWithEntities retrieves a previously generated report including
-// entity-level detail for each service access event.
+// GetServiceLastAccessedDetailsWithEntities retrieves a previously
+// generated report including the entity-level detail for the requested
+// service namespace.  The entity list is scoped to that service and
+// sorted by most recent access first; supports pagination via Marker and
+// MaxItems.
 func (s *IAMService) GetServiceLastAccessedDetailsWithEntities(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	jobID := request.GetStringParam(req.Parameters, "JobId")
 	if jobID == "" {
 		jobID = request.GetStringParam(req.Parameters, "jobId")
 	}
+	serviceNamespace := request.GetStringParam(req.Parameters, "ServiceNamespace")
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	job, err := store.ServiceLastAccessed().Get(jobID)
+	result, err := s.getServiceLastAccessedDetailsWithEntitiesCore(store, jobID, serviceNamespace, marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
-	if job == nil {
-		return nil, ErrNoSuchJob
+
+	entityList := make([]map[string]interface{}, 0, len(result.Entities))
+	for _, entity := range result.Entities {
+		entityInfo := map[string]interface{}{
+			"Arn":  entity.Arn,
+			"Id":   entity.Id,
+			"Name": entity.Name,
+			"Type": entity.Type,
+		}
+		if entity.Path != "" {
+			entityInfo["Path"] = entity.Path
+		}
+		entry := map[string]interface{}{
+			"EntityInfo": entityInfo,
+		}
+		if entity.LastAuthenticated != nil {
+			entry["LastAuthenticated"] = entity.LastAuthenticated.Format(timeutils.ISO8601SimpleFormat)
+		}
+		entityList = append(entityList, entry)
 	}
 
-	result := map[string]interface{}{
-		"JobCreationDate": job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
-		"JobStatus":       job.JobStatus,
-		"JobType":         job.JobType,
-		"JobId":           job.JobID,
+	resp := map[string]interface{}{
+		"JobCreationDate":   result.Job.JobCreationTime.Format(timeutils.ISO8601SimpleFormat),
+		"JobStatus":         result.Job.JobStatus,
+		"EntityDetailsList": entityList,
+		"IsTruncated":       result.IsTruncated,
+	}
+	if result.Marker != "" {
+		resp["Marker"] = result.Marker
+	}
+	if result.Job.JobCompletionTime != nil {
+		resp["JobCompletionDate"] = result.Job.JobCompletionTime.Format(timeutils.ISO8601SimpleFormat)
+	}
+	if result.Job.Error != "" {
+		resp["Error"] = map[string]interface{}{
+			"Message": result.Job.Error,
+			"Code":    "InternalError",
+		}
 	}
 
-	if job.JobCompletionTime != nil {
-		result["JobCompletionDate"] = job.JobCompletionTime.Format(timeutils.ISO8601SimpleFormat)
-	}
-	if job.Error != "" {
-		result["Error"] = job.Error
-	}
-
-	entityList := make([]map[string]interface{}, 0)
-	entityServices := make(map[string][]iamstore.TrackedActionLastAccessed)
-
-	for _, action := range job.TrackedActionsLastAccessed {
-		entityServices[action.EntityPath] = append(entityServices[action.EntityPath], action)
-	}
-
-	for entityPath, actions := range entityServices {
-		entity := map[string]interface{}{
-			"EntityPath": entityPath,
-		}
-		entityPolicyNames := make([]map[string]interface{}, 0)
-		entityEntry := map[string]interface{}{
-			"EntityName": resolveEntityName(entityPath),
-			"EntityType": resolveEntityType(entityPath),
-		}
-		// Compute the entity-level LastAuthenticated as the most recent
-		// action-level LastAccessedDate for this entity.
-		var entityLastAccessed *time.Time
-		for _, a := range actions {
-			if a.LastAccessedDate != nil {
-				if entityLastAccessed == nil || a.LastAccessedDate.After(*entityLastAccessed) {
-					entityLastAccessed = a.LastAccessedDate
-				}
-			}
-		}
-		if entityLastAccessed != nil {
-			entityEntry["LastAuthenticated"] = entityLastAccessed.Format(timeutils.ISO8601SimpleFormat)
-		}
-		entityPolicyNames = append(entityPolicyNames, entityEntry)
-		entity["EntityPolicyList"] = entityPolicyNames
-
-		svcMap := make(map[string][]iamstore.TrackedActionLastAccessed)
-		for _, a := range actions {
-			svcMap[a.ServiceNamespace] = append(svcMap[a.ServiceNamespace], a)
-		}
-
-		serviceList := make([]map[string]interface{}, 0, len(svcMap))
-		for ns, svcActions := range svcMap {
-			svcEntry := map[string]interface{}{
-				"ServiceNamespace": ns,
-			}
-			actionList := make([]map[string]interface{}, 0, len(svcActions))
-			for _, a := range svcActions {
-				aEntry := map[string]interface{}{
-					"ActionName": a.ActionName,
-				}
-				if a.LastAccessedDate != nil {
-					aEntry["LastAccessedTime"] = a.LastAccessedDate.Format(timeutils.ISO8601SimpleFormat)
-				}
-				if a.LastAccessedRegion != "" {
-					aEntry["LastAccessedRegion"] = a.LastAccessedRegion
-				}
-				actionList = append(actionList, aEntry)
-			}
-			svcEntry["TrackedActionsLastAccessed"] = actionList
-			serviceList = append(serviceList, svcEntry)
-		}
-		entity["ServicesLastAccessed"] = serviceList
-		entityList = append(entityList, entity)
-	}
-
-	result["EntityDetailsList"] = entityList
-
-	return result, nil
+	return resp, nil
 }

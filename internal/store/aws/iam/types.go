@@ -337,6 +337,7 @@ type SAMLPrivateKey struct {
 type SAMLProvider struct {
 	Arn                     string           `json:"arn"`
 	AccountId               string           `json:"account_id"`
+	UUID                    string           `json:"saml_provider_uuid,omitempty"` // privateKeyIdType, returned by GetSAMLProvider
 	SAMLMetadataDocument    string           `json:"saml_metadata_document,omitempty"`
 	ValidUntil              *time.Time       `json:"valid_until,omitempty"`
 	CreateDate              time.Time        `json:"create_date"`

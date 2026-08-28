@@ -37,6 +37,16 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iam", "GetOpenIDConnectProvider", func() error {
+		// An ARN shorter than the documented 20-character minimum is
+		// malformed input, not a missing provider.
+		if _, err := tc.client.GetOpenIDConnectProvider(tc.ctx, &iam.GetOpenIDConnectProviderInput{
+			OpenIDConnectProviderArn: aws.String("x"),
+		}); err == nil {
+			return fmt.Errorf("a malformed provider ARN must be rejected")
+		} else if !containsErrorCode(err, "InvalidInput") {
+			return fmt.Errorf("malformed provider ARN: got %v, want InvalidInput", err)
+		}
+
 		resp, err := tc.client.GetOpenIDConnectProvider(tc.ctx, &iam.GetOpenIDConnectProviderInput{
 			OpenIDConnectProviderArn: aws.String(tc.oidcProviderArn),
 		})

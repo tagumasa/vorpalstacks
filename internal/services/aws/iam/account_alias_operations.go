@@ -9,47 +9,25 @@ import (
 
 // CreateAccountAlias sets the specified alias for the AWS account.
 func (s *IAMService) CreateAccountAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	alias := request.GetStringParam(req.Parameters, "AccountAlias")
-	if alias == "" {
-		return nil, NewValidationError("AccountAlias")
-	}
-	if err := validateAccountAlias(alias); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.AccountAlias().Put(alias); err != nil {
+	if err := s.createAccountAliasCore(store, request.GetStringParam(req.Parameters, "AccountAlias")); err != nil {
 		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // DeleteAccountAlias removes the account alias for the AWS account.
 func (s *IAMService) DeleteAccountAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	accountAlias := request.GetStringParam(req.Parameters, "AccountAlias")
-	if accountAlias == "" {
-		return nil, NewValidationError("AccountAlias")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	existing, err := store.AccountAlias().Get()
-	if err != nil {
+	if err := s.deleteAccountAliasCore(store, request.GetStringParam(req.Parameters, "AccountAlias")); err != nil {
 		return nil, err
 	}
-	if existing == nil || existing.AccountAlias != accountAlias {
-		return nil, NewNoSuchEntityError("Account Alias", accountAlias)
-	}
-	if err := store.AccountAlias().Delete(); err != nil {
-		return nil, err
-	}
-
 	return response.EmptyResponse(), nil
 }
 
@@ -59,7 +37,7 @@ func (s *IAMService) ListAccountAliases(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	alias, err := store.AccountAlias().Get()
+	alias, err := s.listAccountAliasesCore(store)
 	if err != nil {
 		return nil, err
 	}

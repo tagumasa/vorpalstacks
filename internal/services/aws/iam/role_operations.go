@@ -37,7 +37,7 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	return map[string]interface{}{
-		"Role": s.roleToResponse(reqCtx, role),
+		"Role": roleToResponse(role),
 	}, nil
 }
 
@@ -59,7 +59,7 @@ func (s *IAMService) GetRole(ctx context.Context, reqCtx *request.RequestContext
 	}
 
 	return map[string]interface{}{
-		"Role": s.roleToResponse(reqCtx, role),
+		"Role": roleToResponse(role),
 	}, nil
 }
 
@@ -82,7 +82,7 @@ func (s *IAMService) UpdateRole(ctx context.Context, reqCtx *request.RequestCont
 	}
 
 	return map[string]interface{}{
-		"Role": s.roleToResponse(reqCtx, role),
+		"Role": roleToResponse(role),
 	}, nil
 }
 
@@ -103,7 +103,7 @@ func (s *IAMService) UpdateRoleDescription(ctx context.Context, reqCtx *request.
 	}
 
 	return map[string]interface{}{
-		"Role": s.roleToResponse(reqCtx, role),
+		"Role": roleToResponse(role),
 	}, nil
 }
 
@@ -145,7 +145,7 @@ func (s *IAMService) ListRoles(ctx context.Context, reqCtx *request.RequestConte
 
 	roles := make([]interface{}, len(result.Roles))
 	for i, role := range result.Roles {
-		roles[i] = s.roleToResponse(reqCtx, role)
+		roles[i] = roleToResponse(role)
 	}
 
 	response := map[string]interface{}{
@@ -209,7 +209,7 @@ func (s *IAMService) ListRoleTags(ctx context.Context, reqCtx *request.RequestCo
 	return listResourceTags(ctx, s, reqCtx, req, roleTagOps)
 }
 
-func (s *IAMService) roleToResponse(reqCtx *request.RequestContext, role *iamstore.Role) map[string]interface{} {
+func roleToResponse(role *iamstore.Role) map[string]interface{} {
 	resp := map[string]interface{}{
 		"RoleId":             role.ID,
 		"Path":               role.Path,
@@ -256,42 +256,33 @@ func (s *IAMService) roleToResponse(reqCtx *request.RequestContext, role *iamsto
 // RoleName is required.
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
+	marker := request.GetStringParam(req.Parameters, "Marker")
+	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if !store.Roles().Exists(roleName) {
-		return nil, NewNoSuchRoleError(roleName)
-	}
-
-	marker := request.GetStringParam(req.Parameters, "Marker")
-	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
-
-	result, err := store.InstanceProfiles().ListForRole(roleName, marker, maxItems)
+	result, err := s.listInstanceProfilesForRoleCore(store, request.GetStringParam(req.Parameters, "RoleName"), marker, maxItems)
 	if err != nil {
 		return nil, err
 	}
 
-	profiles := make([]interface{}, len(result.InstanceProfiles))
-	for i, profile := range result.InstanceProfiles {
-		profiles[i] = s.instanceProfileToResponseWithRoles(reqCtx, profile, store)
+	profiles := make([]interface{}, len(result.Profiles))
+	for i, entry := range result.Profiles {
+		profiles[i] = s.instanceProfileToResponseWithRoles(entry.Profile, entry.Roles)
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"InstanceProfiles": profiles,
 		"IsTruncated":      result.IsTruncated,
 	}
 
 	if result.Marker != "" {
-		response["Marker"] = result.Marker
+		resp["Marker"] = result.Marker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 // PutRolePermissionsBoundary sets the permissions boundary for an IAM role.

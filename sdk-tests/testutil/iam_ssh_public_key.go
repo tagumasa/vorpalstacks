@@ -206,6 +206,19 @@ func (r *TestRunner) iamSSHPublicKeyTests(tc *iamTestContext) []TestResult {
 		}
 		keyID := upload.SSHPublicKey.SSHPublicKeyId
 
+		// Retrieving through a non-owner UserName is rejected the same
+		// way as update and delete: the key is scoped to the (user,
+		// key-id) association.
+		if _, err := tc.client.GetSSHPublicKey(tc.ctx, &iam.GetSSHPublicKeyInput{
+			UserName:       aws.String(other),
+			SSHPublicKeyId: keyID,
+			Encoding:       "SSH",
+		}); err == nil {
+			return fmt.Errorf("retrieving through a non-owner UserName must be rejected")
+		} else if !containsErrorCode(err, "NoSuchEntity") {
+			return fmt.Errorf("non-owner get: got %v, want NoSuchEntity", err)
+		}
+
 		if _, err := tc.client.UpdateSSHPublicKey(tc.ctx, &iam.UpdateSSHPublicKeyInput{
 			UserName:       aws.String(other),
 			SSHPublicKeyId: keyID,
