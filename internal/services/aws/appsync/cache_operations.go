@@ -2,13 +2,6 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-	"time"
-
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -20,63 +13,18 @@ func (s *AppSyncService) CreateApiCache(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	if _, err := store.GetGraphqlApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	cacheType := request.GetStringParam(req.Parameters, "type")
-	if cacheType == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-	if !validateApiCacheType(cacheType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid cache type: %s", cacheType))
-	}
-	ttl := request.GetInt64Param(req.Parameters, "ttl")
-	apiCachingBehavior := request.GetStringParam(req.Parameters, "apiCachingBehavior")
-	if apiCachingBehavior == "" {
-		return nil, NewBadRequestException("apiCachingBehavior is required")
-	}
-	if !validateApiCachingBehavior(apiCachingBehavior) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid apiCachingBehavior: %s", apiCachingBehavior))
-	}
-	if err := validateApiCacheTtl(ttl); err != nil {
-		return nil, err
-	}
-
-	cache := &appsyncstore.ApiCache{
-		Type:                     cacheType,
-		Ttl:                      ttl,
-		ApiCachingBehavior:       apiCachingBehavior,
+	cache, err := s.createApiCacheCore(store, createApiCacheInput{
+		ApiId:                    request.GetStringParam(req.Parameters, "apiId"),
+		Type:                     request.GetStringParam(req.Parameters, "type"),
+		Ttl:                      request.GetInt64Param(req.Parameters, "ttl"),
+		ApiCachingBehavior:       request.GetStringParam(req.Parameters, "apiCachingBehavior"),
 		AtRestEncryptionEnabled:  request.GetBoolParam(req.Parameters, "atRestEncryptionEnabled"),
 		TransitEncryptionEnabled: request.GetBoolParam(req.Parameters, "transitEncryptionEnabled"),
 		HealthMetricsConfig:      request.GetStringParam(req.Parameters, "healthMetricsConfig"),
-		Status:                   "CREATING",
+	})
+	if err != nil {
+		return nil, err
 	}
-	hmc := cache.HealthMetricsConfig
-	if hmc != "" && !validateEnabledDisabled(hmc) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid healthMetricsConfig: %s", hmc))
-	}
-
-	if err := store.CreateApiCache(apiId, cache); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Simulate async cache creation: transition CREATING → AVAILABLE.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync cache creation async") }()
-		time.Sleep(2 * time.Second)
-		cache.Status = "AVAILABLE"
-		if err := store.UpdateApiCache(apiId, cache); err != nil {
-			logs.Warn("failed to persist cache AVAILABLE status",
-				logs.String("apiId", apiId),
-				logs.Err(err))
-		}
-	}()
 
 	return map[string]interface{}{"apiCache": apiCacheToMap(cache)}, nil
 }
@@ -88,14 +36,9 @@ func (s *AppSyncService) GetApiCache(ctx context.Context, reqCtx *request.Reques
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	cache, err := store.GetApiCache(apiId)
+	cache, err := s.getApiCacheCore(store, request.GetStringParam(req.Parameters, "apiId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{"apiCache": apiCacheToMap(cache)}, nil
@@ -108,49 +51,18 @@ func (s *AppSyncService) UpdateApiCache(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	cache, err := store.GetApiCache(apiId)
+	cache, err := s.updateApiCacheCore(store, updateApiCacheInput{
+		ApiId:                 request.GetStringParam(req.Parameters, "apiId"),
+		Type:                  request.GetStringParam(req.Parameters, "type"),
+		HasType:               request.HasParam(req.Parameters, "type"),
+		Ttl:                   request.GetInt64Param(req.Parameters, "ttl"),
+		HasTtl:                request.HasParam(req.Parameters, "ttl"),
+		ApiCachingBehavior:    request.GetStringParam(req.Parameters, "apiCachingBehavior"),
+		HasApiCachingBehavior: request.HasParam(req.Parameters, "apiCachingBehavior"),
+		HealthMetricsConfig:   request.GetStringParam(req.Parameters, "healthMetricsConfig"),
+	})
 	if err != nil {
-		return mapStoreError(err)
-	}
-
-	cacheType := request.GetStringParam(req.Parameters, "type")
-	ttl := request.GetInt64Param(req.Parameters, "ttl")
-	apiCachingBehavior := request.GetStringParam(req.Parameters, "apiCachingBehavior")
-
-	if cacheType != "" {
-		if !validateApiCacheType(cacheType) {
-			return nil, NewBadRequestException(fmt.Sprintf("Invalid cache type: %s", cacheType))
-		}
-		cache.Type = cacheType
-	}
-	// Use HasParam to distinguish "ttl not provided" from "ttl explicitly set to 0".
-	if request.HasParam(req.Parameters, "ttl") {
-		if err := validateApiCacheTtl(ttl); err != nil {
-			return nil, err
-		}
-		cache.Ttl = ttl
-	}
-	if apiCachingBehavior != "" {
-		if !validateApiCachingBehavior(apiCachingBehavior) {
-			return nil, NewBadRequestException(fmt.Sprintf("Invalid apiCachingBehavior: %s", apiCachingBehavior))
-		}
-		cache.ApiCachingBehavior = apiCachingBehavior
-	}
-	healthMetrics := request.GetStringParam(req.Parameters, "healthMetricsConfig")
-	if healthMetrics != "" {
-		if !validateEnabledDisabled(healthMetrics) {
-			return nil, NewBadRequestException(fmt.Sprintf("Invalid healthMetricsConfig: %s", healthMetrics))
-		}
-		cache.HealthMetricsConfig = healthMetrics
-	}
-
-	if err := store.UpdateApiCache(apiId, cache); err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{"apiCache": apiCacheToMap(cache)}, nil
@@ -163,13 +75,8 @@ func (s *AppSyncService) DeleteApiCache(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	if err := store.DeleteApiCache(apiId); err != nil {
-		return mapStoreError(err)
+	if err := s.deleteApiCacheCore(store, request.GetStringParam(req.Parameters, "apiId")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -183,23 +90,9 @@ func (s *AppSyncService) FlushApiCache(ctx context.Context, reqCtx *request.Requ
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
+	if err := s.flushApiCacheCore(store, request.GetStringParam(req.Parameters, "apiId")); err != nil {
+		return nil, err
 	}
-
-	if _, err := store.GetApiCache(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Flush all cached resolver results for this API.
-	if err := store.FlushResolverCache(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Invalidate the in-memory schema parse cache so subsequent requests
-	// re-fetch fresh schema and resolver definitions.
-	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{}, nil
 }

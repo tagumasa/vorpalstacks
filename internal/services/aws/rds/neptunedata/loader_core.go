@@ -205,11 +205,16 @@ func (s *NeptuneDataService) getLoaderJobStatusCore(in *GetLoaderJobStatusInput)
 	if in.LoadId == "" {
 		return nil, missingParameter("loadId")
 	}
-	if in.HasPage && in.Page < MinLoaderPage {
-		return nil, invalidParameter(fmt.Sprintf("page must be a positive integer: %d", in.Page))
-	}
-	if in.HasErrorsPerPage && in.ErrorsPerPage < MinLoaderErrorsPerPage {
-		return nil, invalidParameter(fmt.Sprintf("errorsPerPage must be a positive integer: %d", in.ErrorsPerPage))
+	// The page and errorsPerPage members are documented as only valid when
+	// the errors flag is TRUE, so their positive-integer minimums apply on
+	// the error-listing path alone.
+	if in.Errors {
+		if in.HasPage && in.Page < MinLoaderPage {
+			return nil, invalidParameter(fmt.Sprintf("page must be a positive integer: %d", in.Page))
+		}
+		if in.HasErrorsPerPage && in.ErrorsPerPage < MinLoaderErrorsPerPage {
+			return nil, invalidParameter(fmt.Sprintf("errorsPerPage must be a positive integer: %d", in.ErrorsPerPage))
+		}
 	}
 
 	store, err := s.GetStoreForRegion(in.Region)
@@ -220,15 +225,6 @@ func (s *NeptuneDataService) getLoaderJobStatusCore(in *GetLoaderJobStatusInput)
 	job, err := store.GetLoaderJob(in.LoadId)
 	if err != nil || job == nil {
 		return nil, bulkLoadNotFound(in.LoadId)
-	}
-
-	page := in.Page
-	if page <= 0 {
-		page = 1
-	}
-	errorsPerPage := in.ErrorsPerPage
-	if errorsPerPage <= 0 {
-		errorsPerPage = 10
 	}
 
 	failed := job.GetTotalErrors()
@@ -271,6 +267,14 @@ func (s *NeptuneDataService) getLoaderJobStatusCore(in *GetLoaderJobStatusInput)
 	// Split the error log by newlines into individual entries and paginate
 	// using the page and errorsPerPage query parameters.
 	if in.Errors && job.GetErrorLog() != "" {
+		page := in.Page
+		if page <= 0 {
+			page = 1
+		}
+		errorsPerPage := in.ErrorsPerPage
+		if errorsPerPage <= 0 {
+			errorsPerPage = 10
+		}
 		errorLines := strings.Split(strings.TrimSpace(job.GetErrorLog()), "\n")
 		totalErrors := len(errorLines)
 		startIdx := (page - 1) * errorsPerPage

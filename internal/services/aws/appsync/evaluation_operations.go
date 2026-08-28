@@ -25,36 +25,14 @@ func (s *AppSyncService) ListTypesByAssociation(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
-	if err != nil {
-		return mapStoreError(err)
-	}
-
-	format := request.GetStringParam(req.Parameters, "format")
-	if format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-	if !validateTypeFormat(format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
-	}
-
-	opts, err := parsePaginationOptions(req)
+	types, nextToken, err := s.listTypesByAssociationCore(store,
+		request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"),
+		request.GetStringParam(req.Parameters, "format"),
+		request.GetIntParam(req.Parameters, "maxResults"),
+		request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	types, nextToken, err := store.ListTypes(assoc.SourceApiId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(types))

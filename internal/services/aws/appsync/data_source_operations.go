@@ -2,12 +2,43 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
+
+// parseDataSourceInput extracts the shared data-source payload members from
+// the request parameters.
+func parseDataSourceInput(req *request.ParsedRequest) (dataSourceInput, error) {
+	in := dataSourceInput{
+		ApiId:          request.GetStringParam(req.Parameters, "apiId"),
+		Name:           request.GetStringParam(req.Parameters, "name"),
+		Type:           request.GetStringParam(req.Parameters, "type"),
+		Description:    request.GetStringParam(req.Parameters, "description"),
+		ServiceRoleArn: request.GetStringParam(req.Parameters, "serviceRoleArn"),
+		MetricsConfig:  request.GetStringParam(req.Parameters, "metricsConfig"),
+	}
+
+	var err error
+	in.RelationalDatabaseConfig, err = parseRelationalDatabaseConfig(req.Parameters)
+	if err != nil {
+		return dataSourceInput{}, err
+	}
+	in.DynamodbConfig, err = parseDynamoDBConfig(req.Parameters)
+	if err != nil {
+		return dataSourceInput{}, err
+	}
+	in.HttpConfig, err = parseHttpConfig(req.Parameters)
+	if err != nil {
+		return dataSourceInput{}, err
+	}
+	in.ElasticsearchConfig = parseElasticsearchConfig(req.Parameters)
+	in.EventBridgeConfig = parseEventBridgeConfig(req.Parameters)
+	in.LambdaConfig = parseLambdaDataSourceConfig(req.Parameters)
+	in.NeptuneConfig = parseNeptuneConfig(req.Parameters)
+	in.OpenSearchServiceConfig = parseOpenSearchServiceConfig(req.Parameters)
+
+	return in, nil
+}
 
 // CreateDataSource creates a new data source for a GraphQL API.
 // POST /v1/apis/{apiId}/datasources
@@ -17,76 +48,14 @@ func (s *AppSyncService) CreateDataSource(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-	if err := validateGraphqlApiExists(store, apiId); err != nil {
-		return nil, err
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateResourceName(name); err != nil {
-		return nil, err
-	}
-
-	dsType := request.GetStringParam(req.Parameters, "type")
-	if dsType == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-	if !validateDataSourceType(dsType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", dsType))
-	}
-
-	metricsConfig := request.GetStringParam(req.Parameters, "metricsConfig")
-	if metricsConfig != "" && !validateEnabledDisabled(metricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-	if err := validateDescription(description); err != nil {
-		return nil, err
-	}
-
-	relDbCfg, err := parseRelationalDatabaseConfig(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
-	}
-	dynamoCfg, err := parseDynamoDBConfig(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	httpCfg, err := parseHttpConfig(req.Parameters)
+	in, err := parseDataSourceInput(req)
 	if err != nil {
 		return nil, err
 	}
 
-	ds := &appsyncstore.DataSource{
-		ApiId:                    apiId,
-		Name:                     name,
-		Type:                     dsType,
-		Description:              description,
-		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
-		DynamodbConfig:           dynamoCfg,
-		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),
-		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
-		HttpConfig:               httpCfg,
-		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
-		MetricsConfig:            metricsConfig,
-		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
-		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
-		RelationalDatabaseConfig: relDbCfg,
-	}
-
-	created, err := store.CreateDataSource(ds)
+	created, err := s.createDataSourceCore(store, in)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -102,15 +71,9 @@ func (s *AppSyncService) GetDataSource(ctx context.Context, reqCtx *request.Requ
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
-	}
-
-	ds, err := store.GetDataSource(apiId, name)
+	ds, err := s.getDataSourceCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "name"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -126,69 +89,14 @@ func (s *AppSyncService) UpdateDataSource(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
-	}
-	if err := validateResourceName(name); err != nil {
-		return nil, err
-	}
-
-	dsType := request.GetStringParam(req.Parameters, "type")
-	if dsType == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-	if !validateDataSourceType(dsType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", dsType))
-	}
-
-	metricsConfig := request.GetStringParam(req.Parameters, "metricsConfig")
-	if metricsConfig != "" && !validateEnabledDisabled(metricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", metricsConfig))
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-	if err := validateDescription(description); err != nil {
-		return nil, err
-	}
-
-	relDbCfg, err := parseRelationalDatabaseConfig(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	if relDbCfg != nil && relDbCfg.RelationalDatabaseSourceType != "" && !validateRelationalDatabaseSourceType(relDbCfg.RelationalDatabaseSourceType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid relationalDatabaseSourceType: %s", relDbCfg.RelationalDatabaseSourceType))
-	}
-	dynamoCfg, err := parseDynamoDBConfig(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	httpCfg, err := parseHttpConfig(req.Parameters)
+	in, err := parseDataSourceInput(req)
 	if err != nil {
 		return nil, err
 	}
 
-	ds := &appsyncstore.DataSource{
-		ApiId:                    apiId,
-		Name:                     name,
-		Type:                     dsType,
-		Description:              description,
-		ServiceRoleArn:           request.GetStringParam(req.Parameters, "serviceRoleArn"),
-		DynamodbConfig:           dynamoCfg,
-		ElasticsearchConfig:      parseElasticsearchConfig(req.Parameters),
-		EventBridgeConfig:        parseEventBridgeConfig(req.Parameters),
-		HttpConfig:               httpCfg,
-		LambdaConfig:             parseLambdaDataSourceConfig(req.Parameters),
-		MetricsConfig:            metricsConfig,
-		NeptuneConfig:            parseNeptuneConfig(req.Parameters),
-		OpenSearchServiceConfig:  parseOpenSearchServiceConfig(req.Parameters),
-		RelationalDatabaseConfig: relDbCfg,
-	}
-
-	updated, err := store.UpdateDataSource(ds)
+	updated, err := s.updateDataSourceCore(store, in)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -204,14 +112,8 @@ func (s *AppSyncService) DeleteDataSource(ctx context.Context, reqCtx *request.R
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
-	}
-
-	if err := store.DeleteDataSource(apiId, name); err != nil {
-		return mapStoreError(err)
+	if err := s.deleteDataSourceCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "name")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -226,17 +128,10 @@ func (s *AppSyncService) ListDataSources(ctx context.Context, reqCtx *request.Re
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	opts, err := parsePaginationOptions(req)
+	dataSources, nextToken, err := s.listDataSourcesCore(store, apiId, request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	dataSources, nextToken, err := store.ListDataSources(apiId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(dataSources))

@@ -200,6 +200,17 @@ func (r *TestRunner) runAppSyncSchemaTests(res *appsyncResources) []TestResult {
 		return nil
 	}))
 
+	// The SDK client-validates an omitted format (a value enum member), so
+	// the negative drives the enum rejection with an off-enum value; the
+	// omitted-member rejection is pinned by the appsync contract unit tests.
+	results = append(results, r.RunTest("appsync", "GetIntrospectionSchema_InvalidFormatRejected", func() error {
+		_, err := client.GetIntrospectionSchema(ctx, &appsync.GetIntrospectionSchemaInput{
+			ApiId:  aws.String(res.gqlApiId),
+			Format: types.OutputType("YAML"),
+		})
+		return expectAWSErrorCode(err, "BadRequestException")
+	}))
+
 	return results
 }
 
@@ -262,6 +273,19 @@ func (r *TestRunner) runAppSyncEnvironmentVariableTests(res *appsyncResources) [
 		}
 		if _, exists := resp.EnvironmentVariables["ENV1"]; exists {
 			return fmt.Errorf("ENV1 should have been replaced")
+		}
+		return nil
+	}))
+
+	// The typed SDK validates the required environmentVariables member
+	// client-side, so the omission never reaches the server; the server-side
+	// rejection is pinned by the appsync contract unit tests.
+	results = append(results, r.RunTest("appsync", "PutGraphqlApiEnvironmentVariables_MissingMapRejected", func() error {
+		_, err := client.PutGraphqlApiEnvironmentVariables(ctx, &appsync.PutGraphqlApiEnvironmentVariablesInput{
+			ApiId: aws.String(res.gqlApiId),
+		})
+		if err == nil {
+			return fmt.Errorf("expected an error for a request missing the required environmentVariables member")
 		}
 		return nil
 	}))

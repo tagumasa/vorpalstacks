@@ -94,27 +94,42 @@ func (r *TestRunner) runNeptunedataLoaderTests(tc *neptunedataContext) []TestRes
 		return nil
 	}))
 
-	results = append(results, r.RunTest("neptunedata", "GetLoaderJobStatus_NonPositivePaginationRejected", func() error {
+	results = append(results, r.RunTest("neptunedata", "GetLoaderJobStatus_PaginationGatedByErrors", func() error {
 		if loaderJobID == "" {
 			return fmt.Errorf("no loader job ID from StartLoaderJob")
 		}
 		for _, page := range []int32{0, -1} {
 			_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
 				LoadId: aws.String(loaderJobID),
+				Errors: aws.Bool(true),
 				Page:   aws.Int32(page),
 			})
 			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
-				return fmt.Errorf("page=%d: %w", page, err)
+				return fmt.Errorf("errors=true page=%d: %w", page, err)
 			}
 		}
 		for _, perPage := range []int32{0, -1} {
 			_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
 				LoadId:        aws.String(loaderJobID),
+				Errors:        aws.Bool(true),
 				ErrorsPerPage: aws.Int32(perPage),
 			})
 			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
-				return fmt.Errorf("errorsPerPage=%d: %w", perPage, err)
+				return fmt.Errorf("errors=true errorsPerPage=%d: %w", perPage, err)
 			}
+		}
+		// Without the errors flag the pagination members are documented as
+		// invalid and are ignored; the status request succeeds.
+		resp, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
+			LoadId:        aws.String(loaderJobID),
+			Page:          aws.Int32(0),
+			ErrorsPerPage: aws.Int32(0),
+		})
+		if err != nil {
+			return fmt.Errorf("pagination without errors flag: %w", err)
+		}
+		if resp == nil || resp.Payload == nil {
+			return fmt.Errorf("expected loader job status payload with pagination ignored")
 		}
 		return nil
 	}))

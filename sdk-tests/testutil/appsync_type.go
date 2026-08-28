@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -77,6 +78,46 @@ func (r *TestRunner) runAppSyncTypeTests(res *appsyncResources) []TestResult {
 			return t.Name != nil && *t.Name == "Post"
 		}) == nil {
 			return fmt.Errorf("created type Post not found in list")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("appsync", "ListTypes_JSONFormatConvertsStoredSDL", func() error {
+		definitions, err := res.allTypes(res.gqlApiId, types.TypeDefinitionFormatJson)
+		if err != nil {
+			return err
+		}
+		post := containsID(definitions, func(t *types.Type) bool {
+			return t.Name != nil && *t.Name == "Post"
+		})
+		if post == nil {
+			return fmt.Errorf("created type Post not found in JSON list")
+		}
+		if post.Format != types.TypeDefinitionFormatJson {
+			return fmt.Errorf("expected JSON format, got %s", post.Format)
+		}
+		if post.Definition == nil {
+			return fmt.Errorf("definition is nil")
+		}
+		var typeObj map[string]interface{}
+		if err := json.Unmarshal([]byte(*post.Definition), &typeObj); err != nil {
+			return fmt.Errorf("definition is not JSON: %v (definition=%q)", err, *post.Definition)
+		}
+		if typeObj["name"] != "Post" || typeObj["kind"] != "OBJECT" {
+			return fmt.Errorf("unexpected type object: %v", typeObj)
+		}
+		return nil
+	}))
+
+	// The typed SDK validates the required format member client-side, so the
+	// omission never reaches the server; the server-side rejection is pinned
+	// by the appsync contract unit tests.
+	results = append(results, r.RunTest("appsync", "ListTypes_MissingFormatRejected", func() error {
+		_, err := client.ListTypes(ctx, &appsync.ListTypesInput{
+			ApiId: aws.String(res.gqlApiId),
+		})
+		if err == nil {
+			return fmt.Errorf("expected an error for a request missing the required format member")
 		}
 		return nil
 	}))

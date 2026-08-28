@@ -2,347 +2,183 @@ package appsync
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
-
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
-// AssociateSourceGraphqlApi links a source GraphQL API to a merged API.
+// AssociateSourceGraphqlApi creates a source API association addressed from
+// the merged API side.
+// POST /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations
 func (s *AppSyncService) AssociateSourceGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	sourceApiId := request.GetStringParam(req.Parameters, "sourceApiIdentifier")
-	if sourceApiId == "" {
-		return nil, NewBadRequestException("sourceApiIdentifier is required")
-	}
-
-	if _, err := store.GetGraphqlApiById(sourceApiId); err != nil {
-		return mapStoreError(err)
-	}
-	if _, err := store.GetGraphqlApiById(mergedApiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-
 	assocConfig, err := parseSourceApiAssociationConfig(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	assocID := uuid.New().String()
-	assoc := &appsyncstore.SourceApiAssociation{
-		AssociationId:              assocID,
-		MergedApiId:                mergedApiId,
-		SourceApiId:                sourceApiId,
-		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
-		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(mergedApiId, assocID),
-		SourceApiAssociationStatus: "MERGE_SCHEDULED",
-		Description:                description,
-		SourceApiAssociationConfig: assocConfig,
+	in := associateSourceApiInput{
+		MergedApiId: request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		SourceApiId: request.GetStringParam(req.Parameters, "sourceApiIdentifier"),
+		Description: request.GetStringParam(req.Parameters, "description"),
+		AssocConfig: assocConfig,
 	}
 
-	if err := store.CreateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
+	assoc, err := s.associateSourceGraphqlApiCore(store, in)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{"sourceApiAssociation": mergedApiAssociationToMap(assoc)}, nil
 }
 
-// GetSourceApiAssociation retrieves a source API association.
+// GetSourceApiAssociation retrieves one source API association of a merged
+// API.
+// GET /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}
 func (s *AppSyncService) GetSourceApiAssociation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
+	assoc, err := s.getSourceApiAssociationCore(store,
+		request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{"sourceApiAssociation": mergedApiAssociationToMap(assoc)}, nil
 }
 
-// UpdateSourceApiAssociation updates a source API association description and config.
+// UpdateSourceApiAssociation updates an existing source API association.
+// POST /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}
 func (s *AppSyncService) UpdateSourceApiAssociation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
+	assocConfig, err := parseSourceApiAssociationConfig(req.Parameters)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	description := request.GetStringParam(req.Parameters, "description")
-	if description != "" {
-		assoc.Description = description
-	}
-
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
+	assoc, err := s.updateSourceApiAssociationCore(store,
+		request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"),
+		request.GetStringParam(req.Parameters, "description"),
+		assocConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{"sourceApiAssociation": mergedApiAssociationToMap(assoc)}, nil
 }
 
-// DisassociateSourceGraphqlApi removes a source API association from a merged API.
+// DisassociateSourceGraphqlApi schedules the deletion of a source API
+// association addressed from the merged API side.
+// DELETE /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}
 func (s *AppSyncService) DisassociateSourceGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
+	status, err := s.disassociateSourceGraphqlApiCore(store,
+		request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Async deletion with persistent failure status.
-	// On delete failure, the association status is updated to DELETION_FAILED
-	// so it does not silently remain in DELETION_SCHEDULED forever.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync DisassociateSourceGraphqlApi async cleanup") }()
-		time.Sleep(5 * time.Second)
-		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
-			assoc.SourceApiAssociationStatus = "DELETION_FAILED"
-			if updateErr := store.UpdateMergedApiAssociation(assoc); updateErr != nil {
-				logs.Warn("failed to persist DELETION_FAILED status",
-					logs.String("mergedApiId", mergedApiId),
-					logs.String("associationId", associationId),
-					logs.Err(updateErr))
-			}
-			logs.Warn("async deletion of source API association failed",
-				logs.String("mergedApiId", mergedApiId),
-				logs.String("associationId", associationId),
-				logs.Err(err))
-		}
-	}()
-
-	return map[string]interface{}{"sourceApiAssociationStatus": "DELETION_SCHEDULED"}, nil
+	return map[string]interface{}{"sourceApiAssociationStatus": status}, nil
 }
 
-// StartSchemaMerge initiates a schema merge for a source API association.
+// StartSchemaMerge triggers a schema merge for a source API association.
+// POST /v1/mergedApis/{mergedApiIdentifier}/sourceApiAssociations/{associationId}/merge
 func (s *AppSyncService) StartSchemaMerge(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociation(mergedApiId, associationId)
+	status, err := s.startSchemaMergeCore(store,
+		request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	assoc.SourceApiAssociationStatus = "MERGE_IN_PROGRESS"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Simulate async schema merge: transition MERGE_IN_PROGRESS → MERGE_SUCCESS.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync schema merge async") }()
-		time.Sleep(2 * time.Second)
-		assoc.SourceApiAssociationStatus = "MERGE_SUCCESS"
-		now := time.Now().UTC()
-		assoc.LastSuccessfulMergeDate = &now
-		if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-			logs.Warn("failed to persist merged API SUCCESS status",
-				logs.String("mergedApiId", mergedApiId),
-				logs.String("associationId", associationId),
-				logs.Err(err))
-		}
-	}()
-
-	return map[string]interface{}{"sourceApiAssociationStatus": "MERGE_IN_PROGRESS"}, nil
+	return map[string]interface{}{"sourceApiAssociationStatus": status}, nil
 }
 
-// AssociateMergedGraphqlApi links a merged API from the source API side.
+// AssociateMergedGraphqlApi creates a source API association addressed from
+// the source API side.
+// POST /v1/sourceApis/{sourceApiIdentifier}/mergedApiAssociations
 func (s *AppSyncService) AssociateMergedGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	sourceApiId := request.GetStringParam(req.Parameters, "sourceApiIdentifier")
-	if sourceApiId == "" {
-		return nil, NewBadRequestException("sourceApiIdentifier is required")
-	}
-
-	mergedApiId := request.GetStringParam(req.Parameters, "mergedApiIdentifier")
-	if mergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	if _, err := store.GetGraphqlApiById(sourceApiId); err != nil {
-		return mapStoreError(err)
-	}
-	if _, err := store.GetGraphqlApiById(mergedApiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-
 	assocConfig, err := parseSourceApiAssociationConfig(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 
-	assocID := uuid.New().String()
-	assoc := &appsyncstore.SourceApiAssociation{
-		AssociationId:              assocID,
-		MergedApiId:                mergedApiId,
-		SourceApiId:                sourceApiId,
-		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(mergedApiId),
-		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(sourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(sourceApiId, assocID),
-		SourceApiAssociationStatus: "MERGE_SCHEDULED",
-		Description:                description,
-		SourceApiAssociationConfig: assocConfig,
+	in := associateSourceApiInput{
+		MergedApiId: request.GetStringParam(req.Parameters, "mergedApiIdentifier"),
+		SourceApiId: request.GetStringParam(req.Parameters, "sourceApiIdentifier"),
+		Description: request.GetStringParam(req.Parameters, "description"),
+		AssocConfig: assocConfig,
 	}
 
-	if err := store.CreateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
+	assoc, err := s.associateMergedGraphqlApiCore(store, in)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{"sourceApiAssociation": mergedApiAssociationToMap(assoc)}, nil
 }
 
-// DisassociateMergedGraphqlApi removes a merged API association from the source API side.
-// The source-side path only provides sourceApiIdentifier and associationId, so we
-// look up the association by UUID to recover the mergedApiId for the composite key.
+// DisassociateMergedGraphqlApi schedules the deletion of a source API
+// association addressed from the source API side.
+// DELETE /v1/sourceApis/{sourceApiIdentifier}/mergedApiAssociations/{associationId}
 func (s *AppSyncService) DisassociateMergedGraphqlApi(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	associationId := request.GetStringParam(req.Parameters, "associationId")
-	if associationId == "" {
-		return nil, NewBadRequestException("associationId is required")
-	}
-
-	assoc, err := store.GetMergedApiAssociationById(associationId)
+	status, err := s.disassociateMergedGraphqlApiCore(store,
+		request.GetStringParam(req.Parameters, "sourceApiIdentifier"),
+		request.GetStringParam(req.Parameters, "associationId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return mapStoreError(err)
-	}
-
-	mergedApiId := assoc.MergedApiId
-	// Async deletion with persistent failure status.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync DisassociateMergedGraphqlApi async cleanup") }()
-		time.Sleep(5 * time.Second)
-		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
-			assoc.SourceApiAssociationStatus = "DELETION_FAILED"
-			if updateErr := store.UpdateMergedApiAssociation(assoc); updateErr != nil {
-				logs.Warn("failed to persist DELETION_FAILED status",
-					logs.String("mergedApiId", mergedApiId),
-					logs.String("associationId", associationId),
-					logs.Err(updateErr))
-			}
-			logs.Warn("async deletion of merged API association failed",
-				logs.String("mergedApiId", mergedApiId),
-				logs.String("associationId", associationId),
-				logs.Err(err))
-		}
-	}()
-
-	return map[string]interface{}{"sourceApiAssociationStatus": "DELETION_SCHEDULED"}, nil
+	return map[string]interface{}{"sourceApiAssociationStatus": status}, nil
 }
 
-// ListSourceApiAssociations lists source API associations for a GraphQL API.
-// Uses filter-based listing by sourceApiId since the store key is composite (mergedApiId/associationId).
+// ListSourceApiAssociations lists the source API associations of a GraphQL
+// API acting as a merged API.
+// GET /v1/apis/{apiId}/sourceApiAssociations
 func (s *AppSyncService) ListSourceApiAssociations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	if _, err := store.GetGraphqlApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	opts, err := parsePaginationOptions(req)
+	assocs, nextToken, err := s.listSourceApiAssociationsCore(store,
+		request.GetStringParam(req.Parameters, "apiId"),
+		request.GetIntParam(req.Parameters, "maxResults"),
+		request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	assocs, nextToken, err := store.ListMergedApiAssociations(apiId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]map[string]interface{}, 0, len(assocs))

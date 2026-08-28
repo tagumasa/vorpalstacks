@@ -3,8 +3,6 @@ package appsync
 import (
 	"context"
 
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-
 	"vorpalstacks/internal/common/request"
 )
 
@@ -14,14 +12,6 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateApiName(name); err != nil {
-		return nil, err
 	}
 
 	eventConfig, err := parseEventConfig(req.Parameters)
@@ -34,32 +24,18 @@ func (s *AppSyncService) CreateApi(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	api := &appsyncstore.Api{
-		Name:         name,
-		EventConfig:  eventConfig,
+	created, tags, err := s.createApiCore(store, createApiInput{
+		Name:         request.GetStringParam(req.Parameters, "name"),
 		OwnerContact: request.GetStringParam(req.Parameters, "ownerContact"),
-		Tags:         tagMap,
 		WafWebAclArn: request.GetStringParam(req.Parameters, "wafWebAclArn"),
 		XrayEnabled:  request.GetBoolParam(req.Parameters, "xrayEnabled"),
-	}
-
-	created, err := store.CreateApi(api)
+	}, eventConfig, tagMap)
 	if err != nil {
-		return mapStoreError(err)
-	}
-
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	result := apiToMap(created)
-	if tags, err := store.TagStore.List(created.Arn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -76,19 +52,14 @@ func (s *AppSyncService) GetApi(ctx context.Context, reqCtx *request.RequestCont
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	api, err := store.GetApiById(apiId)
+	api, tags, err := s.getApiCore(store, request.GetStringParam(req.Parameters, "apiId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := apiToMap(api)
-	if tagsFromStore, err := store.TagStore.List(api.Arn); err == nil && len(tagsFromStore) > 0 {
-		result["tags"] = tagsFromStore
+	if tags != nil {
+		result["tags"] = tags
 	}
 
 	return map[string]interface{}{
@@ -104,62 +75,26 @@ func (s *AppSyncService) UpdateApi(ctx context.Context, reqCtx *request.RequestC
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	// Per Smithy model, name is required for UpdateApiRequest.
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateApiName(name); err != nil {
-		return nil, err
-	}
-
-	// Fetch existing to preserve fields that were not provided in the request.
-	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
-	// Go zero values on every update call that omits them.
-	existing, err := store.GetApiById(apiId)
-	if err != nil {
-		return mapStoreError(err)
-	}
-
-	wafWebAclArn := existing.WafWebAclArn
-	if request.HasParam(req.Parameters, "wafWebAclArn") {
-		wafWebAclArn = request.GetStringParam(req.Parameters, "wafWebAclArn")
-	}
-
-	xrayEnabled := existing.XrayEnabled
-	if request.HasParam(req.Parameters, "xrayEnabled") {
-		xrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
-	}
-
-	api := &appsyncstore.Api{
-		Name:         request.GetStringParam(req.Parameters, "name"),
-		OwnerContact: request.GetStringParam(req.Parameters, "ownerContact"),
-		WafWebAclArn: wafWebAclArn,
-		XrayEnabled:  xrayEnabled,
-	}
-
-	// Per Smithy UpdateApiRequest, eventConfig is @required.
-	if !request.HasParam(req.Parameters, "eventConfig") {
-		return nil, NewBadRequestException("eventConfig is required")
-	}
 	eventConfig, err := parseEventConfig(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	api.EventConfig = eventConfig
 
-	updated, err := store.UpdateApiById(apiId, api)
+	updated, tags, err := s.updateApiCore(store, updateApiInput{
+		ApiId:           request.GetStringParam(req.Parameters, "apiId"),
+		Name:            request.GetStringParam(req.Parameters, "name"),
+		OwnerContact:    request.GetStringParam(req.Parameters, "ownerContact"),
+		WafWebAclArn:    request.GetStringParam(req.Parameters, "wafWebAclArn"),
+		HasWafWebAclArn: request.HasParam(req.Parameters, "wafWebAclArn"),
+		XrayEnabled:     request.GetBoolParam(req.Parameters, "xrayEnabled"),
+		HasXrayEnabled:  request.HasParam(req.Parameters, "xrayEnabled"),
+	}, eventConfig)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := apiToMap(updated)
-	if tags, err := store.TagStore.List(updated.Arn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -176,20 +111,9 @@ func (s *AppSyncService) DeleteApi(ctx context.Context, reqCtx *request.RequestC
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
+	if err := s.deleteApiCore(store, request.GetStringParam(req.Parameters, "apiId")); err != nil {
+		return nil, err
 	}
-
-	if _, err := store.GetApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	if err := store.DeleteApiById(apiId); err != nil {
-		return mapStoreError(err)
-	}
-
-	s.eventServer.DisconnectByApiId(apiId)
 
 	return map[string]interface{}{}, nil
 }
@@ -206,16 +130,17 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	apis, nextToken, err := s.listApisCore(store, int(opts.MaxItems), opts.Marker)
+
+	entries, nextToken, err := s.listApisCore(store, int(opts.MaxItems), opts.Marker)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(apis))
-	for _, api := range apis {
-		item := apiToMap(api)
-		if tags, err := store.TagStore.List(api.Arn); err == nil && len(tags) > 0 {
-			item["tags"] = tags
+	items := make([]interface{}, 0, len(entries))
+	for _, entry := range entries {
+		item := apiToMap(entry.Api)
+		if entry.Tags != nil {
+			item["tags"] = entry.Tags
 		}
 		items = append(items, item)
 	}

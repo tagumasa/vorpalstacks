@@ -2,11 +2,6 @@ package appsync
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -19,37 +14,14 @@ func (s *AppSyncService) CreateApiKey(ctx context.Context, reqCtx *request.Reque
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	// API keys can be created for both GraphQL APIs and Event APIs.
-	if err := validateGraphqlApiExists(store, apiId); err != nil {
-		if err := validateEventApiExists(store, apiId); err != nil {
-			return mapStoreError(err)
-		}
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-	expires := request.GetInt64Param(req.Parameters, "expires")
-	if expires == 0 {
-		expires = time.Now().Add(365 * 24 * time.Hour).Unix()
-	} else {
-		if err := validateApiKeyExpiry(expires); err != nil {
-			return nil, err
-		}
-	}
-
-	apiKey := &appsyncstore.ApiKey{
-		Id:          uuid.New().String(),
-		Description: description,
-		Expires:     expires,
-		// AWS returns Deletes equal to Expires at creation time.
-		Deletes: expires,
-	}
-
-	if err := store.CreateApiKey(apiId, apiKey); err != nil {
-		return mapStoreError(err)
+	apiKey, err := s.createApiKeyCore(store, createApiKeyInput{
+		ApiId:       apiId,
+		Description: request.GetStringParam(req.Parameters, "description"),
+		Expires:     request.GetInt64Param(req.Parameters, "expires"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	result := apiKeyToMap(apiKey)
@@ -65,17 +37,10 @@ func (s *AppSyncService) ListApiKeys(ctx context.Context, reqCtx *request.Reques
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	opts, err := parsePaginationOptions(req)
+	keys, nextToken, err := s.listApiKeysCore(store, apiId, request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	keys, nextToken, err := store.ListApiKeys(apiId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]map[string]interface{}, 0, len(keys))
@@ -100,37 +65,15 @@ func (s *AppSyncService) UpdateApiKey(ctx context.Context, reqCtx *request.Reque
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	id := request.GetStringParam(req.Parameters, "id")
-	if id == "" {
-		return nil, NewBadRequestException("id is required")
-	}
-
-	apiKey, err := store.GetApiKey(apiId, id)
+	apiKey, err := s.updateApiKeyCore(store, updateApiKeyInput{
+		ApiId:       apiId,
+		Id:          request.GetStringParam(req.Parameters, "id"),
+		Description: request.GetStringParam(req.Parameters, "description"),
+		Expires:     request.GetInt64Param(req.Parameters, "expires"),
+	})
 	if err != nil {
-		return mapStoreError(err)
-	}
-
-	description := request.GetStringParam(req.Parameters, "description")
-	expires := request.GetInt64Param(req.Parameters, "expires")
-
-	if description != "" {
-		apiKey.Description = description
-	}
-	if expires != 0 {
-		if err := validateApiKeyExpiry(expires); err != nil {
-			return nil, err
-		}
-		apiKey.Expires = expires
-		// Deleting an API key happens after the expiry TTL; sync Deletes with Expires.
-		apiKey.Deletes = expires
-	}
-
-	if err := store.UpdateApiKey(apiId, apiKey); err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := apiKeyToMap(apiKey)
@@ -145,18 +88,8 @@ func (s *AppSyncService) DeleteApiKey(ctx context.Context, reqCtx *request.Reque
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	id := request.GetStringParam(req.Parameters, "id")
-	if id == "" {
-		return nil, NewBadRequestException("id is required")
-	}
-
-	if err := store.DeleteApiKey(apiId, id); err != nil {
-		return mapStoreError(err)
+	if err := s.deleteApiKeyCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "id")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil

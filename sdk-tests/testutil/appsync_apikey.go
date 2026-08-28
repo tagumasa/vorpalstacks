@@ -37,7 +37,11 @@ func (r *TestRunner) runAppSyncApiKeyTests(res *appsyncResources) []TestResult {
 			return fmt.Errorf("id is empty")
 		}
 		if resp.ApiKey.Expires == 0 {
-			return fmt.Errorf("expires should be set (default 365 days)")
+			return fmt.Errorf("expires should be set (default 7 days)")
+		}
+		now := time.Now().Unix()
+		if resp.ApiKey.Expires < now+6*24*3600 || resp.ApiKey.Expires > now+8*24*3600 {
+			return fmt.Errorf("expected default expiry ~7 days from creation, got %d", resp.ApiKey.Expires)
 		}
 		if resp.ApiKey.Deletes == 0 {
 			return fmt.Errorf("deletes should be set (same as Expires)")
@@ -230,6 +234,28 @@ func (r *TestRunner) runAppSyncCacheTests(res *appsyncResources) []TestResult {
 			return fmt.Errorf("expected TTL 600, got %d", resp.ApiCache.Ttl)
 		}
 		return nil
+	}))
+
+	// The typed SDK validates the required type/apiCachingBehavior members
+	// client-side, so the omission never reaches the server; the server-side
+	// rejections are pinned by the appsync contract unit tests.
+	results = append(results, r.RunTest("appsync", "UpdateApiCache_MissingRequiredMembersRejected", func() error {
+		_, err := client.UpdateApiCache(ctx, &appsync.UpdateApiCacheInput{
+			ApiId: aws.String(res.gqlApiId),
+		})
+		if err == nil {
+			return fmt.Errorf("expected an error for a request missing the required members")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("appsync", "UpdateApiCache_ZeroTtlRejected", func() error {
+		_, err := client.UpdateApiCache(ctx, &appsync.UpdateApiCacheInput{
+			ApiId:              aws.String(res.gqlApiId),
+			Type:               types.ApiCacheTypeSmall,
+			ApiCachingBehavior: types.ApiCachingBehaviorPerResolverCaching,
+		})
+		return expectAWSErrorCode(err, "BadRequestException")
 	}))
 
 	results = append(results, r.RunTest("appsync", "FlushApiCache", func() error {

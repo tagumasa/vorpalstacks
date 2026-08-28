@@ -2,9 +2,6 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -15,14 +12,6 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateApiName(name); err != nil {
-		return nil, err
 	}
 
 	additionalAuthProviders, err := parseAdditionalAuthProviders(req.Parameters)
@@ -52,8 +41,8 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	created, err := s.createGraphqlApiCore(store, createGraphqlApiInput{
-		Name:                              name,
+	created, tags, err := s.createGraphqlApiCore(store, createGraphqlApiInput{
+		Name:                              request.GetStringParam(req.Parameters, "name"),
 		AuthenticationType:                request.GetStringParam(req.Parameters, "authenticationType"),
 		AdditionalAuthenticationProviders: additionalAuthProviders,
 		ApiType:                           request.GetStringParam(req.Parameters, "apiType"),
@@ -79,7 +68,7 @@ func (s *AppSyncService) CreateGraphqlApi(ctx context.Context, reqCtx *request.R
 	}
 
 	result := graphqlApiToMap(created)
-	if tags, err := store.TagStore.List(created.Arn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -96,19 +85,14 @@ func (s *AppSyncService) GetGraphqlApi(ctx context.Context, reqCtx *request.Requ
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	api, err := store.GetGraphqlApiById(apiId)
+	api, tags, err := s.getGraphqlApiCore(store, request.GetStringParam(req.Parameters, "apiId"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := graphqlApiToMap(api)
-	if tagsFromStore, err := store.TagStore.List(api.Arn); err == nil && len(tagsFromStore) > 0 {
-		result["tags"] = tagsFromStore
+	if tags != nil {
+		result["tags"] = tags
 	}
 
 	return map[string]interface{}{
@@ -122,69 +106,6 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
-	}
-
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	// Per Smithy model, name and authenticationType are required for
-	// UpdateGraphqlApiRequest. The client must resend current values.
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateApiName(name); err != nil {
-		return nil, err
-	}
-	authType := request.GetStringParam(req.Parameters, "authenticationType")
-	if authType == "" {
-		return nil, NewBadRequestException("authenticationType is required")
-	}
-	if !validateAuthenticationType(authType) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid authenticationType: %s", authType))
-	}
-
-	introspectionConfig := request.GetStringParam(req.Parameters, "introspectionConfig")
-	if introspectionConfig != "" && !validateIntrospectionConfig(introspectionConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid introspectionConfig: %s", introspectionConfig))
-	}
-
-	logCfg := parseLogConfig(req.Parameters)
-	if logCfg != nil && logCfg.FieldLogLevel != "" && !validateFieldLogLevel(logCfg.FieldLogLevel) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid logConfig.fieldLogLevel: %s", logCfg.FieldLogLevel))
-	}
-
-	// Fetch existing to preserve fields that were not provided in the request.
-	// Without this, WafWebAclArn and XrayEnabled would be overwritten with
-	// Go zero values on every update call that omits them.
-	existing, err := store.GetGraphqlApiById(apiId)
-	if err != nil {
-		return mapStoreError(err)
-	}
-
-	wafWebAclArn := existing.WafWebAclArn
-	if request.HasParam(req.Parameters, "wafWebAclArn") {
-		wafWebAclArn = request.GetStringParam(req.Parameters, "wafWebAclArn")
-	}
-
-	xrayEnabled := existing.XrayEnabled
-	if request.HasParam(req.Parameters, "xrayEnabled") {
-		xrayEnabled = request.GetBoolParam(req.Parameters, "xrayEnabled")
-	}
-
-	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
-	if _, ok := req.Parameters["queryDepthLimit"]; ok {
-		if err := validateQueryDepthLimit(queryDepthLimit); err != nil {
-			return nil, err
-		}
-	}
-	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
-	if _, ok := req.Parameters["resolverCountLimit"]; ok {
-		if err := validateResolverCountLimit(resolverCountLimit); err != nil {
-			return nil, err
-		}
 	}
 
 	additionalAuthProviders, err := parseAdditionalAuthProviders(req.Parameters)
@@ -204,31 +125,39 @@ func (s *AppSyncService) UpdateGraphqlApi(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	api := &appsyncstore.GraphqlApi{
-		Name:                              name,
-		AuthenticationType:                authType,
+	queryDepthLimit := int32(request.GetIntParam(req.Parameters, "queryDepthLimit"))
+	_, hasQueryDepthLimit := req.Parameters["queryDepthLimit"]
+	resolverCountLimit := int32(request.GetIntParam(req.Parameters, "resolverCountLimit"))
+	_, hasResolverCountLimit := req.Parameters["resolverCountLimit"]
+
+	updated, tags, err := s.updateGraphqlApiCore(store, updateGraphqlApiInput{
+		ApiId:                             request.GetStringParam(req.Parameters, "apiId"),
+		Name:                              request.GetStringParam(req.Parameters, "name"),
+		AuthenticationType:                request.GetStringParam(req.Parameters, "authenticationType"),
 		AdditionalAuthenticationProviders: additionalAuthProviders,
 		EnhancedMetricsConfig:             enhancedMetrics,
-		IntrospectionConfig:               introspectionConfig,
+		IntrospectionConfig:               request.GetStringParam(req.Parameters, "introspectionConfig"),
 		LambdaAuthorizerConfig:            lambdaAuthConfig,
-		LogConfig:                         logCfg,
+		LogConfig:                         parseLogConfig(req.Parameters),
 		MergedApiExecutionRoleArn:         request.GetStringParam(req.Parameters, "mergedApiExecutionRoleArn"),
 		OpenIDConnectConfig:               oidcCfg,
 		OwnerContact:                      request.GetStringParam(req.Parameters, "ownerContact"),
 		QueryDepthLimit:                   queryDepthLimit,
+		HasQueryDepthLimit:                hasQueryDepthLimit,
 		ResolverCountLimit:                resolverCountLimit,
+		HasResolverCountLimit:             hasResolverCountLimit,
 		UserPoolConfig:                    parseUserPoolConfig(req.Parameters),
-		WafWebAclArn:                      wafWebAclArn,
-		XrayEnabled:                       xrayEnabled,
-	}
-
-	updated, err := store.UpdateGraphqlApiById(apiId, api)
+		WafWebAclArn:                      request.GetStringParam(req.Parameters, "wafWebAclArn"),
+		HasWafWebAclArn:                   request.HasParam(req.Parameters, "wafWebAclArn"),
+		XrayEnabled:                       request.GetBoolParam(req.Parameters, "xrayEnabled"),
+		HasXrayEnabled:                    request.HasParam(req.Parameters, "xrayEnabled"),
+	})
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := graphqlApiToMap(updated)
-	if tags, err := store.TagStore.List(updated.Arn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -266,16 +195,17 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
-	apis, nextToken, err := s.listGraphqlApisCore(store, int(opts.MaxItems), opts.Marker, apiTypeFilter)
+
+	entries, nextToken, err := s.listGraphqlApisCore(store, int(opts.MaxItems), opts.Marker, apiTypeFilter)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(apis))
-	for _, api := range apis {
-		item := graphqlApiToMap(api)
-		if tags, err := store.TagStore.List(api.Arn); err == nil && len(tags) > 0 {
-			item["tags"] = tags
+	items := make([]interface{}, 0, len(entries))
+	for _, entry := range entries {
+		item := graphqlApiToMap(entry.Api)
+		if entry.Tags != nil {
+			item["tags"] = entry.Tags
 		}
 		items = append(items, item)
 	}

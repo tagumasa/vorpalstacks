@@ -35,14 +35,14 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	apis, nextToken, err := h.service.listApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken)
+	entries, nextToken, err := h.service.listApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	pbApis := make([]*pb.Api, len(apis))
-	for i, a := range apis {
-		pbApis[i] = toPbApi(a)
+	pbApis := make([]*pb.Api, len(entries))
+	for i, a := range entries {
+		pbApis[i] = toPbApi(a.Api)
 	}
 
 	return connect.NewResponse(&pb.ListApisResponse{
@@ -58,14 +58,14 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	graphqlApis, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken, "")
+	entries, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken, "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	pbApis := make([]*pb.GraphqlApi, len(graphqlApis))
-	for i, a := range graphqlApis {
-		pbApis[i] = toPbGraphqlApi(a)
+	pbApis := make([]*pb.GraphqlApi, len(entries))
+	for i, a := range entries {
+		pbApis[i] = toPbGraphqlApi(a.Api)
 	}
 
 	return connect.NewResponse(&pb.ListGraphqlApisResponse{
@@ -90,7 +90,7 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, err := h.service.createGraphqlApiCore(store, createGraphqlApiInput{
+	result, _, err := h.service.createGraphqlApiCore(store, createGraphqlApiInput{
 		Name:               req.Msg.GetName(),
 		AuthenticationType: authType,
 		Tags:               req.Msg.GetTags(),

@@ -180,12 +180,21 @@ func validateCachingConfig(cc *appsyncstore.CachingConfig) error {
 // API key expiry validation
 // ============================================================================
 
+// MinApiKeyValidityDays and MaxApiKeyValidityDays bound the API key expiry
+// window: the expiration must be set to a value between 1 and 365 days from
+// creation (CreateApiKey) or from update (UpdateApiKey).
+const (
+	MinApiKeyValidityDays = 1
+	MaxApiKeyValidityDays = 365
+)
+
 // validateApiKeyExpiry validates that the expiry timestamp falls within the
-// AWS-mandated range of 1 day to 365 days from now.
+// AWS-mandated range of MinApiKeyValidityDays to MaxApiKeyValidityDays from
+// now.
 func validateApiKeyExpiry(expires int64) error {
 	now := time.Now().Unix()
-	minExpiry := now + 86400    // 1 day
-	maxExpiry := now + 31536000 // 365 days
+	minExpiry := now + int64(MinApiKeyValidityDays)*24*3600
+	maxExpiry := now + int64(MaxApiKeyValidityDays)*24*3600
 	if expires < minExpiry || expires > maxExpiry {
 		return ErrApiKeyValidityOutOfBoundsException
 	}

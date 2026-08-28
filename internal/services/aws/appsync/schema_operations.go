@@ -2,18 +2,10 @@ package appsync
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
-
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/utils/graphql"
@@ -28,98 +20,23 @@ func (s *AppSyncService) StartSchemaCreation(ctx context.Context, reqCtx *reques
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
+	in := startSchemaCreationInput{
+		ApiId:      request.GetStringParam(req.Parameters, "apiId"),
+		Definition: request.GetStringParam(req.Parameters, "definition"),
 	}
 
-	definitionB64 := request.GetStringParam(req.Parameters, "definition")
-	if definitionB64 == "" {
-		return nil, NewBadRequestException("definition is required")
-	}
-
-	decodedDef, err := base64.StdEncoding.DecodeString(definitionB64)
+	status, err := s.startSchemaCreationCore(store, in)
 	if err != nil {
-		decodedDef, err = base64.RawStdEncoding.DecodeString(definitionB64)
-		if err != nil {
-			return nil, NewBadRequestException("definition is not valid base64")
-		}
+		return nil, err
 	}
-
-	_, err = store.GetGraphqlApiById(apiId)
-	if err != nil {
-		return nil, NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", apiId))
-	}
-
-	status := &appsyncstore.SchemaCreationStatus{
-		ApiId:      apiId,
-		Status:     "PROCESSING",
-		Details:    "",
-		Definition: string(decodedDef),
-	}
-
-	if err := store.SaveSchemaCreationStatus(apiId, status); err != nil {
-		return nil, ErrInternalFailureException
-	}
-
-	defStr := string(decodedDef)
-	s.schemaWg.Add(1)
-	go func() {
-		defer s.schemaWg.Done()
-		defer func() { resilience.RecoverPanic("appsync schema creation") }()
-
-		_, parseErr := gqlparser.LoadSchema(&ast.Source{
-			Name:  "schema.graphql",
-			Input: defStr,
-		})
-
-		if parseErr != nil {
-			errMsg := parseErr.Error()
-			completed := &appsyncstore.SchemaCreationStatus{
-				ApiId:      apiId,
-				Status:     "FAILED",
-				Details:    errMsg,
-				Definition: defStr,
-			}
-			saveSchemaStatusWithRetry(store, apiId, completed)
-			return
-		}
-
-		completed := &appsyncstore.SchemaCreationStatus{
-			ApiId:      apiId,
-			Status:     "SUCCESS",
-			Details:    "The schema was successfully created.",
-			Definition: defStr,
-		}
-		saveSchemaStatusWithRetry(store, apiId, completed)
-	}()
 
 	return map[string]interface{}{
-		"status": "PROCESSING",
+		"status": status,
 	}, nil
 }
 
-// saveSchemaStatusWithRetry attempts to persist schema creation status with
-// up to 3 retries on failure. This prevents the status from being stuck in
-// PROCESSING if a transient Pebble error occurs during the goroutine save.
-func saveSchemaStatusWithRetry(store *appsyncstore.AppSyncStore, apiId string, status *appsyncstore.SchemaCreationStatus) {
-	for attempt := 0; attempt < 3; attempt++ {
-		if err := store.SaveSchemaCreationStatus(apiId, status); err != nil {
-			logs.Warn("failed to persist schema creation status",
-				logs.String("apiId", apiId),
-				logs.Int("attempt", attempt+1),
-				logs.Err(err))
-			time.Sleep(time.Duration(attempt+1) * time.Second)
-			continue
-		}
-		return
-	}
-	logs.Error("failed to persist schema creation status after 3 retries",
-		logs.String("apiId", apiId),
-		logs.String("status", status.Status))
-}
-
-// GetSchemaCreationStatus retrieves the status of a schema creation operation.
+// GetSchemaCreationStatus retrieves the current schema creation status of a
+// GraphQL API.
 // GET /v1/apis/{apiId}/schemacreation
 func (s *AppSyncService) GetSchemaCreationStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -127,101 +44,35 @@ func (s *AppSyncService) GetSchemaCreationStatus(ctx context.Context, reqCtx *re
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-
-	status, err := store.GetSchemaCreationStatus(apiId)
+	result, err := s.getSchemaCreationStatusCore(store, request.GetStringParam(req.Parameters, "apiId"))
 	if err != nil {
-		return map[string]interface{}{
-			"status":  "NOT_APPLICABLE",
-			"details": "No schema creation has been initiated for this API.",
-		}, nil
+		return nil, err
 	}
 
 	response := map[string]interface{}{
-		"status": status.Status,
+		"status": result.Status,
 	}
-	if status.Details != "" {
-		response["details"] = status.Details
+	if result.Details != "" {
+		response["details"] = result.Details
 	}
 	return response, nil
 }
 
-// GetIntrospectionSchema returns the introspection schema for a GraphQL API.
-// The response is raw bytes (SDL or JSON), not JSON-wrapped.
-// GET /v1/apis/{apiId}/schema?format=SDL|JSON&includeDirectives=true|false
+// GetIntrospectionSchema retrieves the introspection schema of a GraphQL API.
+// GET /v1/apis/{apiId}/schema
 func (s *AppSyncService) GetIntrospectionSchema(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
+	in := getIntrospectionSchemaInput{
+		ApiId:             request.GetStringParam(req.Parameters, "apiId"),
+		Format:            request.GetStringParam(req.Parameters, "format"),
+		IncludeDirectives: request.GetBoolParam(req.Parameters, "includeDirectives"),
 	}
 
-	_, err = store.GetGraphqlApiById(apiId)
-	if err != nil {
-		return mapStoreError(err)
-	}
-
-	// Check if schema creation has failed — AWS returns GraphQLSchemaException
-	// when the introspection schema is in an invalid state.
-	if status, err := store.GetSchemaCreationStatus(apiId); err == nil && status.Status == "FAILED" {
-		return nil, NewGraphQLSchemaException(status.Details)
-	}
-
-	format := request.GetStringParam(req.Parameters, "format")
-	if format == "" {
-		format = "SDL"
-	}
-
-	includeDirectives := request.GetBoolParam(req.Parameters, "includeDirectives")
-
-	schemaSDL := collectSchemaSDL(store, apiId)
-	if schemaSDL == "" {
-		schemaSDL = buildIntrospectionSchema(includeDirectives)
-	}
-
-	if strings.EqualFold(format, "JSON") {
-		return schemaJSONFromSDL(schemaSDL, includeDirectives), nil
-	}
-
-	if !includeDirectives {
-		schemaSDL = stripDirectivesFromSDL(schemaSDL)
-	}
-
-	return schemaSDL, nil
-}
-
-// collectSchemaSDL builds a complete SDL string from the schema creation status
-// and any individual type definitions stored via CreateType.
-func collectSchemaSDL(store *appsyncstore.AppSyncStore, apiId string) string {
-	schemaStatus, err := store.GetSchemaCreationStatus(apiId)
-	if err != nil {
-		return ""
-	}
-
-	sdl := schemaStatus.Definition
-	if sdl == "" {
-		return ""
-	}
-
-	types, err := store.GetAllTypesForApi(apiId)
-	if err != nil || len(types) == 0 {
-		return sdl
-	}
-
-	for _, t := range types {
-		if t.Definition != "" && !typeDefInSDL(sdl, t.Definition) {
-			sdl += "\n\n" + t.Definition
-		}
-	}
-
-	return sdl
+	return s.getIntrospectionSchemaCore(store, in)
 }
 
 var typeNamePrefixes = []string{"type ", "input ", "enum ", "interface ", "union ", "scalar "}

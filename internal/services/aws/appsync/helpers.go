@@ -54,7 +54,14 @@ var paginationTokenPattern = regexp.MustCompile(`^\S+$`)
 // Smithy MaxResults shape: range 0-25. When omitted (0), defaults to 25.
 // Values exceeding 25 are rejected with BadRequestException.
 func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, error) {
-	maxResults := request.GetIntParam(req.Parameters, "maxResults")
+	return listOptionsFromParams(request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
+}
+
+// listOptionsFromParams validates raw maxResults/nextToken wire values in
+// the order the wire parser historically applied them, so Core functions can
+// run the pagination checks at their documented position in the validation
+// sequence.
+func listOptionsFromParams(maxResults int, token string) (common.ListOptions, error) {
 	if maxResults > 25 {
 		return common.ListOptions{}, NewBadRequestException("maxResults must be between 1 and 25")
 	}
@@ -64,7 +71,6 @@ func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, err
 	if maxResults == 0 {
 		maxResults = 25
 	}
-	token := request.GetStringParam(req.Parameters, "nextToken")
 	// PaginationToken @length(1,65536) counts Unicode characters and the
 	// shape carries the pattern ^[\S]+$ (which admits multibyte): a
 	// supplied token must not contain whitespace.

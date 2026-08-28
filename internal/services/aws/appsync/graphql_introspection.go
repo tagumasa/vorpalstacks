@@ -282,10 +282,16 @@ func (e *graphQLEngine) buildTypeRefObjectVisited(schema *ast.Schema, t *ast.Typ
 	}
 
 	if t.NonNull {
+		// A non-null named type carries its name in NamedType with a nil
+		// Elem; the wrapper must recurse into the named inner type.
+		inner := t.Elem
+		if inner == nil {
+			inner = &ast.Type{NamedType: t.NamedType}
+		}
 		return map[string]interface{}{
 			"kind":   "NON_NULL",
 			"name":   nil,
-			"ofType": e.buildTypeRefObjectVisited(schema, t.Elem, visited),
+			"ofType": e.buildTypeRefObjectVisited(schema, inner, visited),
 		}
 	}
 

@@ -2,12 +2,38 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
+
+// parseResolverInput extracts the shared resolver payload members from the
+// request parameters.
+func parseResolverInput(req *request.ParsedRequest) (resolverInput, error) {
+	syncCfg, err := parseSyncConfig(req.Parameters)
+	if err != nil {
+		return resolverInput{}, err
+	}
+
+	in := resolverInput{
+		ApiId:                   request.GetStringParam(req.Parameters, "apiId"),
+		TypeName:                request.GetStringParam(req.Parameters, "typeName"),
+		FieldName:               request.GetStringParam(req.Parameters, "fieldName"),
+		Kind:                    request.GetStringParam(req.Parameters, "kind"),
+		DataSourceName:          request.GetStringParam(req.Parameters, "dataSourceName"),
+		RequestMappingTemplate:  request.GetStringParam(req.Parameters, "requestMappingTemplate"),
+		ResponseMappingTemplate: request.GetStringParam(req.Parameters, "responseMappingTemplate"),
+		Code:                    request.GetStringParam(req.Parameters, "code"),
+		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
+		Runtime:                 parseAppSyncRuntime(req.Parameters),
+		CachingConfig:           parseCachingConfig(req.Parameters),
+		PipelineConfig:          parsePipelineConfig(req.Parameters),
+		SyncConfig:              syncCfg,
+		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
+	}
+	_, in.HasMaxBatchSize = req.Parameters["maxBatchSize"]
+
+	return in, nil
+}
 
 // CreateResolver creates a new resolver for a GraphQL API type and field.
 // POST /v1/apis/{apiId}/types/{typeName}/resolvers
@@ -17,85 +43,15 @@ func (s *AppSyncService) CreateResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	fieldName := request.GetStringParam(req.Parameters, "fieldName")
-
-	if apiId == "" || typeName == "" || fieldName == "" {
-		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
-	}
-	if err := validateResourceName(typeName); err != nil {
-		return nil, err
-	}
-	if err := validateResourceName(fieldName); err != nil {
-		return nil, err
-	}
-	if err := validateGraphqlApiExists(store, apiId); err != nil {
-		return nil, err
-	}
-
-	syncCfg, err := parseSyncConfig(req.Parameters)
+	in, err := parseResolverInput(req)
 	if err != nil {
 		return nil, err
 	}
 
-	r := &appsyncstore.Resolver{
-		ApiId:                   apiId,
-		TypeName:                typeName,
-		FieldName:               fieldName,
-		Kind:                    request.GetStringParam(req.Parameters, "kind"),
-		DataSourceName:          request.GetStringParam(req.Parameters, "dataSourceName"),
-		RequestMappingTemplate:  request.GetStringParam(req.Parameters, "requestMappingTemplate"),
-		ResponseMappingTemplate: request.GetStringParam(req.Parameters, "responseMappingTemplate"),
-		Runtime:                 parseAppSyncRuntime(req.Parameters),
-		Code:                    request.GetStringParam(req.Parameters, "code"),
-		CachingConfig:           parseCachingConfig(req.Parameters),
-		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
-		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
-		PipelineConfig:          parsePipelineConfig(req.Parameters),
-		SyncConfig:              syncCfg,
-	}
-
-	kind := request.GetStringParam(req.Parameters, "kind")
-	if kind != "" && !validateResolverKind(kind) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
-	}
-	if err := validateCachingConfig(r.CachingConfig); err != nil {
-		return nil, err
-	}
-	if err := validateAppSyncRuntime(r.Runtime); err != nil {
-		return nil, err
-	}
-	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
-	}
-	if _, ok := req.Parameters["maxBatchSize"]; ok {
-		if err := validateMaxBatchSize(r.MaxBatchSize); err != nil {
-			return nil, err
-		}
-	}
-	if r.Code != "" {
-		if err := validateCode(r.Code); err != nil {
-			return nil, err
-		}
-	}
-	if r.RequestMappingTemplate != "" {
-		if err := validateMappingTemplate(r.RequestMappingTemplate); err != nil {
-			return nil, err
-		}
-	}
-	if r.ResponseMappingTemplate != "" {
-		if err := validateMappingTemplate(r.ResponseMappingTemplate); err != nil {
-			return nil, err
-		}
-	}
-
-	created, err := store.CreateResolver(r)
+	created, err := s.createResolverCore(store, in)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
-
-	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{
 		"resolver": resolverToMap(created),
@@ -110,17 +66,12 @@ func (s *AppSyncService) GetResolver(ctx context.Context, reqCtx *request.Reques
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	fieldName := request.GetStringParam(req.Parameters, "fieldName")
-
-	if apiId == "" || typeName == "" || fieldName == "" {
-		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
-	}
-
-	r, err := store.GetResolver(apiId, typeName, fieldName)
+	r, err := s.getResolverCore(store,
+		request.GetStringParam(req.Parameters, "apiId"),
+		request.GetStringParam(req.Parameters, "typeName"),
+		request.GetStringParam(req.Parameters, "fieldName"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -136,76 +87,15 @@ func (s *AppSyncService) UpdateResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	fieldName := request.GetStringParam(req.Parameters, "fieldName")
-
-	if apiId == "" || typeName == "" || fieldName == "" {
-		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
-	}
-
-	syncCfg, err := parseSyncConfig(req.Parameters)
+	in, err := parseResolverInput(req)
 	if err != nil {
 		return nil, err
 	}
 
-	r := &appsyncstore.Resolver{
-		ApiId:                   apiId,
-		TypeName:                typeName,
-		FieldName:               fieldName,
-		Kind:                    request.GetStringParam(req.Parameters, "kind"),
-		DataSourceName:          request.GetStringParam(req.Parameters, "dataSourceName"),
-		RequestMappingTemplate:  request.GetStringParam(req.Parameters, "requestMappingTemplate"),
-		ResponseMappingTemplate: request.GetStringParam(req.Parameters, "responseMappingTemplate"),
-		Runtime:                 parseAppSyncRuntime(req.Parameters),
-		Code:                    request.GetStringParam(req.Parameters, "code"),
-		CachingConfig:           parseCachingConfig(req.Parameters),
-		MaxBatchSize:            int32(request.GetIntParam(req.Parameters, "maxBatchSize")),
-		MetricsConfig:           request.GetStringParam(req.Parameters, "metricsConfig"),
-		PipelineConfig:          parsePipelineConfig(req.Parameters),
-		SyncConfig:              syncCfg,
-	}
-
-	kind := request.GetStringParam(req.Parameters, "kind")
-	if kind != "" && !validateResolverKind(kind) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid resolver kind: %s. Valid values: UNIT, PIPELINE", kind))
-	}
-	if err := validateCachingConfig(r.CachingConfig); err != nil {
-		return nil, err
-	}
-	if err := validateAppSyncRuntime(r.Runtime); err != nil {
-		return nil, err
-	}
-	if r.MetricsConfig != "" && !validateEnabledDisabled(r.MetricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", r.MetricsConfig))
-	}
-	if _, ok := req.Parameters["maxBatchSize"]; ok {
-		if err := validateMaxBatchSize(r.MaxBatchSize); err != nil {
-			return nil, err
-		}
-	}
-	if r.Code != "" {
-		if err := validateCode(r.Code); err != nil {
-			return nil, err
-		}
-	}
-	if r.RequestMappingTemplate != "" {
-		if err := validateMappingTemplate(r.RequestMappingTemplate); err != nil {
-			return nil, err
-		}
-	}
-	if r.ResponseMappingTemplate != "" {
-		if err := validateMappingTemplate(r.ResponseMappingTemplate); err != nil {
-			return nil, err
-		}
-	}
-
-	updated, err := store.UpdateResolver(r)
+	updated, err := s.updateResolverCore(store, in)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
-
-	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{
 		"resolver": resolverToMap(updated),
@@ -220,24 +110,17 @@ func (s *AppSyncService) DeleteResolver(ctx context.Context, reqCtx *request.Req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	fieldName := request.GetStringParam(req.Parameters, "fieldName")
-
-	if apiId == "" || typeName == "" || fieldName == "" {
-		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
+	if err := s.deleteResolverCore(store,
+		request.GetStringParam(req.Parameters, "apiId"),
+		request.GetStringParam(req.Parameters, "typeName"),
+		request.GetStringParam(req.Parameters, "fieldName")); err != nil {
+		return nil, err
 	}
-
-	if err := store.DeleteResolver(apiId, typeName, fieldName); err != nil {
-		return mapStoreError(err)
-	}
-
-	s.schemaCache.Delete(apiId)
 
 	return map[string]interface{}{}, nil
 }
 
-// ListResolvers returns a paginated list of resolvers for a GraphQL API type.
+// ListResolvers lists the resolvers attached to one type of a GraphQL API.
 // GET /v1/apis/{apiId}/types/{typeName}/resolvers
 func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -245,19 +128,13 @@ func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.Requ
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	if apiId == "" || typeName == "" {
-		return nil, NewBadRequestException("apiId and typeName are required")
-	}
-
-	opts, err := parsePaginationOptions(req)
+	resolvers, nextToken, err := s.listResolversCore(store,
+		request.GetStringParam(req.Parameters, "apiId"),
+		request.GetStringParam(req.Parameters, "typeName"),
+		request.GetIntParam(req.Parameters, "maxResults"),
+		request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	resolvers, nextToken, err := store.ListResolvers(apiId, typeName, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(resolvers))
@@ -274,7 +151,8 @@ func (s *AppSyncService) ListResolvers(ctx context.Context, reqCtx *request.Requ
 	return response, nil
 }
 
-// ListResolversByFunction returns resolvers that reference a given function.
+// ListResolversByFunction lists the resolvers that reference a given AppSync
+// function.
 // GET /v1/apis/{apiId}/functions/{functionId}/resolvers
 func (s *AppSyncService) ListResolversByFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -282,19 +160,13 @@ func (s *AppSyncService) ListResolversByFunction(ctx context.Context, reqCtx *re
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	functionId := request.GetStringParam(req.Parameters, "functionId")
-	if apiId == "" || functionId == "" {
-		return nil, NewBadRequestException("apiId and functionId are required")
-	}
-
-	opts, err := parsePaginationOptions(req)
+	resolvers, nextToken, err := s.listResolversByFunctionCore(store,
+		request.GetStringParam(req.Parameters, "apiId"),
+		request.GetStringParam(req.Parameters, "functionId"),
+		request.GetIntParam(req.Parameters, "maxResults"),
+		request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	resolvers, nextToken, err := store.ListResolversByFunction(apiId, functionId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(resolvers))

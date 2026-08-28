@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/appsync"
@@ -298,6 +300,9 @@ func (r *TestRunner) runAppSyncMergedApiTests(res *appsyncResources) []TestResul
 			MergedApiIdentifier: aws.String(res.mergedApiId),
 			AssociationId:       aws.String(res.associationId),
 			Description:         aws.String("updated association"),
+			SourceApiAssociationConfig: &types.SourceApiAssociationConfig{
+				MergeType: types.MergeTypeAutoMerge,
+			},
 		})
 		if err != nil {
 			return err
@@ -307,6 +312,10 @@ func (r *TestRunner) runAppSyncMergedApiTests(res *appsyncResources) []TestResul
 		}
 		if resp.SourceApiAssociation.Description == nil || *resp.SourceApiAssociation.Description != "updated association" {
 			return fmt.Errorf("description not updated: %v", resp.SourceApiAssociation.Description)
+		}
+		if resp.SourceApiAssociation.SourceApiAssociationConfig == nil ||
+			resp.SourceApiAssociation.SourceApiAssociationConfig.MergeType != types.MergeTypeAutoMerge {
+			return fmt.Errorf("sourceApiAssociationConfig not applied: %v", resp.SourceApiAssociation.SourceApiAssociationConfig)
 		}
 		return nil
 	}))
@@ -409,6 +418,98 @@ func (r *TestRunner) runAppSyncMergedGraphqlApiAssociationTests(res *appsyncReso
 			return fmt.Errorf("description not set: %v", resp.SourceApiAssociation.Description)
 		}
 		res.mergedAssocId = *resp.SourceApiAssociation.AssociationId
+		return nil
+	}))
+
+	results = append(results, r.RunTest("appsync", "ListTypesByAssociation", func() error {
+		if _, err := client.CreateType(ctx, &appsync.CreateTypeInput{
+			ApiId:      aws.String(res.sourceApiId2),
+			Definition: aws.String("type SourceOnly { id: ID! label: String }"),
+			Format:     types.TypeDefinitionFormatSdl,
+		}); err != nil {
+			return fmt.Errorf("failed to create source-side type: %v", err)
+		}
+
+		sdlTypes, err := paginate(func(next *string) ([]types.Type, *string, error) {
+			resp, err := client.ListTypesByAssociation(ctx, &appsync.ListTypesByAssociationInput{
+				MergedApiIdentifier: aws.String(res.mergedApiId),
+				AssociationId:       aws.String(res.mergedAssocId),
+				Format:              types.TypeDefinitionFormatSdl,
+				NextToken:           next,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.Types, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		found := containsID(sdlTypes, func(t *types.Type) bool {
+			return t.Name != nil && *t.Name == "SourceOnly"
+		})
+		if found == nil {
+			return fmt.Errorf("source-side type not listed through the association")
+		}
+		if found.Definition == nil || !strings.Contains(*found.Definition, "label: String") {
+			return fmt.Errorf("SDL definition missing through the association: %v", found.Definition)
+		}
+
+		jsonTypes, err := paginate(func(next *string) ([]types.Type, *string, error) {
+			resp, err := client.ListTypesByAssociation(ctx, &appsync.ListTypesByAssociationInput{
+				MergedApiIdentifier: aws.String(res.mergedApiId),
+				AssociationId:       aws.String(res.mergedAssocId),
+				Format:              types.TypeDefinitionFormatJson,
+				NextToken:           next,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.Types, resp.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		jsonFound := containsID(jsonTypes, func(t *types.Type) bool {
+			return t.Name != nil && *t.Name == "SourceOnly"
+		})
+		if jsonFound == nil {
+			return fmt.Errorf("source-side type not listed in JSON through the association")
+		}
+		if jsonFound.Format != types.TypeDefinitionFormatJson {
+			return fmt.Errorf("expected JSON format, got %s", jsonFound.Format)
+		}
+		if jsonFound.Definition == nil {
+			return fmt.Errorf("JSON definition is nil")
+		}
+		var typeObj map[string]interface{}
+		if err := json.Unmarshal([]byte(*jsonFound.Definition), &typeObj); err != nil {
+			return fmt.Errorf("definition is not JSON: %v (definition=%q)", err, *jsonFound.Definition)
+		}
+		if typeObj["name"] != "SourceOnly" || typeObj["kind"] != "OBJECT" {
+			return fmt.Errorf("unexpected type object: %v", typeObj)
+		}
+
+		if _, err := client.DeleteType(ctx, &appsync.DeleteTypeInput{
+			ApiId:    aws.String(res.sourceApiId2),
+			TypeName: aws.String("SourceOnly"),
+		}); err != nil {
+			return fmt.Errorf("failed to clean up source-side type: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("appsync", "DisassociateMergedGraphqlApi_WrongSourceApiRejected", func() error {
+		_, err := client.DisassociateMergedGraphqlApi(ctx, &appsync.DisassociateMergedGraphqlApiInput{
+			SourceApiIdentifier: aws.String(res.mergedApiId),
+			AssociationId:       aws.String(res.mergedAssocId),
+		})
+		if err == nil {
+			return fmt.Errorf("expected an error when the source API identifier does not own the association")
+		}
+		if codeErr := expectAWSErrorCode(err, "NotFoundException"); codeErr != nil {
+			return codeErr
+		}
 		return nil
 	}))
 

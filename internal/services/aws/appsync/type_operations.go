@@ -2,9 +2,6 @@ package appsync
 
 import (
 	"context"
-	"fmt"
-
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -17,42 +14,18 @@ func (s *AppSyncService) CreateType(ctx context.Context, reqCtx *request.Request
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-	if err := validateGraphqlApiExists(store, apiId); err != nil {
+	t, err := s.createTypeCore(store, createTypeInput{
+		ApiId:       request.GetStringParam(req.Parameters, "apiId"),
+		Definition:  request.GetStringParam(req.Parameters, "definition"),
+		Format:      request.GetStringParam(req.Parameters, "format"),
+		Description: request.GetStringParam(req.Parameters, "description"),
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	definition := request.GetStringParam(req.Parameters, "definition")
-	if definition == "" {
-		return nil, NewBadRequestException("definition is required")
-	}
-
-	format := request.GetStringParam(req.Parameters, "format")
-	if format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-
-	if !validateTypeFormat(format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
-	}
-
-	t := &appsyncstore.Type{
-		ApiId:       apiId,
-		Definition:  definition,
-		Format:      format,
-		Description: request.GetStringParam(req.Parameters, "description"),
-	}
-
-	created, err := store.CreateType(t)
-	if err != nil {
-		return mapStoreError(err)
-	}
-
 	return map[string]interface{}{
-		"type": typeToMap(created),
+		"type": typeToMap(t),
 	}, nil
 }
 
@@ -64,15 +37,9 @@ func (s *AppSyncService) GetType(ctx context.Context, reqCtx *request.RequestCon
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	if apiId == "" || typeName == "" {
-		return nil, NewBadRequestException("apiId and typeName are required")
-	}
-
-	t, err := store.GetType(apiId, typeName)
+	t, err := s.getTypeCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "typeName"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -88,43 +55,21 @@ func (s *AppSyncService) UpdateType(ctx context.Context, reqCtx *request.Request
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	if apiId == "" || typeName == "" {
-		return nil, NewBadRequestException("apiId and typeName are required")
-	}
-
-	format := request.GetStringParam(req.Parameters, "format")
-	if format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-
-	if !validateTypeFormat(format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
-	}
-
-	t := &appsyncstore.Type{
-		ApiId:  apiId,
-		Name:   typeName,
-		Format: format,
-	}
-
-	if request.HasParam(req.Parameters, "definition") {
-		t.Definition = request.GetStringParam(req.Parameters, "definition")
-		t.DefinitionSet = true
-	}
-	if request.HasParam(req.Parameters, "description") {
-		t.Description = request.GetStringParam(req.Parameters, "description")
-		t.DescriptionSet = true
-	}
-
-	updated, err := store.UpdateType(t)
+	t, err := s.updateTypeCore(store, updateTypeInput{
+		ApiId:          request.GetStringParam(req.Parameters, "apiId"),
+		TypeName:       request.GetStringParam(req.Parameters, "typeName"),
+		Format:         request.GetStringParam(req.Parameters, "format"),
+		Definition:     request.GetStringParam(req.Parameters, "definition"),
+		HasDefinition:  request.HasParam(req.Parameters, "definition"),
+		Description:    request.GetStringParam(req.Parameters, "description"),
+		HasDescription: request.HasParam(req.Parameters, "description"),
+	})
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"type": typeToMap(updated),
+		"type": typeToMap(t),
 	}, nil
 }
 
@@ -136,14 +81,8 @@ func (s *AppSyncService) DeleteType(ctx context.Context, reqCtx *request.Request
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	typeName := request.GetStringParam(req.Parameters, "typeName")
-	if apiId == "" || typeName == "" {
-		return nil, NewBadRequestException("apiId and typeName are required")
-	}
-
-	if err := store.DeleteType(apiId, typeName); err != nil {
-		return mapStoreError(err)
+	if err := s.deleteTypeCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "typeName")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -158,17 +97,10 @@ func (s *AppSyncService) ListTypes(ctx context.Context, reqCtx *request.RequestC
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	opts, err := parsePaginationOptions(req)
+	types, nextToken, err := s.listTypesCore(store, apiId, request.GetStringParam(req.Parameters, "format"), request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
-	}
-	types, nextToken, err := store.ListTypes(apiId, opts)
-	if err != nil {
-		return mapStoreError(err)
 	}
 
 	items := make([]interface{}, 0, len(types))

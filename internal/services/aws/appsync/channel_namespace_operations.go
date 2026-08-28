@@ -3,8 +3,6 @@ package appsync
 import (
 	"context"
 
-	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-
 	"vorpalstacks/internal/common/request"
 )
 
@@ -16,22 +14,6 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
-	if err := validateEventApiExists(store, apiId); err != nil {
-		return nil, err
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if err := validateNamespace(name); err != nil {
-		return nil, err
-	}
-
 	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
 	if err != nil {
 		return nil, err
@@ -39,13 +21,6 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 	subscribeAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "subscribeAuthModes"))
 	if err != nil {
 		return nil, err
-	}
-
-	codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
-	if codeHandlers != "" {
-		if err := validateCode(codeHandlers); err != nil {
-			return nil, err
-		}
 	}
 
 	tagMap, err := parseTags(req.Parameters)
@@ -57,33 +32,21 @@ func (s *AppSyncService) CreateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	ns := &appsyncstore.ChannelNamespace{
-		ApiId:              apiId,
-		Name:               name,
-		CodeHandlers:       codeHandlers,
-		HandlerConfigs:     handlerCfgs,
+	created, tags, err := s.createChannelNamespaceCore(store, createChannelNamespaceInput{
+		ApiId:              request.GetStringParam(req.Parameters, "apiId"),
+		Name:               request.GetStringParam(req.Parameters, "name"),
+		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
 		PublishAuthModes:   publishAuthModes,
 		SubscribeAuthModes: subscribeAuthModes,
 		Tags:               tagMap,
-	}
-
-	created, err := store.CreateChannelNamespace(ns)
+		HandlerConfigs:     handlerCfgs,
+	})
 	if err != nil {
-		return mapStoreError(err)
-	}
-
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.ChannelNamespaceArn, tagMap); err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	result := channelNamespaceToMap(created)
-	if tags, err := store.TagStore.List(created.ChannelNamespaceArn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -100,20 +63,14 @@ func (s *AppSyncService) GetChannelNamespace(ctx context.Context, reqCtx *reques
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
-	}
-
-	ns, err := store.GetChannelNamespace(apiId, name)
+	ns, tags, err := s.getChannelNamespaceCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "name"))
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := channelNamespaceToMap(ns)
-	if tagsFromStore, err := store.TagStore.List(ns.ChannelNamespaceArn); err == nil && len(tagsFromStore) > 0 {
-		result["tags"] = tagsFromStore
+	if tags != nil {
+		result["tags"] = tags
 	}
 
 	return map[string]interface{}{
@@ -129,15 +86,6 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
-	}
-	if err := validateNamespace(name); err != nil {
-		return nil, err
-	}
-
 	publishAuthModes, err := parseAuthModes(request.GetArrayParam(req.Parameters, "publishAuthModes"))
 	if err != nil {
 		return nil, err
@@ -147,37 +95,26 @@ func (s *AppSyncService) UpdateChannelNamespace(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	ns := &appsyncstore.ChannelNamespace{
-		ApiId:              apiId,
-		Name:               name,
-		PublishAuthModes:   publishAuthModes,
-		SubscribeAuthModes: subscribeAuthModes,
-	}
-
-	if request.HasParam(req.Parameters, "codeHandlers") {
-		codeHandlers := request.GetStringParam(req.Parameters, "codeHandlers")
-		if codeHandlers != "" {
-			if err := validateCode(codeHandlers); err != nil {
-				return nil, err
-			}
-		}
-		ns.CodeHandlers = codeHandlers
-		ns.CodeHandlersSet = true
-	}
-
 	handlerCfgs, err := parseHandlerConfigs(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	ns.HandlerConfigs = handlerCfgs
 
-	updated, err := store.UpdateChannelNamespace(ns)
+	updated, tags, err := s.updateChannelNamespaceCore(store, updateChannelNamespaceInput{
+		ApiId:              request.GetStringParam(req.Parameters, "apiId"),
+		Name:               request.GetStringParam(req.Parameters, "name"),
+		CodeHandlers:       request.GetStringParam(req.Parameters, "codeHandlers"),
+		HasCodeHandlers:    request.HasParam(req.Parameters, "codeHandlers"),
+		PublishAuthModes:   publishAuthModes,
+		SubscribeAuthModes: subscribeAuthModes,
+		HandlerConfigs:     handlerCfgs,
+	})
 	if err != nil {
-		return mapStoreError(err)
+		return nil, err
 	}
 
 	result := channelNamespaceToMap(updated)
-	if tags, err := store.TagStore.List(updated.ChannelNamespaceArn); err == nil && len(tags) > 0 {
+	if tags != nil {
 		result["tags"] = tags
 	}
 
@@ -194,23 +131,9 @@ func (s *AppSyncService) DeleteChannelNamespace(ctx context.Context, reqCtx *req
 		return mapStoreError(err)
 	}
 
-	apiId := request.GetStringParam(req.Parameters, "apiId")
-	name := request.GetStringParam(req.Parameters, "name")
-	if apiId == "" || name == "" {
-		return nil, NewBadRequestException("apiId and name are required")
+	if err := s.deleteChannelNamespaceCore(store, request.GetStringParam(req.Parameters, "apiId"), request.GetStringParam(req.Parameters, "name")); err != nil {
+		return nil, err
 	}
-
-	if _, err := store.GetChannelNamespace(apiId, name); err != nil {
-		return mapStoreError(err)
-	}
-
-	if err := store.DeleteChannelNamespace(apiId, name); err != nil {
-		return mapStoreError(err)
-	}
-
-	// Clean up active subscriptions on the deleted namespace to prevent
-	// stale data delivery.
-	s.eventServer.RemoveSubscriptionsByNamespace(name)
 
 	return map[string]interface{}{}, nil
 }
@@ -224,24 +147,17 @@ func (s *AppSyncService) ListChannelNamespaces(ctx context.Context, reqCtx *requ
 	}
 
 	apiId := request.GetStringParam(req.Parameters, "apiId")
-	if apiId == "" {
-		return nil, NewBadRequestException("apiId is required")
-	}
 
-	opts, err := parsePaginationOptions(req)
+	entries, nextToken, err := s.listChannelNamespacesCore(store, apiId, request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
 	}
-	namespaces, nextToken, err := store.ListChannelNamespaces(apiId, opts)
-	if err != nil {
-		return mapStoreError(err)
-	}
 
-	items := make([]interface{}, 0, len(namespaces))
-	for _, ns := range namespaces {
-		item := channelNamespaceToMap(ns)
-		if tags, err := store.TagStore.List(ns.ChannelNamespaceArn); err == nil && len(tags) > 0 {
-			item["tags"] = tags
+	items := make([]interface{}, 0, len(entries))
+	for _, entry := range entries {
+		item := channelNamespaceToMap(entry.Namespace)
+		if entry.Tags != nil {
+			item["tags"] = entry.Tags
 		}
 		items = append(items, item)
 	}
