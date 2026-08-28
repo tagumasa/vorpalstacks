@@ -142,14 +142,21 @@ func (s *NeptuneDataService) ExecuteOpenCypherExplainQuery(ctx context.Context, 
 // of a previously submitted OpenCypher query.
 func (s *NeptuneDataService) GetOpenCypherQueryStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	return s.getQueryStatus(reqCtx, req)
+	return s.getQueryStatusCore(&GetQueryStatusInput{
+		QueryId: getPathParam(req, "queryId"),
+		Region:  reqCtx.GetRegion(),
+	})
 }
 
 // ListOpenCypherQueries returns all submitted OpenCypher queries, optionally
 // including those in a waiting state.
 func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	return s.listQueries(reqCtx, req, "opencypher")
+	return s.listQueriesCore(&ListQueriesInput{
+		QueryType:      "opencypher",
+		IncludeWaiting: request.GetBoolParam(req.Parameters, "includeWaiting"),
+		Region:         reqCtx.GetRegion(),
+	})
 }
 
 // CancelOpenCypherQuery cancels a running OpenCypher query and marks its status
@@ -157,5 +164,10 @@ func (s *NeptuneDataService) ListOpenCypherQueries(ctx context.Context, reqCtx *
 func (s *NeptuneDataService) CancelOpenCypherQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
 	silent := request.GetBoolParam(req.Parameters, "silent")
-	return s.cancelQuery(reqCtx, req, silent, true)
+	return s.cancelQueryCore(&CancelQueryInput{
+		QueryId:        getPathParam(req, "queryId"),
+		Silent:         silent,
+		IncludePayload: true,
+		Region:         reqCtx.GetRegion(),
+	})
 }

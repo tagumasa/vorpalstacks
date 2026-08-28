@@ -151,19 +151,29 @@ func (s *NeptuneDataService) ExecuteGremlinProfileQuery(ctx context.Context, req
 // a previously submitted Gremlin query.
 func (s *NeptuneDataService) GetGremlinQueryStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	return s.getQueryStatus(reqCtx, req)
+	return s.getQueryStatusCore(&GetQueryStatusInput{
+		QueryId: getPathParam(req, "queryId"),
+		Region:  reqCtx.GetRegion(),
+	})
 }
 
 // ListGremlinQueries returns all submitted Gremlin queries, optionally
 // including those in a waiting state.
 func (s *NeptuneDataService) ListGremlinQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	return s.listQueries(reqCtx, req, "gremlin")
+	return s.listQueriesCore(&ListQueriesInput{
+		QueryType:      "gremlin",
+		IncludeWaiting: request.GetBoolParam(req.Parameters, "includeWaiting"),
+		Region:         reqCtx.GetRegion(),
+	})
 }
 
 // CancelGremlinQuery cancels a running Gremlin query and marks its status as
 // cancelled.
 func (s *NeptuneDataService) CancelGremlinQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	return s.cancelQuery(reqCtx, req, false, false)
+	return s.cancelQueryCore(&CancelQueryInput{
+		QueryId: getPathParam(req, "queryId"),
+		Region:  reqCtx.GetRegion(),
+	})
 }

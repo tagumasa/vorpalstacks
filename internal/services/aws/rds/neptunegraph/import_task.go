@@ -4,17 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage/graphengine"
-	storecommon "vorpalstacks/internal/store/aws/common"
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/internal/utils/ntriples"
 )
@@ -109,144 +104,34 @@ func (s *NeptuneGraphService) CreateGraphUsingImportTask(ctx context.Context, re
 		return nil, err
 	}
 
-	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if err := validateGraphName(graphName); err != nil {
-		return nil, err
+	in := &CreateGraphUsingImportTaskInput{
+		GraphName:               request.GetStringParam(req.Parameters, "graphName"),
+		RoleArn:                 request.GetStringParam(req.Parameters, "roleArn"),
+		Source:                  request.GetStringParam(req.Parameters, "source"),
+		Format:                  strings.ToUpper(request.GetStringParam(req.Parameters, "format")),
+		ParquetType:             strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType")),
+		BlankNodeHandling:       request.GetStringParam(req.Parameters, "blankNodeHandling"),
+		KmsKeyIdentifier:        request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
+		DeletionProtection:      request.GetBoolParam(req.Parameters, "deletionProtection"),
+		PublicConnectivity:      request.GetBoolParam(req.Parameters, "publicConnectivity"),
+		FailOnError:             request.GetBoolParam(req.Parameters, "failOnError"),
+		VectorSearchConfig:      req.Parameters["vectorSearchConfiguration"],
+		HasReplicaCount:         request.HasParam(req.Parameters, "replicaCount"),
+		ReplicaCount:            request.GetIntParam(req.Parameters, "replicaCount"),
+		HasMinProvisionedMemory: request.HasParam(req.Parameters, "minProvisionedMemory"),
+		MinProvisionedMemory:    request.GetIntParam(req.Parameters, "minProvisionedMemory"),
+		HasMaxProvisionedMemory: request.HasParam(req.Parameters, "maxProvisionedMemory"),
+		MaxProvisionedMemory:    request.GetIntParam(req.Parameters, "maxProvisionedMemory"),
+		HasImportOptions:        request.HasParam(req.Parameters, "importOptions"),
+		ImportOptions:           parseImportOptions(req.Parameters),
+		Tags:                    parseTagsFromParams(req.Parameters),
+		Region:                  reqCtx.GetRegion(),
 	}
 
-	roleArn := request.GetStringParam(req.Parameters, "roleArn")
-	if err := validateRoleArn(roleArn); err != nil {
-		return nil, err
-	}
-
-	source := request.GetStringParam(req.Parameters, "source")
-	if source == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "source is required")
-	}
-
-	format := strings.ToUpper(request.GetStringParam(req.Parameters, "format"))
-	if err := validateImportFormat(format); err != nil {
-		return nil, err
-	}
-
-	parquetType := strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType"))
-	if err := validateParquetType(parquetType); err != nil {
-		return nil, err
-	}
-
-	blankNodeHandling := request.GetStringParam(req.Parameters, "blankNodeHandling")
-	if err := validateBlankNodeHandling(blankNodeHandling); err != nil {
-		return nil, err
-	}
-
-	region := reqCtx.GetRegion()
-	graphID := generateID("g-")
-	taskID := generateID("t-")
-	now := time.Now().UTC()
-
-	graph := &ngstore.Graph{
-		Id:                 graphID,
-		Name:               graphName,
-		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
-		Status:             "IMPORTING",
-		ProvisionedMemory:  proto.Int32(128),
-		ReplicaCount:       proto.Int32(1),
-		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
-		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
-		BuildNumber:        neptuneGraphBuildNumber,
-		CreateTime:         &now,
-		AccountID:          s.accountID,
-		Region:             region,
-	}
-
-	if vsc, err := parseVectorSearchConfig(req.Parameters); err != nil {
-		return nil, err
-	} else if vsc != nil {
-		graph.VectorSearchConfiguration = vsc
-	}
-
-	if request.HasParam(req.Parameters, "replicaCount") {
-		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		if err := validateReplicaCount(rc); err != nil {
-			return nil, err
-		}
-		graph.ReplicaCount = proto.Int32(int32(rc))
-	}
-
-	if err := store.CreateGraph(graph); err != nil {
-		if ngstore.IsAlreadyExists(err) {
-			return nil, newConflictException("CONCURRENT_MODIFICATION")
-		}
-		return nil, err
-	}
-
-	bucket, err := s.graphBucket(graphID)
+	task, err := s.createGraphUsingImportTaskCore(ctx, store, in)
 	if err != nil {
-		return nil, newInternalServerException(err)
-	}
-	db, err := graphengine.New(bucket, s.engineOptions())
-	if err != nil {
-		logs.Warn("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
-	} else {
-		s.enginesMu.Lock()
-		s.activeEngines[graphID] = &engineEntry{db: db}
-		s.enginesMu.Unlock()
-	}
-
-	task := &ngstore.ImportTask{
-		TaskId:             taskID,
-		GraphId:            graphID,
-		Status:             "INITIALIZING",
-		Source:             source,
-		RoleArn:            roleArn,
-		GraphName:          graphName,
-		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
-		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
-		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		Format:             format,
-		ParquetType:        parquetType,
-		BlankNodeHandling:  blankNodeHandling,
-		FailOnError:        request.GetBoolParam(req.Parameters, "failOnError"),
-		StartTime:          &now,
-	}
-
-	if request.HasParam(req.Parameters, "replicaCount") {
-		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		task.ReplicaCount = proto.Int32(int32(rc))
-	}
-	if request.HasParam(req.Parameters, "minProvisionedMemory") {
-		mem := request.GetIntParam(req.Parameters, "minProvisionedMemory")
-		if err := validateProvisionedMemory(mem, false); err != nil {
-			return nil, err
-		}
-		task.MinProvisionedMemory = proto.Int32(int32(mem))
-	}
-	if request.HasParam(req.Parameters, "maxProvisionedMemory") {
-		mem := request.GetIntParam(req.Parameters, "maxProvisionedMemory")
-		if err := validateProvisionedMemory(mem, false); err != nil {
-			return nil, err
-		}
-		task.MaxProvisionedMemory = proto.Int32(int32(mem))
-	}
-	if request.HasParam(req.Parameters, "importOptions") {
-		opts := parseImportOptions(req.Parameters)
-		if err := validateImportOptions(opts); err != nil {
-			return nil, err
-		}
-		task.ImportOptions = opts
-	}
-	if graph.VectorSearchConfiguration != nil {
-		task.VectorSearchConfiguration = graph.VectorSearchConfiguration
-	}
-
-	if err := store.CreateImportTask(task); err != nil {
 		return nil, err
 	}
-
-	s.taskWg.Add(1)
-	go s.advanceImportTask(store, taskID, graphID)
-
 	return importTaskToResponse(task), nil
 }
 
@@ -257,16 +142,8 @@ func (s *NeptuneGraphService) GetImportTask(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	taskID := request.GetStringParam(req.Parameters, "taskIdentifier")
-	if taskID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "taskIdentifier")
-	}
-
-	task, err := store.GetImportTask(taskID)
+	task, err := s.getImportTaskCore(store, request.GetStringParam(req.Parameters, "taskIdentifier"))
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("import task", taskID)
-		}
 		return nil, err
 	}
 
@@ -280,26 +157,26 @@ func (s *NeptuneGraphService) ListImportTasks(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	opts := storecommon.ListOptions{
+	in := &ListImportTasksInput{
 		MaxItems: clampMaxResults(request.GetIntParam(req.Parameters, "maxResults")),
 		Marker:   request.GetStringParam(req.Parameters, "nextToken"),
 	}
 
-	tasks, nextToken, truncated, err := store.ListImportTasks(opts)
+	res, err := s.listImportTasksCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(tasks))
-	for _, t := range tasks {
+	items := make([]interface{}, 0, len(res.Tasks))
+	for _, t := range res.Tasks {
 		items = append(items, importTaskSummaryToResponse(t))
 	}
 
 	result := map[string]interface{}{
 		"tasks": items,
 	}
-	if truncated {
-		result["nextToken"] = nextToken
+	if res.Truncated {
+		result["nextToken"] = res.NextToken
 	}
 	return result, nil
 }
@@ -311,33 +188,14 @@ func (s *NeptuneGraphService) CancelImportTask(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	taskID := request.GetStringParam(req.Parameters, "taskIdentifier")
-	if taskID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "taskIdentifier")
+	in := &CancelImportTaskInput{
+		TaskIdentifier: request.GetStringParam(req.Parameters, "taskIdentifier"),
 	}
 
-	task, err := store.GetImportTask(taskID)
+	task, err := s.cancelImportTaskCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("import task", taskID)
-		}
 		return nil, err
 	}
-
-	if task.Status == "SUCCEEDED" || task.Status == "FAILED" || task.Status == "CANCELLED" || task.Status == "CANCELLING" {
-		return importTaskSummaryToResponse(task), nil
-	}
-
-	originalStatus := task.Status
-	task.Status = "CANCELLING"
-	task.StatusReason = "Cancelled by user"
-	if err := store.TryAdvanceImportTask(taskID, originalStatus, func(t *ngstore.ImportTask) {
-		t.Status = "CANCELLING"
-		t.StatusReason = "Cancelled by user"
-	}); err != nil {
-		logs.Warn("failed to cancel import task", logs.String("taskId", taskID), logs.Err(err))
-	}
-
 	return importTaskSummaryToResponse(task), nil
 }
 
@@ -348,245 +206,23 @@ func (s *NeptuneGraphService) StartImportTask(ctx context.Context, reqCtx *reque
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
-	}
-
-	graph, err := s.resolveGraphIdentifier(store, graphID)
-	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
-		return nil, err
-	}
-
-	roleArn := request.GetStringParam(req.Parameters, "roleArn")
-	if err := validateRoleArn(roleArn); err != nil {
-		return nil, err
-	}
-
-	source := request.GetStringParam(req.Parameters, "source")
-	if source == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "source is required")
-	}
-
-	format := strings.ToUpper(request.GetStringParam(req.Parameters, "format"))
-	if err := validateImportFormat(format); err != nil {
-		return nil, err
-	}
-
-	parquetType := strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType"))
-	if err := validateParquetType(parquetType); err != nil {
-		return nil, err
-	}
-
-	blankNodeHandling := request.GetStringParam(req.Parameters, "blankNodeHandling")
-	if err := validateBlankNodeHandling(blankNodeHandling); err != nil {
-		return nil, err
-	}
-
-	taskID := generateID("t-")
-	now := time.Now().UTC()
-
-	task := &ngstore.ImportTask{
-		TaskId:            taskID,
-		GraphId:           graph.Id,
-		Status:            "INITIALIZING",
-		Source:            source,
-		RoleArn:           roleArn,
-		Format:            format,
-		ParquetType:       parquetType,
-		BlankNodeHandling: blankNodeHandling,
+	in := &StartImportTaskInput{
+		GraphIdentifier:   request.GetStringParam(req.Parameters, "graphIdentifier"),
+		RoleArn:           request.GetStringParam(req.Parameters, "roleArn"),
+		Source:            request.GetStringParam(req.Parameters, "source"),
+		Format:            strings.ToUpper(request.GetStringParam(req.Parameters, "format")),
+		ParquetType:       strings.ToUpper(request.GetStringParam(req.Parameters, "parquetType")),
+		BlankNodeHandling: request.GetStringParam(req.Parameters, "blankNodeHandling"),
 		FailOnError:       request.GetBoolParam(req.Parameters, "failOnError"),
-		StartTime:         &now,
+		HasImportOptions:  request.HasParam(req.Parameters, "importOptions"),
+		ImportOptions:     parseImportOptions(req.Parameters),
 	}
 
-	if request.HasParam(req.Parameters, "importOptions") {
-		opts := parseImportOptions(req.Parameters)
-		if err := validateImportOptions(opts); err != nil {
-			return nil, err
-		}
-		task.ImportOptions = opts
-	}
-
-	if err := store.CreateImportTask(task); err != nil {
+	task, err := s.startImportTaskCore(store, in)
+	if err != nil {
 		return nil, err
 	}
-
-	s.taskWg.Add(1)
-	go s.advanceImportTask(store, taskID, graph.Id)
-
 	return importTaskToResponse(task), nil
-}
-
-func (s *NeptuneGraphService) advanceImportTask(store *ngstore.NeptuneGraphStore, taskID, graphID string) {
-	defer s.taskWg.Done()
-	defer func() { resilience.RecoverPanic("NeptuneGraph advanceImportTask") }()
-
-	task, err := store.GetImportTask(taskID)
-	if err != nil {
-		logs.Warn("failed to get import task", logs.String("taskId", taskID), logs.Err(err))
-		finaliseImportedGraph(store, graphID, false, "failed to get import task")
-		return
-	}
-
-	source := task.Source
-	format := strings.ToLower(task.Format)
-
-	if strings.HasPrefix(strings.ToLower(source), "s3://") {
-		err = store.TryAdvanceImportTask(taskID, "INITIALIZING", func(t *ngstore.ImportTask) {
-			t.Status = "FAILED"
-			t.StatusReason = "S3 sources are not accessible in standalone mode"
-			now := time.Now().UTC()
-			sinceStart := int64(now.Sub(*t.StartTime).Seconds())
-			t.ImportTaskDetails = &ngstore.ImportTaskDetails{
-				ProgressPercentage: proto.Int32(0),
-				StartTime:          t.StartTime,
-				TimeElapsedSeconds: proto.Int64(sinceStart),
-				StatementCount:     proto.Int64(0),
-				ErrorCount:         proto.Int32(1),
-				Status:             proto.String("FAILED"),
-			}
-		})
-		if err != nil {
-			logs.Warn("failed to advance import task to FAILED", logs.String("taskId", taskID), logs.Err(err))
-		}
-		finaliseImportedGraph(store, graphID, false, "Import failed")
-		return
-	}
-
-	filePath := strings.TrimPrefix(source, "file://")
-	if filePath == source {
-		filePath = source
-	}
-
-	s.enginesMu.RLock()
-	entry, ok := s.activeEngines[graphID]
-	s.enginesMu.RUnlock()
-
-	if !ok {
-		logs.Warn("engine not found for graph during import", logs.String("graphId", graphID))
-		err = store.TryAdvanceImportTask(taskID, "INITIALIZING", func(t *ngstore.ImportTask) {
-			t.Status = "FAILED"
-			t.StatusReason = "Graph engine not available"
-			now := time.Now().UTC()
-			sinceStart := int64(now.Sub(*t.StartTime).Seconds())
-			t.ImportTaskDetails = &ngstore.ImportTaskDetails{
-				ProgressPercentage: proto.Int32(0),
-				StartTime:          t.StartTime,
-				TimeElapsedSeconds: proto.Int64(sinceStart),
-				StatementCount:     proto.Int64(0),
-				ErrorCount:         proto.Int32(1),
-				Status:             proto.String("FAILED"),
-			}
-		})
-		if err != nil {
-			logs.Warn("failed to advance import task to FAILED", logs.String("taskId", taskID), logs.Err(err))
-		}
-		finaliseImportedGraph(store, graphID, false, "Import failed")
-		return
-	}
-
-	err = store.TryAdvanceImportTask(taskID, "INITIALIZING", func(t *ngstore.ImportTask) {
-		t.Status = "IMPORTING"
-	})
-	if err != nil {
-		logs.Warn("failed to advance import task to IMPORTING", logs.String("taskId", taskID), logs.Err(err))
-		// Detect concurrent CancelImportTask: status may have transitioned
-		// from INITIALIZING to CANCELLING before the goroutine started.
-		current, getErr := store.GetImportTask(taskID)
-		if getErr == nil && current.Status == "CANCELLING" {
-			_ = store.TryAdvanceImportTask(taskID, "CANCELLING", func(t *ngstore.ImportTask) {
-				t.Status = "CANCELLED"
-			})
-			finaliseImportedGraph(store, graphID, false, "Import cancelled")
-		} else {
-			finaliseImportedGraph(store, graphID, false, "failed to advance to IMPORTING")
-		}
-		return
-	}
-
-	var statementCount, dictionaryCount, errorCount int64
-
-	switch {
-	case format == "" || format == "csv":
-		statementCount, dictionaryCount, errorCount = s.importCSV(entry.db, filePath)
-	case format == "open_cypher":
-		statementCount, dictionaryCount, errorCount = s.importCSV(entry.db, filePath)
-	case format == "ntriples":
-		statementCount, dictionaryCount, errorCount = s.importRDF(entry.db, filePath)
-	case format == "parquet":
-		errorCount = 1
-		logs.Warn("parquet import not supported in standalone mode", logs.String("format", format), logs.String("taskId", taskID))
-	default:
-		errorCount = 1
-		logs.Warn("unsupported import format", logs.String("format", format), logs.String("taskId", taskID))
-	}
-
-	finalStatus := "SUCCEEDED"
-	statusReason := ""
-	if errorCount > 0 && task.FailOnError {
-		finalStatus = "FAILED"
-		statusReason = fmt.Sprintf("%d errors during import", errorCount)
-	}
-
-	now := time.Now().UTC()
-	sinceStart := int64(now.Sub(*task.StartTime).Seconds())
-	details := &ngstore.ImportTaskDetails{
-		ProgressPercentage:   proto.Int32(100),
-		StartTime:            task.StartTime,
-		TimeElapsedSeconds:   proto.Int64(sinceStart),
-		StatementCount:       proto.Int64(statementCount),
-		DictionaryEntryCount: proto.Int64(dictionaryCount),
-		ErrorCount:           proto.Int32(int32(errorCount)),
-		Status:               proto.String(finalStatus),
-	}
-
-	err = store.TryAdvanceImportTask(taskID, "IMPORTING", func(t *ngstore.ImportTask) {
-		t.Status = finalStatus
-		t.StatusReason = statusReason
-		t.ImportTaskDetails = details
-	})
-	if err != nil {
-		logs.Warn("failed to advance import task to final state", logs.String("taskId", taskID), logs.Err(err))
-		// Detect concurrent CancelImportTask: status may have transitioned
-		// from IMPORTING to CANCELLING while the import was running.
-		current, getErr := store.GetImportTask(taskID)
-		if getErr == nil && current.Status == "CANCELLING" {
-			_ = store.TryAdvanceImportTask(taskID, "CANCELLING", func(t *ngstore.ImportTask) {
-				t.Status = "CANCELLED"
-			})
-			finaliseImportedGraph(store, graphID, false, "Import cancelled")
-		} else {
-			finaliseImportedGraph(store, graphID, finalStatus == "SUCCEEDED", statusReason)
-		}
-		return
-	}
-
-	finaliseImportedGraph(store, graphID, finalStatus == "SUCCEEDED", statusReason)
-}
-
-// finaliseImportedGraph transitions a graph from IMPORTING to AVAILABLE or FAILED
-// based on import outcome. All early-return paths in advanceImportTask must call
-// this to prevent the graph from being stuck in IMPORTING state forever.
-func finaliseImportedGraph(store *ngstore.NeptuneGraphStore, graphID string, succeeded bool, reason string) {
-	graph, err := store.GetGraph(graphID)
-	if err != nil {
-		return
-	}
-	if graph.Status != "IMPORTING" {
-		return
-	}
-	if succeeded {
-		graph.Status = "AVAILABLE"
-	} else {
-		graph.Status = "FAILED"
-		graph.StatusReason = reason
-	}
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("failed to update graph status after import", logs.String("graphId", graphID), logs.Err(err))
-	}
 }
 
 func (s *NeptuneGraphService) importCSV(db *graphengine.DB, filePath string) (statementCount, dictionaryCount, errorCount int64) {

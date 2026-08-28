@@ -2,13 +2,8 @@ package neptunegraph
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
-	storecommon "vorpalstacks/internal/store/aws/common"
-	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
 // CreateGraphSnapshot creates a point-in-time snapshot of the specified graph.
@@ -18,71 +13,16 @@ func (s *NeptuneGraphService) CreateGraphSnapshot(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &CreateGraphSnapshotInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		SnapshotName:    request.GetStringParam(req.Parameters, "snapshotName"),
+		Region:          reqCtx.GetRegion(),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	snapshot, err := s.createGraphSnapshotCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-
-	if graph.Status != "AVAILABLE" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
-	}
-
-	snapshotName := request.GetStringParam(req.Parameters, "snapshotName")
-	if snapshotName == "" || strings.HasPrefix(snapshotName, "gs-") || !snapshotNameRegex.MatchString(snapshotName) || len(snapshotName) > 63 {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "snapshotName")
-	}
-
-	region := reqCtx.GetRegion()
-	snapshotID := generateID("gs-")
-	now := time.Now().UTC()
-
-	snapshot := &ngstore.GraphSnapshot{
-		Id:                 snapshotID,
-		Name:               snapshotName,
-		Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
-		Status:             "CREATING",
-		SourceGraphId:      graph.Id,
-		SnapshotCreateTime: &now,
-		AccountID:          s.accountID,
-		Region:             region,
-	}
-
-	if err := store.CreateSnapshot(snapshot); err != nil {
-		if ngstore.IsAlreadyExists(err) {
-			return nil, newConflictException("CONCURRENT_MODIFICATION")
-		}
-		return nil, err
-	}
-
-	srcBkt, srcErr := s.graphBucket(graph.Id)
-	dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
-	copyOK := false
-	if srcErr == nil && dstErr == nil {
-		if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
-			logs.Warn("failed to copy graph data to snapshot bucket",
-				logs.String("graphId", graph.Id), logs.String("snapshotId", snapshotID), logs.Err(err))
-		} else {
-			copyOK = true
-		}
-	}
-
-	snapshot.Status = "AVAILABLE"
-	if !copyOK {
-		snapshot.Status = "FAILED"
-	}
-	if err := store.UpdateSnapshot(snapshot); err != nil {
-		logs.Warn("failed to update snapshot status after copy",
-			logs.String("snapshotId", snapshotID), logs.Err(err))
-	}
-
 	return snapshotToResponse(snapshot), nil
 }
 
@@ -93,23 +33,14 @@ func (s *NeptuneGraphService) GetGraphSnapshot(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	snapshotID := request.GetStringParam(req.Parameters, "snapshotIdentifier")
-	if snapshotID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "snapshotIdentifier")
+	in := &GetGraphSnapshotInput{
+		SnapshotIdentifier: request.GetStringParam(req.Parameters, "snapshotIdentifier"),
 	}
 
-	snapshot, err := store.GetSnapshot(snapshotID)
+	snapshot, err := s.getGraphSnapshotCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("snapshot", snapshotID)
-		}
 		return nil, err
 	}
-
-	if snapshot.Status == "DELETING" {
-		return nil, newResourceNotFoundException("snapshot", snapshotID)
-	}
-
 	return snapshotToResponse(snapshot), nil
 }
 
@@ -120,27 +51,27 @@ func (s *NeptuneGraphService) ListGraphSnapshots(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	opts := storecommon.ListOptions{
-		MaxItems: clampMaxResults(request.GetIntParam(req.Parameters, "maxResults")),
-		Marker:   request.GetStringParam(req.Parameters, "nextToken"),
+	in := &ListGraphSnapshotsInput{
+		MaxItems:        clampMaxResults(request.GetIntParam(req.Parameters, "maxResults")),
+		Marker:          request.GetStringParam(req.Parameters, "nextToken"),
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	snapshots, nextToken, truncated, err := store.ListSnapshots(opts, graphID)
+	res, err := s.listGraphSnapshotsCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(snapshots))
-	for _, sn := range snapshots {
+	items := make([]interface{}, 0, len(res.Snapshots))
+	for _, sn := range res.Snapshots {
 		items = append(items, snapshotToResponse(sn))
 	}
 
 	result := map[string]interface{}{
 		"graphSnapshots": items,
 	}
-	if truncated {
-		result["nextToken"] = nextToken
+	if res.Truncated {
+		result["nextToken"] = res.NextToken
 	}
 	return result, nil
 }
@@ -152,31 +83,14 @@ func (s *NeptuneGraphService) DeleteGraphSnapshot(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	snapshotID := request.GetStringParam(req.Parameters, "snapshotIdentifier")
-	if snapshotID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "snapshotIdentifier")
+	in := &DeleteGraphSnapshotInput{
+		SnapshotIdentifier: request.GetStringParam(req.Parameters, "snapshotIdentifier"),
+		Region:             reqCtx.GetRegion(),
 	}
 
-	snapshot, err := store.GetSnapshot(snapshotID)
+	snapshot, err := s.deleteGraphSnapshotCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("snapshot", snapshotID)
-		}
 		return nil, err
 	}
-
-	response := snapshotToResponse(snapshot)
-
-	if err := store.DeleteSnapshot(snapshotID); err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("snapshot", snapshotID)
-		}
-		return nil, err
-	}
-
-	if rs, err := s.storageManager.GetStorage(reqCtx.GetRegion()); err == nil {
-		rs.DeleteBucket("neptunegraph:graph:snapshot:" + snapshotID)
-	}
-
-	return response, nil
+	return snapshotToResponse(snapshot), nil
 }

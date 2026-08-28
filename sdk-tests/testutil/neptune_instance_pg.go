@@ -127,6 +127,65 @@ func (r *TestRunner) runNeptuneInstanceParamGroupTests(tc *neptuneContext) []Tes
 		return nil
 	}))
 
+	results = append(results, r.RunTest("neptune", "ModifyDBParameterGroup_AddCustomParameter", func() error {
+		_, err := tc.client.ModifyDBParameterGroup(tc.ctx, &neptune.ModifyDBParameterGroupInput{
+			DBParameterGroupName: aws.String(instancePGName),
+			Parameters: []types.Parameter{
+				{ParameterName: aws.String("neptune_query_timeout"), ParameterValue: aws.String("200000"), ApplyMethod: types.ApplyMethodImmediate},
+				{ParameterName: aws.String("neptune_custom_flag"), ParameterValue: aws.String("7"), ApplyMethod: types.ApplyMethodImmediate},
+			},
+		})
+		return err
+	}))
+
+	results = append(results, r.RunTest("neptune", "ResetDBParameterGroup_SpecificParameters", func() error {
+		resp, err := tc.client.ResetDBParameterGroup(tc.ctx, &neptune.ResetDBParameterGroupInput{
+			DBParameterGroupName: aws.String(instancePGName),
+			Parameters: []types.Parameter{
+				{ParameterName: aws.String("neptune_query_timeout"), ApplyMethod: types.ApplyMethodImmediate},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.DBParameterGroupName == nil || *resp.DBParameterGroupName != instancePGName {
+			return fmt.Errorf("expected DBParameterGroupName=%s in response, got %v", instancePGName, resp.DBParameterGroupName)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "ResetDBParameterGroup_SpecificParameters_Verify", func() error {
+		resp, err := tc.client.DescribeDBParameters(tc.ctx, &neptune.DescribeDBParametersInput{
+			DBParameterGroupName: aws.String(instancePGName),
+		})
+		if err != nil {
+			return err
+		}
+		timeout, timeoutSource, custom := "", "", ""
+		for _, p := range resp.Parameters {
+			if p.ParameterName == nil {
+				continue
+			}
+			switch *p.ParameterName {
+			case "neptune_query_timeout":
+				timeout = aws.ToString(p.ParameterValue)
+				timeoutSource = aws.ToString(p.Source)
+			case "neptune_custom_flag":
+				custom = aws.ToString(p.ParameterValue)
+			}
+		}
+		if timeout != "120000" {
+			return fmt.Errorf("expected neptune_query_timeout reset to default 120000, got %q", timeout)
+		}
+		if timeoutSource == "user" {
+			return fmt.Errorf("expected neptune_query_timeout Source to leave user after reset, got %q", timeoutSource)
+		}
+		if custom != "7" {
+			return fmt.Errorf("expected untouched neptune_custom_flag=7 after subset reset, got %q", custom)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("neptune", "CopyDBParameterGroup", func() error {
 		copyPGName := fmt.Sprintf("test-pg-copy-%d", tc.ts)
 		resp, err := tc.client.CopyDBParameterGroup(tc.ctx, &neptune.CopyDBParameterGroupInput{

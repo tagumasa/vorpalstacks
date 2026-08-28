@@ -39,6 +39,12 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 		if es.SourceType == nil || *es.SourceType != "db-cluster" {
 			return fmt.Errorf("expected SourceType=db-cluster, got %v", es.SourceType)
 		}
+		if len(es.SourceIdsList) != 1 || es.SourceIdsList[0] != tc.clusterID {
+			return fmt.Errorf("expected SourceIdsList=[%s] in create response, got %v", tc.clusterID, es.SourceIdsList)
+		}
+		if len(es.EventCategoriesList) != 3 {
+			return fmt.Errorf("expected 3 event categories in create response, got %v", es.EventCategoriesList)
+		}
 		return nil
 	}))
 
@@ -135,6 +141,7 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 		_, err := tc.client.ModifyEventSubscription(tc.ctx, &neptune.ModifyEventSubscriptionInput{
 			SubscriptionName: aws.String(subName),
 			SourceType:       aws.String("db-instance"),
+			EventCategories:  []string{"maintenance", "notification"},
 		})
 		return err
 	}))
@@ -152,6 +159,9 @@ func (r *TestRunner) runNeptuneEventSubscriptionTests(tc *neptuneContext) []Test
 		sub := resp.EventSubscriptionsList[0]
 		if sub.SourceType == nil || *sub.SourceType != "db-instance" {
 			return fmt.Errorf("expected SourceType=db-instance after modify, got %v", sub.SourceType)
+		}
+		if len(sub.EventCategoriesList) != 2 {
+			return fmt.Errorf("expected 2 event categories after modify, got %v", sub.EventCategoriesList)
 		}
 		return nil
 	}))

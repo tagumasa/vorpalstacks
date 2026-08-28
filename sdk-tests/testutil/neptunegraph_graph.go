@@ -209,5 +209,53 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 		return nil
 	}))
 
+	results = append(results, r.RunTest("neptunegraph", "ResetGraph_FinalSnapshotCreated", func() error {
+		if err := tc.requireGraph(); err != nil {
+			return err
+		}
+		snapshotsFor := func() ([]types.GraphSnapshotSummary, error) {
+			return paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
+				resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
+					GraphIdentifier: aws.String(tc.graphID),
+					NextToken:       next,
+				})
+				if err != nil {
+					return nil, nil, err
+				}
+				return resp.GraphSnapshots, resp.NextToken, nil
+			})
+		}
+		before, err := snapshotsFor()
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.ResetGraph(tc.ctx, &neptunegraph.ResetGraphInput{
+			GraphIdentifier: aws.String(tc.graphID),
+			SkipSnapshot:    aws.Bool(false),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Id == nil || *resp.Id != tc.graphID {
+			return fmt.Errorf("expected id=%s, got %v", tc.graphID, resp.Id)
+		}
+		after, err := snapshotsFor()
+		if err != nil {
+			return err
+		}
+		if len(after) <= len(before) {
+			return fmt.Errorf("expected a final snapshot after ResetGraph(skipSnapshot=false), before=%d after=%d", len(before), len(after))
+		}
+		for _, sn := range after {
+			if sn.SourceGraphId != nil && *sn.SourceGraphId == tc.graphID {
+				if sn.Status != types.SnapshotStatusAvailable && sn.Status != types.SnapshotStatusCreating {
+					return fmt.Errorf("unexpected final snapshot status %s", sn.Status)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("final snapshot for graph %s not found in list", tc.graphID)
+	}))
+
 	return results
 }

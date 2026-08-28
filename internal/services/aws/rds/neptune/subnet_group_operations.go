@@ -8,6 +8,7 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
+	types "vorpalstacks/internal/common/tags"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
@@ -52,6 +53,20 @@ func getNeptuneTagList(params map[string]interface{}) []map[string]interface{} {
 	return tags
 }
 
+// parseNeptuneTags converts the wire tag list into store tag values.
+func parseNeptuneTags(params map[string]interface{}) []types.Tag {
+	rawTags := getNeptuneTagList(params)
+	result := make([]types.Tag, 0, len(rawTags))
+	for _, t := range rawTags {
+		key, _ := t["Key"].(string)
+		value, _ := t["Value"].(string)
+		if key != "" {
+			result = append(result, types.Tag{Key: key, Value: value})
+		}
+	}
+	return result
+}
+
 func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Parameter {
 	var parameters []neptunestore.Parameter
 	for i := 1; ; i++ {
@@ -65,6 +80,7 @@ func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Param
 		source := request.GetStringParam(params, prefix+".Source")
 		applyType := request.GetStringParam(params, prefix+".ApplyType")
 		dataType := request.GetStringParam(params, prefix+".DataType")
+		applyMethod := request.GetStringParam(params, prefix+".ApplyMethod")
 		parameters = append(parameters, neptunestore.Parameter{
 			ParameterName:  paramName,
 			ParameterValue: paramValue,
@@ -72,6 +88,7 @@ func getNeptuneParameterList(params map[string]interface{}) []neptunestore.Param
 			Source:         source,
 			ApplyType:      applyType,
 			DataType:       dataType,
+			ApplyMethod:    applyMethod,
 			IsModifiable:   true,
 		})
 	}
@@ -142,70 +159,30 @@ func (s *NeptuneService) resolveSecurityGroups(ctx context.Context, region strin
 // CreateDBSubnetGroup creates a new DB subnet group with the specified subnets.
 func (s *NeptuneService) CreateDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	name := request.GetStringParam(params, "DBSubnetGroupName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("DBSubnetGroupName is required")
-	}
-	desc := request.GetStringParam(params, "DBSubnetGroupDescription")
-	subnetIds := getNeptuneStringList(params, "SubnetIds")
-	if len(subnetIds) == 0 {
-		return nil, awserrors.NewMissingParameter("SubnetIds is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := validateSubnetCount(len(subnetIds)); err != nil {
-		return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", err.Error(), http.StatusBadRequest)
+	in := &CreateDBSubnetGroupInput{
+		DBSubnetGroupName:        request.GetStringParam(params, "DBSubnetGroupName"),
+		DBSubnetGroupDescription: request.GetStringParam(params, "DBSubnetGroupDescription"),
+		SubnetIds:                getNeptuneStringList(params, "SubnetIds"),
+		AccountID:                reqCtx.GetAccountID(),
+		Region:                   reqCtx.GetRegion(),
 	}
-
-	region := reqCtx.GetRegion()
-	subnets, vpcId, err := s.resolveSubnets(ctx, region, subnetIds)
-	if err != nil {
-		return nil, err
-	}
-
-	sg := &neptunestore.DBSubnetGroup{
-		DBSubnetGroupName:        name,
-		DBSubnetGroupDescription: desc,
-		VpcId:                    vpcId,
-		SubnetGroupStatus:        "Complete",
-		Subnets:                  subnets,
-		ARN:                      neptunestore.SubnetGroupARN(reqCtx.GetAccountID(), reqCtx.GetRegion(), name),
-	}
-
-	if err := store.CreateSubnetGroup(sg); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DBSubnetGroup": sg,
-	}, nil
+	return s.createDBSubnetGroupCore(ctx, store, in)
 }
 
 // DeleteDBSubnetGroup deletes the specified DB subnet group.
 func (s *NeptuneService) DeleteDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	name := request.GetStringParam(params, "DBSubnetGroupName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("DBSubnetGroupName is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	sg, err := store.GetSubnetGroup(name)
-	if err != nil {
-		return nil, translateStoreError(err)
+	in := &DeleteDBSubnetGroupInput{
+		DBSubnetGroupName: request.GetStringParam(req.Parameters, "DBSubnetGroupName"),
 	}
-	if err := store.DeleteSubnetGroup(name); err != nil {
-		return nil, translateStoreError(err)
-	}
-	removeTagsForResource(store, sg.ARN)
-	return map[string]interface{}{}, nil
+	return s.deleteDBSubnetGroupCore(ctx, store, in)
 }
 
 // DescribeDBSubnetGroups describes one or all DB subnet groups.
@@ -243,42 +220,15 @@ func (s *NeptuneService) DescribeDBSubnetGroups(ctx context.Context, reqCtx *req
 // ModifyDBSubnetGroup modifies the description or subnet list of an existing DB subnet group.
 func (s *NeptuneService) ModifyDBSubnetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	name := request.GetStringParam(params, "DBSubnetGroupName")
-	if name == "" {
-		return nil, awserrors.NewMissingParameter("DBSubnetGroupName is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	sg, err := store.GetSubnetGroup(name)
-	if err != nil {
-		return nil, translateStoreError(err)
+	in := &ModifyDBSubnetGroupInput{
+		DBSubnetGroupName:        request.GetStringParam(params, "DBSubnetGroupName"),
+		DBSubnetGroupDescription: request.GetStringParam(params, "DBSubnetGroupDescription"),
+		SubnetIds:                getNeptuneStringList(params, "SubnetIds"),
+		Region:                   reqCtx.GetRegion(),
 	}
-
-	if desc := request.GetStringParam(params, "DBSubnetGroupDescription"); desc != "" {
-		sg.DBSubnetGroupDescription = desc
-	}
-	if subnetIds := getNeptuneStringList(params, "SubnetIds"); len(subnetIds) > 0 {
-		if err := validateSubnetCount(len(subnetIds)); err != nil {
-			return nil, awserrors.NewAWSError("DBSubnetGroupQuotaExceededFault", err.Error(), http.StatusBadRequest)
-		}
-		region := reqCtx.GetRegion()
-		subnets, vpcId, err := s.resolveSubnets(ctx, region, subnetIds)
-		if err != nil {
-			return nil, err
-		}
-		sg.Subnets = subnets
-		sg.VpcId = vpcId
-	}
-
-	if err := store.UpdateSubnetGroup(sg); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DBSubnetGroup": sg,
-	}, nil
+	return s.modifyDBSubnetGroupCore(ctx, store, in)
 }

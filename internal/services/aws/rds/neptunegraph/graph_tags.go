@@ -14,18 +14,17 @@ func (s *NeptuneGraphService) ListTagsForResource(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	resourceArn := request.GetStringParam(req.Parameters, "resourceArn")
-	if resourceArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "resourceArn")
+	in := &ListTagsForResourceInput{
+		ResourceArn: request.GetStringParam(req.Parameters, "resourceArn"),
 	}
 
-	tags, err := store.GetTags(resourceArn)
+	resourceTags, err := s.listTagsForResourceCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"tags": tags,
+		"tags": resourceTags,
 	}, nil
 }
 
@@ -36,22 +35,18 @@ func (s *NeptuneGraphService) TagResource(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	resourceArn := request.GetStringParam(req.Parameters, "resourceArn")
-	if resourceArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "resourceArn")
+	in := &TagResourceInput{
+		ResourceArn: request.GetStringParam(req.Parameters, "resourceArn"),
+		Tags:        parseTagsFromParams(req.Parameters),
 	}
 
-	tags := parseTagsFromParams(req.Parameters)
-	if err := validateTags(tags); err != nil {
-		return nil, err
-	}
-
-	if err := store.AddTags(resourceArn, tags); err != nil {
+	resourceTags, err := s.tagResourceCore(store, in)
+	if err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"tags": tags,
+		"tags": resourceTags,
 	}, nil
 }
 
@@ -62,20 +57,18 @@ func (s *NeptuneGraphService) UntagResource(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	resourceArn := request.GetStringParam(req.Parameters, "resourceArn")
-	if resourceArn == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "resourceArn")
+	in := &UntagResourceInput{
+		ResourceArn: request.GetStringParam(req.Parameters, "resourceArn"),
+		TagKeys:     tags.ParseTagKeysAsSlice(req.Parameters, "tagKeys"),
 	}
 
-	tagKeys := tags.ParseTagKeysAsSlice(req.Parameters, "tagKeys")
-
-	if err := store.RemoveTags(resourceArn, tagKeys); err != nil {
+	resourceTags, err := s.untagResourceCore(store, in)
+	if err != nil {
 		return nil, err
 	}
 
-	tags, _ := store.GetTags(resourceArn)
 	return map[string]interface{}{
-		"tags": tags,
+		"tags": resourceTags,
 	}, nil
 }
 

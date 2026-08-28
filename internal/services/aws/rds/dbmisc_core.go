@@ -21,16 +21,38 @@ import (
 // Input DTOs
 // ---------------------------------------------------------------------------
 
+// The documented RDS Describe* MaxRecords window shared by every list
+// operation of both engine planes: "Default: 100. Constraints: Minimum 20,
+// maximum 100." Raw numbers appear only here.
+const (
+	MinDescribeMaxRecords = 20
+	MaxDescribeMaxRecords = 100
+)
+
+// ResolveDescribeMaxRecords resolves a client-supplied MaxRecords value to
+// the documented window: zero (unset) becomes the default, values below the
+// minimum or above the maximum are clamped to the nearest bound.
+func ResolveDescribeMaxRecords(maxRecords int) int {
+	if maxRecords == 0 {
+		return MaxDescribeMaxRecords
+	}
+	if maxRecords < MinDescribeMaxRecords {
+		return MinDescribeMaxRecords
+	}
+	if maxRecords > MaxDescribeMaxRecords {
+		return MaxDescribeMaxRecords
+	}
+	return maxRecords
+}
+
 // paginateRDSItems applies Marker/MaxRecords pagination to a sorted slice.
 // Delegates to the shared pagination.PaginateSlice so that marker-not-found
 // returns an empty page (not the first page) — the same behaviour Neptune's
 // paginateItems relies on. maxRecords is clamped to 20-100 with a default
 // of 100 when zero.
 func paginateRDSItems[T any](items []T, marker string, maxRecords int32, idFunc func(T) string) ([]T, string) {
-	if maxRecords <= 0 || maxRecords > 100 {
-		maxRecords = 100
-	}
-	result := pagination.PaginateSlice(items, marker, int(maxRecords), pagination.KeyExtractor[T](idFunc))
+	resolved := ResolveDescribeMaxRecords(int(maxRecords))
+	result := pagination.PaginateSlice(items, marker, resolved, pagination.KeyExtractor[T](idFunc))
 	return result.Items, result.NextMarker
 }
 
@@ -159,14 +181,7 @@ func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInpu
 		endTime = startTime.Add(time.Duration(in.Duration) * time.Minute)
 	}
 
-	maxRecords := int(in.MaxRecords)
-	if maxRecords == 0 {
-		maxRecords = 100
-	} else if maxRecords < 20 {
-		maxRecords = 20
-	} else if maxRecords > 100 {
-		maxRecords = 100
-	}
+	maxRecords := ResolveDescribeMaxRecords(int(in.MaxRecords))
 
 	opts := storerds.EventListOptions{
 		SourceType:       sourceTypeStr,

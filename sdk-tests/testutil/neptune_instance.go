@@ -81,11 +81,18 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBInstance", func() error {
-		_, err := tc.client.ModifyDBInstance(tc.ctx, &neptune.ModifyDBInstanceInput{
-			DBInstanceIdentifier: aws.String(tc.instanceID),
-			DBInstanceClass:      aws.String("db.r5.xlarge"),
+		resp, err := tc.client.ModifyDBInstance(tc.ctx, &neptune.ModifyDBInstanceInput{
+			DBInstanceIdentifier:       aws.String(tc.instanceID),
+			DBInstanceClass:            aws.String("db.r5.xlarge"),
+			PreferredMaintenanceWindow: aws.String("tue:04:00-tue:05:00"),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if resp.DBInstance == nil || resp.DBInstance.PreferredMaintenanceWindow == nil || *resp.DBInstance.PreferredMaintenanceWindow != "tue:04:00-tue:05:00" {
+			return fmt.Errorf("expected PreferredMaintenanceWindow=tue:04:00-tue:05:00 in ModifyDBInstance response, got %v", resp.DBInstance.PreferredMaintenanceWindow)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBInstance_Verify", func() error {
@@ -101,6 +108,9 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 		dbi := resp.DBInstances[0]
 		if dbi.DBInstanceClass == nil || *dbi.DBInstanceClass != "db.r5.xlarge" {
 			return fmt.Errorf("expected DBInstanceClass=db.r5.xlarge after modify, got %v", dbi.DBInstanceClass)
+		}
+		if dbi.PreferredMaintenanceWindow == nil || *dbi.PreferredMaintenanceWindow != "tue:04:00-tue:05:00" {
+			return fmt.Errorf("expected PreferredMaintenanceWindow=tue:04:00-tue:05:00 after modify, got %v", dbi.PreferredMaintenanceWindow)
 		}
 		return nil
 	}))

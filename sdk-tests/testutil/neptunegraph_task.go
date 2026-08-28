@@ -92,11 +92,13 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 
 	results = append(results, r.RunTest("neptunegraph", "CreateGraphUsingImportTask", func() error {
 		importGraphName := tc.unique("sdk-impgraph")
+		createTags := map[string]string{"env": "import-created", "suite": "neptunegraph"}
 		resp, err := tc.client.CreateGraphUsingImportTask(tc.ctx, &neptunegraph.CreateGraphUsingImportTaskInput{
 			GraphName: aws.String(importGraphName),
 			Source:    aws.String("s3://test-bucket/import-data/"),
 			RoleArn:   aws.String(fmt.Sprintf("arn:aws:iam::%s:role/NeptuneImportRole", acct)),
 			Format:    types.FormatCsv,
+			Tags:      createTags,
 		})
 		if err != nil {
 			return err
@@ -107,15 +109,37 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 		if resp.Status == "" {
 			return fmt.Errorf("expected non-empty status")
 		}
+		if resp.GraphId == nil || *resp.GraphId == "" {
+			_, _ = tc.client.CancelImportTask(tc.ctx, &neptunegraph.CancelImportTaskInput{
+				TaskIdentifier: resp.TaskId,
+			})
+			return fmt.Errorf("expected non-empty graph ID from CreateGraphUsingImportTask")
+		}
+		graph, err := tc.getGraph(*resp.GraphId)
+		if err != nil {
+			return err
+		}
+		if graph.Arn == nil || *graph.Arn == "" {
+			return fmt.Errorf("expected non-empty ARN for import-created graph")
+		}
+		tagResp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{
+			ResourceArn: graph.Arn,
+		})
+		if err != nil {
+			return err
+		}
+		for k, v := range createTags {
+			if got, ok := tagResp.Tags[k]; !ok || got != v {
+				return fmt.Errorf("import-created graph missing create-time tag %s=%s (got %q)", k, v, got)
+			}
+		}
 		_, _ = tc.client.CancelImportTask(tc.ctx, &neptunegraph.CancelImportTaskInput{
 			TaskIdentifier: resp.TaskId,
 		})
-		if resp.GraphId != nil && *resp.GraphId != "" {
-			_, _ = tc.client.DeleteGraph(tc.ctx, &neptunegraph.DeleteGraphInput{
-				GraphIdentifier: resp.GraphId,
-				SkipSnapshot:    aws.Bool(true),
-			})
-		}
+		_, _ = tc.client.DeleteGraph(tc.ctx, &neptunegraph.DeleteGraphInput{
+			GraphIdentifier: resp.GraphId,
+			SkipSnapshot:    aws.Bool(true),
+		})
 		return nil
 	}))
 

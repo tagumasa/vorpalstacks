@@ -4,11 +4,9 @@ import (
 	"context"
 	"sort"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage/graphengine"
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 	"vorpalstacks/internal/utils/timeutils"
@@ -226,24 +224,15 @@ func (s *NeptuneGraphService) GetQuery(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	queryID := request.GetStringParam(req.Parameters, "queryId")
-	if queryID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "queryId")
+	in := &GetQueryInput{
+		QueryID:         request.GetStringParam(req.Parameters, "queryId"),
+		GraphIdentifier: resolveGraphIdentifier(req.Parameters),
 	}
 
-	graphID := resolveGraphIdentifier(req.Parameters)
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
-	}
-
-	query, err := store.GetQuery(graphID, queryID)
+	query, err := s.getQueryCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("query", queryID)
-		}
 		return nil, err
 	}
-
 	return queryToResponse(query), nil
 }
 
@@ -254,38 +243,13 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphID := resolveGraphIdentifier(req.Parameters)
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
+	in := &ListQueriesInput{
+		GraphIdentifier: resolveGraphIdentifier(req.Parameters),
+		MaxResults:      clampMaxResults(request.GetIntParam(req.Parameters, "maxResults")),
+		State:           strings.ToUpper(request.GetStringParam(req.Parameters, "state")),
 	}
 
-	maxResults := clampMaxResults(request.GetIntParam(req.Parameters, "maxResults"))
-
-	stateFilter := strings.ToUpper(request.GetStringParam(req.Parameters, "state"))
-	if err := validateQueryStateInput(stateFilter); err != nil {
-		return nil, err
-	}
-	if stateFilter != "" && stateFilter != "ALL" {
-		allQueries, err := store.ListQueries(graphID, 0)
-		if err != nil {
-			return nil, err
-		}
-		items := make([]interface{}, 0, maxResults)
-		for _, q := range allQueries {
-			if q.State != stateFilter {
-				continue
-			}
-			items = append(items, queryToResponse(q))
-			if len(items) >= maxResults {
-				break
-			}
-		}
-		return map[string]interface{}{
-			"queries": items,
-		}, nil
-	}
-
-	queries, err := store.ListQueries(graphID, maxResults)
+	queries, err := s.listQueriesCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -301,122 +265,44 @@ func (s *NeptuneGraphService) ListQueries(ctx context.Context, reqCtx *request.R
 }
 
 // CancelQuery cancels a running query by transitioning it to CANCELLING state.
-// Per Smithy QueryState model, only RUNNING/WAITING/CANCELLING are valid states.
-// Terminal queries are deleted (not stored with a terminal state), so a query
-// that still exists is either RUNNING or CANCELLING.
 func (s *NeptuneGraphService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	queryID := request.GetStringParam(req.Parameters, "queryId")
-	if queryID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "queryId")
+	in := &CancelQueryInput{
+		QueryID:         request.GetStringParam(req.Parameters, "queryId"),
+		GraphIdentifier: resolveGraphIdentifier(req.Parameters),
 	}
 
-	graphID := resolveGraphIdentifier(req.Parameters)
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
-	}
-
-	query, err := store.GetQuery(graphID, queryID)
+	query, err := s.cancelQueryCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("query", queryID)
-		}
 		return nil, err
 	}
-
-	// If already CANCELLING, return idempotently.
-	if query.State == "CANCELLING" || query.State == "WAITING" {
-		return queryToResponse(query), nil
-	}
-
-	query.State = "CANCELLING"
-	if err := store.UpdateQuery(query); err != nil {
-		logs.Warn("failed to cancel query", logs.String("queryId", queryID), logs.Err(err))
-		return nil, err
-	}
-
 	return queryToResponse(query), nil
 }
 
 // GetGraphSummary returns structural statistics about the specified graph's data.
 func (s *NeptuneGraphService) GetGraphSummary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	graphID := resolveGraphIdentifier(req.Parameters)
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+
+	in := &GetGraphSummaryInput{
+		GraphIdentifier: resolveGraphIdentifier(req.Parameters),
+		Mode:            strings.ToUpper(request.GetStringParam(req.Parameters, "mode")),
+	}
+
+	res, err := s.getGraphSummaryCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
-	}
-	graphID = graph.Id
-
-	s.enginesMu.Lock()
-	entry, ok := s.activeEngines[graphID]
-	if !ok {
-		s.enginesMu.Unlock()
-		return nil, newResourceNotFoundException("graph", graphID)
-	}
-	if entry.stopped {
-		s.enginesMu.Unlock()
-		return nil, newResourceNotFoundException("graph", graphID)
-	}
-	entry.wg.Add(1)
-	s.enginesMu.Unlock()
-	defer entry.wg.Done()
-
-	entry.mu.RLock()
-	stats := entry.db.Stats()
-	entry.mu.RUnlock()
-	now := time.Now().UTC()
-
-	summary := &ngstore.GraphDataSummary{
-		NumNodes:      proto.Int64(stats.NodeCount),
-		NumEdges:      proto.Int64(stats.EdgeCount),
-		NumNodeLabels: proto.Int64(int64(len(stats.LabelCounts))),
-		NumEdgeLabels: proto.Int64(int64(len(stats.RelCounts))),
-	}
-
-	if len(stats.LabelCounts) > 0 {
-		labels := make([]string, 0, len(stats.LabelCounts))
-		for label := range stats.LabelCounts {
-			labels = append(labels, label)
-		}
-		summary.NodeLabels = labels
-	}
-
-	if len(stats.RelCounts) > 0 {
-		labels := make([]string, 0, len(stats.RelCounts))
-		for label := range stats.RelCounts {
-			labels = append(labels, label)
-		}
-		summary.EdgeLabels = labels
-	}
-
-	// DETAILED mode: compute property statistics by iterating all nodes
-	// and edges. This is O(n) but GetGraphSummary is not a hot path.
-	mode := strings.ToUpper(request.GetStringParam(req.Parameters, "mode"))
-	if err := validateGraphSummaryMode(mode); err != nil {
-		return nil, err
-	}
-	if mode == "DETAILED" {
-		populateDetailedStats(entry.db, summary)
 	}
 
 	return map[string]interface{}{
-		"graphSummary":                  graphDataSummaryToResponse(summary),
-		"lastStatisticsComputationTime": now.Format(timeutils.ISO8601UTCFormat),
+		"graphSummary":                  graphDataSummaryToResponse(res.Summary),
+		"lastStatisticsComputationTime": res.StatsTime.Format(timeutils.ISO8601UTCFormat),
 		"version":                       "1.0",
 	}, nil
 }

@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现全部受支持的 AWS 服务（列表见[docs/services.md](docs/services.md)），Go SDK 测试 3,304 项、跨服务集成测试 50 项、WebSocket 测试 17 项（合计 3,371 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
+> **注意：目前为测试版。** Vorpalstacks 正在积极开发中。已实现全部受支持的 AWS 服务（列表见[docs/services.md](docs/services.md)），Go SDK 测试 3,314 项、跨服务集成测试 50 项、WebSocket 测试 17 项（合计 3,381 项，另有 Python 631 项、TypeScript 2028 项、C# 2019 项），但并未完全覆盖所有边界情况和 AWS 行为。可能存在破坏性变更。欢迎提交 Bug 报告和贡献。
 
 轻量级 AWS 兼容边缘与本地云平台。
 

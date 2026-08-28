@@ -201,20 +201,6 @@ func (s *NeptuneService) IsSubnetInUse(ctx context.Context, region, subnetId str
 	return false
 }
 
-func recordEvent(store neptunestore.NeptuneStoreInterface, sourceType, sourceID, sourceArn, message string, categories []string) {
-	evt := &neptunestore.Event{
-		Date:             time.Now().UTC(),
-		EventCategories:  categories,
-		Message:          message,
-		SourceArn:        sourceArn,
-		SourceIdentifier: sourceID,
-		SourceType:       sourceType,
-	}
-	if err := store.RecordEvent(evt); err != nil {
-		logs.Warn("failed to record event", logs.Err(err))
-	}
-}
-
 // scheduleTransition spawns a goroutine that waits for the specified delay
 // and then invokes fn with the per-region store. The goroutine respects
 // service shutdown via the transition context. This implements the async

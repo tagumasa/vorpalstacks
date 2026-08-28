@@ -99,5 +99,98 @@ func (r *TestRunner) runNeptuneClusterParamGroupTests(tc *neptuneContext) []Test
 		return nil
 	}))
 
+	results = append(results, r.RunTest("neptune", "ModifyDBClusterParameterGroup", func() error {
+		resp, err := tc.client.ModifyDBClusterParameterGroup(tc.ctx, &neptune.ModifyDBClusterParameterGroupInput{
+			DBClusterParameterGroupName: aws.String(tc.paramGroupName),
+			Parameters: []types.Parameter{
+				{ParameterName: aws.String("neptune_query_timeout"), ParameterValue: aws.String("180000"), ApplyMethod: types.ApplyMethodImmediate},
+				{ParameterName: aws.String("neptune_custom_flag"), ParameterValue: aws.String("7"), ApplyMethod: types.ApplyMethodImmediate},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.DBClusterParameterGroupName == nil || *resp.DBClusterParameterGroupName != tc.paramGroupName {
+			return fmt.Errorf("expected DBClusterParameterGroupName=%s in response, got %v", tc.paramGroupName, resp.DBClusterParameterGroupName)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "ModifyDBClusterParameterGroup_Verify", func() error {
+		resp, err := tc.client.DescribeDBClusterParameters(tc.ctx, &neptune.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(tc.paramGroupName),
+		})
+		if err != nil {
+			return err
+		}
+		timeout, custom := "", ""
+		for _, p := range resp.Parameters {
+			if p.ParameterName == nil {
+				continue
+			}
+			switch *p.ParameterName {
+			case "neptune_query_timeout":
+				timeout = aws.ToString(p.ParameterValue)
+			case "neptune_custom_flag":
+				custom = aws.ToString(p.ParameterValue)
+			}
+		}
+		if timeout != "180000" {
+			return fmt.Errorf("expected neptune_query_timeout=180000 after modify, got %q", timeout)
+		}
+		if custom != "7" {
+			return fmt.Errorf("expected neptune_custom_flag=7 after modify, got %q", custom)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "ResetDBClusterParameterGroup_SpecificParameters", func() error {
+		resp, err := tc.client.ResetDBClusterParameterGroup(tc.ctx, &neptune.ResetDBClusterParameterGroupInput{
+			DBClusterParameterGroupName: aws.String(tc.paramGroupName),
+			Parameters: []types.Parameter{
+				{ParameterName: aws.String("neptune_query_timeout"), ApplyMethod: types.ApplyMethodImmediate},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.DBClusterParameterGroupName == nil || *resp.DBClusterParameterGroupName != tc.paramGroupName {
+			return fmt.Errorf("expected DBClusterParameterGroupName=%s in response, got %v", tc.paramGroupName, resp.DBClusterParameterGroupName)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptune", "ResetDBClusterParameterGroup_SpecificParameters_Verify", func() error {
+		resp, err := tc.client.DescribeDBClusterParameters(tc.ctx, &neptune.DescribeDBClusterParametersInput{
+			DBClusterParameterGroupName: aws.String(tc.paramGroupName),
+		})
+		if err != nil {
+			return err
+		}
+		timeout, timeoutSource, custom := "", "", ""
+		for _, p := range resp.Parameters {
+			if p.ParameterName == nil {
+				continue
+			}
+			switch *p.ParameterName {
+			case "neptune_query_timeout":
+				timeout = aws.ToString(p.ParameterValue)
+				timeoutSource = aws.ToString(p.Source)
+			case "neptune_custom_flag":
+				custom = aws.ToString(p.ParameterValue)
+			}
+		}
+		if timeout != "120000" {
+			return fmt.Errorf("expected neptune_query_timeout reset to default 120000, got %q", timeout)
+		}
+		if timeoutSource == "user" {
+			return fmt.Errorf("expected neptune_query_timeout Source to leave user after reset, got %q", timeoutSource)
+		}
+		if custom != "7" {
+			return fmt.Errorf("expected untouched neptune_custom_flag=7 after subset reset, got %q", custom)
+		}
+		return nil
+	}))
+
 	return results
 }

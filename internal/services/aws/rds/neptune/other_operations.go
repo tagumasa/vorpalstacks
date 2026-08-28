@@ -2,74 +2,15 @@ package neptune
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
 	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
-
-func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterface) tags.TagHandlerConfig {
-	return tags.TagHandlerConfig{
-		Param: tags.TagOperationConfig{
-			ResourceParam:   "ResourceName",
-			TagsParam:       "Tags",
-			TagKeysParam:    "TagKeys",
-			TagKeyName:      "Key",
-			TagValueName:    "Value",
-			RequireTags:     false,
-			RequireTagKeys:  false,
-			RequireResource: true,
-		},
-		ParseTags: func(params map[string]interface{}) []tags.Tag {
-			rawTags := getNeptuneTagList(params)
-			result := make([]tags.Tag, 0, len(rawTags))
-			for _, t := range rawTags {
-				key, _ := t["Key"].(string)
-				value, _ := t["Value"].(string)
-				if key != "" {
-					result = append(result, tags.Tag{Key: key, Value: value})
-				}
-			}
-			return result
-		},
-		ParseTagKeys: func(params map[string]interface{}) []string {
-			return request.GetStringList(params, "TagKeys")
-		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagList []tags.Tag) error {
-			return store.AddTags(resourceKey, tagList)
-		},
-		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			return store.RemoveTags(resourceKey, tagKeys)
-		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]tags.Tag, error) {
-			return store.GetTags(resourceKey)
-		},
-		FormatResponse: func(tagList []tags.Tag, _ string) (interface{}, error) {
-			items := make([]interface{}, 0, len(tagList))
-			for _, t := range tagList {
-				items = append(items, map[string]interface{}{"Key": t.Key, "Value": t.Value})
-			}
-			return map[string]interface{}{
-				"TagList": protocol.XMLElements{ElementName: "Tag", Items: items},
-			}, nil
-		},
-		EmptyResponse: func() (interface{}, error) {
-			return map[string]interface{}{}, nil
-		},
-		MapError: func(err error) error {
-			return err
-		},
-	}
-}
 
 // AddTagsToResource adds metadata tags to the specified Neptune resource.
 func (s *NeptuneService) AddTagsToResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -102,105 +43,55 @@ func (s *NeptuneService) RemoveTagsFromResource(ctx context.Context, reqCtx *req
 // cluster.
 func (s *NeptuneService) CreateDBClusterEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	epID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
-	if epID == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterEndpointIdentifier is required")
-	}
-	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
-	if clusterID == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterIdentifier is required")
-	}
-	epType := request.GetStringParam(params, "EndpointType")
-	if epType == "" {
-		return nil, awserrors.NewMissingParameter("EndpointType is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	if _, err := store.GetCluster(clusterID); err != nil {
-		return nil, awserrors.NewAWSError("DBClusterNotFoundFault", fmt.Sprintf("DBCluster %s not found", clusterID), http.StatusNotFound)
+	in := &CreateDBClusterEndpointInput{
+		DBClusterEndpointIdentifier: request.GetStringParam(params, "DBClusterEndpointIdentifier"),
+		DBClusterIdentifier:         request.GetStringParam(params, "DBClusterIdentifier"),
+		EndpointType:                request.GetStringParam(params, "EndpointType"),
+		ExcludedMembers:             request.GetStringList(params, "ExcludedMembers"),
+		StaticMembers:               request.GetStringList(params, "StaticMembers"),
+		AccountID:                   reqCtx.GetAccountID(),
+		Region:                      reqCtx.GetRegion(),
 	}
-
-	accountID := reqCtx.GetAccountID()
-	region := reqCtx.GetRegion()
-
-	excludedMembers := request.GetStringList(params, "ExcludedMembers")
-	staticMembers := request.GetStringList(params, "StaticMembers")
-
-	ep := &neptunestore.DBClusterEndpoint{
-		DBClusterEndpointIdentifier: epID,
-		DBClusterIdentifier:         clusterID,
-		Endpoint:                    fmt.Sprintf("%s.cluster-%s.%s.amazonaws.com", epID, clusterID, region),
-		Status:                      "available",
-		EndpointType:                epType,
-		ExcludedMembers:             excludedMembers,
-		StaticMembers:               staticMembers,
-		DBClusterEndpointArn:        arnutil.NewARNBuilder(accountID, region).RDS().ClusterEndpoint(epID),
-	}
-
-	if err := store.CreateClusterEndpoint(ep); err != nil {
+	ep, err := s.createDBClusterEndpointCore(ctx, store, in)
+	if err != nil {
 		return nil, err
 	}
-
-	return map[string]interface{}{
-		"DBClusterEndpointIdentifier": epID,
-		"DBClusterIdentifier":         clusterID,
-		"Endpoint":                    ep.Endpoint,
-		"EndpointType":                epType,
-		"Status":                      "available",
-		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
-	}, nil
+	return clusterEndpointToResponse(ep), nil
 }
 
 // DescribeDBClusterEndpoints returns information about the custom endpoints for
 // the specified DB cluster.
 func (s *NeptuneService) DescribeDBClusterEndpoints(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
-	endpointID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	if endpointID != "" {
-		ep, err := store.GetClusterEndpoint(endpointID)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return map[string]interface{}{
-			"DBClusterEndpoints": protocol.XMLElements{ElementName: "DBClusterEndpointList", Items: []interface{}{
-				map[string]interface{}{
-					"DBClusterEndpointIdentifier": ep.DBClusterEndpointIdentifier,
-					"DBClusterIdentifier":         ep.DBClusterIdentifier,
-					"Endpoint":                    ep.Endpoint,
-					"Status":                      ep.Status,
-					"EndpointType":                ep.EndpointType,
-					"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
-				},
-			}},
-		}, nil
+	in := &DescribeDBClusterEndpointsInput{
+		DBClusterIdentifier:         request.GetStringParam(params, "DBClusterIdentifier"),
+		DBClusterEndpointIdentifier: request.GetStringParam(params, "DBClusterEndpointIdentifier"),
 	}
-
-	endpoints, err := store.ListClusterEndpoints(clusterID)
+	result, err := s.describeDBClusterEndpointsCore(ctx, store, in)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]interface{}, 0, len(endpoints))
-	for _, ep := range endpoints {
-		items = append(items, map[string]interface{}{
-			"DBClusterEndpointIdentifier": ep.DBClusterEndpointIdentifier,
-			"DBClusterIdentifier":         ep.DBClusterIdentifier,
-			"Endpoint":                    ep.Endpoint,
-			"Status":                      ep.Status,
-			"EndpointType":                ep.EndpointType,
-			"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
-		})
+	if result.Endpoint != nil {
+		ep := result.Endpoint
+		return map[string]interface{}{
+			"DBClusterEndpoints": protocol.XMLElements{ElementName: "DBClusterEndpointList", Items: []interface{}{
+				clusterEndpointToResponse(ep),
+			}},
+		}, nil
+	}
+
+	items := make([]interface{}, 0, len(result.Endpoints))
+	for _, ep := range result.Endpoints {
+		items = append(items, clusterEndpointToResponse(ep))
 	}
 
 	return map[string]interface{}{
@@ -208,78 +99,64 @@ func (s *NeptuneService) DescribeDBClusterEndpoints(ctx context.Context, reqCtx 
 	}, nil
 }
 
+// clusterEndpointToResponse projects a cluster endpoint record onto the
+// operation's response member shape, emitting every documented member the
+// record carries.
+func clusterEndpointToResponse(ep *neptunestore.DBClusterEndpoint) map[string]interface{} {
+	m := map[string]interface{}{
+		"DBClusterEndpointIdentifier": ep.DBClusterEndpointIdentifier,
+		"DBClusterIdentifier":         ep.DBClusterIdentifier,
+		"Endpoint":                    ep.Endpoint,
+		"Status":                      ep.Status,
+		"EndpointType":                ep.EndpointType,
+		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
+	}
+	if len(ep.ExcludedMembers) > 0 {
+		m["ExcludedMembers"] = protocol.XMLElements{ElementName: "member", Items: stringSliceToInterface(ep.ExcludedMembers)}
+	}
+	if len(ep.StaticMembers) > 0 {
+		m["StaticMembers"] = protocol.XMLElements{ElementName: "member", Items: stringSliceToInterface(ep.StaticMembers)}
+	}
+	return m
+}
+
 // ModifyDBClusterEndpoint modifies the properties of the specified DB cluster
 // endpoint.
 func (s *NeptuneService) ModifyDBClusterEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	epID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
-	if epID == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterEndpointIdentifier is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	ep, err := store.GetClusterEndpoint(epID)
+	in := &ModifyDBClusterEndpointInput{
+		DBClusterEndpointIdentifier: request.GetStringParam(params, "DBClusterEndpointIdentifier"),
+		EndpointType:                request.GetStringParam(params, "EndpointType"),
+		ExcludedMembers:             request.GetStringList(params, "ExcludedMembers"),
+		StaticMembers:               request.GetStringList(params, "StaticMembers"),
+	}
+	ep, err := s.modifyDBClusterEndpointCore(ctx, store, in)
 	if err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	if request.HasParam(params, "ExcludedMembers") {
-		ep.ExcludedMembers = request.GetStringList(params, "ExcludedMembers")
-	}
-	if request.HasParam(params, "StaticMembers") {
-		ep.StaticMembers = request.GetStringList(params, "StaticMembers")
-	}
-	if newType := request.GetStringParam(params, "EndpointType"); newType != "" {
-		ep.EndpointType = newType
-	}
-
-	ep.Status = "available"
-	if err := store.UpdateClusterEndpoint(ep); err != nil {
 		return nil, err
 	}
-
-	return map[string]interface{}{
-		"DBClusterEndpointIdentifier": epID,
-		"DBClusterIdentifier":         ep.DBClusterIdentifier,
-		"Endpoint":                    ep.Endpoint,
-		"EndpointType":                ep.EndpointType,
-		"Status":                      "available",
-		"DBClusterEndpointArn":        ep.DBClusterEndpointArn,
-	}, nil
+	return clusterEndpointToResponse(ep), nil
 }
 
 // DeleteDBClusterEndpoint deletes the specified custom DB cluster endpoint.
 func (s *NeptuneService) DeleteDBClusterEndpoint(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	epID := request.GetStringParam(params, "DBClusterEndpointIdentifier")
-	if epID == "" {
-		return nil, awserrors.NewMissingParameter("DBClusterEndpointIdentifier is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	ep, err := store.GetClusterEndpoint(epID)
-	if err != nil {
-		return nil, translateStoreError(err)
+	in := &DeleteDBClusterEndpointInput{
+		DBClusterEndpointIdentifier: request.GetStringParam(req.Parameters, "DBClusterEndpointIdentifier"),
 	}
-	epArn := ep.DBClusterEndpointArn
-
-	if err := store.DeleteClusterEndpoint(epID); err != nil {
+	ep, err := s.deleteDBClusterEndpointCore(ctx, store, in)
+	if err != nil {
 		return nil, err
 	}
-
-	return map[string]interface{}{
-		"DBClusterEndpointIdentifier": epID,
-		"Status":                      "deleting",
-		"DBClusterEndpointArn":        epArn,
-	}, nil
+	resp := clusterEndpointToResponse(ep)
+	resp["Status"] = "deleting"
+	return resp, nil
 }
 
 // DescribeEvents returns Neptune events matching the specified filter criteria.
@@ -289,38 +166,16 @@ func (s *NeptuneService) DescribeEvents(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-
-	var startTime time.Time
-	if stStr := request.GetStringParam(params, "StartTime"); stStr != "" {
-		var err error
-		startTime, err = time.Parse(time.RFC3339, stStr)
-		if err != nil {
-			return nil, awserrors.NewAWSError("InvalidParameterValue", "Invalid StartTime format: use RFC3339", http.StatusBadRequest)
-		}
-	}
-
-	duration := request.GetIntParam(params, "Duration")
-	var endTime time.Time
-	if duration > 0 && !startTime.IsZero() {
-		endTime = startTime.Add(time.Duration(duration) * time.Minute)
-	} else if etStr := request.GetStringParam(params, "EndTime"); etStr != "" {
-		var err error
-		endTime, err = time.Parse(time.RFC3339, etStr)
-		if err != nil {
-			return nil, awserrors.NewAWSError("InvalidParameterValue", "Invalid EndTime format: use RFC3339", http.StatusBadRequest)
-		}
-	}
-
-	opts := neptunestore.EventListOptions{
+	in := &DescribeEventsInput{
 		SourceType:       request.GetStringParam(params, "SourceType"),
 		SourceIdentifier: request.GetStringParam(params, "SourceIdentifier"),
-		StartTime:        startTime,
-		EndTime:          endTime,
-		Marker:           pagination.GetMarker(req.Parameters, "Marker"),
-		MaxRecords:       pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+		StartTime:        request.GetStringParam(params, "StartTime"),
+		EndTime:          request.GetStringParam(params, "EndTime"),
+		Duration:         request.GetIntParam(params, "Duration"),
+		Marker:           pagination.GetMarker(params, "Marker"),
+		MaxRecords:       request.GetIntParam(params, "MaxRecords"),
 	}
-
-	result, err := store.ListEvents(opts)
+	result, err := s.describeEventsCore(ctx, store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -397,40 +252,22 @@ func (s *NeptuneService) DescribePendingMaintenanceActions(ctx context.Context, 
 // specified Neptune resource.
 func (s *NeptuneService) ApplyPendingMaintenanceAction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	resourceID := request.GetStringParam(params, "ResourceIdentifier")
-	if resourceID == "" {
-		return nil, awserrors.NewMissingParameter("ResourceIdentifier is required")
-	}
-	action := request.GetStringParam(params, "ApplyAction")
-	if action == "" {
-		return nil, awserrors.NewMissingParameter("ApplyAction is required")
-	}
-	if err := validateApplyAction(action); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-	optIn := request.GetStringParam(params, "OptInType")
-	if optIn == "" {
-		return nil, awserrors.NewMissingParameter("OptInType is required")
-	}
-	if err := validateOptInType(optIn); err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-
-	// Validate that the resource exists.
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.GetCluster(resourceID); err != nil {
-		if _, err2 := store.GetInstance(resourceID); err2 != nil {
-			return nil, awserrors.NewAWSError("ResourceNotFoundFault",
-				fmt.Sprintf("Resource %s not found", resourceID), http.StatusNotFound)
-		}
+	in := &ApplyPendingMaintenanceActionInput{
+		ResourceIdentifier: request.GetStringParam(params, "ResourceIdentifier"),
+		ApplyAction:        request.GetStringParam(params, "ApplyAction"),
+		OptInType:          request.GetStringParam(params, "OptInType"),
+	}
+	if err := s.applyPendingMaintenanceActionCore(ctx, store, in); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
 		"ResourcePendingMaintenanceActions": map[string]interface{}{
-			"ResourceIdentifier": resourceID,
+			"ResourceIdentifier": in.ResourceIdentifier,
 		},
 	}, nil
 }
@@ -543,15 +380,12 @@ func (s *NeptuneService) DescribeOrderableDBInstanceOptions(ctx context.Context,
 // DescribeValidDBInstanceModifications returns the valid modifications that can
 // be applied to the specified DB instance.
 func (s *NeptuneService) DescribeValidDBInstanceModifications(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	instanceID := request.GetStringParam(params, "DBInstanceIdentifier")
-	if instanceID == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
-
-	return map[string]interface{}{
-		"ValidDBInstanceModificationsMessage": map[string]interface{}{
-			"Storage": protocol.XMLElements{ElementName: "ValidStorageOptions", Items: []interface{}{}},
-		},
-	}, nil
+	in := &DescribeValidDBInstanceModificationsInput{
+		DBInstanceIdentifier: request.GetStringParam(req.Parameters, "DBInstanceIdentifier"),
+	}
+	return s.describeValidDBInstanceModificationsCore(ctx, store, in)
 }

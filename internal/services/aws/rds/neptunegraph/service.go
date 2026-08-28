@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
@@ -256,30 +255,6 @@ func (s *NeptuneGraphService) store(reqCtx *request.RequestContext) (*ngstore.Ne
 	return st, nil
 }
 
-// resolveGraphIdentifier resolves a graphIdentifier parameter (which may be
-// either a graph ID like "g-xxxxxxxxxx" or a graph name) to a Graph.
-// AWS NeptuneGraph accepts both forms for most operations.
-func (s *NeptuneGraphService) resolveGraphIdentifier(store *ngstore.NeptuneGraphStore, identifier string) (*ngstore.Graph, error) {
-	graph, err := store.GetGraph(identifier)
-	if err == nil {
-		return graph, nil
-	}
-	if !ngstore.IsNotFound(err) {
-		return nil, err
-	}
-
-	graphs, _, _, listErr := store.ListGraphs(storecommon.ListOptions{})
-	if listErr != nil {
-		return nil, listErr
-	}
-	for _, g := range graphs {
-		if g.Name == identifier {
-			return g, nil
-		}
-	}
-	return nil, ngstore.ErrGraphNotFound
-}
-
 // RegisterHandlers registers all NeptuneGraph operation handlers with the dispatcher.
 func (s *NeptuneGraphService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("neptunegraph", "CreateGraph", s.CreateGraph)
@@ -333,103 +308,23 @@ func (s *NeptuneGraphService) CreateGraph(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if err := validateGraphName(graphName); err != nil {
-		return nil, err
-	}
-
-	mem := request.GetIntParam(req.Parameters, "provisionedMemory")
-	if err := validateProvisionedMemory(mem, true); err != nil {
-		return nil, err
-	}
-
-	replicaCount := 1
-	if request.HasParam(req.Parameters, "replicaCount") {
-		replicaCount = request.GetIntParam(req.Parameters, "replicaCount")
-		if err := validateReplicaCount(replicaCount); err != nil {
-			return nil, err
-		}
-	}
-
-	kmsKey := request.GetStringParam(req.Parameters, "kmsKeyIdentifier")
-	if err := validateKmsKeyArn(kmsKey, false); err != nil {
-		return nil, err
-	}
-
-	region := reqCtx.GetRegion()
-	graphID := generateID("g-")
-	now := time.Now().UTC()
-
-	graph := &ngstore.Graph{
-		Id:                 graphID,
-		Name:               graphName,
-		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
-		Status:             "CREATING",
-		ProvisionedMemory:  proto.Int32(int32(mem)),
-		ReplicaCount:       proto.Int32(int32(replicaCount)),
+	in := &CreateGraphInput{
+		GraphName:          request.GetStringParam(req.Parameters, "graphName"),
+		ProvisionedMemory:  request.GetIntParam(req.Parameters, "provisionedMemory"),
+		HasReplicaCount:    request.HasParam(req.Parameters, "replicaCount"),
+		ReplicaCount:       request.GetIntParam(req.Parameters, "replicaCount"),
+		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
 		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
 		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		KmsKeyIdentifier:   request.GetStringParam(req.Parameters, "kmsKeyIdentifier"),
-		BuildNumber:        neptuneGraphBuildNumber,
-		CreateTime:         &now,
-		AccountID:          s.accountID,
-		Region:             region,
+		VectorSearchConfig: req.Parameters["vectorSearchConfiguration"],
+		Tags:               parseTagsFromParams(req.Parameters),
+		Region:             reqCtx.GetRegion(),
 	}
 
-	if vsc, err := parseVectorSearchConfig(req.Parameters); err != nil {
-		return nil, err
-	} else if vsc != nil {
-		graph.VectorSearchConfiguration = vsc
-	}
-
-	if err := store.CreateGraph(graph); err != nil {
-		if ngstore.IsAlreadyExists(err) {
-			return nil, newConflictException("CONCURRENT_MODIFICATION")
-		}
+	graph, err := s.createGraphCore(ctx, store, in)
+	if err != nil {
 		return nil, err
 	}
-
-	bucket, err := s.graphBucket(graphID)
-	if err != nil {
-		return nil, newInternalServerException(err)
-	}
-	db, err := graphengine.New(bucket, s.engineOptions())
-	if err != nil {
-		logs.Error("failed to open graph engine", logs.String("graphId", graphID), logs.Err(err))
-		graph.Status = "FAILED"
-		graph.StatusReason = fmt.Sprintf("failed to open graph engine: %v", err)
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to update graph status to FAILED", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(err)
-	}
-	s.enginesMu.Lock()
-	s.activeEngines[graphID] = &engineEntry{db: db}
-	s.enginesMu.Unlock()
-
-	graph.Status = "AVAILABLE"
-	graph.Endpoint = s.graphEndpoint(graphID)
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Error("failed to update graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
-		s.enginesMu.Lock()
-		delete(s.activeEngines, graphID)
-		s.enginesMu.Unlock()
-		db.Close()
-		graph.Status = "FAILED"
-		graph.StatusReason = "failed to persist graph status"
-		graph.Endpoint = ""
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to update graph status to FAILED after AVAILABLE failure", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status: %w", err))
-	}
-
-	if tags := parseTagsFromParams(req.Parameters); len(tags) > 0 {
-		if err := store.AddTags(graph.Arn, tags); err != nil {
-			logs.Warn("failed to store tags for graph", logs.String("graphId", graphID), logs.Err(err))
-		}
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -440,19 +335,14 @@ func (s *NeptuneGraphService) GetGraph(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &GetGraphInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.getGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -463,26 +353,26 @@ func (s *NeptuneGraphService) ListGraphs(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	opts := storecommon.ListOptions{
+	in := &ListGraphsInput{
 		MaxItems: clampMaxResults(request.GetIntParam(req.Parameters, "maxResults")),
 		Marker:   request.GetStringParam(req.Parameters, "nextToken"),
 	}
 
-	graphs, nextToken, truncated, err := store.ListGraphs(opts)
+	res, err := s.listGraphsCore(store, in)
 	if err != nil {
 		return nil, err
 	}
 
-	summaries := make([]interface{}, 0, len(graphs))
-	for _, g := range graphs {
+	summaries := make([]interface{}, 0, len(res.Graphs))
+	for _, g := range res.Graphs {
 		summaries = append(summaries, graphSummaryToResponse(g))
 	}
 
 	result := map[string]interface{}{
 		"graphs": summaries,
 	}
-	if truncated {
-		result["nextToken"] = nextToken
+	if res.Truncated {
+		result["nextToken"] = res.NextToken
 	}
 	return result, nil
 }
@@ -494,41 +384,20 @@ func (s *NeptuneGraphService) UpdateGraph(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &UpdateGraphInput{
+		GraphIdentifier:       request.GetStringParam(req.Parameters, "graphIdentifier"),
+		HasProvisionedMemory:  request.HasParam(req.Parameters, "provisionedMemory"),
+		ProvisionedMemory:     request.GetIntParam(req.Parameters, "provisionedMemory"),
+		HasDeletionProtection: request.HasParam(req.Parameters, "deletionProtection"),
+		DeletionProtection:    request.GetBoolParam(req.Parameters, "deletionProtection"),
+		HasPublicConnectivity: request.HasParam(req.Parameters, "publicConnectivity"),
+		PublicConnectivity:    request.GetBoolParam(req.Parameters, "publicConnectivity"),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.updateGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-
-	if graph.Status != "AVAILABLE" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
-	}
-
-	if request.HasParam(req.Parameters, "provisionedMemory") {
-		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
-		if mem < minProvisionedMemory || mem > maxProvisionedMemory {
-			return nil, newValidationException("CONSTRAINT_VIOLATION", "provisionedMemory")
-		}
-		graph.ProvisionedMemory = proto.Int32(int32(mem))
-	}
-	if request.HasParam(req.Parameters, "deletionProtection") {
-		graph.DeletionProtection = request.GetBoolParam(req.Parameters, "deletionProtection")
-	}
-	if request.HasParam(req.Parameters, "publicConnectivity") {
-		graph.PublicConnectivity = request.GetBoolParam(req.Parameters, "publicConnectivity")
-	}
-
-	if err := store.UpdateGraph(graph); err != nil {
-		return nil, err
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -539,113 +408,17 @@ func (s *NeptuneGraphService) DeleteGraph(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &DeleteGraphInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		HasSkipSnapshot: request.HasParam(req.Parameters, "skipSnapshot"),
+		SkipSnapshot:    request.GetBoolParam(req.Parameters, "skipSnapshot"),
+		Region:          reqCtx.GetRegion(),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.deleteGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-	graphID = graph.Id
-
-	if graph.DeletionProtection {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph has deletion protection enabled")
-	}
-
-	skipSnapshot := request.GetBoolParam(req.Parameters, "skipSnapshot")
-
-	var snapshotID string
-	if !skipSnapshot && graph.Status != "DELETING" {
-		snapshotID = generateID("gs-")
-		now := time.Now().UTC()
-		snapshot := &ngstore.GraphSnapshot{
-			Id:                 snapshotID,
-			Name:               graph.Name + "-auto-snapshot",
-			Arn:                s.arnBuilder.NeptuneGraph().Snapshot(snapshotID),
-			Status:             "CREATING",
-			SourceGraphId:      graphID,
-			SnapshotCreateTime: &now,
-			AccountID:          s.accountID,
-			Region:             graph.Region,
-		}
-		if err := store.CreateSnapshot(snapshot); err != nil {
-			logs.Warn("failed to create auto snapshot during graph deletion", logs.String("graphId", graphID), logs.Err(err))
-			snapshotID = ""
-		}
-	}
-
-	graph.Status = "DELETING"
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Warn("failed to update graph status to DELETING", logs.String("graphId", graphID), logs.Err(err))
-	}
-
-	if graph.Arn != "" {
-		existingTags, _ := store.GetTags(graph.Arn)
-		if len(existingTags) > 0 {
-			keys := make([]string, 0, len(existingTags))
-			for k := range existingTags {
-				keys = append(keys, k)
-			}
-			if err := store.RemoveTags(graph.Arn, keys); err != nil {
-				logs.Warn("failed to remove tags during graph deletion", logs.String("arn", graph.Arn), logs.Err(err))
-			}
-		}
-	}
-
-	s.enginesMu.Lock()
-	var engineEntry *engineEntry
-	if e, ok := s.activeEngines[graphID]; ok {
-		e.stopped = true
-		engineEntry = e
-		delete(s.activeEngines, graphID)
-	}
-	s.enginesMu.Unlock()
-	s.planCache.purgeByGraph(graphID)
-
-	if engineEntry != nil {
-		engineEntry.wg.Wait()
-		engineEntry.db.Close()
-	}
-
-	if snapshotID != "" {
-		srcBkt, srcErr := s.graphBucket(graphID)
-		dstBkt, dstErr := s.graphBucket("snapshot:" + snapshotID)
-		copyOK := false
-		if srcErr == nil && dstErr == nil {
-			if err := copyGraphBucket(srcBkt, dstBkt); err != nil {
-				logs.Warn("failed to copy graph data to snapshot bucket during deletion",
-					logs.String("graphId", graphID), logs.String("snapshotId", snapshotID), logs.Err(err))
-			} else {
-				copyOK = true
-			}
-		}
-		finalStatus := "AVAILABLE"
-		if !copyOK {
-			finalStatus = "FAILED"
-		}
-		if snap, getErr := store.GetSnapshot(snapshotID); getErr == nil {
-			snap.Status = finalStatus
-			if updateErr := store.UpdateSnapshot(snap); updateErr != nil {
-				logs.Warn("failed to update snapshot status after copy",
-					logs.String("snapshotId", snapshotID), logs.Err(updateErr))
-			}
-		}
-	}
-
-	if rs, err := s.storageManager.GetStorage(reqCtx.GetRegion()); err == nil {
-		rs.DeleteBucket("neptunegraph:graph:" + graphID)
-	}
-
-	if err := store.DeleteGraph(graphID); err != nil {
-		logs.Error("failed to delete graph from store", logs.String("graphId", graphID), logs.Err(err))
-		return nil, newInternalServerException(fmt.Errorf("failed to delete graph: %w", err))
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -656,69 +429,14 @@ func (s *NeptuneGraphService) StartGraph(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &StartGraphInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.startGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-	graphID = graph.Id
-
-	if graph.Status != "STOPPED" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in STOPPED state")
-	}
-
-	graph.Status = "STARTING"
-	if err := store.UpdateGraph(graph); err != nil {
-		graph.Status = "STOPPED"
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STARTING: %w", err))
-	}
-
-	bucket, err := s.graphBucket(graphID)
-	if err != nil {
-		graph.Status = "STOPPED"
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to restore graph status to STOPPED after graphBucket failure",
-				logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(err)
-	}
-	db, err := graphengine.New(bucket, s.engineOptions())
-	if err != nil {
-		graph.Status = "FAILED"
-		graph.StatusReason = err.Error()
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to update graph status to FAILED after engine open failure", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(err)
-	}
-
-	s.enginesMu.Lock()
-	s.activeEngines[graphID] = &engineEntry{db: db}
-	s.enginesMu.Unlock()
-
-	graph.Status = "AVAILABLE"
-	graph.Endpoint = s.graphEndpoint(graphID)
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Error("failed to update graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
-		s.enginesMu.Lock()
-		delete(s.activeEngines, graphID)
-		s.enginesMu.Unlock()
-		db.Close()
-		graph.Status = "STOPPED"
-		graph.Endpoint = ""
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to restore graph status to STOPPED", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to AVAILABLE: %w", err))
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -729,51 +447,14 @@ func (s *NeptuneGraphService) StopGraph(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &StopGraphInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.stopGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-	graphID = graph.Id
-
-	if graph.Status != "AVAILABLE" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
-	}
-
-	graph.Status = "STOPPING"
-	if err := store.UpdateGraph(graph); err != nil {
-		graph.Status = "AVAILABLE"
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STOPPING: %w", err))
-	}
-
-	s.enginesMu.Lock()
-	var entry *engineEntry
-	if e, ok := s.activeEngines[graphID]; ok {
-		e.stopped = true
-		entry = e
-		delete(s.activeEngines, graphID)
-	}
-	s.enginesMu.Unlock()
-
-	if entry != nil {
-		entry.wg.Wait()
-		entry.db.Close()
-	}
-
-	graph.Status = "STOPPED"
-	graph.Endpoint = ""
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Error("failed to update graph status to STOPPED", logs.String("graphId", graphID), logs.Err(err))
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to STOPPED: %w", err))
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -784,57 +465,16 @@ func (s *NeptuneGraphService) ResetGraph(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &ResetGraphInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		HasSkipSnapshot: request.HasParam(req.Parameters, "skipSnapshot"),
+		SkipSnapshot:    request.GetBoolParam(req.Parameters, "skipSnapshot"),
 	}
 
-	graph, err := s.resolveGraphIdentifier(store, graphID)
+	graph, err := s.resetGraphCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
 		return nil, err
 	}
-	graphID = graph.Id
-
-	if graph.Status != "AVAILABLE" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graph is not in AVAILABLE state")
-	}
-
-	graph.Status = "RESETTING"
-	if err := store.UpdateGraph(graph); err != nil {
-		graph.Status = "AVAILABLE"
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to RESETTING: %w", err))
-	}
-
-	s.enginesMu.RLock()
-	entry, ok := s.activeEngines[graphID]
-	s.enginesMu.RUnlock()
-
-	if ok {
-		entry.mu.Lock()
-		if err := entry.db.Clear(); err != nil {
-			entry.mu.Unlock()
-
-			graph.Status = "FAILED"
-			graph.StatusReason = err.Error()
-			if storeErr := store.UpdateGraph(graph); storeErr != nil {
-				logs.Warn("Failed to update graph status to FAILED after Clear error",
-					logs.String("graphId", graphID),
-					logs.Err(storeErr))
-			}
-			return nil, newInternalServerException(err)
-		}
-		entry.mu.Unlock()
-	}
-
-	graph.Status = "AVAILABLE"
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Error("failed to update graph status to AVAILABLE after reset", logs.String("graphId", graphID), logs.Err(err))
-		return nil, newInternalServerException(fmt.Errorf("failed to update graph status to AVAILABLE: %w", err))
-	}
-
 	return graphToResponse(graph), nil
 }
 
@@ -845,146 +485,22 @@ func (s *NeptuneGraphService) RestoreGraphFromSnapshot(ctx context.Context, reqC
 		return nil, err
 	}
 
-	snapshotID := request.GetStringParam(req.Parameters, "snapshotIdentifier")
-	if snapshotID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "snapshotIdentifier")
+	in := &RestoreGraphFromSnapshotInput{
+		SnapshotIdentifier:   request.GetStringParam(req.Parameters, "snapshotIdentifier"),
+		GraphName:            request.GetStringParam(req.Parameters, "graphName"),
+		DeletionProtection:   request.GetBoolParam(req.Parameters, "deletionProtection"),
+		PublicConnectivity:   request.GetBoolParam(req.Parameters, "publicConnectivity"),
+		HasProvisionedMemory: request.HasParam(req.Parameters, "provisionedMemory"),
+		ProvisionedMemory:    request.GetIntParam(req.Parameters, "provisionedMemory"),
+		HasReplicaCount:      request.HasParam(req.Parameters, "replicaCount"),
+		ReplicaCount:         request.GetIntParam(req.Parameters, "replicaCount"),
+		Tags:                 parseTagsFromParams(req.Parameters),
+		Region:               reqCtx.GetRegion(),
 	}
 
-	graphName := request.GetStringParam(req.Parameters, "graphName")
-	if err := validateGraphName(graphName); err != nil {
-		return nil, err
-	}
-
-	_, err = store.GetSnapshot(snapshotID)
+	graph, err := s.restoreGraphFromSnapshotCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("snapshot", snapshotID)
-		}
 		return nil, err
 	}
-
-	region := reqCtx.GetRegion()
-	graphID := generateID("g-")
-	now := time.Now().UTC()
-
-	graph := &ngstore.Graph{
-		Id:                 graphID,
-		Name:               graphName,
-		Arn:                s.arnBuilder.NeptuneGraph().Graph(graphID),
-		Status:             "CREATING",
-		ProvisionedMemory:  proto.Int32(128),
-		ReplicaCount:       proto.Int32(1),
-		DeletionProtection: request.GetBoolParam(req.Parameters, "deletionProtection"),
-		PublicConnectivity: request.GetBoolParam(req.Parameters, "publicConnectivity"),
-		BuildNumber:        neptuneGraphBuildNumber,
-		SourceSnapshotId:   snapshotID,
-		CreateTime:         &now,
-		AccountID:          s.accountID,
-		Region:             region,
-	}
-
-	if request.HasParam(req.Parameters, "provisionedMemory") {
-		mem := request.GetIntParam(req.Parameters, "provisionedMemory")
-		if err := validateProvisionedMemory(mem, false); err != nil {
-			return nil, err
-		}
-		if mem > 0 {
-			graph.ProvisionedMemory = proto.Int32(int32(mem))
-		}
-	}
-
-	if request.HasParam(req.Parameters, "replicaCount") {
-		rc := request.GetIntParam(req.Parameters, "replicaCount")
-		if err := validateReplicaCount(rc); err != nil {
-			return nil, err
-		}
-		graph.ReplicaCount = proto.Int32(int32(rc))
-	}
-
-	if err := store.CreateGraph(graph); err != nil {
-		if ngstore.IsAlreadyExists(err) {
-			return nil, newConflictException("CONCURRENT_MODIFICATION")
-		}
-		return nil, err
-	}
-
-	if tags := parseTagsFromParams(req.Parameters); len(tags) > 0 {
-		if err := store.AddTags(graph.Arn, tags); err != nil {
-			logs.Warn("failed to store tags for restored graph", logs.String("graphId", graphID), logs.Err(err))
-		}
-	}
-
-	srcBucket, srcErr := s.graphBucket("snapshot:" + snapshotID)
-	dstBucket, dstErr := s.graphBucket(graphID)
-	if srcErr == nil && dstErr == nil {
-		if err := copyGraphBucket(srcBucket, dstBucket); err != nil {
-			logs.Warn("Failed to copy graph data during restore from snapshot",
-				logs.String("graphId", graphID),
-				logs.String("snapshotId", snapshotID),
-				logs.Err(err))
-		}
-	}
-
-	db, err := graphengine.New(dstBucket, s.engineOptions())
-	if err != nil {
-		graph.Status = "FAILED"
-		graph.StatusReason = fmt.Sprintf("failed to open graph engine: %v", err)
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to update graph status to FAILED after restore", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(err)
-	}
-
-	s.enginesMu.Lock()
-	s.activeEngines[graphID] = &engineEntry{db: db}
-	s.enginesMu.Unlock()
-
-	graph.Status = "AVAILABLE"
-	graph.Endpoint = s.graphEndpoint(graphID)
-	if err := store.UpdateGraph(graph); err != nil {
-		logs.Error("failed to update restored graph status to AVAILABLE", logs.String("graphId", graphID), logs.Err(err))
-		s.enginesMu.Lock()
-		delete(s.activeEngines, graphID)
-		s.enginesMu.Unlock()
-		db.Close()
-		graph.Status = "FAILED"
-		graph.StatusReason = "failed to persist graph status"
-		graph.Endpoint = ""
-		if updateErr := store.UpdateGraph(graph); updateErr != nil {
-			logs.Error("failed to update graph status to FAILED after restore AVAILABLE failure", logs.String("graphId", graphID), logs.Err(updateErr))
-		}
-		return nil, newInternalServerException(fmt.Errorf("failed to update restored graph status: %w", err))
-	}
-
 	return graphToResponse(graph), nil
-}
-
-func copyGraphBucket(src, dst storage.BatchBucket) error {
-	return src.ForEach(func(k, v []byte) error {
-		return dst.Put(k, v)
-	})
-}
-
-func parseVectorSearchConfig(params map[string]interface{}) (*ngstore.VectorSearchConfig, error) {
-	v, ok := params["vectorSearchConfiguration"]
-	if !ok || v == nil {
-		return nil, nil
-	}
-	m, ok := v.(map[string]interface{})
-	if !ok {
-		return nil, nil
-	}
-	dim := 0
-	if d, ok := m["dimension"]; ok {
-		switch v := d.(type) {
-		case float64:
-			dim = int(v)
-		case int:
-			dim = v
-		}
-	}
-	if err := validateVectorSearchDimension(dim); err != nil {
-		return nil, err
-	}
-	return &ngstore.VectorSearchConfig{Dimension: int32(dim)}, nil
 }

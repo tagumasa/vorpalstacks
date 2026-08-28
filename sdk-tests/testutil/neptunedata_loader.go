@@ -82,5 +82,42 @@ func (r *TestRunner) runNeptunedataLoaderTests(tc *neptunedataContext) []TestRes
 		return nil
 	}))
 
+	results = append(results, r.RunTest("neptunedata", "ListLoaderJobs_LimitWindowRejected", func() error {
+		for _, limit := range []int32{0, 101} {
+			_, err := tc.client.ListLoaderJobs(tc.ctx, &neptunedata.ListLoaderJobsInput{
+				Limit: aws.Int32(limit),
+			})
+			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
+				return fmt.Errorf("limit=%d: %w", limit, err)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("neptunedata", "GetLoaderJobStatus_NonPositivePaginationRejected", func() error {
+		if loaderJobID == "" {
+			return fmt.Errorf("no loader job ID from StartLoaderJob")
+		}
+		for _, page := range []int32{0, -1} {
+			_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
+				LoadId: aws.String(loaderJobID),
+				Page:   aws.Int32(page),
+			})
+			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
+				return fmt.Errorf("page=%d: %w", page, err)
+			}
+		}
+		for _, perPage := range []int32{0, -1} {
+			_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
+				LoadId:        aws.String(loaderJobID),
+				ErrorsPerPage: aws.Int32(perPage),
+			})
+			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
+				return fmt.Errorf("errorsPerPage=%d: %w", perPage, err)
+			}
+		}
+		return nil
+	}))
+
 	return results
 }

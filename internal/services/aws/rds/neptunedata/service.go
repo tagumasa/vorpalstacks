@@ -13,15 +13,12 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
 	"vorpalstacks/internal/eventbus"
-	pb "vorpalstacks/internal/pb/storage/storage_neptune"
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/server/portalloc"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
@@ -631,7 +628,6 @@ func (s *NeptuneDataService) GetEngineStatus(ctx context.Context, reqCtx *reques
 // validates the token and clears all graph data.
 func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	_ = ctx
-	_ = reqCtx
 	body := req.Body
 	var params struct {
 		Action string `json:"action"`
@@ -641,76 +637,17 @@ func (s *NeptuneDataService) ExecuteFastReset(ctx context.Context, reqCtx *reque
 		return nil, badRequest(fmt.Sprintf("invalid request body: %v", err))
 	}
 
-	switch params.Action {
-	case "initiateDatabaseReset":
-		token := generateFastResetToken()
-		now := time.Now()
-		s.fastTokens.Store(token, now.Add(30*time.Second))
-		s.fastTokens.Range(func(key, value any) bool {
-			if t, ok := value.(time.Time); ok {
-				if now.After(t) {
-					s.fastTokens.Delete(key)
-				}
-			}
-			return true
-		})
-		return map[string]interface{}{
-			"payload": map[string]interface{}{
-				"token": token,
-			},
-		}, nil
-
-	case "performDatabaseReset":
-		if params.Token == "" {
-			return nil, missingParameter("token")
-		}
-		val, ok := s.fastTokens.Load(params.Token)
-		if !ok {
-			return nil, preconditionFailed("invalid or expired token")
-		}
-		expiry, typeOk := val.(time.Time)
-		if !typeOk || time.Now().After(expiry) {
-			s.fastTokens.Delete(params.Token)
-			return nil, preconditionFailed("invalid or expired token")
-		}
-		s.fastTokens.Delete(params.Token)
-
-		if gs, ok := reqCtx.GraphWriter().(graphengine.GraphStore); ok {
-			if err := gs.Clear(); err != nil {
-				logs.Error("failed to clear graph store during fast reset", logs.Err(err))
-				return nil, internalFailure(fmt.Sprintf("fast reset failed: graph clear error: %v", err))
-			}
-		}
-		region := reqCtx.GetRegion()
-		s.mu.Lock()
-		s.statsDisabled = false
-		s.autoComputeEnabled = true
-		s.mu.Unlock()
-		s.statsMap.Store(region, &GraphStatistics{
-			LabelCounts: make(map[string]int64),
-			RelCounts:   make(map[string]int64),
-		})
-		if resetStore, err := s.GetStoreForRegion(region); err == nil {
-			queries, _ := resetStore.ListQueries()
-			for _, q := range queries {
-				if err := resetStore.DeleteQuery(q.GetQueryId()); err != nil {
-					logs.Warn("failed to delete query during reset", logs.String("queryId", q.GetQueryId()), logs.Err(err))
-				}
-			}
-			jobs, _ := resetStore.ListLoaderJobs()
-			for _, j := range jobs {
-				if err := resetStore.DeleteLoaderJob(j.GetLoadId()); err != nil {
-					logs.Warn("failed to delete loader job during reset", logs.String("loadId", j.GetLoadId()), logs.Err(err))
-				}
-			}
-		}
-		return map[string]interface{}{
-			"status": "200 OK",
-		}, nil
-
-	default:
-		return nil, invalidParameter(fmt.Sprintf("unknown action: %s", params.Action))
+	var graph graphengine.GraphStore
+	if gs, ok := reqCtx.GraphWriter().(graphengine.GraphStore); ok {
+		graph = gs
 	}
+
+	return s.executeFastResetCore(&FastResetInput{
+		Action: params.Action,
+		Token:  params.Token,
+		Region: reqCtx.GetRegion(),
+		Graph:  graph,
+	})
 }
 
 // unsupported returns an UnsupportedOperationException for operations not
@@ -722,174 +659,8 @@ func (s *NeptuneDataService) unsupported(ctx context.Context, reqCtx *request.Re
 	return nil, unsupported("this operation is not supported by vorpalstacks")
 }
 
-// trackQuery records the start of a query execution in Pebble storage.
-func (s *NeptuneDataService) trackQuery(store *neptunestore.NeptuneStore, id, query, queryType string) {
-	if queryType != "gremlin" && queryType != "opencypher" && queryType != "sparql" {
-		queryType = "unknown"
-	}
-	qr := &pb.QueryState{
-		QueryId:     id,
-		QueryType:   queryType,
-		QueryString: query,
-		Status:      "running",
-		StartTime:   timestamppb.Now(),
-	}
-	if err := store.CreateQuery(qr); err != nil {
-		logs.Warn("failed to track query", logs.String("queryId", id), logs.Err(err))
-	}
-}
-
-// resolveQuery records the completion of a query in Pebble storage.
-func (s *NeptuneDataService) resolveQuery(store *neptunestore.NeptuneStore, id string, result any, err error) {
-	qr, storeErr := store.GetQuery(id)
-	if storeErr != nil || qr == nil {
-		return
-	}
-	qr.EndTime = timestamppb.Now()
-
-	if err != nil {
-		qr.Status = "failed"
-		qr.Error = err.Error()
-	} else {
-		qr.Status = "complete"
-	}
-	if updateErr := store.UpdateQuery(qr); updateErr != nil {
-		logs.Warn("failed to resolve query", logs.String("queryId", id), logs.Err(updateErr))
-	}
-}
-
-// getQueryStatus returns the status and evaluation statistics of a query
-// identified by queryId. Shared by both Gremlin and OpenCypher query status
-// handlers.
-func (s *NeptuneDataService) getQueryStatus(reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryId := getPathParam(req, "queryId")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-
-	var elapsed int64
-	if qr.StartTime != nil {
-		if qr.EndTime != nil {
-			elapsed = qr.EndTime.AsTime().Sub(qr.StartTime.AsTime()).Milliseconds()
-		} else {
-			elapsed = time.Since(qr.StartTime.AsTime()).Milliseconds()
-		}
-	}
-
-	return map[string]interface{}{
-		"queryId":     qr.GetQueryId(),
-		"queryString": qr.GetQueryString(),
-		"queryEvalStats": map[string]interface{}{
-			"cancelled":  qr.GetStatus() == "cancelled",
-			"elapsed":    elapsed,
-			"waited":     0,
-			"subqueries": []interface{}{},
-		},
-	}, nil
-}
-
-// listQueries returns all submitted queries of the given type, optionally
-// including those in a waiting state. Shared by both Gremlin and OpenCypher
-// list queries handlers.
-func (s *NeptuneDataService) listQueries(reqCtx *request.RequestContext, req *request.ParsedRequest, queryType string) (interface{}, error) {
-	includeWaiting := request.GetBoolParam(req.Parameters, "includeWaiting")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, err
-	}
-
-	var result []interface{}
-	var acceptedCount, runningCount int32
-
-	for _, qr := range queries {
-		if qr.GetQueryType() != queryType {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		if st == "waiting" && !includeWaiting {
-			continue
-		}
-		entry := map[string]interface{}{
-			"queryId":     qr.GetQueryId(),
-			"queryString": qr.GetQueryString(),
-		}
-		if st == "running" {
-			runningCount++
-		} else {
-			acceptedCount++
-		}
-		result = append(result, entry)
-	}
-	if result == nil {
-		result = []interface{}{}
-	}
-
-	return map[string]interface{}{
-		"queries":            result,
-		"acceptedQueryCount": acceptedCount,
-		"runningQueryCount":  runningCount,
-	}, nil
-}
-
-// cancelQuery cancels a running query identified by queryId. Shared by both
-// Gremlin and OpenCypher cancel handlers. If silent is true, an empty body is
-// returned instead of the standard cancellation confirmation.
-func (s *NeptuneDataService) cancelQuery(reqCtx *request.RequestContext, req *request.ParsedRequest, silent bool, includePayload bool) (interface{}, error) {
-	queryId := getPathParam(req, "queryId")
-	if queryId == "" {
-		return nil, missingParameter("queryId")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, internalFailure(err.Error())
-	}
-
-	qr, err := store.GetQuery(queryId)
-	if err != nil || qr == nil {
-		return nil, badRequest(fmt.Sprintf("query not found: %s", queryId))
-	}
-	switch qr.GetStatus() {
-	case "complete", "failed", "cancelled":
-		return nil, badRequest(fmt.Sprintf("cannot cancel query in terminal state: %s", qr.GetStatus()))
-	}
-	qr.Status = "cancelled"
-	qr.EndTime = timestamppb.Now()
-	if err := store.UpdateQuery(qr); err != nil {
-		logs.Warn("failed to persist query cancellation", logs.String("queryId", queryId), logs.Err(err))
-	}
-
-	if silent {
-		return map[string]interface{}{}, nil
-	}
-
-	resp := map[string]interface{}{
-		"status": "200 OK",
-	}
-	if includePayload {
-		resp["payload"] = true
-	}
-	return resp, nil
-}
+// trackQuery and resolveQuery (query-state persistence for the execute
+// paths) live in query_status_core.go, alongside the query-status Cores.
 
 func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
 	val, _ := s.statsMap.LoadOrStore(region, &GraphStatistics{
@@ -898,11 +669,11 @@ func (s *NeptuneDataService) getStats(region string) *GraphStatistics {
 		LastAccess:  time.Now(),
 		LastRefresh: time.Now(),
 	})
-	st := val.(*GraphStatistics)
-	st.mu.Lock()
-	st.LastAccess = time.Now()
-	st.mu.Unlock()
-	return st
+	gs := val.(*GraphStatistics)
+	gs.mu.Lock()
+	gs.LastAccess = time.Now()
+	gs.mu.Unlock()
+	return gs
 }
 
 func (s *NeptuneDataService) refreshStatistics(reqCtx *request.RequestContext) {
@@ -983,27 +754,27 @@ func refreshStatisticsWithReader(reader graphengine.GraphReader, region string, 
 	stats.mu.Unlock()
 }
 
-func (st *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, relCounts, nodePropCounts, edgePropCounts map[string]int64) {
-	st.mu.Lock()
-	nodeCount = st.NodeCount
-	edgeCount = st.EdgeCount
-	labelCounts = make(map[string]int64, len(st.LabelCounts))
-	for k, v := range st.LabelCounts {
+func (gs *GraphStatistics) snapshot() (nodeCount, edgeCount int64, labelCounts, relCounts, nodePropCounts, edgePropCounts map[string]int64) {
+	gs.mu.Lock()
+	nodeCount = gs.NodeCount
+	edgeCount = gs.EdgeCount
+	labelCounts = make(map[string]int64, len(gs.LabelCounts))
+	for k, v := range gs.LabelCounts {
 		labelCounts[k] = v
 	}
-	relCounts = make(map[string]int64, len(st.RelCounts))
-	for k, v := range st.RelCounts {
+	relCounts = make(map[string]int64, len(gs.RelCounts))
+	for k, v := range gs.RelCounts {
 		relCounts[k] = v
 	}
-	nodePropCounts = make(map[string]int64, len(st.NodePropCounts))
-	for k, v := range st.NodePropCounts {
+	nodePropCounts = make(map[string]int64, len(gs.NodePropCounts))
+	for k, v := range gs.NodePropCounts {
 		nodePropCounts[k] = v
 	}
-	edgePropCounts = make(map[string]int64, len(st.EdgePropCounts))
-	for k, v := range st.EdgePropCounts {
+	edgePropCounts = make(map[string]int64, len(gs.EdgePropCounts))
+	for k, v := range gs.EdgePropCounts {
 		edgePropCounts[k] = v
 	}
-	st.mu.Unlock()
+	gs.mu.Unlock()
 	return
 }
 
@@ -1032,151 +803,9 @@ func generateStatisticsID() string {
 	return fmt.Sprintf("stats-%d-%d", time.Now().UnixMilli(), id)
 }
 
-// startLoaderDispatcher launches the loader job dispatcher if it is not
-// already running. The dispatcher scans for LOAD_QUEUED jobs whose
-// dependencies are satisfied and starts them, respecting the maxConcurrentLoads
-// limit. It exits when no more queued jobs remain.
-func (s *NeptuneDataService) startLoaderDispatcher() {
-	if s.dispatcherRunning.Swap(true) {
-		return
-	}
-	go s.loaderDispatchLoop()
-}
-
-// loaderDispatchLoop repeatedly scans for dispatchable queued loader jobs
-// until none remain. Uses a short poll interval to keep latency low without
-// busy-waiting.
-func (s *NeptuneDataService) loaderDispatchLoop() {
-	defer s.dispatcherRunning.Store(false)
-
-	ticker := time.NewTicker(500 * time.Millisecond)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		dispatched, err := s.dispatchQueuedJobs()
-		if err != nil {
-			logs.Warn("loader dispatcher error", logs.Err(err))
-		}
-		if dispatched == 0 {
-			jobs, err := s.countQueuedJobs()
-			if err != nil || jobs == 0 {
-				return
-			}
-		}
-	}
-}
-
-// countQueuedJobs counts LOAD_QUEUED jobs across all regional stores.
-func (s *NeptuneDataService) countQueuedJobs() (int, error) {
-	count := 0
-	s.stores.Range(func(_, val any) bool {
-		store, ok := val.(*neptunestore.NeptuneStore)
-		if !ok {
-			return true
-		}
-		jobs, err := store.ListLoaderJobs()
-		if err != nil {
-			return true
-		}
-		for _, job := range jobs {
-			if job.GetStatus() == "LOAD_QUEUED" {
-				count++
-			}
-		}
-		return true
-	})
-	return count, nil
-}
-
-// dispatchQueuedJobs scans all stores for LOAD_QUEUED jobs whose dependencies
-// are satisfied and launches them, respecting the concurrency limit.
-// Returns the number of jobs dispatched in this pass.
-func (s *NeptuneDataService) dispatchQueuedJobs() (int, error) {
-	dispatched := 0
-
-	s.stores.Range(func(regionVal, val any) bool {
-		region, rok := regionVal.(string)
-		store, ok := val.(*neptunestore.NeptuneStore)
-		if !ok || !rok {
-			return true
-		}
-
-		jobs, err := store.ListLoaderJobs()
-		if err != nil {
-			return true
-		}
-
-		running := 0
-		for _, job := range jobs {
-			if job.GetStatus() == "LOAD_IN_PROGRESS" {
-				running++
-			}
-		}
-
-		for _, job := range jobs {
-			if job.GetStatus() != "LOAD_QUEUED" {
-				continue
-			}
-			if running >= maxConcurrentLoads {
-				break
-			}
-
-			if !s.dependenciesSatisfied(store, job) {
-				continue
-			}
-
-			clusterDB := s.GetClusterEngineForRegion(region)
-
-			// Re-read the job from the store to detect a concurrent
-			// CancelLoaderJob before transitioning to LOAD_IN_PROGRESS.
-			// Without this, the dispatcher's snapshot can overwrite a
-			// CANCELLED status set between ListLoaderJobs and
-			// UpdateLoaderJob.
-			current, err := store.GetLoaderJob(job.GetLoadId())
-			if err != nil || current == nil || current.GetStatus() != "LOAD_QUEUED" {
-				continue
-			}
-
-			current.Status = "LOAD_IN_PROGRESS"
-			_ = store.UpdateLoaderJob(current)
-
-			s.launchLoaderJob(region, current, clusterDB)
-			running++
-			dispatched++
-		}
-		return true
-	})
-
-	return dispatched, nil
-}
-
-// dependenciesSatisfied checks whether all dependency load IDs are in a
-// LOAD_COMPLETED state. If any dependency failed, the job is marked
-// LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED.
-func (s *NeptuneDataService) dependenciesSatisfied(store *neptunestore.NeptuneStore, job *pb.LoaderJob) bool {
-	for _, depID := range job.GetDependencies() {
-		dep, err := store.GetLoaderJob(depID)
-		if err != nil || dep == nil {
-			job.Status = "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED"
-			job.EndTime = timestamppb.Now()
-			job.ErrorLog = fmt.Sprintf("dependency %s not found", depID)
-			_ = store.UpdateLoaderJob(job)
-			return false
-		}
-		depStatus := dep.GetStatus()
-		if depStatus == "LOAD_FAILED" || depStatus == "CANCELLED" || depStatus == "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED" {
-			job.Status = "LOAD_FAILED_BECAUSE_DEPENDENCY_NOT_SATISFIED"
-			job.EndTime = timestamppb.Now()
-			job.ErrorLog = fmt.Sprintf("dependency %s is in failed state: %s", depID, depStatus)
-			_ = store.UpdateLoaderJob(job)
-			return false
-		}
-		if depStatus != "LOAD_COMPLETED" {
-			return false
-		}
-	}
-	return true
-}
+// The loader dispatcher machinery (startLoaderDispatcher, the dispatch loop
+// and the queued-job/dependency helpers) lives in loader_core.go with the
+// loader Cores.
 
 // GetClusterEngineForRegion returns the graph engine DB for a cluster in the
 // given region. Used by the loader dispatcher which operates outside of a

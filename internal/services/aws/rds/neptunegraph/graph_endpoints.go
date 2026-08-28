@@ -2,11 +2,9 @@ package neptunegraph
 
 import (
 	"context"
-	"fmt"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	ngstore "vorpalstacks/internal/store/aws/rds/neptunegraph"
 )
 
@@ -15,25 +13,6 @@ func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, re
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
-	}
-
-	graph, err := s.resolveGraphIdentifier(store, graphID)
-	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("graph", graphID)
-		}
-		return nil, err
-	}
-
-	vpcID := request.GetStringParam(req.Parameters, "vpcId")
-
-	if vpcID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
 	}
 
 	var subnetIds []string
@@ -47,44 +26,17 @@ func (s *NeptuneGraphService) CreatePrivateGraphEndpoint(ctx context.Context, re
 		}
 	}
 
-	if len(subnetIds) == 0 {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "subnetIds must not be empty")
+	in := &CreatePrivateGraphEndpointInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		VpcId:           request.GetStringParam(req.Parameters, "vpcId"),
+		SubnetIds:       subnetIds,
+		Region:          reqCtx.GetRegion(),
 	}
 
-	if s.eventBus == nil {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "EC2 service not available for VPC/Subnet validation")
-	}
-	ec2 := s.eventBus.EC2Invoker()
-	if ec2 == nil {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "EC2 service not available for VPC/Subnet validation")
-	}
-	for _, subnetId := range subnetIds {
-		subnetVpcId, _, err := ec2.LookupSubnet(ctx, reqCtx.GetRegion(), subnetId)
-		if err != nil {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("subnet %s not found: %v", subnetId, err))
-		}
-		if subnetVpcId != vpcID {
-			return nil, newValidationException("ILLEGAL_ARGUMENT", fmt.Sprintf("subnet %s belongs to VPC %s, not %s", subnetId, subnetVpcId, vpcID))
-		}
-	}
-
-	ep := &ngstore.PrivateGraphEndpoint{
-		GraphId:       graph.Id,
-		VpcId:         vpcID,
-		VpcEndpointId: generateID("vpce-"),
-		SubnetIds:     subnetIds,
-		Status:        "AVAILABLE",
-		AccountID:     s.accountID,
-		Region:        reqCtx.GetRegion(),
-	}
-
-	if err := store.CreateEndpoint(ep); err != nil {
-		if ngstore.IsAlreadyExists(err) {
-			return nil, newConflictException("CONCURRENT_MODIFICATION")
-		}
+	ep, err := s.createPrivateGraphEndpointCore(ctx, store, in)
+	if err != nil {
 		return nil, err
 	}
-
 	return endpointToResponse(ep), nil
 }
 
@@ -95,23 +47,15 @@ func (s *NeptuneGraphService) GetPrivateGraphEndpoint(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
-	}
-	vpcID := request.GetStringParam(req.Parameters, "vpcId")
-	if vpcID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
+	in := &GetPrivateGraphEndpointInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		VpcId:           request.GetStringParam(req.Parameters, "vpcId"),
 	}
 
-	ep, err := store.GetEndpoint(graphID, vpcID)
+	ep, err := s.getPrivateGraphEndpointCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("endpoint", vpcID)
-		}
 		return nil, err
 	}
-
 	return endpointToResponse(ep), nil
 }
 
@@ -122,12 +66,11 @@ func (s *NeptuneGraphService) ListPrivateGraphEndpoints(ctx context.Context, req
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
+	in := &ListPrivateGraphEndpointsInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
 	}
 
-	endpoints, err := store.ListEndpoints(graphID)
+	endpoints, err := s.listPrivateGraphEndpointsCore(store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -160,26 +103,14 @@ func (s *NeptuneGraphService) DeletePrivateGraphEndpoint(ctx context.Context, re
 		return nil, err
 	}
 
-	graphID := request.GetStringParam(req.Parameters, "graphIdentifier")
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier")
-	}
-	vpcID := request.GetStringParam(req.Parameters, "vpcId")
-	if vpcID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "vpcId")
+	in := &DeletePrivateGraphEndpointInput{
+		GraphIdentifier: request.GetStringParam(req.Parameters, "graphIdentifier"),
+		VpcId:           request.GetStringParam(req.Parameters, "vpcId"),
 	}
 
-	ep, err := store.GetEndpoint(graphID, vpcID)
+	ep, err := s.deletePrivateGraphEndpointCore(store, in)
 	if err != nil {
-		if ngstore.IsNotFound(err) {
-			return nil, newResourceNotFoundException("endpoint", vpcID)
-		}
 		return nil, err
 	}
-
-	if err := store.DeleteEndpoint(graphID, vpcID); err != nil {
-		logs.Warn("failed to delete endpoint", logs.String("graphId", graphID), logs.String("vpcId", vpcID), logs.Err(err))
-	}
-
 	return endpointToResponse(ep), nil
 }

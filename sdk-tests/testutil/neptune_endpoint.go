@@ -11,12 +11,15 @@ import (
 func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestResult {
 	var results []TestResult
 	endpointID := fmt.Sprintf("test-ep-%d", tc.ts)
+	staticMember := fmt.Sprintf("static-inst-%d", tc.ts)
+	excludedMember := fmt.Sprintf("excluded-inst-%d", tc.ts)
 
 	results = append(results, r.RunTest("neptune", "CreateDBClusterEndpoint", func() error {
 		resp, err := tc.client.CreateDBClusterEndpoint(tc.ctx, &neptune.CreateDBClusterEndpointInput{
 			DBClusterEndpointIdentifier: aws.String(endpointID),
 			DBClusterIdentifier:         aws.String(tc.clusterID),
 			EndpointType:                aws.String("READER"),
+			StaticMembers:               []string{staticMember},
 		})
 		if err != nil {
 			return err
@@ -29,6 +32,9 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 		}
 		if resp.EndpointType == nil || *resp.EndpointType != "READER" {
 			return fmt.Errorf("expected EndpointType=READER, got %v", resp.EndpointType)
+		}
+		if len(resp.StaticMembers) != 1 || resp.StaticMembers[0] != staticMember {
+			return fmt.Errorf("expected StaticMembers=[%s] in create response, got %v", staticMember, resp.StaticMembers)
 		}
 		return nil
 	}))
@@ -53,15 +59,25 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 		if ep.DBClusterIdentifier == nil || *ep.DBClusterIdentifier != tc.clusterID {
 			return fmt.Errorf("expected DBClusterIdentifier=%s, got %v", tc.clusterID, ep.DBClusterIdentifier)
 		}
+		if len(ep.StaticMembers) != 1 || ep.StaticMembers[0] != staticMember {
+			return fmt.Errorf("expected StaticMembers=[%s] in describe response, got %v", staticMember, ep.StaticMembers)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBClusterEndpoint", func() error {
-		_, err := tc.client.ModifyDBClusterEndpoint(tc.ctx, &neptune.ModifyDBClusterEndpointInput{
+		resp, err := tc.client.ModifyDBClusterEndpoint(tc.ctx, &neptune.ModifyDBClusterEndpointInput{
 			DBClusterEndpointIdentifier: aws.String(endpointID),
 			EndpointType:                aws.String("ANY"),
+			ExcludedMembers:             []string{excludedMember},
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if len(resp.ExcludedMembers) != 1 || resp.ExcludedMembers[0] != excludedMember {
+			return fmt.Errorf("expected ExcludedMembers=[%s] in modify response, got %v", excludedMember, resp.ExcludedMembers)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBClusterEndpoint_Verify", func() error {
@@ -75,6 +91,9 @@ func (r *TestRunner) runNeptuneClusterEndpointTests(tc *neptuneContext) []TestRe
 		ep := endpoints[0]
 		if ep.EndpointType == nil || *ep.EndpointType != "ANY" {
 			return fmt.Errorf("expected EndpointType=ANY after modify, got %v", ep.EndpointType)
+		}
+		if len(ep.ExcludedMembers) != 1 || ep.ExcludedMembers[0] != excludedMember {
+			return fmt.Errorf("expected ExcludedMembers=[%s] after modify, got %v", excludedMember, ep.ExcludedMembers)
 		}
 		return nil
 	}))

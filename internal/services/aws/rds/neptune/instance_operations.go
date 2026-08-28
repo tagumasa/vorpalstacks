@@ -2,17 +2,10 @@ package neptune
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	types "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
-	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateDBInstance creates a new Neptune DB instance within a cluster.
@@ -23,136 +16,39 @@ func (s *NeptuneService) CreateDBInstance(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	clusterID := request.GetStringParam(params, "DBClusterIdentifier")
-	if clusterID != "" {
-		if _, err := store.GetCluster(clusterID); err != nil {
-			return nil, awserrors.NewAWSError("DBClusterNotFoundFault", fmt.Sprintf("DBCluster %s not found", clusterID), http.StatusNotFound)
-		}
+	in := &CreateDBInstanceInput{
+		CreateInstanceParams: rdssvc.CreateInstanceParams{
+			DBInstanceIdentifier:            request.GetStringParam(params, "DBInstanceIdentifier"),
+			DBClusterIdentifier:             request.GetStringParam(params, "DBClusterIdentifier"),
+			Engine:                          request.GetStringParam(params, "Engine"),
+			EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
+			DBInstanceClass:                 request.GetStringParam(params, "DBInstanceClass"),
+			AvailabilityZone:                request.GetStringParam(params, "AvailabilityZone"),
+			DBParameterGroupName:            request.GetStringParam(params, "DBParameterGroupName"),
+			DBSubnetGroupName:               request.GetStringParam(params, "DBSubnetGroupName"),
+			PubliclyAccessible:              request.GetBoolParam(params, "PubliclyAccessible"),
+			AutoMinorVersionUpgrade:         request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
+			Port:                            int32(request.GetIntParam(params, "Port")),
+			StorageType:                     request.GetStringParam(params, "StorageType"),
+			BackupRetentionPeriod:           int32(request.GetIntParam(params, "BackupRetentionPeriod")),
+			AllocatedStorage:                int32(request.GetIntParam(params, "AllocatedStorage")),
+			StorageEncrypted:                request.GetBoolParam(params, "StorageEncrypted"),
+			KmsKeyId:                        request.GetStringParam(params, "KmsKeyId"),
+			DeletionProtection:              request.GetBoolParam(params, "DeletionProtection"),
+			MonitoringInterval:              int32(request.GetIntParam(params, "MonitoringInterval")),
+			MonitoringRoleArn:               request.GetStringParam(params, "MonitoringRoleArn"),
+			EnablePerformanceInsights:       request.GetBoolParam(params, "EnablePerformanceInsights"),
+			PerformanceInsightsKMSKeyId:     request.GetStringParam(params, "PerformanceInsightsKMSKeyId"),
+			EnableIAMDatabaseAuthentication: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
+			MasterUsername:                  request.GetStringParam(params, "MasterUsername"),
+			CopyTagsToSnapshot:              request.GetBoolParam(params, "CopyTagsToSnapshot"),
+			AccountID:                       reqCtx.GetAccountID(),
+			Region:                          reqCtx.GetRegion(),
+		},
+		MasterUserPassword: request.GetStringParam(params, "MasterUserPassword"),
+		Tags:               parseNeptuneTags(params),
 	}
-
-	createParams := rdssvc.CreateInstanceParams{
-		DBInstanceIdentifier:            request.GetStringParam(params, "DBInstanceIdentifier"),
-		DBClusterIdentifier:             clusterID,
-		Engine:                          request.GetStringParam(params, "Engine"),
-		EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
-		DBInstanceClass:                 request.GetStringParam(params, "DBInstanceClass"),
-		AvailabilityZone:                request.GetStringParam(params, "AvailabilityZone"),
-		DBParameterGroupName:            request.GetStringParam(params, "DBParameterGroupName"),
-		DBSubnetGroupName:               request.GetStringParam(params, "DBSubnetGroupName"),
-		PubliclyAccessible:              request.GetBoolParam(params, "PubliclyAccessible"),
-		AutoMinorVersionUpgrade:         request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
-		Port:                            int32(request.GetIntParam(params, "Port")),
-		StorageType:                     request.GetStringParam(params, "StorageType"),
-		BackupRetentionPeriod:           int32(request.GetIntParam(params, "BackupRetentionPeriod")),
-		AllocatedStorage:                int32(request.GetIntParam(params, "AllocatedStorage")),
-		StorageEncrypted:                request.GetBoolParam(params, "StorageEncrypted"),
-		KmsKeyId:                        request.GetStringParam(params, "KmsKeyId"),
-		DeletionProtection:              request.GetBoolParam(params, "DeletionProtection"),
-		MonitoringInterval:              int32(request.GetIntParam(params, "MonitoringInterval")),
-		MonitoringRoleArn:               request.GetStringParam(params, "MonitoringRoleArn"),
-		EnablePerformanceInsights:       request.GetBoolParam(params, "EnablePerformanceInsights"),
-		PerformanceInsightsKMSKeyId:     request.GetStringParam(params, "PerformanceInsightsKMSKeyId"),
-		EnableIAMDatabaseAuthentication: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
-		MasterUsername:                  request.GetStringParam(params, "MasterUsername"),
-		CopyTagsToSnapshot:              request.GetBoolParam(params, "CopyTagsToSnapshot"),
-		AccountID:                       reqCtx.GetAccountID(),
-		Region:                          reqCtx.GetRegion(),
-	}
-
-	if err := rdssvc.ValidateCreateInstanceParams(store, createParams); err != nil {
-		return nil, neptuneTranslateError(err)
-	}
-
-	masterPassword := request.GetStringParam(params, "MasterUserPassword")
-	masterPasswordHash, err := hashMasterPassword(masterPassword)
-	if err != nil {
-		return nil, awserrors.NewAWSError("InvalidParameterValue", err.Error(), http.StatusBadRequest)
-	}
-
-	instance := rdssvc.BuildInstance(createParams)
-	instance.DBInstanceStatus = "available"
-	instance.MasterUserPasswordHash = masterPasswordHash
-
-	if err := store.CreateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	if clusterID != "" {
-		if cluster, err := store.GetCluster(clusterID); err == nil {
-			isWriter := len(cluster.DBClusterMembers) == 0
-			cluster.DBClusterMembers = append(cluster.DBClusterMembers, neptunestore.DBClusterMember{
-				DBInstanceIdentifier: instance.DBInstanceIdentifier,
-				IsClusterWriter:      isWriter,
-				PromotionTier:        0,
-			})
-			if err := store.UpdateCluster(cluster); err != nil {
-				logs.Warn("failed to add instance to cluster members", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-			}
-		}
-	}
-
-	if clusterID != "" {
-		if s.porter != nil {
-			if port, err := s.porter.GetPort(clusterID); err == nil && port > 0 {
-				instance.Endpoint = &neptunestore.Endpoint{
-					Address: s.endpointAddressFor(instance.DBInstanceIdentifier, instance.Engine),
-					Port:    port,
-				}
-				if err := store.UpdateInstance(instance); err != nil {
-					logs.Warn("failed to persist instance endpoint", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-				}
-			}
-		}
-	} else {
-		engineType := instance.Engine
-		if engineType == "" {
-			engineType = "neptune"
-		}
-		if eng := s.engineFor(engineType); eng != nil {
-			if port, err := eng.Open(reqCtx.GetRegion(), instance.DBInstanceIdentifier); err != nil {
-				logs.Warn("failed to open instance engine", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-			} else {
-				instance.Endpoint = &neptunestore.Endpoint{
-					Address: s.endpointAddressFor(instance.DBInstanceIdentifier, engineType),
-					Port:    port,
-				}
-				if err := store.UpdateInstance(instance); err != nil {
-					logs.Warn("failed to persist instance endpoint", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-				}
-			}
-		}
-	}
-
-	recordEvent(store, "db-instance", instance.DBInstanceIdentifier, instance.DBInstanceArn,
-		fmt.Sprintf("DB instance %s created", instance.DBInstanceIdentifier), []string{"creation"})
-
-	if tagList := getNeptuneTagList(params); len(tagList) > 0 {
-		storeTags := make([]types.Tag, 0, len(tagList))
-		for _, t := range tagList {
-			key, _ := t["Key"].(string)
-			value, _ := t["Value"].(string)
-			if key != "" {
-				storeTags = append(storeTags, types.Tag{Key: key, Value: value})
-			}
-		}
-		if err := store.AddTags(instance.DBInstanceArn, storeTags); err != nil {
-			if instance.DBClusterIdentifier == "" {
-				engineType := instance.Engine
-				if engineType == "" {
-					engineType = "neptune"
-				}
-				if eng := s.engineFor(engineType); eng != nil {
-					eng.Close(instance.DBInstanceIdentifier)
-				}
-			}
-			store.DeleteInstance(instance.DBInstanceIdentifier)
-			return nil, awserrors.NewAWSError("InvalidParameterValue", fmt.Sprintf("Failed to tag instance: %v", err), http.StatusBadRequest)
-		}
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
+	return s.createDBInstanceCore(ctx, store, in)
 }
 
 // DeleteDBInstance deletes the specified Neptune DB instance.
@@ -162,144 +58,40 @@ func (s *NeptuneService) DeleteDBInstance(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-
-	instance, err := rdssvc.ValidateDeleteInstanceParams(store, rdssvc.DeleteInstanceParams{
-		DBInstanceIdentifier: request.GetStringParam(params, "DBInstanceIdentifier"),
-		AccountID:            reqCtx.GetAccountID(),
-		Region:               reqCtx.GetRegion(),
-	})
-	if err != nil {
-		return nil, neptuneTranslateError(err)
+	in := &DeleteDBInstanceInput{
+		DeleteInstanceParams: rdssvc.DeleteInstanceParams{
+			DBInstanceIdentifier: request.GetStringParam(params, "DBInstanceIdentifier"),
+			AccountID:            reqCtx.GetAccountID(),
+			Region:               reqCtx.GetRegion(),
+		},
 	}
-
-	instance.DBInstanceStatus = "deleting"
-	if err := store.UpdateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	if instance.DBClusterIdentifier == "" {
-		engineType := instance.Engine
-		if engineType == "" {
-			engineType = "neptune"
-		}
-		if eng := s.engineFor(engineType); eng != nil {
-			if err := eng.Close(instance.DBInstanceIdentifier); err != nil {
-				logs.Warn("failed to close instance engine on delete", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-			}
-		}
-	}
-
-	if err := store.DeleteInstance(instance.DBInstanceIdentifier); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	if instance.DBClusterIdentifier != "" {
-		if cluster, err := store.GetCluster(instance.DBClusterIdentifier); err == nil {
-			filtered := make([]neptunestore.DBClusterMember, 0, len(cluster.DBClusterMembers))
-			for _, mem := range cluster.DBClusterMembers {
-				if mem.DBInstanceIdentifier != instance.DBInstanceIdentifier {
-					filtered = append(filtered, mem)
-				}
-			}
-			cluster.DBClusterMembers = filtered
-			if err := store.UpdateCluster(cluster); err != nil {
-				logs.Warn("failed to remove instance from cluster members", logs.String("instance", instance.DBInstanceIdentifier), logs.Err(err))
-			}
-		}
-	}
-
-	removeTagsForResource(store, instance.DBInstanceArn)
-
-	recordEvent(store, "db-instance", instance.DBInstanceIdentifier, instance.DBInstanceArn,
-		fmt.Sprintf("DB instance %s deleted", instance.DBInstanceIdentifier), []string{"deletion"})
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
+	return s.deleteDBInstanceCore(ctx, store, in)
 }
 
 // ModifyDBInstance updates the configuration of the specified DB instance.
 func (s *NeptuneService) ModifyDBInstance(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
-	id := request.GetStringParam(params, "DBInstanceIdentifier")
-	if id == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	instance, err := store.GetInstance(id)
-	if err != nil {
-		return nil, translateStoreError(err)
+	in := &ModifyDBInstanceInput{
+		DBInstanceIdentifier:            request.GetStringParam(params, "DBInstanceIdentifier"),
+		DBInstanceClass:                 request.GetStringParam(params, "DBInstanceClass"),
+		EngineVersion:                   request.GetStringParam(params, "EngineVersion"),
+		DBParameterGroupName:            request.GetStringParam(params, "DBParameterGroupName"),
+		PreferredMaintenanceWindow:      request.GetStringParam(params, "PreferredMaintenanceWindow"),
+		HasPubliclyAccessible:           request.HasParam(params, "PubliclyAccessible"),
+		PubliclyAccessible:              request.GetBoolParam(params, "PubliclyAccessible"),
+		HasAutoMinorVersionUpgrade:      request.HasParam(params, "AutoMinorVersionUpgrade"),
+		AutoMinorVersionUpgrade:         request.GetBoolParam(params, "AutoMinorVersionUpgrade"),
+		HasEnableIAMDatabaseAuth:        request.HasParam(params, "EnableIAMDatabaseAuthentication"),
+		EnableIAMDatabaseAuthentication: request.GetBoolParam(params, "EnableIAMDatabaseAuthentication"),
+		HasCopyTagsToSnapshot:           request.HasParam(params, "CopyTagsToSnapshot"),
+		CopyTagsToSnapshot:              request.GetBoolParam(params, "CopyTagsToSnapshot"),
+		NewDBInstanceIdentifier:         request.GetStringParam(params, "NewDBInstanceIdentifier"),
 	}
-
-	if v := request.GetStringParam(params, "DBInstanceClass"); v != "" {
-		instance.DBInstanceClass = v
-	}
-	if v := request.GetStringParam(params, "EngineVersion"); v != "" {
-		instance.EngineVersion = v
-	}
-	if v := request.GetStringParam(params, "DBParameterGroupName"); v != "" {
-		instance.DBParameterGroupName = v
-	}
-	if v := request.GetStringParam(params, "PreferredMaintenanceWindow"); v != "" {
-		instance.PreferredMaintenanceWindow = v
-	}
-	if request.HasParam(params, "PubliclyAccessible") {
-		instance.PubliclyAccessible = request.GetBoolParam(params, "PubliclyAccessible")
-	}
-	if request.HasParam(params, "AutoMinorVersionUpgrade") {
-		instance.AutoMinorVersionUpgrade = request.GetBoolParam(params, "AutoMinorVersionUpgrade")
-	}
-	if request.HasParam(params, "EnableIAMDatabaseAuthentication") {
-		instance.IAMDatabaseAuthenticationEnabled = request.GetBoolParam(params, "EnableIAMDatabaseAuthentication")
-	}
-	if request.HasParam(params, "CopyTagsToSnapshot") {
-		instance.CopyTagsToSnapshot = request.GetBoolParam(params, "CopyTagsToSnapshot")
-	}
-
-	if err := store.UpdateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	// Support NewDBInstanceIdentifier (instance rename).
-	// Follows the same create-new + delete-old pattern as ModifyDBCluster.
-	if newID := request.GetStringParam(params, "NewDBInstanceIdentifier"); newID != "" && newID != id {
-		oldArn := instance.DBInstanceArn
-		instance.DBInstanceIdentifier = newID
-		instance.DBInstanceArn = arnutil.NewARNBuilder(instance.AccountID, instance.Region).RDS().DBInstance(newID)
-		if err := store.CreateInstance(instance); err != nil {
-			instance.DBInstanceIdentifier = id
-			instance.DBInstanceArn = oldArn
-			return nil, translateStoreError(err)
-		}
-		// Copy tags from old to new ARN.
-		if tags, err := store.GetTags(oldArn); err == nil && len(tags) > 0 {
-			store.AddTags(instance.DBInstanceArn, tags)
-		}
-		if err := store.DeleteInstance(id); err != nil {
-			logs.Warn("failed to delete old instance after rename", logs.String("oldID", id), logs.Err(err))
-		}
-		removeTagsForResource(store, oldArn)
-		// Update DBClusterMembers if the instance belongs to a cluster.
-		if instance.DBClusterIdentifier != "" {
-			if cluster, err := store.GetCluster(instance.DBClusterIdentifier); err == nil {
-				for i, mem := range cluster.DBClusterMembers {
-					if mem.DBInstanceIdentifier == id {
-						cluster.DBClusterMembers[i].DBInstanceIdentifier = newID
-					}
-				}
-				store.UpdateCluster(cluster)
-			}
-		}
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
+	return s.modifyDBInstanceCore(ctx, store, in)
 }
 
 // DescribeDBInstances returns information about the specified DB instance or lists
@@ -337,32 +129,12 @@ func (s *NeptuneService) DescribeDBInstances(ctx context.Context, reqCtx *reques
 
 // RebootDBInstance reboots the specified DB instance.
 func (s *NeptuneService) RebootDBInstance(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	params := req.Parameters
-	id := request.GetStringParam(params, "DBInstanceIdentifier")
-	if id == "" {
-		return nil, awserrors.NewMissingParameter("DBInstanceIdentifier is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	instance, err := store.GetInstance(id)
-	if err != nil {
-		return nil, translateStoreError(err)
+	in := &RebootDBInstanceInput{
+		DBInstanceIdentifier: request.GetStringParam(req.Parameters, "DBInstanceIdentifier"),
 	}
-
-	if instance.DBInstanceStatus != "available" {
-		return nil, awserrors.NewAWSError("InvalidDBInstanceStateFault", fmt.Sprintf("instance %s is not in available state", id), http.StatusBadRequest)
-	}
-
-	instance.DBInstanceStatus = "available"
-	if err := store.UpdateInstance(instance); err != nil {
-		return nil, translateStoreError(err)
-	}
-
-	return map[string]interface{}{
-		"DBInstance": instance,
-	}, nil
+	return s.rebootDBInstanceCore(ctx, store, in)
 }

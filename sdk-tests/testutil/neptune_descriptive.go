@@ -49,6 +49,30 @@ func (r *TestRunner) runNeptuneDescriptiveTests(tc *neptuneContext) []TestResult
 		if ev.SourceType == "" {
 			return fmt.Errorf("expected non-empty SourceType in first event")
 		}
+
+		// A client-supplied MaxRecords must bound the page (documented range
+		// 20-100); it must not fall back to the 100 default.
+		paged, err := tc.client.DescribeEvents(tc.ctx, &neptune.DescribeEventsInput{
+			MaxRecords: aws.Int32(20),
+		})
+		if err != nil {
+			return err
+		}
+		if len(paged.Events) > 20 {
+			return fmt.Errorf("expected at most 20 events with MaxRecords=20, got %d", len(paged.Events))
+		}
+
+		// A MaxRecords below the documented minimum is clamped up to 20 and
+		// accepted, not rejected.
+		clamped, err := tc.client.DescribeEvents(tc.ctx, &neptune.DescribeEventsInput{
+			MaxRecords: aws.Int32(5),
+		})
+		if err != nil {
+			return err
+		}
+		if len(clamped.Events) > 20 {
+			return fmt.Errorf("expected at most 20 events with MaxRecords=5 clamped to the minimum, got %d", len(clamped.Events))
+		}
 		return nil
 	}))
 
