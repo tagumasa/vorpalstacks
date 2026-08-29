@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-08-27
+**Last Updated**: 2026-08-29
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
-**SDK Tests**: 3,389 passed, 0 failed (3,322 SDK + 50 integration + 17 WebSocket)
+**SDK Tests**: 3,399 passed, 0 failed (3,332 SDK + 50 integration + 17 WebSocket)
 
 ---
 

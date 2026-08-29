@@ -57,6 +57,9 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	// Phase 3: Return value and consumed capacity (self-contained)
 	results = append(results, r.dynamoDBReturnValueTests(ctx, client)...)
 
+	// Item collection metrics on self-contained LSI and plain fixtures
+	results = append(results, r.dynamoDBItemCollectionMetricsTests(ctx, client)...)
+
 	// Phase 4: Composite key table (shared compTableName)
 	compTableName := fmt.Sprintf("CompTable-%d", time.Now().UnixNano())
 	results = append(results, r.dynamoDBCompositeKeySetup(ctx, client, compTableName)...)

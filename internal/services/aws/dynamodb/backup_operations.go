@@ -7,33 +7,13 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
-	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // CreateBackup creates a backup of a DynamoDB table.
 func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// Table must be ACTIVE to create a backup. CreateBackup's Smithy model
-	// declares TableNotFoundException (not ResourceNotFoundException), so
-	// surface the individual error sentinel here.
-	table, err := s.validateAndGetActiveTableWithErr(reqCtx, req.Parameters, ErrTableNotFoundException)
-	if err != nil {
-		return nil, err
-	}
-
-	backupName := request.GetStringParam(req.Parameters, "BackupName")
-	if !validateResourceName(backupName) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if store.Backups().Exists(backupName) {
-		return nil, ErrBackupAlreadyExists
-	}
-
-	backup, err := s.createBackupCore(ctx, store, table, backupName)
+	backup, err := s.createBackupCore(ctx, reqCtx, createBackupInput{
+		Parameters: req.Parameters,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -54,17 +34,7 @@ func (s *DynamoDBService) CreateBackup(ctx context.Context, reqCtx *request.Requ
 
 // DeleteBackup deletes a DynamoDB table backup.
 func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if !validateBackupArn(backupArn) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	backup, err := s.deleteBackupCore(store, backupArn)
+	backup, err := s.deleteBackupCore(ctx, reqCtx, request.GetStringParam(req.Parameters, "BackupArn"))
 	if err != nil {
 		return nil, err
 	}
@@ -87,17 +57,7 @@ func (s *DynamoDBService) DeleteBackup(ctx context.Context, reqCtx *request.Requ
 
 // DescribeBackup returns information about a DynamoDB table backup.
 func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if !validateBackupArn(backupArn) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	backup, err := s.describeBackupCore(store, backupArn)
+	backup, err := s.describeBackupCore(ctx, reqCtx, request.GetStringParam(req.Parameters, "BackupArn"))
 	if err != nil {
 		return nil, err
 	}
@@ -140,37 +100,13 @@ func (s *DynamoDBService) DescribeBackup(ctx context.Context, reqCtx *request.Re
 
 // ListBackups lists the backups of a DynamoDB table.
 func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	tableName := request.GetStringParam(req.Parameters, "TableName")
-	backupTypeFilter := request.GetStringParam(req.Parameters, "BackupTypeFilter")
-	timeRangeLowerBound := request.GetInt64Param(req.Parameters, "TimeRangeLowerBoundDateTime")
-	timeRangeUpperBound := request.GetInt64Param(req.Parameters, "TimeRangeUpperBoundDateTime")
-	limit := request.GetIntParam(req.Parameters, "Limit")
-	if limit == 0 {
-		limit = listBackupsMaxLimit
-	} else {
-		if !validateListBackupsLimit(limit) {
-			return nil, ErrInvalidParameter
-		}
-	}
-	exclusiveStartBackupArn := request.GetStringParam(req.Parameters, "ExclusiveStartBackupArn")
-	if exclusiveStartBackupArn != "" {
-		if !validateBackupArn(exclusiveStartBackupArn) {
-			return nil, ErrInvalidParameter
-		}
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	coreResult, err := s.listBackupsCore(store, ListBackupsCoreInput{
-		TableName:               tableName,
-		BackupTypeFilter:        backupTypeFilter,
-		TimeRangeLowerBound:     timeRangeLowerBound,
-		TimeRangeUpperBound:     timeRangeUpperBound,
-		Limit:                   limit,
-		ExclusiveStartBackupArn: exclusiveStartBackupArn,
+	coreResult, err := s.listBackupsCore(ctx, reqCtx, ListBackupsCoreInput{
+		TableName:               request.GetStringParam(req.Parameters, "TableName"),
+		BackupTypeFilter:        request.GetStringParam(req.Parameters, "BackupTypeFilter"),
+		TimeRangeLowerBound:     request.GetInt64Param(req.Parameters, "TimeRangeLowerBoundDateTime"),
+		TimeRangeUpperBound:     request.GetInt64Param(req.Parameters, "TimeRangeUpperBoundDateTime"),
+		Limit:                   request.GetIntParam(req.Parameters, "Limit"),
+		ExclusiveStartBackupArn: request.GetStringParam(req.Parameters, "ExclusiveStartBackupArn"),
 	})
 	if err != nil {
 		return nil, err
@@ -202,24 +138,9 @@ func (s *DynamoDBService) ListBackups(ctx context.Context, reqCtx *request.Reque
 
 // RestoreTableFromBackup restores a table from a DynamoDB backup.
 func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	backupArn := request.GetStringParam(req.Parameters, "BackupArn")
-	if !validateBackupArn(backupArn) {
-		return nil, ErrInvalidParameter
-	}
-
-	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")
-	if !validateResourceName(targetTableName) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	table, err := s.restoreTableFromBackupCore(ctx, store, RestoreTableFromBackupCoreInput{
-		BackupArn:       backupArn,
-		TargetTableName: targetTableName,
+	table, err := s.restoreTableFromBackupCore(ctx, reqCtx, RestoreTableFromBackupCoreInput{
+		BackupArn:       request.GetStringParam(req.Parameters, "BackupArn"),
+		TargetTableName: request.GetStringParam(req.Parameters, "TargetTableName"),
 	})
 	if err != nil {
 		return nil, err
@@ -232,117 +153,8 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 
 // RestoreTableToPointInTime restores a table to a point in time.
 func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	sourceTableName := request.GetStringParam(req.Parameters, "SourceTableName")
-	sourceTableArn := request.GetStringParam(req.Parameters, "SourceTableArn")
-
-	if sourceTableName == "" && sourceTableArn == "" {
-		return nil, ErrInvalidParameter
-	}
-	if sourceTableName != "" && sourceTableArn != "" {
-		return nil, ErrInvalidParameter
-	}
-
-	if sourceTableName != "" {
-		if !validateResourceName(sourceTableName) {
-			return nil, ErrInvalidParameter
-		}
-	}
-
-	if sourceTableArn != "" {
-		sourceTableName = svcarn.ParseTableARN(sourceTableArn)
-		if sourceTableName == "" {
-			return nil, ErrResourceNotFound
-		}
-	}
-
-	targetTableName := request.GetStringParam(req.Parameters, "TargetTableName")
-	if !validateResourceName(targetTableName) {
-		return nil, ErrInvalidParameter
-	}
-
-	// RestoreTableToPointInTime declares TableNotFoundException (rather
-	// than the general ResourceNotFoundException) in the Smithy model, so
-	// use the individual error sentinel here.
-	sourceTable, err := s.validateAndGetTableWithErr(reqCtx, map[string]interface{}{"TableName": sourceTableName}, ErrTableNotFoundException)
-	if err != nil {
-		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Point-in-time restore requires recovery to be enabled on the source
-	// table; the request must then name a point inside the restorable
-	// window.
-	pitr, err := store.Tables().GetPointInTimeRecovery(sourceTableName)
-	if err != nil {
-		return nil, err
-	}
-	if pitr == nil || pitr.Status != dbstore.PITRStatusEnabled {
-		return nil, ErrPITRNotEnabled
-	}
-
-	now := time.Now()
-	restoreDateTime, hasRestoreDateTime := parseTimestampParam(req.Parameters, "RestoreDateTime")
-	useLatest := false
-	if raw, present := req.Parameters["UseLatestRestorableTime"]; present {
-		if b, isBool := raw.(bool); isBool {
-			useLatest = b
-		}
-	}
-	switch {
-	case useLatest:
-		restoreDateTime = now
-	case !hasRestoreDateTime:
-		return nil, ErrInvalidParameter
-	}
-	if restoreDateTime.Before(pitr.EarliestRestorableDateTime) || restoreDateTime.After(now) {
-		return nil, ErrInvalidRestoreTime
-	}
-
-	// Parse optional overrides.
-	billingMode := sourceTable.BillingMode
-	provThroughput := sourceTable.ProvisionedThroughput
-	gsi := sourceTable.GlobalSecondaryIndexes
-	lsi := sourceTable.LocalSecondaryIndexes
-	var sseDesc *dbstore.SSEDescription
-
-	if billingModeOverride := request.GetStringParam(req.Parameters, "BillingModeOverride"); billingModeOverride != "" {
-		billingMode = dbstore.BillingMode(billingModeOverride)
-	}
-	if provOverride := parseProvisionedThroughputOverride(req.Parameters); provOverride != nil {
-		provThroughput = provOverride
-	}
-	if sseSpec, ok := req.Parameters["SSESpecificationOverride"].(map[string]interface{}); ok {
-		sseDesc, err = parseSSESpecification(sseSpec)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if gsiOverrides := parseGSIOverrideList(req.Parameters); len(gsiOverrides) > 0 {
-		gsi, err = selectGSIOverrides(gsi, gsiOverrides)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if lsiOverrideList := parseLSIOverrideList(req.Parameters); len(lsiOverrideList) > 0 {
-		lsi, err = selectLSIOverrides(lsi, lsiOverrideList)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	table, err := s.restoreTableToPointInTimeCore(ctx, store, RestoreTableToPointInTimeCoreInput{
-		SourceTable:     sourceTable,
-		TargetTableName: targetTableName,
-		BillingMode:     billingMode,
-		ProvThroughput:  provThroughput,
-		SSEDesc:         sseDesc,
-		GSI:             gsi,
-		LSI:             lsi,
-		RestoreDateTime: restoreDateTime,
+	table, err := s.restoreTableToPointInTimeCore(ctx, reqCtx, restoreTableToPointInTimeInput{
+		Parameters: req.Parameters,
 	})
 	if err != nil {
 		return nil, err

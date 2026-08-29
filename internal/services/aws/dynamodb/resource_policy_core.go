@@ -1,11 +1,14 @@
 package dynamodb
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -32,15 +35,48 @@ func revisionMatches(expected string, currentRev int) (bool, error) {
 	return expectedNum == currentRev, nil
 }
 
+// resolveResourcePolicyTable validates the request ARN and resolves it to an
+// existing table, acquiring the store on the way.
+func (s *DynamoDBService) resolveResourcePolicyTable(reqCtx *request.RequestContext, resourceArn string) (dbstore.DynamoDBStoreInterface, string, error) {
+	if !validateResourceArnString(resourceArn) {
+		return nil, "", ErrInvalidParameter
+	}
+
+	tableName := svcarn.ParseTableARN(resourceArn)
+	if tableName == "" {
+		return nil, "", ErrResourceNotFound
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := store.Tables().Get(tableName); err != nil {
+		return nil, "", ErrResourceNotFound
+	}
+	return store, tableName, nil
+}
+
+// GetResourcePolicyInput is the service-layer DTO for GetResourcePolicy.
+type GetResourcePolicyInput struct {
+	ResourceArn string
+}
+
 // GetResourcePolicyResult is the service-layer result of GetResourcePolicy.
 type GetResourcePolicyResult struct {
 	Policy     string
 	RevisionId string
 }
 
-// getResourcePolicyCore returns the resource-based policy for the named
-// table. Returns ErrPolicyNotFound when no policy is attached.
-func (s *DynamoDBService) getResourcePolicyCore(store dbstore.DynamoDBStoreInterface, tableName string) (*GetResourcePolicyResult, error) {
+// getResourcePolicyCore returns the resource-based policy for the table
+// named by the request ARN. Returns ErrPolicyNotFound when no policy is
+// attached.
+func (s *DynamoDBService) getResourcePolicyCore(ctx context.Context, reqCtx *request.RequestContext, in GetResourcePolicyInput) (*GetResourcePolicyResult, error) {
+	store, tableName, err := s.resolveResourcePolicyTable(reqCtx, in.ResourceArn)
+	if err != nil {
+		return nil, err
+	}
+
 	policy, err := store.Tables().GetResourcePolicy(tableName)
 	if err != nil {
 		return nil, err
@@ -60,7 +96,7 @@ func (s *DynamoDBService) getResourcePolicyCore(store dbstore.DynamoDBStoreInter
 
 // PutResourcePolicyInput is the service-layer DTO for PutResourcePolicy.
 type PutResourcePolicyInput struct {
-	TableName          string
+	ResourceArn        string
 	Policy             string
 	ExpectedRevisionId string // optional; empty skips optimistic-lock check
 }
@@ -71,11 +107,24 @@ type PutResourcePolicyResult struct {
 }
 
 // putResourcePolicyCore creates or replaces the resource-based policy for
-// the named table. When ExpectedRevisionId is non-empty, it must match the
-// current revision or ErrPolicyNotFound is returned.
-func (s *DynamoDBService) putResourcePolicyCore(store dbstore.DynamoDBStoreInterface, in PutResourcePolicyInput) (*PutResourcePolicyResult, error) {
+// the table named by the request ARN. When ExpectedRevisionId is non-empty,
+// it must match the current revision or ErrPolicyNotFound is returned.
+func (s *DynamoDBService) putResourcePolicyCore(ctx context.Context, reqCtx *request.RequestContext, in PutResourcePolicyInput) (*PutResourcePolicyResult, error) {
+	if in.Policy == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	if !validatePolicyRevisionId(in.ExpectedRevisionId) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, tableName, err := s.resolveResourcePolicyTable(reqCtx, in.ResourceArn)
+	if err != nil {
+		return nil, err
+	}
+
 	if in.ExpectedRevisionId != "" {
-		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(in.TableName)
+		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
 		if revErr != nil {
 			return nil, revErr
 		}
@@ -88,11 +137,11 @@ func (s *DynamoDBService) putResourcePolicyCore(store dbstore.DynamoDBStoreInter
 		}
 	}
 
-	if err := store.Tables().SetResourcePolicy(in.TableName, in.Policy); err != nil {
+	if err := store.Tables().SetResourcePolicy(tableName, in.Policy); err != nil {
 		return nil, err
 	}
 
-	newRev, revErr := store.Tables().GetResourcePolicyRevisionId(in.TableName)
+	newRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
 	if revErr != nil {
 		return nil, revErr
 	}
@@ -101,16 +150,32 @@ func (s *DynamoDBService) putResourcePolicyCore(store dbstore.DynamoDBStoreInter
 	}, nil
 }
 
-// deleteResourcePolicyCore removes the resource-based policy from the
-// named table. When ExpectedRevisionId is non-empty, it must match the
-// current revision or ErrPolicyNotFound is returned.
-func (s *DynamoDBService) deleteResourcePolicyCore(store dbstore.DynamoDBStoreInterface, tableName, expectedRevisionId string) error {
-	if expectedRevisionId != "" {
+// DeleteResourcePolicyInput is the service-layer DTO for
+// DeleteResourcePolicy.
+type DeleteResourcePolicyInput struct {
+	ResourceArn        string
+	ExpectedRevisionId string // optional; empty skips optimistic-lock check
+}
+
+// deleteResourcePolicyCore removes the resource-based policy from the table
+// named by the request ARN. When ExpectedRevisionId is non-empty, it must
+// match the current revision or ErrPolicyNotFound is returned.
+func (s *DynamoDBService) deleteResourcePolicyCore(ctx context.Context, reqCtx *request.RequestContext, in DeleteResourcePolicyInput) error {
+	if !validatePolicyRevisionId(in.ExpectedRevisionId) {
+		return ErrInvalidParameter
+	}
+
+	store, tableName, err := s.resolveResourcePolicyTable(reqCtx, in.ResourceArn)
+	if err != nil {
+		return err
+	}
+
+	if in.ExpectedRevisionId != "" {
 		currentRev, revErr := store.Tables().GetResourcePolicyRevisionId(tableName)
 		if revErr != nil {
 			return revErr
 		}
-		matched, matchErr := revisionMatches(expectedRevisionId, currentRev)
+		matched, matchErr := revisionMatches(in.ExpectedRevisionId, currentRev)
 		if matchErr != nil {
 			return matchErr
 		}

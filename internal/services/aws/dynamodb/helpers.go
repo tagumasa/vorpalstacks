@@ -6,37 +6,11 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
-	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 func (s *DynamoDBService) validateAndGetTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {
 	return s.validateAndGetTableWithErr(reqCtx, params, ErrTableNotFound)
-}
-
-// validateAndGetTableWithErr behaves like validateAndGetTable but lets the
-// caller pick the not-found error sentinel. Operations whose Smithy model
-// declares TableNotFoundException (rather than the general
-// ResourceNotFoundException) must pass ErrTableNotFoundException here so the
-// client receives the individual error code.
-func (s *DynamoDBService) validateAndGetTableWithErr(reqCtx *request.RequestContext, params map[string]interface{}, notFoundErr *APIError) (*dbstore.Table, error) {
-	tableName := request.GetStringParam(params, "TableName")
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
-		if dbstore.IsTableNotFound(err) || commonstore.IsNotFound(err) {
-			return nil, notFoundErr
-		}
-		return nil, err
-	}
-	return table, nil
 }
 
 func (s *DynamoDBService) validateAndGetActiveTable(reqCtx *request.RequestContext, params map[string]interface{}) (*dbstore.Table, error) {

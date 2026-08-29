@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"time"
 
+	"vorpalstacks/internal/common/pagination"
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -23,8 +26,16 @@ import (
 // these methods.
 // ---------------------------------------------------------------------------
 
-// describeExportCore returns an export by ARN.
-func (s *DynamoDBService) describeExportCore(store dbstore.DynamoDBStoreInterface, exportArn string) (*dbstore.ExportDescription, error) {
+// describeExportCore validates the request, then returns an export by ARN.
+func (s *DynamoDBService) describeExportCore(ctx context.Context, reqCtx *request.RequestContext, exportArn string) (*dbstore.ExportDescription, error) {
+	if !validateExportArn(exportArn) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 	export, err := store.Exports().Get(exportArn)
 	if err != nil {
 		return nil, ErrExportNotFound
@@ -32,13 +43,47 @@ func (s *DynamoDBService) describeExportCore(store dbstore.DynamoDBStoreInterfac
 	return export, nil
 }
 
-// listExportsCore returns a paginated list of exports filtered by table ARN.
-func (s *DynamoDBService) listExportsCore(store dbstore.DynamoDBStoreInterface, tableArn string, nextToken string, maxResults int) ([]*dbstore.ExportDescription, string, error) {
+// listExportsInput carries the raw wire parameters for ListExports.
+type listExportsInput struct {
+	Parameters map[string]interface{}
+}
+
+// listExportsCore validates the request, then returns a paginated list of
+// exports filtered by table ARN.
+func (s *DynamoDBService) listExportsCore(ctx context.Context, reqCtx *request.RequestContext, in listExportsInput) ([]*dbstore.ExportDescription, string, error) {
+	tableArn := request.GetStringParam(in.Parameters, "TableArn")
+	if tableArn != "" {
+		if !validateTableArn(tableArn) {
+			return nil, "", ErrInvalidParameter
+		}
+	}
+	nextToken := pagination.GetMarker(in.Parameters, "NextToken")
+	maxResults := listExportsMaxLimit
+	if _, ok := in.Parameters["MaxResults"]; ok {
+		v := request.GetIntParam(in.Parameters, "MaxResults")
+		if !validateListExportsLimit(v) {
+			return nil, "", ErrInvalidParameter
+		}
+		maxResults = v
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, "", err
+	}
 	return store.Exports().List(tableArn, nextToken, maxResults)
 }
 
-// describeImportCore returns an import by ARN.
-func (s *DynamoDBService) describeImportCore(store dbstore.DynamoDBStoreInterface, importArn string) (*dbstore.ImportTableDescription, error) {
+// describeImportCore validates the request, then returns an import by ARN.
+func (s *DynamoDBService) describeImportCore(ctx context.Context, reqCtx *request.RequestContext, importArn string) (*dbstore.ImportTableDescription, error) {
+	if !validateImportArn(importArn) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 	imp, err := store.Imports().Get(importArn)
 	if err != nil {
 		return nil, ErrImportNotFound
@@ -46,12 +91,56 @@ func (s *DynamoDBService) describeImportCore(store dbstore.DynamoDBStoreInterfac
 	return imp, nil
 }
 
-// listImportsCore returns a paginated list of imports filtered by table ARN.
-func (s *DynamoDBService) listImportsCore(store dbstore.DynamoDBStoreInterface, tableArn, nextToken string, pageSize int) ([]*dbstore.ImportTableDescription, string, error) {
+// listImportsInput carries the raw wire parameters for ListImports.
+type listImportsInput struct {
+	Parameters map[string]interface{}
+}
+
+// listImportsCore validates the request, then returns a paginated list of
+// imports filtered by table ARN.
+func (s *DynamoDBService) listImportsCore(ctx context.Context, reqCtx *request.RequestContext, in listImportsInput) ([]*dbstore.ImportTableDescription, string, error) {
+	tableArn := request.GetStringParam(in.Parameters, "TableArn")
+	if tableArn != "" {
+		if !validateTableArn(tableArn) {
+			return nil, "", ErrInvalidParameter
+		}
+	}
+	nextToken := pagination.GetMarker(in.Parameters, "NextToken")
+	if token := request.GetStringParam(in.Parameters, "NextToken"); token != "" {
+		if !validateImportNextToken(token) {
+			return nil, "", ErrInvalidParameter
+		}
+	}
+	pageSize := listImportsMaxLimit
+	if _, ok := in.Parameters["PageSize"]; ok {
+		v := request.GetIntParam(in.Parameters, "PageSize")
+		if !validateListImportsLimit(v) {
+			return nil, "", ErrInvalidParameter
+		}
+		pageSize = v
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, "", err
+	}
 	return store.Imports().List(tableArn, nextToken, pageSize)
 }
 
-// ExportTableCoreInput is the service-layer DTO for ExportTableToPointInTime.
+// exportTableInput carries the raw wire parameters for
+// ExportTableToPointInTime.
+type exportTableInput struct {
+	Parameters map[string]interface{}
+}
+
+// exportTableResult carries the created export record and the resolved
+// export time for wire serialisation.
+type exportTableResult struct {
+	Export     *dbstore.ExportDescription
+	ExportTime time.Time
+}
+
+// ExportTableCoreInput is the service-layer DTO for the export job.
 type ExportTableCoreInput struct {
 	TableArn     string
 	TableName    string
@@ -63,16 +152,102 @@ type ExportTableCoreInput struct {
 	ExportTime   time.Time
 }
 
-// exportTableCore creates the export record in the IN_PROGRESS state and
-// starts the export in the background; clients poll DescribeExport for the
-// final state. The returned description is the initial one.
-func (s *DynamoDBService) exportTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in ExportTableCoreInput) (*dbstore.ExportDescription, error) {
-	export, err := store.Exports().Create(in.TableArn, in.TableName, in.ExportFormat)
+// exportTableCore validates the request, then creates the export record in
+// the IN_PROGRESS state and starts the export in the background; clients
+// poll DescribeExport for the final state. The returned description is the
+// initial one.
+func (s *DynamoDBService) exportTableCore(ctx context.Context, reqCtx *request.RequestContext, in exportTableInput) (*exportTableResult, error) {
+	tableArn := request.GetStringParam(in.Parameters, "TableArn")
+	if !validateTableArn(tableArn) {
+		return nil, ErrInvalidParameter
+	}
+
+	s3Bucket := request.GetStringParam(in.Parameters, "S3Bucket")
+	if !validateS3Bucket(s3Bucket) {
+		return nil, ErrInvalidParameter
+	}
+
+	s3Prefix := request.GetStringParam(in.Parameters, "S3Prefix")
+	if !validateS3Prefix(s3Prefix) {
+		return nil, ErrInvalidParameter
+	}
+
+	s3BucketOwner := request.GetStringParam(in.Parameters, "S3BucketOwner")
+	if !validateS3BucketOwner(s3BucketOwner) {
+		return nil, ErrInvalidParameter
+	}
+
+	s3SseKmsKeyId := request.GetStringParam(in.Parameters, "S3SseKmsKeyId")
+	if !validateS3SseKmsKeyId(s3SseKmsKeyId) {
+		return nil, ErrInvalidParameter
+	}
+
+	clientToken := request.GetStringParam(in.Parameters, "ClientToken")
+	if !validateClientToken(clientToken) {
+		return nil, ErrInvalidParameter
+	}
+
+	tableName := svcarn.ParseTableARN(tableArn)
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	export.S3Bucket = in.S3Bucket
-	export.S3Prefix = in.S3Prefix
+
+	if _, err := store.Tables().Get(tableName); err != nil {
+		// Smithy declares TableNotFoundException (not the general
+		// ResourceNotFoundException) for exportTableToPointInTime.
+		return nil, ErrTableNotFoundException
+	}
+
+	pitr, err := store.Tables().GetPointInTimeRecovery(tableName)
+	if err != nil || pitr == nil || pitr.Status != dbstore.PITRStatusEnabled {
+		return nil, ErrPITRNotEnabled
+	}
+
+	// The export snapshots the table at the requested time, which must lie
+	// inside the restorable window; an omitted time exports the present.
+	now := time.Now()
+	exportTime, hasExportTime := parseTimestampParam(in.Parameters, "ExportTime")
+	if !hasExportTime {
+		exportTime = now
+	}
+	if exportTime.Before(pitr.EarliestRestorableDateTime) || exportTime.After(now) {
+		return nil, ErrInvalidExportTime
+	}
+
+	exportFormat := request.GetStringParam(in.Parameters, "ExportFormat")
+	if exportFormat == "" {
+		exportFormat = "DYNAMODB_JSON"
+	}
+	validExportFormats := map[string]bool{
+		"DYNAMODB_JSON": true,
+		"ION":           true,
+	}
+	if !validExportFormats[exportFormat] {
+		return nil, ErrInvalidParameter
+	}
+
+	job := ExportTableCoreInput{
+		TableArn:     tableArn,
+		TableName:    tableName,
+		ExportFormat: exportFormat,
+		S3Bucket:     s3Bucket,
+		S3Prefix:     s3Prefix,
+		ClientToken:  clientToken,
+		Region:       reqCtx.GetRegion(),
+		ExportTime:   exportTime,
+	}
+
+	export, err := store.Exports().Create(job.TableArn, job.TableName, job.ExportFormat)
+	if err != nil {
+		return nil, err
+	}
+	export.S3Bucket = job.S3Bucket
+	export.S3Prefix = job.S3Prefix
 	if err := store.Exports().Put(export); err != nil {
 		return nil, err
 	}
@@ -81,9 +256,9 @@ func (s *DynamoDBService) exportTableCore(ctx context.Context, store dbstore.Dyn
 	go func() {
 		defer s.bgWg.Done()
 		defer resilience.RecoverPanic("dynamodb export job")
-		s.runExportJob(store, in, export.ExportArn)
+		s.runExportJob(store, job, export.ExportArn)
 	}()
-	return export, nil
+	return &exportTableResult{Export: export, ExportTime: exportTime}, nil
 }
 
 // runExportJob snapshots the table as of the export time, writes the data
@@ -221,7 +396,21 @@ func itemKeyString(key map[string]*dbstore.AttributeValue) string {
 	return string(data)
 }
 
-// ImportTableCoreInput is the service-layer DTO for ImportTable. It
+// importTableInput carries the raw wire parameters for ImportTable.
+type importTableInput struct {
+	Parameters map[string]interface{}
+}
+
+// importTableResult carries the created import record and the echoed S3
+// source members for wire serialisation.
+type importTableResult struct {
+	Import        *dbstore.ImportTableDescription
+	S3Bucket      string
+	S3Prefix      string
+	S3BucketOwner string
+}
+
+// ImportTableCoreInput is the service-layer DTO for the import job. It
 // contains all parameters needed to create the target table and import
 // data from S3.
 type ImportTableCoreInput struct {
@@ -241,12 +430,160 @@ type ImportTableCoreInput struct {
 	CSVHeaderList  []string
 }
 
-// importTableCore creates the import record in the IN_PROGRESS state and
-// runs the import in the background; clients poll DescribeImport for the
-// final state. The returned description is the initial one.
-func (s *DynamoDBService) importTableCore(store dbstore.DynamoDBStoreInterface, region string, in ImportTableCoreInput) (*dbstore.ImportTableDescription, error) {
-	tableArn := store.Tables().ARNBuilder().Table(in.TableName)
-	imp, err := store.Imports().Create(tableArn, in.TableName)
+// importTableCore validates the request, then creates the import record in
+// the IN_PROGRESS state and runs the import in the background; clients poll
+// DescribeImport for the final state. The returned description is the
+// initial one.
+func (s *DynamoDBService) importTableCore(ctx context.Context, reqCtx *request.RequestContext, in importTableInput) (*importTableResult, error) {
+	inputFormat := request.GetStringParam(in.Parameters, "InputFormat")
+	if inputFormat == "" {
+		inputFormat = "DYNAMODB_JSON"
+	}
+
+	validFormats := map[string]bool{
+		"DYNAMODB_JSON": true,
+		"CSV":           true,
+	}
+	if !validFormats[inputFormat] {
+		return nil, ErrInvalidParameter
+	}
+
+	s3BucketSourceParam, ok := in.Parameters["S3BucketSource"].(map[string]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+
+	s3Bucket, _ := s3BucketSourceParam["S3Bucket"].(string)
+	if !validateS3Bucket(s3Bucket) {
+		return nil, ErrInvalidParameter
+	}
+
+	// The S3BucketSource member is named S3KeyPrefix on the wire (the
+	// Smithy member name; ImportTable has no jsonName override).
+	s3Prefix, _ := s3BucketSourceParam["S3KeyPrefix"].(string)
+	if !validateS3Prefix(s3Prefix) {
+		return nil, ErrInvalidParameter
+	}
+	s3BucketOwner, _ := s3BucketSourceParam["S3BucketOwner"].(string)
+	if !validateS3BucketOwner(s3BucketOwner) {
+		return nil, ErrInvalidParameter
+	}
+
+	clientToken := request.GetStringParam(in.Parameters, "ClientToken")
+	if !validateClientToken(clientToken) {
+		return nil, ErrInvalidParameter
+	}
+
+	// Validate CSV-specific options when InputFormat=CSV.
+	if inputFormat == "CSV" {
+		if csvOpts, ok := in.Parameters["CsvOptions"].(map[string]interface{}); ok {
+			if delim, ok := csvOpts["Delimiter"].(string); ok {
+				if !validateCsvDelimiter(delim) {
+					return nil, ErrInvalidParameter
+				}
+			}
+			if headerList, ok := csvOpts["HeaderList"].([]interface{}); ok {
+				if !validateCsvHeaderList(len(headerList)) {
+					return nil, ErrInvalidParameter
+				}
+				for _, h := range headerList {
+					hs, ok := h.(string)
+					if !ok {
+						return nil, ErrInvalidParameter
+					}
+					if !validateCsvHeader(hs) {
+						return nil, ErrInvalidParameter
+					}
+				}
+			}
+		}
+	}
+
+	tableCreationParams, ok := in.Parameters["TableCreationParameters"].(map[string]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+
+	tableName, _ := tableCreationParams["TableName"].(string)
+	if !validateResourceName(tableName) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if store.Tables().Exists(tableName) {
+		return nil, ErrTableAlreadyExists
+	}
+
+	keySchema := parseKeySchema(tableCreationParams)
+	if len(keySchema) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
+	attrDefs := parseAttributeDefinitions(tableCreationParams)
+	if len(attrDefs) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
+	billingMode := dbstore.BillingMode(request.GetStringParam(tableCreationParams, "BillingMode"))
+	if billingMode == "" {
+		billingMode = dbstore.BillingModePayPerRequest
+	}
+
+	provThroughput := parseProvisionedThroughput(tableCreationParams)
+	if billingMode == dbstore.BillingModeProvisioned && provThroughput == nil {
+		provThroughput = &dbstore.ProvisionedThroughput{
+			ReadCapacityUnits:  5,
+			WriteCapacityUnits: 5,
+		}
+	}
+
+	importGSI, err := parseGlobalSecondaryIndexes(tableCreationParams)
+	if err != nil {
+		return nil, err
+	}
+	importLSI, err := parseLocalSecondaryIndexes(tableCreationParams)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse CSV options for the import loop (already validated above).
+	var csvDelimiter string
+	var csvHeaderList []string
+	if inputFormat == "CSV" {
+		if csvOpts, ok := in.Parameters["CsvOptions"].(map[string]interface{}); ok {
+			csvDelimiter, _ = csvOpts["Delimiter"].(string)
+			if hl, ok := csvOpts["HeaderList"].([]interface{}); ok {
+				for _, h := range hl {
+					if hs, ok := h.(string); ok {
+						csvHeaderList = append(csvHeaderList, hs)
+					}
+				}
+			}
+		}
+	}
+
+	job := ImportTableCoreInput{
+		TableName:      tableName,
+		KeySchema:      keySchema,
+		AttributeDefs:  attrDefs,
+		BillingMode:    billingMode,
+		ProvThroughput: provThroughput,
+		GSI:            importGSI,
+		LSI:            importLSI,
+		InputFormat:    inputFormat,
+		S3Bucket:       s3Bucket,
+		S3Prefix:       s3Prefix,
+		S3BucketOwner:  s3BucketOwner,
+		ClientToken:    clientToken,
+		CSVDelimiter:   csvDelimiter,
+		CSVHeaderList:  csvHeaderList,
+	}
+
+	tableArn := store.Tables().ARNBuilder().Table(job.TableName)
+	imp, err := store.Imports().Create(tableArn, job.TableName)
 	if err != nil {
 		return nil, err
 	}
@@ -255,9 +592,14 @@ func (s *DynamoDBService) importTableCore(store dbstore.DynamoDBStoreInterface, 
 	go func() {
 		defer s.bgWg.Done()
 		defer resilience.RecoverPanic("dynamodb import job")
-		s.runImportJob(store, region, in, imp.ImportArn)
+		s.runImportJob(store, reqCtx.GetRegion(), job, imp.ImportArn)
 	}()
-	return imp, nil
+	return &importTableResult{
+		Import:        imp,
+		S3Bucket:      s3Bucket,
+		S3Prefix:      s3Prefix,
+		S3BucketOwner: s3BucketOwner,
+	}, nil
 }
 
 // runImportJob creates the target table, reads the data from S3, writes the

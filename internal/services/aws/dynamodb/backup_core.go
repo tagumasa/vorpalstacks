@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -19,10 +21,36 @@ import (
 // these methods to ensure identical behaviour.
 // ---------------------------------------------------------------------------
 
-// createBackupCore persists a new backup record in CREATING state and
-// launches the background snapshot goroutine. The table must already be
-// validated and ACTIVE. Returns the persisted backup in its initial state.
-func (s *DynamoDBService) createBackupCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, backupName string) (*dbstore.Backup, error) {
+// createBackupInput carries the raw wire parameters for CreateBackup.
+type createBackupInput struct {
+	Parameters map[string]interface{}
+}
+
+// createBackupCore validates the request, persists a new backup record in
+// CREATING state and launches the background snapshot goroutine. The table
+// must be ACTIVE. Returns the persisted backup in its initial state.
+func (s *DynamoDBService) createBackupCore(ctx context.Context, reqCtx *request.RequestContext, in createBackupInput) (*dbstore.Backup, error) {
+	// Table must be ACTIVE to create a backup. CreateBackup's Smithy model
+	// declares TableNotFoundException (not ResourceNotFoundException), so
+	// surface the individual error sentinel here.
+	table, err := s.validateAndGetActiveTableWithErr(reqCtx, in.Parameters, ErrTableNotFoundException)
+	if err != nil {
+		return nil, err
+	}
+
+	backupName := request.GetStringParam(in.Parameters, "BackupName")
+	if !validateResourceName(backupName) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if store.Backups().Exists(backupName) {
+		return nil, ErrBackupAlreadyExists
+	}
+
 	backup, err := store.Backups().Create(backupName, table.Name, table.ARN, table.TableSizeBytes)
 	if err != nil {
 		return nil, err
@@ -81,9 +109,18 @@ func (s *DynamoDBService) createBackupCore(ctx context.Context, store dbstore.Dy
 	return backup, nil
 }
 
-// deleteBackupCore deletes a backup by ARN and returns the deleted backup
-// record for response formatting.
-func (s *DynamoDBService) deleteBackupCore(store dbstore.DynamoDBStoreInterface, backupArn string) (*dbstore.Backup, error) {
+// deleteBackupCore validates the request, then deletes a backup by ARN and
+// returns the deleted backup record for response formatting.
+func (s *DynamoDBService) deleteBackupCore(ctx context.Context, reqCtx *request.RequestContext, backupArn string) (*dbstore.Backup, error) {
+	if !validateBackupArn(backupArn) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	backup, err := store.Backups().Get(backupArn)
 	if err != nil {
 		return nil, ErrBackupNotFound
@@ -94,8 +131,17 @@ func (s *DynamoDBService) deleteBackupCore(store dbstore.DynamoDBStoreInterface,
 	return backup, nil
 }
 
-// describeBackupCore returns a backup by ARN.
-func (s *DynamoDBService) describeBackupCore(store dbstore.DynamoDBStoreInterface, backupArn string) (*dbstore.Backup, error) {
+// describeBackupCore validates the request, then returns a backup by ARN.
+func (s *DynamoDBService) describeBackupCore(ctx context.Context, reqCtx *request.RequestContext, backupArn string) (*dbstore.Backup, error) {
+	if !validateBackupArn(backupArn) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	backup, err := store.Backups().Get(backupArn)
 	if err != nil {
 		return nil, ErrBackupNotFound
@@ -119,8 +165,27 @@ type ListBackupsCoreResult struct {
 	LastEvaluatedBackupArn string
 }
 
-// listBackupsCore returns a filtered, paginated list of backups.
-func (s *DynamoDBService) listBackupsCore(store dbstore.DynamoDBStoreInterface, in ListBackupsCoreInput) (*ListBackupsCoreResult, error) {
+// listBackupsCore validates the request, then returns a filtered, paginated
+// list of backups.
+func (s *DynamoDBService) listBackupsCore(ctx context.Context, reqCtx *request.RequestContext, in ListBackupsCoreInput) (*ListBackupsCoreResult, error) {
+	if in.Limit == 0 {
+		in.Limit = listBackupsMaxLimit
+	} else {
+		if !validateListBackupsLimit(in.Limit) {
+			return nil, ErrInvalidParameter
+		}
+	}
+	if in.ExclusiveStartBackupArn != "" {
+		if !validateBackupArn(in.ExclusiveStartBackupArn) {
+			return nil, ErrInvalidParameter
+		}
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	marker := ""
 	if in.ExclusiveStartBackupArn != "" {
 		parts := strings.Split(in.ExclusiveStartBackupArn, "/")
@@ -170,9 +235,21 @@ type RestoreTableFromBackupCoreInput struct {
 	TargetTableName string
 }
 
-// restoreTableFromBackupCore creates a new table from a backup snapshot.
-// The target table must not already exist.
-func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in RestoreTableFromBackupCoreInput) (*dbstore.Table, error) {
+// restoreTableFromBackupCore validates the request, then creates a new
+// table from a backup snapshot. The target table must not already exist.
+func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, reqCtx *request.RequestContext, in RestoreTableFromBackupCoreInput) (*dbstore.Table, error) {
+	if !validateBackupArn(in.BackupArn) {
+		return nil, ErrInvalidParameter
+	}
+	if !validateResourceName(in.TargetTableName) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	backup, err := store.Backups().Get(in.BackupArn)
 	if err != nil {
 		return nil, ErrBackupNotFound
@@ -266,39 +343,134 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, store 
 	return table, nil
 }
 
-// RestoreTableToPointInTimeCoreInput is the service-layer DTO for
+// restoreTableToPointInTimeInput carries the raw wire parameters for
 // RestoreTableToPointInTime.
-type RestoreTableToPointInTimeCoreInput struct {
-	SourceTable     *dbstore.Table
-	TargetTableName string
-	BillingMode     dbstore.BillingMode
-	ProvThroughput  *dbstore.ProvisionedThroughput
-	SSEDesc         *dbstore.SSEDescription
-	GSI             []*dbstore.GlobalSecondaryIndex
-	LSI             []*dbstore.LocalSecondaryIndex
-	RestoreDateTime time.Time
+type restoreTableToPointInTimeInput struct {
+	Parameters map[string]interface{}
 }
 
-// restoreTableToPointInTimeCore creates a new table by copying the source
-// table's schema and items, applying any overrides. The target table must
-// not already exist.
+// restoreTableToPointInTimeCore validates the request, then creates a new
+// table by copying the source table's schema and items, applying any
+// overrides. The target table must not already exist.
 // restoreChunkSize is the number of items written per store.Update()
 // transaction during restore. Each chunk is atomic; the table remains
 // in CREATING status (invisible to clients) until all chunks complete.
 const restoreChunkSize = 500
 
-func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in RestoreTableToPointInTimeCoreInput) (*dbstore.Table, error) {
-	if store.Tables().Exists(in.TargetTableName) {
+func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, reqCtx *request.RequestContext, in restoreTableToPointInTimeInput) (*dbstore.Table, error) {
+	sourceTableName := request.GetStringParam(in.Parameters, "SourceTableName")
+	sourceTableArn := request.GetStringParam(in.Parameters, "SourceTableArn")
+
+	if sourceTableName == "" && sourceTableArn == "" {
+		return nil, ErrInvalidParameter
+	}
+	if sourceTableName != "" && sourceTableArn != "" {
+		return nil, ErrInvalidParameter
+	}
+
+	if sourceTableName != "" {
+		if !validateResourceName(sourceTableName) {
+			return nil, ErrInvalidParameter
+		}
+	}
+
+	if sourceTableArn != "" {
+		sourceTableName = svcarn.ParseTableARN(sourceTableArn)
+		if sourceTableName == "" {
+			return nil, ErrResourceNotFound
+		}
+	}
+
+	targetTableName := request.GetStringParam(in.Parameters, "TargetTableName")
+	if !validateResourceName(targetTableName) {
+		return nil, ErrInvalidParameter
+	}
+
+	// RestoreTableToPointInTime declares TableNotFoundException (rather
+	// than the general ResourceNotFoundException) in the Smithy model, so
+	// use the individual error sentinel here.
+	sourceTable, err := s.validateAndGetTableWithErr(reqCtx, map[string]interface{}{"TableName": sourceTableName}, ErrTableNotFoundException)
+	if err != nil {
+		return nil, err
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Point-in-time restore requires recovery to be enabled on the source
+	// table; the request must then name a point inside the restorable
+	// window.
+	pitr, err := store.Tables().GetPointInTimeRecovery(sourceTableName)
+	if err != nil {
+		return nil, err
+	}
+	if pitr == nil || pitr.Status != dbstore.PITRStatusEnabled {
+		return nil, ErrPITRNotEnabled
+	}
+
+	now := time.Now()
+	restoreDateTime, hasRestoreDateTime := parseTimestampParam(in.Parameters, "RestoreDateTime")
+	useLatest := false
+	if raw, present := in.Parameters["UseLatestRestorableTime"]; present {
+		if b, isBool := raw.(bool); isBool {
+			useLatest = b
+		}
+	}
+	switch {
+	case useLatest:
+		restoreDateTime = now
+	case !hasRestoreDateTime:
+		return nil, ErrInvalidParameter
+	}
+	if restoreDateTime.Before(pitr.EarliestRestorableDateTime) || restoreDateTime.After(now) {
+		return nil, ErrInvalidRestoreTime
+	}
+
+	// Parse optional overrides.
+	billingMode := sourceTable.BillingMode
+	provThroughput := sourceTable.ProvisionedThroughput
+	gsi := sourceTable.GlobalSecondaryIndexes
+	lsi := sourceTable.LocalSecondaryIndexes
+	var sseDesc *dbstore.SSEDescription
+
+	if billingModeOverride := request.GetStringParam(in.Parameters, "BillingModeOverride"); billingModeOverride != "" {
+		billingMode = dbstore.BillingMode(billingModeOverride)
+	}
+	if provOverride := parseProvisionedThroughputOverride(in.Parameters); provOverride != nil {
+		provThroughput = provOverride
+	}
+	if sseSpec, ok := in.Parameters["SSESpecificationOverride"].(map[string]interface{}); ok {
+		sseDesc, err = parseSSESpecification(sseSpec)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if gsiOverrides := parseGSIOverrideList(in.Parameters); len(gsiOverrides) > 0 {
+		gsi, err = selectGSIOverrides(gsi, gsiOverrides)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if lsiOverrideList := parseLSIOverrideList(in.Parameters); len(lsiOverrideList) > 0 {
+		lsi, err = selectLSIOverrides(lsi, lsiOverrideList)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if store.Tables().Exists(targetTableName) {
 		return nil, ErrTableAlreadyExistsException
 	}
 
-	if !validateBillingModeConsistency(in.BillingMode, in.ProvThroughput) {
+	if !validateBillingModeConsistency(billingMode, provThroughput) {
 		return nil, ErrInvalidParameter
 	}
 
 	table, err := store.Tables().Create(
-		in.TargetTableName, in.SourceTable.KeySchema, in.SourceTable.AttributeDefinitions,
-		in.BillingMode, in.ProvThroughput, in.GSI, in.LSI, nil, nil, false,
+		targetTableName, sourceTable.KeySchema, sourceTable.AttributeDefinitions,
+		billingMode, provThroughput, gsi, lsi, nil, nil, false,
 	)
 	if err != nil {
 		return nil, err
@@ -307,33 +479,33 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, sto
 	// Set table to CREATING status so clients cannot see partial data
 	// during the restore. AWS uses the same status transition.
 	table.Status = dbstore.TableStatusCreating
-	if in.SSEDesc != nil {
-		table.SSEDescription = in.SSEDesc
+	if sseDesc != nil {
+		table.SSEDescription = sseDesc
 	}
 	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
 
-	sourceTableName := in.SourceTable.Name
+	sourceTableName = sourceTable.Name
 
 	// Snapshot the source as of the restore point (the current state with
 	// every journaled mutation newer than the restore time undone) and
 	// write it to the target in buffered chunks. Each chunk is a single
 	// atomic transaction; if any chunk fails, the partially-populated
 	// CREATING table is left for startup recovery.
-	snapshot, err := snapshotItemsAsOf(store, sourceTableName, in.RestoreDateTime)
+	snapshot, err := snapshotItemsAsOf(store, sourceTableName, restoreDateTime)
 	if err != nil {
 		return nil, err
 	}
 	buffer := make([]*dbstore.Item, 0, restoreChunkSize)
 	for _, item := range snapshot {
 		buffer = append(buffer, &dbstore.Item{
-			TableName:  in.TargetTableName,
+			TableName:  targetTableName,
 			Key:        copyAttributes(item.Key),
 			Attributes: copyAttributes(item.Attributes),
 		})
 		if len(buffer) >= restoreChunkSize {
-			if err := s.flushRestoreChunk(ctx, store, in.TargetTableName, buffer); err != nil {
+			if err := s.flushRestoreChunk(ctx, store, targetTableName, buffer); err != nil {
 				return nil, err
 			}
 			buffer = buffer[:0]
@@ -341,21 +513,21 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, sto
 	}
 	// Flush remaining items.
 	if len(buffer) > 0 {
-		if err := s.flushRestoreChunk(ctx, store, in.TargetTableName, buffer); err != nil {
+		if err := s.flushRestoreChunk(ctx, store, targetTableName, buffer); err != nil {
 			return nil, err
 		}
 	}
 
 	// All items copied — re-fetch to preserve ItemCount/TableSizeBytes
 	// updated during chunked restore, then transition to ACTIVE.
-	table, err = store.Tables().Get(in.TargetTableName)
+	table, err = store.Tables().Get(targetTableName)
 	if err != nil {
 		return nil, err
 	}
 	table.Status = dbstore.TableStatusActive
 	table.RestoreSummary = &dbstore.RestoreSummary{
-		SourceTableArn:    in.SourceTable.ARN,
-		RestoreDateTime:   in.RestoreDateTime,
+		SourceTableArn:    sourceTable.ARN,
+		RestoreDateTime:   restoreDateTime,
 		RestoreInProgress: false,
 	}
 	if err := store.Tables().Put(table); err != nil {

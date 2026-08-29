@@ -286,6 +286,69 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		return nil
 	}))
 
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_GlobalMembersApplied", func() error {
+		updated, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName:                          aws.String(gtName),
+			GlobalTableBillingMode:                   dynamodbtypes.BillingModeProvisioned,
+			GlobalTableProvisionedWriteCapacityUnits: aws.Int64(9),
+			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{
+				{
+					RegionName:                          aws.String(r.region),
+					ReplicaProvisionedReadCapacityUnits: aws.Int64(5),
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(updated.GlobalTableName) != gtName {
+			return fmt.Errorf("update returned %v", updated.GlobalTableName)
+		}
+
+		after, err := client.DescribeGlobalTableSettings(ctx, &dynamodb.DescribeGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtName),
+		})
+		if err != nil {
+			return err
+		}
+		if len(after.ReplicaSettings) != 1 {
+			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		}
+		rs := after.ReplicaSettings[0]
+		if rs.ReplicaBillingModeSummary == nil || rs.ReplicaBillingModeSummary.BillingMode != dynamodbtypes.BillingModeProvisioned {
+			return fmt.Errorf("expected PROVISIONED billing mode summary, got %+v", rs.ReplicaBillingModeSummary)
+		}
+		if aws.ToInt64(rs.ReplicaProvisionedWriteCapacityUnits) != 9 {
+			return fmt.Errorf("expected write units 9, got %v", rs.ReplicaProvisionedWriteCapacityUnits)
+		}
+		if aws.ToInt64(rs.ReplicaProvisionedReadCapacityUnits) != 5 {
+			return fmt.Errorf("expected read units 5, got %v", rs.ReplicaProvisionedReadCapacityUnits)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_InvalidBillingModeRejected", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName:        aws.String(gtName),
+			GlobalTableBillingMode: dynamodbtypes.BillingMode("INVALID"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for off-enum billing mode")
+		}
+		return expectAWSErrorCode(err, "ValidationException")
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_ZeroWriteCapacityRejected", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName:                          aws.String(gtName),
+			GlobalTableProvisionedWriteCapacityUnits: aws.Int64(0),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for zero write capacity")
+		}
+		return expectAWSErrorCode(err, "ValidationException")
+	}))
+
 	// --- Replica auto-scaling descriptions ------------------------------
 	asTable := fmt.Sprintf("baseline-autoscaling-%d", suffix)
 	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
@@ -358,6 +421,25 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 			return fmt.Errorf("replica %s not described: %+v", r.region, replicas)
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "UpdateTableReplicaAutoScaling_SettingsMemberValidationRejected", func() error {
+		longArn := strings.Repeat("a", 1601)
+		_, err := client.UpdateTableReplicaAutoScaling(ctx, &dynamodb.UpdateTableReplicaAutoScalingInput{
+			TableName: aws.String(asTable),
+			ReplicaUpdates: []dynamodbtypes.ReplicaAutoScalingUpdate{
+				{
+					RegionName: aws.String(r.region),
+					ReplicaProvisionedReadCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+						AutoScalingRoleArn: aws.String(longArn),
+					},
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for over-length nested AutoScalingRoleArn")
+		}
+		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
 	return results

@@ -6,24 +6,6 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-// scanPageOptions configures collectScanPage, the shared paginator for the
-// Scan data plane and the index fallback reads of Query.
-type scanPageOptions struct {
-	table             *dbstore.Table
-	indexName         string // secondary index whose membership filters the page; "" scans the base table
-	limit             int    // page size; iteration stops after limit+1 qualifying items
-	segment           int    // parallel-scan segment; -1 disables segment filtering
-	totalSegments     int
-	exclusiveStartKey map[string]*dbstore.AttributeValue
-}
-
-// scanPageResult carries one page of qualifying items plus the continuation
-// flag derived from the limit+1 lookahead item.
-type scanPageResult struct {
-	items   []*dbstore.Item
-	hasMore bool
-}
-
 // indexKeyAttributeNames resolves the hash and sort key attribute names of a
 // secondary index, reporting whether the index is global.
 func indexKeyAttributeNames(table *dbstore.Table, indexName string) (hashName, sortName string, gsi bool) {
@@ -207,79 +189,4 @@ func mergeIndexKey(item *dbstore.Item, table *dbstore.Table, indexName string) m
 		}
 	}
 	return merged
-}
-
-// collectScanPage walks the table in storage order and applies, per item, the
-// parallel-scan segment filter, the secondary-index membership filter, and the
-// exclusive-start-key skip, collecting at most limit+1 qualifying items. The
-// lookahead item only sets hasMore; callers truncate to limit. Applying the
-// filters during iteration — before the limit is counted — is what keeps
-// index scans paginable: a page bounded before filtering would strand later
-// index members behind a LastEvaluatedKey that is never emitted.
-func (s *DynamoDBService) collectScanPage(store dbstore.DynamoDBStoreInterface, tableName string, opts scanPageOptions) (scanPageResult, error) {
-	var hashName, sortName string
-	isGSIIndex := false
-	if opts.indexName != "" {
-		hashName, sortName, isGSIIndex = indexKeyAttributeNames(opts.table, opts.indexName)
-	}
-
-	pkName := ""
-	if opts.segment >= 0 {
-		for _, ks := range opts.table.KeySchema {
-			if ks.KeyType == dbstore.KeyTypeHash {
-				pkName = ks.AttributeName
-				break
-			}
-		}
-	}
-
-	result := scanPageResult{}
-	started := opts.exclusiveStartKey == nil
-
-	_, err := store.Items().ScanWithOptions(tableName, dbstore.ScanOptions{}, func(item *dbstore.Item) error {
-		if opts.segment >= 0 && opts.totalSegments > 0 {
-			pkAttr := item.Key[pkName]
-			if pkAttr == nil {
-				pkAttr = item.Attributes[pkName]
-			}
-			if pkAttr == nil {
-				return nil
-			}
-			if int(md5SegmentHash(pkAttr)%uint32(opts.totalSegments)) != opts.segment {
-				return nil
-			}
-		}
-
-		if opts.indexName != "" && !isIndexMember(item, hashName, sortName, isGSIIndex) {
-			return nil
-		}
-
-		if !started {
-			itemStartKey := mergeIndexKey(item, opts.table, opts.indexName)
-			if itemKeyMatches(itemStartKey, opts.exclusiveStartKey) {
-				started = true
-				return nil
-			}
-			if itemKeySortsAfter(itemStartKey, opts.exclusiveStartKey, opts.table, opts.indexName) {
-				started = true
-			} else {
-				return nil
-			}
-		}
-
-		result.items = append(result.items, item)
-		if len(result.items) > opts.limit {
-			return errScanSufficient
-		}
-		return nil
-	})
-	if err != nil && err != errScanSufficient {
-		return scanPageResult{}, err
-	}
-
-	result.hasMore = len(result.items) > opts.limit
-	if len(result.items) > opts.limit {
-		result.items = result.items[:opts.limit]
-	}
-	return result, nil
 }

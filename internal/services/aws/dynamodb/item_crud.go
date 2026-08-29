@@ -104,6 +104,12 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, 1.0)
 	}
 
+	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
+		if entry := buildItemCollectionMetricsEntry(table, key); entry != nil {
+			resp["ItemCollectionMetrics"] = entry
+		}
+	}
+
 	return resp, nil
 }
 
@@ -134,7 +140,7 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 	}
 	item, err := s.getItemCore(ctx, store, tableName, key)
 	if err != nil {
-		if dbstore.IsItemNotFound(err) {
+		if isItemNotFound(err) {
 			return response.EmptyResponse(), nil
 		}
 		return nil, err
@@ -242,6 +248,12 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, 1.0)
 	}
 
+	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
+		if entry := buildItemCollectionMetricsEntry(table, key); entry != nil {
+			resp["ItemCollectionMetrics"] = entry
+		}
+	}
+
 	return resp, nil
 }
 
@@ -319,6 +331,12 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
 		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(table.Name, 1.0)
+	}
+
+	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
+		if entry := buildItemCollectionMetricsEntry(table, key); entry != nil {
+			resp["ItemCollectionMetrics"] = entry
+		}
 	}
 
 	return resp, nil
