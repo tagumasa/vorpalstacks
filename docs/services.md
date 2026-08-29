@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-08-29
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
-**SDK Tests**: 3,399 passed, 0 failed (3,332 SDK + 50 integration + 17 WebSocket)
+**SDK Tests**: 3,436 passed, 0 failed (3,369 SDK + 50 integration + 17 WebSocket)
 
 ---
 
@@ -91,6 +91,7 @@ Platform decisions and restrictions on behaviour AWS leaves unspecified. The ser
 - **Kinesis — SubscribeToShard heartbeat interval**: 15 s (provisional; AWS does not document the exact value).
 - **Lambda — AddPermission Principal**: restricted to a known service-principal allowlist (see `validServicePrincipals` in `validators.go`); unrecognised `*.amazonaws.com` principals are rejected.
 - **Secrets Manager — BatchGetSecretValue `MaxResults`**: AWS documents the requirement ("To use this parameter, you must also use the Filters parameter") but not the behaviour when it is violated; requests pairing `MaxResults` with `SecretIdList` are rejected with `InvalidParameterException` (400).
+- **AWS IoT — managed job templates**: the platform ships no AWS-provided managed-job-template catalogue (the catalogue content is AWS's copyrighted material), so `DescribeManagedJobTemplate` resolves every template name to `ResourceNotFoundException` and `ListManagedJobTemplates` returns an empty list.
 
 ### Cross-Cutting Features
 

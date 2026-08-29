@@ -35,7 +35,8 @@ func (s *IoTService) DeleteAccountAuditConfiguration(ctx context.Context, reqCtx
 	if err != nil {
 		return nil, err
 	}
-	if err := s.deleteAccountAuditConfigurationCore(store); err != nil {
+	if err := s.deleteAccountAuditConfigurationCore(store,
+		request.GetBoolParam(req.Parameters, "deleteScheduledAudits")); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -84,7 +85,14 @@ func (s *IoTService) ListAuditTasks(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	items, err := s.listAuditTasksCore(store)
+	items, err := s.listAuditTasksCore(store, ListAuditTasksInput{
+		StartTime:         timestampMemberParam(req.Parameters, "startTime"),
+		EndTime:           timestampMemberParam(req.Parameters, "endTime"),
+		StartTimeProvided: request.HasParam(req.Parameters, "startTime"),
+		EndTimeProvided:   request.HasParam(req.Parameters, "endTime"),
+		TaskType:          request.GetParamCaseInsensitive(req.Parameters, "taskType"),
+		TaskStatus:        request.GetParamCaseInsensitive(req.Parameters, "taskStatus"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +122,21 @@ func (s *IoTService) ListAuditFindings(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	findings, err := s.listAuditFindingsCore(store)
+	var listSuppressed *bool
+	if request.HasParam(req.Parameters, "listSuppressedFindings") {
+		v := request.GetBoolParam(req.Parameters, "listSuppressedFindings")
+		listSuppressed = &v
+	}
+	findings, err := s.listAuditFindingsCore(store, ListAuditFindingsInput{
+		TaskID:             request.GetParamCaseInsensitive(req.Parameters, "taskId"),
+		CheckName:          request.GetParamCaseInsensitive(req.Parameters, "checkName"),
+		ResourceIdentifier: resourceIdentifierFromParams(req.Parameters),
+		StartTime:          timestampMemberParam(req.Parameters, "startTime"),
+		EndTime:            timestampMemberParam(req.Parameters, "endTime"),
+		StartTimeProvided:  request.HasParam(req.Parameters, "startTime"),
+		EndTimeProvided:    request.HasParam(req.Parameters, "endTime"),
+		ListSuppressed:     listSuppressed,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -434,7 +434,15 @@ func behaviorResponse(b *iotstore.Behavior) map[string]interface{} {
 		resp["metric"] = b.Metric
 	}
 	if b.MetricDimension != "" {
-		resp["metricDimension"] = b.MetricDimension
+		// The wire form is the MetricDimension structure; the operator is
+		// optional and defaults to IN when absent.
+		dimension := map[string]interface{}{
+			"dimensionName": b.MetricDimension,
+		}
+		if b.MetricDimensionOperator != "" {
+			dimension["operator"] = b.MetricDimensionOperator
+		}
+		resp["metricDimension"] = dimension
 	}
 	if b.SuppressAlerts {
 		resp["suppressAlerts"] = b.SuppressAlerts

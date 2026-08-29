@@ -130,7 +130,17 @@ func (s *IoTService) ListAuditSuppressions(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	suppressions, err := s.listAuditSuppressionsCore(store)
+	var ascending *bool
+	if request.HasParam(req.Parameters, "ascendingOrder") {
+		v := request.GetBoolParam(req.Parameters, "ascendingOrder")
+		ascending = &v
+	}
+	filter := resourceIdentifierFromParams(req.Parameters)
+	suppressions, err := s.listAuditSuppressionsCore(store, ListAuditSuppressionsInput{
+		CheckName:          request.GetParamCaseInsensitive(req.Parameters, "checkName"),
+		ResourceIdentifier: filter,
+		AscendingOrder:     ascending,
+	})
 	if err != nil {
 		return nil, err
 	}

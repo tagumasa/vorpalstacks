@@ -291,8 +291,14 @@ func (r *TestRunner) runIoTReadonlyListTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "List_AuditFindings", func() error {
+		// Either the taskId or the startTime and endTime pair must be
+		// specified, so the pagination walk carries a wide time range.
 		findings, err := paginate(func(next *string) ([]iottypes.AuditFinding, *string, error) {
-			out, err := tc.client.ListAuditFindings(tc.ctx, &iot.ListAuditFindingsInput{NextToken: next})
+			out, err := tc.client.ListAuditFindings(tc.ctx, &iot.ListAuditFindingsInput{
+				NextToken: next,
+				StartTime: aws.Time(time.Now().Add(-24 * time.Hour)),
+				EndTime:   aws.Time(time.Now().Add(24 * time.Hour)),
+			})
 			if err != nil {
 				return nil, nil, err
 			}

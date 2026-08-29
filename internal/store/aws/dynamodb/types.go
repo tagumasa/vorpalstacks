@@ -28,6 +28,13 @@ const (
 	BillingModePayPerRequest BillingMode = "PAY_PER_REQUEST"
 )
 
+// TableClass constants define the replica table class enum applied through
+// ReplicaTableClass.
+const (
+	TableClassStandard                 = "STANDARD"
+	TableClassStandardInfrequentAccess = "STANDARD_INFREQUENT_ACCESS"
+)
+
 // KeyType represents the type of a key in a DynamoDB key schema.
 type KeyType string
 
@@ -274,6 +281,12 @@ type GlobalTable struct {
 	GlobalTableStatus string     `json:"global_table_status"`
 	CreationDateTime  time.Time  `json:"creation_date_time"`
 	ReplicationGroup  []*Replica `json:"replication_group"`
+	// Write-capacity auto-scaling applied at the global level; echoed on
+	// every replica description.
+	WriteAutoScalingSettings map[string]interface{} `json:"write_auto_scaling_settings,omitempty"`
+	// Per-index write-capacity settings applied at the global level; they
+	// merge with each replica's per-index read settings at echo time.
+	GlobalSecondaryIndexWriteSettings []map[string]interface{} `json:"global_secondary_index_write_settings,omitempty"`
 }
 
 // Replica represents a replica of a global table in a specific region.
@@ -283,6 +296,16 @@ type Replica struct {
 	BillingMode                   string `json:"billing_mode,omitempty"`
 	ProvisionedReadCapacityUnits  int64  `json:"provisioned_read_capacity_units,omitempty"`
 	ProvisionedWriteCapacityUnits int64  `json:"provisioned_write_capacity_units,omitempty"`
+	// Read-capacity auto-scaling applied per replica, echoed through
+	// ReplicaProvisionedReadCapacityAutoScalingSettings.
+	ReadAutoScalingSettings map[string]interface{} `json:"read_auto_scaling_settings,omitempty"`
+	// Per-index read-capacity settings applied per replica; the write side
+	// lives on the global table and the two merge at echo time.
+	GlobalSecondaryIndexReadSettings []map[string]interface{} `json:"global_secondary_index_read_settings,omitempty"`
+	// ReplicaTableClass and its update time, echoed through
+	// ReplicaTableClassSummary.
+	TableClass            string     `json:"table_class,omitempty"`
+	TableClassLastUpdated *time.Time `json:"table_class_last_updated,omitempty"`
 }
 
 // KinesisDataStreamDestination represents a Kinesis data stream destination for a table.

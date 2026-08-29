@@ -57,11 +57,16 @@ type AssociateTargetsWithJobInput struct {
 	Comment string
 }
 
-// ListJobsInput holds the parameters for listing jobs.
+// ListJobsInput holds the parameters for listing jobs: the status filter
+// plus the target-selection and thing-group filters the model carries as
+// query members.
 type ListJobsInput struct {
-	Status    string
-	NextToken string
-	MaxItems  int
+	Status          string
+	TargetSelection string
+	ThingGroupName  string
+	ThingGroupID    string
+	NextToken       string
+	MaxItems        int
 }
 
 // CreateJobResult is the transport-agnostic result of CreateJob.
@@ -133,6 +138,10 @@ func (s *IoTService) createJobCore(store iotstore.IotStoreInterface, in CreateJo
 		CreatedAt:                  time.Now().UTC(),
 		LastUpdatedAt:              time.Now().UTC(),
 	}
+	if job.TargetSelection == "" {
+		// An omitted targetSelection is documented as SNAPSHOT.
+		job.TargetSelection = "SNAPSHOT"
+	}
 
 	if job.TargetSelection != "" {
 		if err := ValidateTargetSelection(job.TargetSelection); err != nil {
@@ -186,14 +195,56 @@ func (s *IoTService) deleteJobCore(store iotstore.IotStoreInterface, jobID strin
 	return nil
 }
 
-// listJobsCore lists jobs with an optional status filter.
+// listJobsCore lists jobs with the status, target-selection, and
+// thing-group query filters. An unknown thing group matches no jobs.
 func (s *IoTService) listJobsCore(store iotstore.IotStoreInterface, in ListJobsInput) (*ListJobsResult, error) {
+	if in.TargetSelection != "" {
+		if err := ValidateTargetSelection(in.TargetSelection); err != nil {
+			return nil, err
+		}
+	}
+	filters := iotstore.JobListFilters{
+		Status:          in.Status,
+		TargetSelection: in.TargetSelection,
+	}
+	switch {
+	case in.ThingGroupName != "":
+		// An unresolvable group name filters everything out.
+		if group, err := store.GetThingGroup(in.ThingGroupName); err == nil {
+			filters.ThingGroupARN = group.GroupARN
+		} else {
+			return &ListJobsResult{Jobs: []*iotstore.Job{}}, nil
+		}
+	case in.ThingGroupID != "":
+		opts := iotstoreListOpts(0, "")
+		resolved := false
+		for !resolved {
+			groups, err := store.ListThingGroups(opts, "")
+			if err != nil {
+				return nil, err
+			}
+			for _, g := range groups.Items {
+				if g.GroupID == in.ThingGroupID {
+					filters.ThingGroupARN = g.GroupARN
+					resolved = true
+					break
+				}
+			}
+			if resolved || groups.NextMarker == "" {
+				break
+			}
+			opts = iotstoreListOpts(0, groups.NextMarker)
+		}
+		if !resolved {
+			return &ListJobsResult{Jobs: []*iotstore.Job{}}, nil
+		}
+	}
 	maxItems := in.MaxItems
 	if maxItems <= 0 {
 		maxItems = 100
 	}
 	opts := iotstoreListOpts(maxItems, in.NextToken)
-	jobs, err := store.ListJobs(opts, in.Status)
+	jobs, err := store.ListJobs(opts, filters)
 	if err != nil {
 		return nil, err
 	}

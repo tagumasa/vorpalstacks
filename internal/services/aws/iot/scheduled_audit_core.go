@@ -127,11 +127,14 @@ func (s *IoTService) describeScheduledAuditCore(store iotstore.IotStoreInterface
 	}, nil
 }
 
-// ScheduledAuditListItem is one ListScheduledAudits entry.
+// ScheduledAuditListItem is one ListScheduledAudits entry; the dayOfMonth
+// and dayOfWeek members mirror the ScheduledAuditMetadata member set.
 type ScheduledAuditListItem struct {
-	Name      string
-	Arn       string
-	Frequency interface{}
+	Name       string
+	Arn        string
+	Frequency  interface{}
+	DayOfMonth interface{}
+	DayOfWeek  interface{}
 }
 
 // listScheduledAuditsCore lists every scheduled audit with its ARN.
@@ -144,9 +147,11 @@ func (s *IoTService) listScheduledAuditsCore(store iotstore.IotStoreInterface) (
 	for _, item := range items {
 		name, _ := item["name"].(string)
 		out = append(out, ScheduledAuditListItem{
-			Name:      name,
-			Arn:       iotstore.BuildScheduledAuditARN(store.GetAccountID(), store.GetRegion(), name),
-			Frequency: item["frequency"],
+			Name:       name,
+			Arn:        iotstore.BuildScheduledAuditARN(store.GetAccountID(), store.GetRegion(), name),
+			Frequency:  item["frequency"],
+			DayOfMonth: item["dayOfMonth"],
+			DayOfWeek:  item["dayOfWeek"],
 		})
 	}
 	return out, nil

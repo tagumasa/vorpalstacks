@@ -124,12 +124,35 @@ func (s *IotStore) DeleteJob(jobID string) error {
 	return s.jobPS.DeleteIfExists(jobID)
 }
 
-func (s *IotStore) ListJobs(opts common.ListOptions, statusFilter string) (*common.ListResult[Job], error) {
+// JobListFilters carries the ListJobs query filters: the status and
+// target-selection enum filters plus the thing-group target, which matches
+// a job whose target list carries the group's ARN.
+type JobListFilters struct {
+	Status          string
+	TargetSelection string
+	ThingGroupARN   string
+}
+
+func (s *IotStore) ListJobs(opts common.ListOptions, filters JobListFilters) (*common.ListResult[Job], error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var filter func(*pb.Job) bool
-	if statusFilter != "" {
-		filter = func(j *pb.Job) bool { return j.Status == statusFilter }
+	hasStatus := filters.Status != ""
+	hasTargetSelection := filters.TargetSelection != ""
+	hasGroup := filters.ThingGroupARN != ""
+	if hasStatus || hasTargetSelection || hasGroup {
+		filter = func(j *pb.Job) bool {
+			if hasStatus && j.Status != filters.Status {
+				return false
+			}
+			if hasTargetSelection && j.TargetSelection != filters.TargetSelection {
+				return false
+			}
+			if hasGroup && !jobTargetsContains(j.Targets, filters.ThingGroupARN) {
+				return false
+			}
+			return true
+		}
 	}
 	result, err := common.ListProto(s.jobsBase, opts, func() *pb.Job { return &pb.Job{} }, filter)
 	if err != nil {
@@ -140,6 +163,16 @@ func (s *IotStore) ListJobs(opts common.ListOptions, statusFilter string) (*comm
 		items = append(items, ProtoToJob(p))
 	}
 	return &common.ListResult[Job]{Items: items, NextMarker: result.NextMarker}, nil
+}
+
+// jobTargetsContains reports whether the target list carries the given ARN.
+func jobTargetsContains(targets []string, arn string) bool {
+	for _, t := range targets {
+		if t == arn {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *IotStore) UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error) {

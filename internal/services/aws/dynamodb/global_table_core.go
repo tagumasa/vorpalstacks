@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"time"
 
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -250,7 +251,9 @@ func (s *DynamoDBService) describeGlobalTableSettingsCore(ctx context.Context, r
 }
 
 // buildGlobalTableReplicaSettings renders the per-replica settings list
-// shared by the global table settings operations.
+// shared by the global table settings operations. The global-level write
+// auto-scaling and per-index write settings echo on every replica; the
+// per-replica read settings merge with the per-index write side.
 func buildGlobalTableReplicaSettings(globalTable *dbstore.GlobalTable) []map[string]interface{} {
 	replicaSettings := make([]map[string]interface{}, 0, len(globalTable.ReplicationGroup))
 	for _, replica := range globalTable.ReplicationGroup {
@@ -265,9 +268,173 @@ func buildGlobalTableReplicaSettings(globalTable *dbstore.GlobalTable) []map[str
 				"BillingMode": replica.BillingMode,
 			}
 		}
+		if replica.ReadAutoScalingSettings != nil {
+			settings["ReplicaProvisionedReadCapacityAutoScalingSettings"] = replica.ReadAutoScalingSettings
+		}
+		if globalTable.WriteAutoScalingSettings != nil {
+			settings["ReplicaProvisionedWriteCapacityAutoScalingSettings"] = globalTable.WriteAutoScalingSettings
+		}
+		if gsi := mergeGSISettings(globalTable, replica); len(gsi) > 0 {
+			settings["ReplicaGlobalSecondaryIndexSettings"] = gsi
+		}
+		if replica.TableClass != "" {
+			summary := map[string]interface{}{"TableClass": replica.TableClass}
+			if replica.TableClassLastUpdated != nil {
+				summary["LastUpdateDateTime"] = *replica.TableClassLastUpdated
+			}
+			settings["ReplicaTableClassSummary"] = summary
+		}
 		replicaSettings = append(replicaSettings, settings)
 	}
 	return replicaSettings
+}
+
+// parseGlobalGSIWriteSettings converts GlobalTableGlobalSecondaryIndexSettingsUpdate
+// entries into the per-index write settings stored on the global table. The
+// model marks each entry's IndexName required and the capacity member a
+// positive long.
+func parseGlobalGSIWriteSettings(updates interface{}) ([]map[string]interface{}, error) {
+	gsiUpdates, ok := updates.([]interface{})
+	if !ok {
+		return nil, nil
+	}
+	// The model bounds the settings update list at 1-20 entries.
+	if len(gsiUpdates) < 1 || len(gsiUpdates) > 20 {
+		return nil, ErrInvalidParameter
+	}
+	var result []map[string]interface{}
+	for _, u := range gsiUpdates {
+		uMap, ok := u.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		indexName, _ := uMap["IndexName"].(string)
+		if indexName == "" {
+			return nil, ErrInvalidParameter
+		}
+		entry := map[string]interface{}{"IndexName": indexName}
+		if raw, present := uMap["ProvisionedWriteCapacityUnits"]; present {
+			units, ok := raw.(float64)
+			if !ok || units < 1 {
+				return nil, ErrInvalidParameter
+			}
+			entry["ProvisionedWriteCapacityUnits"] = int64(units)
+		}
+		if writeAS, ok := uMap["ProvisionedWriteCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+			settings, err := parseAutoScalingSettings(writeAS)
+			if err != nil {
+				return nil, err
+			}
+			entry["ProvisionedWriteCapacityAutoScalingSettings"] = settings
+		}
+		result = append(result, entry)
+	}
+	return result, nil
+}
+
+// parseReplicaGSIReadSettings converts ReplicaGlobalSecondaryIndexSettingsUpdate
+// entries into the per-index read settings stored on the replica. The model
+// marks each entry's IndexName required and the capacity member a positive
+// long.
+func parseReplicaGSIReadSettings(updates interface{}) ([]map[string]interface{}, error) {
+	gsiUpdates, ok := updates.([]interface{})
+	if !ok {
+		return nil, nil
+	}
+	// The model bounds the settings update list at 1-20 entries.
+	if len(gsiUpdates) < 1 || len(gsiUpdates) > 20 {
+		return nil, ErrInvalidParameter
+	}
+	var result []map[string]interface{}
+	for _, u := range gsiUpdates {
+		uMap, ok := u.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		indexName, _ := uMap["IndexName"].(string)
+		if indexName == "" {
+			return nil, ErrInvalidParameter
+		}
+		entry := map[string]interface{}{"IndexName": indexName}
+		if raw, present := uMap["ProvisionedReadCapacityUnits"]; present {
+			units, ok := raw.(float64)
+			if !ok || units < 1 {
+				return nil, ErrInvalidParameter
+			}
+			entry["ProvisionedReadCapacityUnits"] = int64(units)
+		}
+		if readAS, ok := uMap["ProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+			settings, err := parseAutoScalingSettings(readAS)
+			if err != nil {
+				return nil, err
+			}
+			entry["ProvisionedReadCapacityAutoScalingSettings"] = settings
+		}
+		result = append(result, entry)
+	}
+	return result, nil
+}
+
+// mergeIndexSettingsLists applies update semantics to a per-index settings
+// list: an update whose IndexName matches a stored entry replaces it, any
+// other update is appended.
+func mergeIndexSettingsLists(stored, updates []map[string]interface{}) []map[string]interface{} {
+	merged := make([]map[string]interface{}, len(stored))
+	copy(merged, stored)
+	for _, update := range updates {
+		name, _ := update["IndexName"].(string)
+		replaced := false
+		for i, entry := range merged {
+			if existing, _ := entry["IndexName"].(string); existing == name {
+				merged[i] = update
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			merged = append(merged, update)
+		}
+	}
+	return merged
+}
+
+// mergeGSISettings merges the global write-side and replica read-side
+// per-index settings into the ReplicaGlobalSecondaryIndexSettings echo.
+func mergeGSISettings(globalTable *dbstore.GlobalTable, replica *dbstore.Replica) []map[string]interface{} {
+	if len(globalTable.GlobalSecondaryIndexWriteSettings) == 0 && len(replica.GlobalSecondaryIndexReadSettings) == 0 {
+		return nil
+	}
+	merged := make(map[string]map[string]interface{})
+	var order []string
+	add := func(settings map[string]interface{}) {
+		name, ok := settings["IndexName"].(string)
+		if !ok {
+			return
+		}
+		entry, exists := merged[name]
+		if !exists {
+			entry = map[string]interface{}{"IndexName": name}
+			merged[name] = entry
+			order = append(order, name)
+		}
+		for key, value := range settings {
+			if key == "IndexName" {
+				continue
+			}
+			entry[key] = value
+		}
+	}
+	for _, settings := range globalTable.GlobalSecondaryIndexWriteSettings {
+		add(settings)
+	}
+	for _, settings := range replica.GlobalSecondaryIndexReadSettings {
+		add(settings)
+	}
+	result := make([]map[string]interface{}, 0, len(order))
+	for _, name := range order {
+		result = append(result, merged[name])
+	}
+	return result
 }
 
 // listGlobalTablesInput carries the raw wire parameters for
@@ -488,6 +655,14 @@ func (s *DynamoDBService) updateGlobalTableSettingsCore(ctx context.Context, req
 		globalWriteUnits = int64(units)
 		hasGlobalWriteUnits = true
 	}
+	globalWriteAS, err := parseOptionalAutoScalingSettings(in.Parameters, "GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate")
+	if err != nil {
+		return nil, err
+	}
+	globalGSIUpdates, err := parseGlobalGSIWriteSettings(in.Parameters["GlobalTableGlobalSecondaryIndexSettingsUpdate"])
+	if err != nil {
+		return nil, err
+	}
 
 	changed := false
 	if globalBillingMode != "" || hasGlobalWriteUnits {
@@ -501,9 +676,21 @@ func (s *DynamoDBService) updateGlobalTableSettingsCore(ctx context.Context, req
 		}
 		changed = true
 	}
+	if globalWriteAS != nil {
+		globalTable.WriteAutoScalingSettings = globalWriteAS
+		changed = true
+	}
+	if globalGSIUpdates != nil {
+		globalTable.GlobalSecondaryIndexWriteSettings = mergeIndexSettingsLists(globalTable.GlobalSecondaryIndexWriteSettings, globalGSIUpdates)
+		changed = true
+	}
 
 	replicaSettingsUpdates, ok := in.Parameters["ReplicaSettingsUpdate"].([]interface{})
 	if ok {
+		// The model bounds the replica settings update list at 1-50 entries.
+		if len(replicaSettingsUpdates) < 1 || len(replicaSettingsUpdates) > 50 {
+			return nil, ErrInvalidParameter
+		}
 		for _, update := range replicaSettingsUpdates {
 			updateMap, ok := update.(map[string]interface{})
 			if !ok {
@@ -515,16 +702,46 @@ func (s *DynamoDBService) updateGlobalTableSettingsCore(ctx context.Context, req
 				return nil, ErrInvalidParameter
 			}
 
+			// A settings update naming a region that is no longer part
+			// of the global table is the documented replica-not-found
+			// error rather than a silently ignored entry.
+			matched := false
 			for _, replica := range globalTable.ReplicationGroup {
 				if replica.RegionName == regionName {
+					matched = true
 					if readUnits, ok := updateMap["ReplicaProvisionedReadCapacityUnits"].(float64); ok {
 						if readUnits < 1 {
 							return nil, ErrInvalidParameter
 						}
 						replica.ProvisionedReadCapacityUnits = int64(readUnits)
 					}
+					if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+						settings, err := parseAutoScalingSettings(readAS)
+						if err != nil {
+							return nil, err
+						}
+						replica.ReadAutoScalingSettings = settings
+					}
+					gsiReadUpdates, err := parseReplicaGSIReadSettings(updateMap["ReplicaGlobalSecondaryIndexSettingsUpdate"])
+					if err != nil {
+						return nil, err
+					}
+					if gsiReadUpdates != nil {
+						replica.GlobalSecondaryIndexReadSettings = mergeIndexSettingsLists(replica.GlobalSecondaryIndexReadSettings, gsiReadUpdates)
+					}
+					if tableClass, ok := updateMap["ReplicaTableClass"].(string); ok && tableClass != "" {
+						if tableClass != dbstore.TableClassStandard && tableClass != dbstore.TableClassStandardInfrequentAccess {
+							return nil, ErrInvalidParameter
+						}
+						replica.TableClass = tableClass
+						now := time.Now()
+						replica.TableClassLastUpdated = &now
+					}
 					break
 				}
+			}
+			if !matched {
+				return nil, ErrReplicaNotFound
 			}
 		}
 		changed = true

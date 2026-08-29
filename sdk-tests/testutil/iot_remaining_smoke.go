@@ -127,9 +127,11 @@ func (r *TestRunner) runIoTRemainingSmokeTests(tc *iotTestContext) []TestResult 
 		_, err := tc.client.GetThingConnectivityData(tc.ctx, &iot.GetThingConnectivityDataInput{ThingName: aws.String("nonexistent")})
 		return expectNotFound(err)
 	}))
+	// The platform ships no AWS-copyrighted managed-template catalogue, so
+	// the catalogue is empty and any describe resolves to not-found.
 	results = append(results, r.RunTest("iot", "DescribeManagedJobTemplate", func() error {
 		_, err := tc.client.DescribeManagedJobTemplate(tc.ctx, &iot.DescribeManagedJobTemplateInput{TemplateName: aws.String("AWS-Reset-Accesskey")})
-		return err
+		return expectNotFound(err)
 	}))
 
 	// Associate targets / update custom metric / start detect mitigation task

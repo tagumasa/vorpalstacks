@@ -25,15 +25,26 @@ func (s *IoTService) GetV2LoggingOptions(ctx context.Context, reqCtx *request.Re
 	// the AWS SDK parser to discard all fields.
 	return rec, nil
 }
+
+// rawListParam extracts a raw wire list member from the request parameters,
+// returning nil when the member is absent or not a list.
+func rawListParam(params map[string]interface{}, key string) []interface{} {
+	if raw, ok := params[key].([]interface{}); ok {
+		return raw
+	}
+	return nil
+}
+
 func (s *IoTService) SetV2LoggingOptions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	in := SetV2LoggingOptionsInput{
-		RoleArn:         request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
-		DefaultLogLevel: request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel"),
-		DisableAllLogs:  request.GetBoolParam(req.Parameters, "disableAllLogs"),
+		RoleArn:             request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
+		DefaultLogLevel:     request.GetParamCaseInsensitive(req.Parameters, "defaultLogLevel"),
+		DisableAllLogs:      request.GetBoolParam(req.Parameters, "disableAllLogs"),
+		EventConfigurations: rawListParam(req.Parameters, "eventConfigurations"),
 	}
 	if err := s.setV2LoggingOptionsCore(store, in); err != nil {
 		return nil, err

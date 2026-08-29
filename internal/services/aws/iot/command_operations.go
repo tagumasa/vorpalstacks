@@ -91,7 +91,9 @@ func (s *IoTService) ListCommands(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 	commands, err := s.listCommandsCore(store, ListCommandsInput{
-		Namespace: request.GetParamCaseInsensitive(req.Parameters, "namespace"),
+		Namespace:            request.GetParamCaseInsensitive(req.Parameters, "namespace"),
+		CommandParameterName: request.GetParamCaseInsensitive(req.Parameters, "commandParameterName"),
+		SortOrder:            request.GetParamCaseInsensitive(req.Parameters, "sortOrder"),
 	})
 	if err != nil {
 		return nil, err
@@ -131,9 +133,13 @@ func (s *IoTService) ListCommandExecutions(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 	executions, err := s.listCommandExecutionsCore(store, ListCommandExecutionsInput{
-		TargetArn:  request.GetParamCaseInsensitive(req.Parameters, "targetArn"),
-		CommandArn: request.GetParamCaseInsensitive(req.Parameters, "commandArn"),
-		Status:     request.GetParamCaseInsensitive(req.Parameters, "status"),
+		TargetArn:           request.GetParamCaseInsensitive(req.Parameters, "targetArn"),
+		CommandArn:          request.GetParamCaseInsensitive(req.Parameters, "commandArn"),
+		Status:              request.GetParamCaseInsensitive(req.Parameters, "status"),
+		Namespace:           request.GetParamCaseInsensitive(req.Parameters, "namespace"),
+		SortOrder:           request.GetParamCaseInsensitive(req.Parameters, "sortOrder"),
+		StartedTimeFilter:   req.Parameters["startedTimeFilter"],
+		CompletedTimeFilter: req.Parameters["completedTimeFilter"],
 	})
 	if err != nil {
 		return nil, err

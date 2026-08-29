@@ -85,9 +85,12 @@ func (s *IoTService) ListJobs(ctx context.Context, reqCtx *request.RequestContex
 
 	opts := parseListOptions(req.Parameters)
 	result, err := s.listJobsCore(store, ListJobsInput{
-		Status:    request.GetParamCaseInsensitive(req.Parameters, "status"),
-		NextToken: opts.Marker,
-		MaxItems:  opts.MaxItems,
+		Status:          request.GetParamCaseInsensitive(req.Parameters, "status"),
+		TargetSelection: request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
+		ThingGroupName:  request.GetParamCaseInsensitive(req.Parameters, "thingGroupName"),
+		ThingGroupID:    request.GetParamCaseInsensitive(req.Parameters, "thingGroupId"),
+		NextToken:       opts.Marker,
+		MaxItems:        opts.MaxItems,
 	})
 	if err != nil {
 		return nil, err

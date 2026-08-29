@@ -77,11 +77,18 @@ func (s *IoTService) ListScheduledAudits(ctx context.Context, reqCtx *request.Re
 	}
 	out := make([]map[string]interface{}, 0, len(items))
 	for _, item := range items {
-		out = append(out, map[string]interface{}{
+		entry := map[string]interface{}{
 			"scheduledAuditName": item.Name,
 			"scheduledAuditArn":  item.Arn,
 			"frequency":          item.Frequency,
-		})
+		}
+		if item.DayOfMonth != nil {
+			entry["dayOfMonth"] = item.DayOfMonth
+		}
+		if item.DayOfWeek != nil {
+			entry["dayOfWeek"] = item.DayOfWeek
+		}
+		out = append(out, entry)
 	}
 	return paginatedMaps("scheduledAudits", out, req.Parameters)
 }

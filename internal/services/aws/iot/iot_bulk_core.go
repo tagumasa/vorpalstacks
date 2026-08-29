@@ -50,6 +50,74 @@ func (s *IoTService) bulkCreateCore(store iotstore.IotStoreInterface, category, 
 	return rec, nil
 }
 
+// bulkCreateIdempotentCore behaves like bulkCreateCore but honours the
+// idempotencyToken trait the create operations carry on their
+// clientRequestToken member: replaying the token the existing record was
+// created with returns the stored record instead of the duplicate conflict.
+func (s *IoTService) bulkCreateIdempotentCore(store iotstore.IotStoreInterface, category, name, clientRequestToken string, extra map[string]interface{}) (map[string]interface{}, error) {
+	if name == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	existing := map[string]interface{}{}
+	exists, err := store.GetGenericExists(category+"/"+name, &existing)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		if clientRequestToken != "" && existing["clientRequestToken"] == clientRequestToken {
+			return existing, nil
+		}
+		return nil, iotstore.ErrResourceAlreadyExists
+	}
+	now := time.Now().Unix()
+	rec := map[string]interface{}{
+		"name":             name,
+		"creationDate":     now,
+		"lastModifiedDate": now,
+	}
+	for k, v := range extra {
+		if v != nil {
+			rec[k] = v
+		}
+	}
+	if err := store.PutGeneric(category+"/"+name, rec); err != nil {
+		return nil, err
+	}
+	return rec, nil
+}
+
+// claimClientToken records the clientRequestToken-to-resource-key index the
+// dimension and audit-suppression creates require: their model documentation
+// states that reusing an existing resource's token for a new resource raises
+// an exception. Re-applying a token against the resource key it already
+// indexes passes through, preserving the idempotent replay of the same
+// create request. The stored index maps the token to the resource record
+// key, so the release side needs no second lookup structure.
+func (s *IoTService) claimClientToken(store iotstore.IotStoreInterface, kind, token, resourceKey string) error {
+	indexKey := "clientToken/" + kind + "/" + token
+	index := map[string]interface{}{}
+	exists, err := store.GetGenericExists(indexKey, &index)
+	if err != nil {
+		return err
+	}
+	if exists {
+		if indexed, _ := index["resourceKey"].(string); indexed == resourceKey {
+			return nil
+		}
+		return iotstore.ErrResourceAlreadyExists
+	}
+	return store.PutGeneric(indexKey, map[string]interface{}{"resourceKey": resourceKey})
+}
+
+// releaseClientToken drops the token index when the resource that claimed
+// it is deleted, so the token may be reused for a later create.
+func (s *IoTService) releaseClientToken(store iotstore.IotStoreInterface, kind, token string) error {
+	if token == "" {
+		return nil
+	}
+	return store.DeleteGeneric("clientToken/" + kind + "/" + token)
+}
+
 // bulkGetCore loads a single record. exists is false (with nil error) and
 // rec is nil when the record is absent.
 func (s *IoTService) bulkGetCore(store iotstore.IotStoreInterface, category, name string) (rec map[string]interface{}, exists bool, err error) {

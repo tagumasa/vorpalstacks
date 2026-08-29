@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
@@ -63,6 +64,39 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 			DefaultVersionName: aws.String(versionName),
 		})
 		return err
+	}))
+
+	results = append(results, r.RunTest("iot", "Package_UpdatePackage_UnsetDefaultVersion", func() error {
+		out, err := tc.client.GetPackage(tc.ctx, &iot.GetPackageInput{PackageName: aws.String(pkgName)})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(out.DefaultVersionName) != versionName {
+			return fmt.Errorf("expected defaultVersionName=%s before unset, got %v", versionName, out.DefaultVersionName)
+		}
+		if _, err := tc.client.UpdatePackage(tc.ctx, &iot.UpdatePackageInput{
+			PackageName:         aws.String(pkgName),
+			UnsetDefaultVersion: aws.Bool(true),
+		}); err != nil {
+			return fmt.Errorf("UpdatePackage unsetDefaultVersion failed: %w", err)
+		}
+		after, err := tc.client.GetPackage(tc.ctx, &iot.GetPackageInput{PackageName: aws.String(pkgName)})
+		if err != nil {
+			return err
+		}
+		if after.DefaultVersionName != nil {
+			return fmt.Errorf("expected defaultVersionName cleared, got %v", *after.DefaultVersionName)
+		}
+		// Setting and unsetting the default version at once is rejected.
+		_, err = tc.client.UpdatePackage(tc.ctx, &iot.UpdatePackageInput{
+			PackageName:         aws.String(pkgName),
+			DefaultVersionName:  aws.String(versionName),
+			UnsetDefaultVersion: aws.Bool(true),
+		})
+		if err == nil {
+			return fmt.Errorf("expected set+unset to be rejected")
+		}
+		return expectValidationError(err)
 	}))
 
 	results = append(results, r.RunTest("iot", "Package_ListPackages_IncludesCreated", func() error {
@@ -210,6 +244,163 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 			}
 		}
 		return fmt.Errorf("created command not found in ListCommands")
+	}))
+
+	results = append(results, r.RunTest("iot", "Command_ListCommands_DefaultDescendingOrder", func() error {
+		earlyID := uniqueName("test-cmd-early")
+		lateID := uniqueName("test-cmd-late")
+		defer tc.client.DeleteCommand(tc.ctx, &iot.DeleteCommandInput{CommandId: aws.String(earlyID)})
+		defer tc.client.DeleteCommand(tc.ctx, &iot.DeleteCommandInput{CommandId: aws.String(lateID)})
+		if _, err := tc.client.CreateCommand(tc.ctx, &iot.CreateCommandInput{
+			CommandId:   aws.String(earlyID),
+			DisplayName: aws.String("default order early command"),
+		}); err != nil {
+			return fmt.Errorf("CreateCommand early failed: %w", err)
+		}
+		// createdAt carries second granularity, so keep the two records
+		// in distinct seconds before comparing their default order.
+		time.Sleep(1100 * time.Millisecond)
+		if _, err := tc.client.CreateCommand(tc.ctx, &iot.CreateCommandInput{
+			CommandId:   aws.String(lateID),
+			DisplayName: aws.String("default order late command"),
+		}); err != nil {
+			return fmt.Errorf("CreateCommand late failed: %w", err)
+		}
+		cmds, err := paginate(func(next *string) ([]iottypes.CommandSummary, *string, error) {
+			out, err := tc.client.ListCommands(tc.ctx, &iot.ListCommandsInput{NextToken: next})
+			if err != nil {
+				return nil, nil, err
+			}
+			return out.Commands, out.NextToken, nil
+		})
+		if err != nil {
+			return err
+		}
+		earlyIdx, lateIdx := -1, -1
+		for i, c := range cmds {
+			switch aws.ToString(c.CommandId) {
+			case earlyID:
+				earlyIdx = i
+			case lateID:
+				lateIdx = i
+			}
+		}
+		if earlyIdx == -1 || lateIdx == -1 {
+			return fmt.Errorf("both commands expected in the default list (early=%d late=%d)", earlyIdx, lateIdx)
+		}
+		// The API documents that, without sortOrder, commands are listed
+		// in descending order of creation time.
+		if lateIdx > earlyIdx {
+			return fmt.Errorf("expected the later-created command first, early=%d late=%d", earlyIdx, lateIdx)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "Command_ListCommands_SortOrderAndParameterFilter", func() error {
+		paramCmdID := uniqueName("test-cmd-param")
+		defer tc.client.DeleteCommand(tc.ctx, &iot.DeleteCommandInput{CommandId: aws.String(paramCmdID)})
+		if _, err := tc.client.CreateCommand(tc.ctx, &iot.CreateCommandInput{
+			CommandId:   aws.String(paramCmdID),
+			DisplayName: aws.String("parameterised command"),
+			MandatoryParameters: []iottypes.CommandParameter{{
+				Name: aws.String("p1"),
+			}},
+		}); err != nil {
+			return fmt.Errorf("CreateCommand with a mandatory parameter failed: %w", err)
+		}
+
+		// The parameter filter matches commands declaring the parameter
+		// and hides commands without it.
+		filtered, err := tc.client.ListCommands(tc.ctx, &iot.ListCommandsInput{
+			CommandParameterName: aws.String("p1"),
+		})
+		if err != nil {
+			return fmt.Errorf("ListCommands commandParameterName failed: %w", err)
+		}
+		hasParam, leakedPlain := false, false
+		for _, c := range filtered.Commands {
+			if aws.ToString(c.CommandId) == paramCmdID {
+				hasParam = true
+			}
+			if aws.ToString(c.CommandId) == cmdID {
+				leakedPlain = true
+			}
+		}
+		if !hasParam || leakedPlain {
+			return fmt.Errorf("commandParameterName filter: hasParam=%v leakedPlain=%v", hasParam, leakedPlain)
+		}
+
+		// Descending order returns the later-created command first.
+		descending, err := tc.client.ListCommands(tc.ctx, &iot.ListCommandsInput{
+			SortOrder: iottypes.SortOrderDescending,
+		})
+		if err != nil {
+			return fmt.Errorf("ListCommands sortOrder failed: %w", err)
+		}
+		paramIdx, plainIdx := -1, -1
+		for i, c := range descending.Commands {
+			if aws.ToString(c.CommandId) == paramCmdID {
+				paramIdx = i
+			}
+			if aws.ToString(c.CommandId) == cmdID {
+				plainIdx = i
+			}
+		}
+		if paramIdx == -1 || plainIdx == -1 {
+			return fmt.Errorf("both commands expected in the descending list (param=%d plain=%d)", paramIdx, plainIdx)
+		}
+		if paramIdx > plainIdx {
+			return fmt.Errorf("expected the later-created command first, paramIdx=%d plainIdx=%d", paramIdx, plainIdx)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iot", "Command_ListCommandExecutions_FiltersAccepted", func() error {
+		// No command executions exist on this platform, so every accepted
+		// filter shape must return an empty page. The documented date and
+		// time format is yyyy-MM-dd'T'HH:mm, without seconds or a zone.
+		out, err := tc.client.ListCommandExecutions(tc.ctx, &iot.ListCommandExecutionsInput{
+			Namespace:         iottypes.CommandNamespaceAWSIoT,
+			SortOrder:         iottypes.SortOrderDescending,
+			StartedTimeFilter: &iottypes.TimeFilter{After: aws.String("2026-01-15T10:30")},
+		})
+		if err != nil {
+			return fmt.Errorf("ListCommandExecutions with the documented time format failed: %w", err)
+		}
+		if len(out.CommandExecutions) != 0 {
+			return fmt.Errorf("expected no executions, got %d", len(out.CommandExecutions))
+		}
+		// Providing both time filters is documented to generate an error.
+		_, err = tc.client.ListCommandExecutions(tc.ctx, &iot.ListCommandExecutionsInput{
+			StartedTimeFilter:   &iottypes.TimeFilter{After: aws.String("2026-01-01T00:00")},
+			CompletedTimeFilter: &iottypes.TimeFilter{Before: aws.String("2030-01-01T00:00")},
+		})
+		if err == nil {
+			return fmt.Errorf("expected both time filters to be rejected")
+		}
+		if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		// Providing both the command ARN and the target ARN is documented
+		// to generate an error as well.
+		_, err = tc.client.ListCommandExecutions(tc.ctx, &iot.ListCommandExecutionsInput{
+			CommandArn:        aws.String(tc.arn("iot", "command", uniqueName("cmd"))),
+			TargetArn:         aws.String(tc.arn("iot", "thing", uniqueName("thing"))),
+			StartedTimeFilter: &iottypes.TimeFilter{After: aws.String("2026-01-01T00:00")},
+		})
+		if err == nil {
+			return fmt.Errorf("expected commandArn plus targetArn to be rejected")
+		}
+		if ve := expectValidationError(err); ve != nil {
+			return ve
+		}
+		_, err = tc.client.ListCommandExecutions(tc.ctx, &iot.ListCommandExecutionsInput{
+			StartedTimeFilter: &iottypes.TimeFilter{After: aws.String("not-a-timestamp")},
+		})
+		if err == nil {
+			return fmt.Errorf("expected an invalid time filter to be rejected")
+		}
+		return expectValidationError(err)
 	}))
 
 	results = append(results, r.RunTest("iot", "Command_DeleteCommand", func() error {

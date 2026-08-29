@@ -108,7 +108,7 @@ type JobOps interface {
 	GetJob(jobID string) (*Job, error)
 	UpdateJob(jobID string, opts JobUpdateOpts) (*Job, error)
 	DeleteJob(jobID string) error
-	ListJobs(opts common.ListOptions, statusFilter string) (*common.ListResult[Job], error)
+	ListJobs(opts common.ListOptions, filters JobListFilters) (*common.ListResult[Job], error)
 }
 
 type ShadowOps interface {

@@ -36,7 +36,10 @@ func (s *IoTService) createCustomMetricCore(store iotstore.IotStoreInterface, in
 	if !customMetricTypes[in.MetricType] {
 		return nil, iotstore.ErrInvalidRequest
 	}
-	rec, err := s.bulkCreateCore(store, "customMetric", in.MetricName, map[string]interface{}{
+	if in.ClientRequestToken == "" {
+		return nil, iotstore.ErrMissingParam
+	}
+	rec, err := s.bulkCreateIdempotentCore(store, "customMetric", in.MetricName, in.ClientRequestToken, map[string]interface{}{
 		"metricType":         in.MetricType,
 		"displayName":        in.DisplayName,
 		"clientRequestToken": in.ClientRequestToken,

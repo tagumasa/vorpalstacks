@@ -211,20 +211,69 @@ type SecurityProfileListItem struct {
 	Arn  string
 }
 
-// listSecurityProfilesCore lists security profiles with their identifiers.
-func (s *IoTService) listSecurityProfilesCore(store iotstore.IotStoreInterface, opts storecommon.ListOptions) ([]SecurityProfileListItem, string, error) {
+// ListSecurityProfilesInput carries the parsed ListSecurityProfiles request.
+// The dimensionName and metricName filters are mutually exclusive per the
+// model documentation.
+type ListSecurityProfilesInput struct {
+	DimensionName string
+	MetricName    string
+}
+
+// listSecurityProfilesCore lists security profiles with their identifiers,
+// optionally restricted to the profiles that reference the given dimension
+// or custom metric.
+func (s *IoTService) listSecurityProfilesCore(store iotstore.IotStoreInterface, opts storecommon.ListOptions, in ListSecurityProfilesInput) ([]SecurityProfileListItem, string, error) {
+	if in.DimensionName != "" && in.MetricName != "" {
+		return nil, "", iotstore.ErrInvalidRequest
+	}
 	profiles, err := store.ListSecurityProfiles(opts)
 	if err != nil {
 		return nil, "", err
 	}
 	items := make([]SecurityProfileListItem, 0, len(profiles.Items))
 	for _, sp := range profiles.Items {
+		if !securityProfileMatchesFilter(sp, in) {
+			continue
+		}
 		items = append(items, SecurityProfileListItem{
 			Name: sp.SecurityProfileName,
 			Arn:  sp.SecurityProfileARN,
 		})
 	}
 	return items, profiles.NextMarker, nil
+}
+
+// securityProfileMatchesFilter reports whether a profile references the
+// filtered dimension (through a behaviour metric dimension or a retained
+// metric's dimension) or the filtered metric (through a behaviour metric or
+// a retained metric).
+func securityProfileMatchesFilter(sp *iotstore.SecurityProfile, in ListSecurityProfilesInput) bool {
+	if in.DimensionName == "" && in.MetricName == "" {
+		return true
+	}
+	for _, b := range sp.Behaviors {
+		if b == nil {
+			continue
+		}
+		if in.DimensionName != "" && b.MetricDimension == in.DimensionName {
+			return true
+		}
+		if in.MetricName != "" && b.Metric == in.MetricName {
+			return true
+		}
+	}
+	for _, m := range sp.AdditionalMetricsToRetainV2 {
+		if m == nil {
+			continue
+		}
+		if in.DimensionName != "" && m.MetricDimension == in.DimensionName {
+			return true
+		}
+		if in.MetricName != "" && m.Metric == in.MetricName {
+			return true
+		}
+	}
+	return false
 }
 
 // attachSecurityProfileCore records a profile<->target association. Both
@@ -378,25 +427,116 @@ func (s *IoTService) putVerificationStateOnViolationCore(store iotstore.IotStore
 	return store.PutGeneric(key, rec)
 }
 
-// listActiveViolationsCore lists active violations, optionally restricted
-// to one thing and one security profile.
-func (s *IoTService) listActiveViolationsCore(store iotstore.IotStoreInterface, thingName, securityProfileName string) ([]*iotstore.ViolationEvent, error) {
-	violations, err := store.ListActiveViolations(thingName)
+// ListActiveViolationsInput carries the parsed ListActiveViolations request
+// filters.
+type ListActiveViolationsInput struct {
+	ThingName            string
+	SecurityProfileName  string
+	BehaviorCriteriaType string
+	VerificationState    string
+	ListSuppressedAlerts *bool
+}
+
+// behaviorCriteriaTypes is the BehaviorCriteriaType enum member set.
+var behaviorCriteriaTypes = map[string]bool{
+	"STATIC": true, "STATISTICAL": true, "MACHINE_LEARNING": true,
+}
+
+// listActiveViolationsCore lists active violations filtered by thing,
+// profile, criteria type, verification state and the suppressed-alert
+// selector. Suppressed alerts (behaviours flagged suppressAlerts) are only
+// returned when listSuppressedAlerts is explicitly set.
+func (s *IoTService) listActiveViolationsCore(store iotstore.IotStoreInterface, in ListActiveViolationsInput) ([]*iotstore.ViolationEvent, error) {
+	if in.BehaviorCriteriaType != "" && !behaviorCriteriaTypes[in.BehaviorCriteriaType] {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	violations, err := store.ListActiveViolations(in.ThingName)
 	if err != nil {
 		return nil, err
 	}
 	filtered := make([]*iotstore.ViolationEvent, 0, len(violations))
 	for _, v := range violations {
-		if securityProfileName != "" && v.SecurityProfileName != securityProfileName {
-			continue
+		if violationMatchesFilters(v, in.SecurityProfileName, in.BehaviorCriteriaType, in.VerificationState, in.ListSuppressedAlerts) {
+			filtered = append(filtered, v)
 		}
-		filtered = append(filtered, v)
 	}
 	return filtered, nil
 }
 
-// listViolationEventsCore lists violation events with the profile/thing
-// filters.
-func (s *IoTService) listViolationEventsCore(store iotstore.IotStoreInterface, opts storecommon.ListOptions, securityProfileName, thingName string) ([]*iotstore.ViolationEvent, error) {
-	return store.ListViolationEvents(opts, securityProfileName, thingName)
+// ListViolationEventsInput carries the parsed ListViolationEvents request.
+// The model marks both time-range members required.
+type ListViolationEventsInput struct {
+	StartTime            int64
+	EndTime              int64
+	StartTimeProvided    bool
+	EndTimeProvided      bool
+	SecurityProfileName  string
+	ThingName            string
+	BehaviorCriteriaType string
+	VerificationState    string
+	ListSuppressedAlerts *bool
+}
+
+// listViolationEventsCore lists violation events inside the required
+// [startTime, endTime] window with the same filter set as the active
+// violations list.
+func (s *IoTService) listViolationEventsCore(store iotstore.IotStoreInterface, opts storecommon.ListOptions, in ListViolationEventsInput) ([]*iotstore.ViolationEvent, error) {
+	if !in.StartTimeProvided || !in.EndTimeProvided {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if in.BehaviorCriteriaType != "" && !behaviorCriteriaTypes[in.BehaviorCriteriaType] {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	events, err := store.ListViolationEvents(opts, in.SecurityProfileName, in.ThingName)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]*iotstore.ViolationEvent, 0, len(events))
+	for _, e := range events {
+		eventTime := e.ViolationEventTime.Unix()
+		if eventTime < in.StartTime || eventTime > in.EndTime {
+			continue
+		}
+		if violationMatchesFilters(e, "", in.BehaviorCriteriaType, in.VerificationState, in.ListSuppressedAlerts) {
+			filtered = append(filtered, e)
+		}
+	}
+	return filtered, nil
+}
+
+// violationMatchesFilters applies the shared security-profile, criteria-type,
+// verification-state and suppressed-alert filters to one violation.
+func violationMatchesFilters(v *iotstore.ViolationEvent, securityProfileName, behaviorCriteriaType, verificationState string, listSuppressed *bool) bool {
+	if securityProfileName != "" && v.SecurityProfileName != securityProfileName {
+		return false
+	}
+	if behaviorCriteriaType != "" && behaviorCriteriaTypeOf(v.Behavior) != behaviorCriteriaType {
+		return false
+	}
+	if verificationState != "" && v.VerificationState != verificationState {
+		return false
+	}
+	if listSuppressed == nil || !*listSuppressed {
+		if v.Behavior != nil && v.Behavior.SuppressAlerts {
+			return false
+		}
+	}
+	return true
+}
+
+// behaviorCriteriaTypeOf classifies a behaviour's criteria onto the
+// BehaviorCriteriaType enum: an ML detection config is MACHINE_LEARNING, a
+// statistical threshold is STATISTICAL, any other criteria is STATIC, and a
+// behaviour without criteria matches none of the typed filters.
+func behaviorCriteriaTypeOf(b *iotstore.Behavior) string {
+	if b == nil || b.Criteria == nil {
+		return ""
+	}
+	if b.Criteria.MLDetectionConfig != nil {
+		return "MACHINE_LEARNING"
+	}
+	if b.Criteria.StatisticalThreshold != nil {
+		return "STATISTICAL"
+	}
+	return "STATIC"
 }

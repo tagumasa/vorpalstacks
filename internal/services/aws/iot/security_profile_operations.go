@@ -102,7 +102,10 @@ func (s *IoTService) ListSecurityProfiles(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	items, nextMarker, err := s.listSecurityProfilesCore(store, parseListOptions(req.Parameters))
+	items, nextMarker, err := s.listSecurityProfilesCore(store, parseListOptions(req.Parameters), ListSecurityProfilesInput{
+		DimensionName: request.GetParamCaseInsensitive(req.Parameters, "dimensionName"),
+		MetricName:    request.GetParamCaseInsensitive(req.Parameters, "metricName"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -238,20 +241,43 @@ func rawToBehaviors(raw []map[string]interface{}) ([]*iotstore.Behavior, error) 
 	behaviors := make([]*iotstore.Behavior, 0, len(raw))
 	for _, r := range raw {
 		b := &iotstore.Behavior{
-			Name:            strVal(r["name"]),
-			Metric:          strVal(r["metric"]),
-			MetricDimension: strVal(r["metricDimension"]),
-			SuppressAlerts:  boolVal(r["suppressAlerts"]),
-			ExportMetric:    boolVal(r["exportMetric"]),
+			Name:           strVal(r["name"]),
+			Metric:         strVal(r["metric"]),
+			SuppressAlerts: boolVal(r["suppressAlerts"]),
+			ExportMetric:   boolVal(r["exportMetric"]),
+		}
+		// The wire form of metricDimension is the MetricDimension structure
+		// {dimensionName, operator}; the operator is the optional IN/NOT_IN
+		// enum.
+		if dim, ok := r["metricDimension"].(map[string]interface{}); ok {
+			b.MetricDimension = strVal(dim["dimensionName"])
+			switch operator := strVal(dim["operator"]); operator {
+			case "":
+			case "IN", "NOT_IN":
+				b.MetricDimensionOperator = operator
+			default:
+				return nil, iotstore.ErrInvalidRequest
+			}
 		}
 		if c, ok := r["criteria"].(map[string]interface{}); ok {
-			b.Criteria = &iotstore.BehaviorCriteria{
+			criteria := &iotstore.BehaviorCriteria{
 				ComparisonOperator:           strVal(c["comparisonOperator"]),
 				Value:                        float64Val(c["value"]),
 				DurationSeconds:              int64Val(c["durationSeconds"]),
 				ConsecutiveDatapointsToAlarm: int64Val(c["consecutiveDatapointsToAlarm"]),
 				ConsecutiveDatapointsToClear: int64Val(c["consecutiveDatapointsToClear"]),
 			}
+			if st, ok := c["statisticalThreshold"].(map[string]interface{}); ok {
+				criteria.StatisticalThreshold = &iotstore.StatisticalThreshold{
+					Statistic: strVal(st["statistic"]),
+				}
+			}
+			if ml, ok := c["mlDetectionConfig"].(map[string]interface{}); ok {
+				criteria.MLDetectionConfig = &iotstore.MachineLearningDetectionConfig{
+					ConfidenceLevel: strVal(ml["confidenceLevel"]),
+				}
+			}
+			b.Criteria = criteria
 		}
 		behaviors = append(behaviors, b)
 	}
@@ -362,9 +388,11 @@ func metricsToRetainFromList(list []interface{}) []*iotstore.MetricToRetain {
 }
 
 func securityProfileToResponse(sp *iotstore.SecurityProfile) map[string]interface{} {
-	var behaviors interface{} = []interface{}{}
-	if sp.Behaviors != nil {
-		behaviors = sp.Behaviors
+	// Behaviours serialise through the shared lowerCamel projection so the
+	// typed SDK can parse the members.
+	behaviors := make([]interface{}, 0, len(sp.Behaviors))
+	for _, b := range sp.Behaviors {
+		behaviors = append(behaviors, behaviorResponse(b))
 	}
 
 	alertTargets := map[string]interface{}{}

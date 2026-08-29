@@ -20,10 +20,11 @@ func (s *IoTService) CreateDimension(ctx context.Context, reqCtx *request.Reques
 		recTags[t.Key] = t.Value
 	}
 	result, err := s.createDimensionCore(store, CreateDimensionInput{
-		Name:         request.GetParamCaseInsensitive(req.Parameters, "name"),
-		Type:         request.GetParamCaseInsensitive(req.Parameters, "type"),
-		StringValues: request.GetStringList(req.Parameters, "stringValues"),
-		Tags:         recTags,
+		Name:               request.GetParamCaseInsensitive(req.Parameters, "name"),
+		Type:               request.GetParamCaseInsensitive(req.Parameters, "type"),
+		StringValues:       request.GetStringList(req.Parameters, "stringValues"),
+		Tags:               recTags,
+		ClientRequestToken: request.GetParamCaseInsensitive(req.Parameters, "clientRequestToken"),
 	})
 	if err != nil {
 		return nil, err

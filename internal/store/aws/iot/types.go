@@ -575,9 +575,12 @@ type Behavior struct {
 	Name            string
 	Metric          string
 	MetricDimension string
-	Criteria        *BehaviorCriteria
-	SuppressAlerts  bool
-	ExportMetric    bool
+	// MetricDimensionOperator is the optional IN/NOT_IN operator of the
+	// behaviour's metric dimension.
+	MetricDimensionOperator string
+	Criteria                *BehaviorCriteria
+	SuppressAlerts          bool
+	ExportMetric            bool
 }
 
 // BehaviorCriteria defines the conditions that trigger a behaviour alert.
@@ -760,14 +763,46 @@ func BehaviorToProto(b *Behavior) (*pb.Behavior, error) {
 			}
 		}
 	}
+	// The storage proto carries the metric dimension as a plain string, so
+	// the name and the optional operator travel as one JSON-encoded
+	// {dimensionName, operator} structure — the same carrier scheme the
+	// retained-metric entries use.
+	dimension := ""
+	if b.MetricDimension != "" || b.MetricDimensionOperator != "" {
+		encoded, err := json.Marshal(map[string]string{
+			"dimensionName": b.MetricDimension,
+			"operator":      b.MetricDimensionOperator,
+		})
+		if err != nil {
+			return nil, err
+		}
+		dimension = string(encoded)
+	}
 	return &pb.Behavior{
 		Name:            b.Name,
 		Metric:          b.Metric,
-		MetricDimension: b.MetricDimension,
+		MetricDimension: dimension,
 		Criteria:        pbCriteria,
 		SuppressAlerts:  b.SuppressAlerts,
 		ExportMetric:    b.ExportMetric,
 	}, nil
+}
+
+// decodeStoredMetricDimension reads the JSON-encoded {dimensionName,
+// operator} carrier of a stored behaviour. A carrier that is not a JSON
+// object is a bare dimension name with no operator.
+func decodeStoredMetricDimension(raw string) (name, operator string) {
+	if raw == "" {
+		return "", ""
+	}
+	var decoded struct {
+		DimensionName string `json:"dimensionName"`
+		Operator      string `json:"operator"`
+	}
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		return raw, ""
+	}
+	return decoded.DimensionName, decoded.Operator
 }
 
 func ProtoToBehavior(p *pb.Behavior) *Behavior {
@@ -791,13 +826,15 @@ func ProtoToBehavior(p *pb.Behavior) *Behavior {
 			}
 		}
 	}
+	dimensionName, dimensionOperator := decodeStoredMetricDimension(p.MetricDimension)
 	return &Behavior{
-		Name:            p.Name,
-		Metric:          p.Metric,
-		MetricDimension: p.MetricDimension,
-		Criteria:        domainCriteria,
-		SuppressAlerts:  p.SuppressAlerts,
-		ExportMetric:    p.ExportMetric,
+		Name:                    p.Name,
+		Metric:                  p.Metric,
+		MetricDimension:         dimensionName,
+		MetricDimensionOperator: dimensionOperator,
+		Criteria:                domainCriteria,
+		SuppressAlerts:          p.SuppressAlerts,
+		ExportMetric:            p.ExportMetric,
 	}
 }
 

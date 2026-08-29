@@ -78,9 +78,29 @@ func (s *IoTService) updateAccountAuditConfigurationCore(store iotstore.IotStore
 }
 
 // deleteAccountAuditConfigurationCore removes the account audit
-// configuration.
-func (s *IoTService) deleteAccountAuditConfigurationCore(store iotstore.IotStoreInterface) error {
-	return store.DeleteGeneric("config/accountAudit")
+// configuration; with deleteScheduledAudits set it also removes every
+// scheduled audit record.
+func (s *IoTService) deleteAccountAuditConfigurationCore(store iotstore.IotStoreInterface, deleteScheduledAudits bool) error {
+	if err := store.DeleteGeneric("config/accountAudit"); err != nil {
+		return err
+	}
+	if !deleteScheduledAudits {
+		return nil
+	}
+	items, err := store.ListGeneric("scheduledAudit/")
+	if err != nil {
+		return err
+	}
+	for _, rec := range items {
+		name, _ := rec["name"].(string)
+		if name == "" {
+			continue
+		}
+		if err := store.DeleteGeneric("scheduledAudit/" + name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // StartOnDemandAuditTaskInput carries the parsed StartOnDemandAuditTask
@@ -174,14 +194,51 @@ type AuditTaskListItem struct {
 	TaskType   string
 }
 
-// listAuditTasksCore lists every audit task record.
-func (s *IoTService) listAuditTasksCore(store iotstore.IotStoreInterface) ([]AuditTaskListItem, error) {
+// ListAuditTasksInput carries the parsed ListAuditTasks request. The model
+// marks both time-range members required, and the type/status filters carry
+// the AuditTaskType/AuditTaskStatus enums.
+type ListAuditTasksInput struct {
+	StartTime         int64
+	EndTime           int64
+	StartTimeProvided bool
+	EndTimeProvided   bool
+	TaskType          string
+	TaskStatus        string
+}
+
+// auditTaskTypes is the AuditTaskType enum member set (wire values).
+var auditTaskTypes = map[string]bool{
+	"ON_DEMAND_AUDIT_TASK": true, "SCHEDULED_AUDIT_TASK": true,
+}
+
+// auditTaskStatuses is the AuditTaskStatus enum member set.
+var auditTaskStatuses = map[string]bool{
+	"IN_PROGRESS": true, "COMPLETED": true, "FAILED": true, "CANCELED": true,
+}
+
+// listAuditTasksCore lists audit tasks inside the required [startTime,
+// endTime] window, filtered by the optional type/status members. Task
+// records carry no type member; they are all on-demand tasks started
+// explicitly, so the SCHEDULED_AUDIT_TASK filter matches none of them.
+func (s *IoTService) listAuditTasksCore(store iotstore.IotStoreInterface, in ListAuditTasksInput) ([]AuditTaskListItem, error) {
+	if !in.StartTimeProvided || !in.EndTimeProvided {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if in.TaskType != "" && !auditTaskTypes[in.TaskType] {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if in.TaskStatus != "" && !auditTaskStatuses[in.TaskStatus] {
+		return nil, iotstore.ErrInvalidRequest
+	}
 	items, err := store.ListGeneric("auditTask/")
 	if err != nil {
 		return nil, err
 	}
 	tasks := make([]AuditTaskListItem, 0, len(items))
 	for _, rec := range items {
+		if !auditTaskMatchesFilters(rec, in) {
+			continue
+		}
 		tasks = append(tasks, AuditTaskListItem{
 			TaskID:     rec["taskId"],
 			TaskStatus: rec["status"],
@@ -189,6 +246,29 @@ func (s *IoTService) listAuditTasksCore(store iotstore.IotStoreInterface) ([]Aud
 		})
 	}
 	return tasks, nil
+}
+
+// auditTaskMatchesFilters applies the time window and the optional
+// type/status filters to one stored audit-task record. Records without a
+// type member are on-demand tasks.
+func auditTaskMatchesFilters(rec map[string]interface{}, in ListAuditTasksInput) bool {
+	start := recordEpoch(rec["startTime"])
+	if start < in.StartTime || start > in.EndTime {
+		return false
+	}
+	if in.TaskType != "" {
+		taskType, _ := rec["taskType"].(string)
+		if taskType == "" {
+			taskType = "ON_DEMAND_AUDIT_TASK"
+		}
+		if taskType != in.TaskType {
+			return false
+		}
+	}
+	if in.TaskStatus != "" && rec["status"] != in.TaskStatus {
+		return false
+	}
+	return true
 }
 
 // describeAuditFindingCore loads an audit finding record. No Defender
@@ -209,9 +289,83 @@ func (s *IoTService) describeAuditFindingCore(store iotstore.IotStoreInterface, 
 	return rec, nil
 }
 
-// listAuditFindingsCore lists every audit finding record.
-func (s *IoTService) listAuditFindingsCore(store iotstore.IotStoreInterface) ([]map[string]interface{}, error) {
-	return store.ListGeneric("auditFinding/")
+// ListAuditFindingsInput carries the parsed ListAuditFindings request. The
+// documented contract requires exactly one of the taskId or the full
+// startTime/endTime range; carrying both together is rejected, and so is
+// carrying neither.
+type ListAuditFindingsInput struct {
+	TaskID             string
+	CheckName          string
+	ResourceIdentifier map[string]interface{}
+	StartTime          int64
+	EndTime            int64
+	StartTimeProvided  bool
+	EndTimeProvided    bool
+	ListSuppressed     *bool
+}
+
+// listAuditFindingsCore lists audit findings filtered by the optional
+// taskId/checkName/resourceIdentifier members, the finding-time range and
+// the suppressed-flag selector.
+func (s *IoTService) listAuditFindingsCore(store iotstore.IotStoreInterface, in ListAuditFindingsInput) ([]map[string]interface{}, error) {
+	// Either the taskId or the startTime and endTime pair must be
+	// specified, but not both; the checkName filter is not a substitute
+	// for either option and half of the pair does not satisfy it.
+	if in.TaskID != "" && (in.StartTimeProvided || in.EndTimeProvided) {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	if in.TaskID == "" && !(in.StartTimeProvided && in.EndTimeProvided) {
+		return nil, iotstore.ErrInvalidRequest
+	}
+	items, err := store.ListGeneric("auditFinding/")
+	if err != nil {
+		return nil, err
+	}
+	findings := make([]map[string]interface{}, 0, len(items))
+	for _, rec := range items {
+		if !auditFindingMatchesFilters(rec, in) {
+			continue
+		}
+		findings = append(findings, rec)
+	}
+	return findings, nil
+}
+
+// auditFindingMatchesFilters applies the ListAuditFindings filter set to one
+// stored finding record. A record without an isSuppressed member counts as
+// not suppressed; the omitted listSuppressedFindings selector returns both
+// kinds.
+func auditFindingMatchesFilters(rec map[string]interface{}, in ListAuditFindingsInput) bool {
+	if in.TaskID != "" && rec["taskId"] != in.TaskID {
+		return false
+	}
+	if in.CheckName != "" && rec["checkName"] != in.CheckName {
+		return false
+	}
+	if len(in.ResourceIdentifier) > 0 {
+		stored, _ := rec["resourceIdentifier"].(map[string]interface{})
+		for k, v := range in.ResourceIdentifier {
+			if stored[k] != v {
+				return false
+			}
+		}
+	}
+	if in.StartTimeProvided || in.EndTimeProvided {
+		findingTime := recordEpoch(rec["findingTime"])
+		if in.StartTimeProvided && findingTime < in.StartTime {
+			return false
+		}
+		if in.EndTimeProvided && findingTime > in.EndTime {
+			return false
+		}
+	}
+	if in.ListSuppressed != nil {
+		suppressed, _ := rec["isSuppressed"].(bool)
+		if suppressed != *in.ListSuppressed {
+			return false
+		}
+	}
+	return true
 }
 
 // listRelatedResourcesForAuditFindingCore loads the related resources

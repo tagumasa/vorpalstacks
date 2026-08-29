@@ -349,6 +349,81 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		return expectAWSErrorCode(err, "ValidationException")
 	}))
 
+	// The table-level write auto-scaling policy is echoed on every replica
+	// together with its target tracking configuration.
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_TargetTrackingRoundTrip", func() error {
+		if _, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtName),
+			GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+				MinimumUnits: aws.Int64(5),
+				MaximumUnits: aws.Int64(50),
+				ScalingPolicyUpdate: &dynamodbtypes.AutoScalingPolicyUpdate{
+					PolicyName: aws.String("gt-write-tracking"),
+					TargetTrackingScalingPolicyConfiguration: &dynamodbtypes.AutoScalingTargetTrackingScalingPolicyConfigurationUpdate{
+						TargetValue:      aws.Float64(50),
+						DisableScaleIn:   aws.Bool(true),
+						ScaleInCooldown:  aws.Int32(60),
+						ScaleOutCooldown: aws.Int32(30),
+					},
+				},
+			},
+		}); err != nil {
+			return err
+		}
+		after, err := client.DescribeGlobalTableSettings(ctx, &dynamodb.DescribeGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtName),
+		})
+		if err != nil {
+			return err
+		}
+		if len(after.ReplicaSettings) != 1 {
+			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		}
+		as := after.ReplicaSettings[0].ReplicaProvisionedWriteCapacityAutoScalingSettings
+		if as == nil || len(as.ScalingPolicies) != 1 {
+			return fmt.Errorf("expected one scaling policy, got %+v", as)
+		}
+		tt := as.ScalingPolicies[0].TargetTrackingScalingPolicyConfiguration
+		if tt == nil {
+			return fmt.Errorf("expected target tracking configuration on the policy")
+		}
+		if aws.ToFloat64(tt.TargetValue) != 50 || !aws.ToBool(tt.DisableScaleIn) ||
+			aws.ToInt32(tt.ScaleInCooldown) != 60 || aws.ToInt32(tt.ScaleOutCooldown) != 30 {
+			return fmt.Errorf("target tracking round-trip mismatch: %+v", tt)
+		}
+		return nil
+	}))
+
+	// A replica settings update naming a region that is not part of the
+	// global table is rejected instead of silently ignored.
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_UnknownReplicaRejected", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtName),
+			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{
+				{
+					RegionName:                          aws.String("no-such-region-xyz"),
+					ReplicaProvisionedReadCapacityUnits: aws.Int64(5),
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for an unknown replica region")
+		}
+		return expectAWSErrorCode(err, "ReplicaNotFoundException")
+	}))
+
+	// The replica settings update list requires at least one entry.
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_EmptyUpdateListRejected", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName:        aws.String(gtName),
+			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for an empty replica settings update list")
+		}
+		return expectAWSErrorCode(err, "ValidationException")
+	}))
+
 	// --- Replica auto-scaling descriptions ------------------------------
 	asTable := fmt.Sprintf("baseline-autoscaling-%d", suffix)
 	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
@@ -440,6 +515,290 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 			return fmt.Errorf("expected error for over-length nested AutoScalingRoleArn")
 		}
 		return expectAWSErrorCode(err, "ValidationException")
+	}))
+
+	// --- Global-table settings optional members -------------------------
+	gtGsiName := fmt.Sprintf("baseline-gt-gsi-%d", suffix)
+	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName: aws.String(gtGsiName),
+		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+			{AttributeName: aws.String("gpk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+		},
+		KeySchema: []dynamodbtypes.KeySchemaElement{
+			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
+		},
+		GlobalSecondaryIndexes: []dynamodbtypes.GlobalSecondaryIndex{
+			{
+				IndexName: aws.String("gsi-index"),
+				KeySchema: []dynamodbtypes.KeySchemaElement{
+					{AttributeName: aws.String("gpk"), KeyType: dynamodbtypes.KeyTypeHash},
+				},
+				Projection: &dynamodbtypes.Projection{ProjectionType: dynamodbtypes.ProjectionTypeAll},
+			},
+		},
+		BillingMode: dynamodbtypes.BillingModePayPerRequest,
+		StreamSpecification: &dynamodbtypes.StreamSpecification{
+			StreamEnabled:  aws.Bool(true),
+			StreamViewType: dynamodbtypes.StreamViewTypeNewAndOldImages,
+		},
+	}); err != nil {
+		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("create GSI table: %v", err))
+	}
+	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(gtGsiName)})
+	if err := waitKinesisDestTableActive(ctx, client, gtGsiName); err != nil {
+		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("wait active: %v", err))
+	}
+	if _, err := client.CreateGlobalTable(ctx, &dynamodb.CreateGlobalTableInput{
+		GlobalTableName: aws.String(gtGsiName),
+		ReplicationGroup: []dynamodbtypes.Replica{
+			{RegionName: aws.String(r.region)},
+		},
+	}); err != nil {
+		return setupErr("UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", fmt.Errorf("create global table: %v", err))
+	}
+
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_ReplicaSettingsMembersRoundTrip", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtGsiName),
+			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{
+				{
+					RegionName: aws.String(r.region),
+					ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+						MinimumUnits: aws.Int64(1),
+						MaximumUnits: aws.Int64(10),
+					},
+					ReplicaGlobalSecondaryIndexSettingsUpdate: []dynamodbtypes.ReplicaGlobalSecondaryIndexSettingsUpdate{
+						{
+							IndexName:                    aws.String("gsi-index"),
+							ProvisionedReadCapacityUnits: aws.Int64(5),
+							ProvisionedReadCapacityAutoScalingSettingsUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+								MinimumUnits: aws.Int64(2),
+								MaximumUnits: aws.Int64(8),
+							},
+						},
+					},
+					ReplicaTableClass: dynamodbtypes.TableClassStandardInfrequentAccess,
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		after, err := client.DescribeGlobalTableSettings(ctx, &dynamodb.DescribeGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtGsiName),
+		})
+		if err != nil {
+			return err
+		}
+		if len(after.ReplicaSettings) != 1 {
+			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		}
+		rs := after.ReplicaSettings[0]
+		if rs.ReplicaProvisionedReadCapacityAutoScalingSettings == nil ||
+			aws.ToInt64(rs.ReplicaProvisionedReadCapacityAutoScalingSettings.MinimumUnits) != 1 {
+			return fmt.Errorf("expected replica read auto-scaling minimum 1, got %+v", rs.ReplicaProvisionedReadCapacityAutoScalingSettings)
+		}
+		if len(rs.ReplicaGlobalSecondaryIndexSettings) != 1 ||
+			aws.ToString(rs.ReplicaGlobalSecondaryIndexSettings[0].IndexName) != "gsi-index" {
+			return fmt.Errorf("expected one GSI setting for gsi-index, got %+v", rs.ReplicaGlobalSecondaryIndexSettings)
+		}
+		gsi := rs.ReplicaGlobalSecondaryIndexSettings[0]
+		if aws.ToInt64(gsi.ProvisionedReadCapacityUnits) != 5 {
+			return fmt.Errorf("expected GSI read units 5, got %v", gsi.ProvisionedReadCapacityUnits)
+		}
+		if gsi.ProvisionedReadCapacityAutoScalingSettings == nil ||
+			aws.ToInt64(gsi.ProvisionedReadCapacityAutoScalingSettings.MinimumUnits) != 2 {
+			return fmt.Errorf("expected GSI read auto-scaling minimum 2, got %+v", gsi.ProvisionedReadCapacityAutoScalingSettings)
+		}
+		if rs.ReplicaTableClassSummary == nil ||
+			rs.ReplicaTableClassSummary.TableClass != dynamodbtypes.TableClassStandardInfrequentAccess {
+			return fmt.Errorf("expected STANDARD_INFREQUENT_ACCESS table class, got %+v", rs.ReplicaTableClassSummary)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_GlobalGSISettingsRoundTrip", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtGsiName),
+			GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+				MinimumUnits: aws.Int64(1),
+				MaximumUnits: aws.Int64(20),
+			},
+			GlobalTableGlobalSecondaryIndexSettingsUpdate: []dynamodbtypes.GlobalTableGlobalSecondaryIndexSettingsUpdate{
+				{
+					IndexName:                     aws.String("gsi-index"),
+					ProvisionedWriteCapacityUnits: aws.Int64(6),
+					ProvisionedWriteCapacityAutoScalingSettingsUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+						MinimumUnits: aws.Int64(3),
+						MaximumUnits: aws.Int64(9),
+					},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		after, err := client.DescribeGlobalTableSettings(ctx, &dynamodb.DescribeGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtGsiName),
+		})
+		if err != nil {
+			return err
+		}
+		if len(after.ReplicaSettings) != 1 {
+			return fmt.Errorf("expected one replica, got %+v", after.ReplicaSettings)
+		}
+		rs := after.ReplicaSettings[0]
+		if rs.ReplicaProvisionedWriteCapacityAutoScalingSettings == nil ||
+			aws.ToInt64(rs.ReplicaProvisionedWriteCapacityAutoScalingSettings.MinimumUnits) != 1 {
+			return fmt.Errorf("expected replica write auto-scaling minimum 1, got %+v", rs.ReplicaProvisionedWriteCapacityAutoScalingSettings)
+		}
+		if len(rs.ReplicaGlobalSecondaryIndexSettings) != 1 {
+			return fmt.Errorf("expected one merged GSI setting, got %+v", rs.ReplicaGlobalSecondaryIndexSettings)
+		}
+		gsi := rs.ReplicaGlobalSecondaryIndexSettings[0]
+		if aws.ToInt64(gsi.ProvisionedWriteCapacityUnits) != 6 ||
+			gsi.ProvisionedWriteCapacityAutoScalingSettings == nil ||
+			aws.ToInt64(gsi.ProvisionedWriteCapacityAutoScalingSettings.MinimumUnits) != 3 {
+			return fmt.Errorf("expected GSI write units 6 with auto-scaling minimum 3, got %+v", gsi)
+		}
+		// The replica-scoped read settings from the previous update must
+		// survive the global-scope write update on the same index.
+		if aws.ToInt64(gsi.ProvisionedReadCapacityUnits) != 5 ||
+			gsi.ProvisionedReadCapacityAutoScalingSettings == nil ||
+			aws.ToInt64(gsi.ProvisionedReadCapacityAutoScalingSettings.MinimumUnits) != 2 {
+			return fmt.Errorf("expected GSI read settings preserved, got %+v", gsi)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_InvalidTableClassRejected", func() error {
+		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
+			GlobalTableName: aws.String(gtGsiName),
+			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{
+				{
+					RegionName:        aws.String(r.region),
+					ReplicaTableClass: dynamodbtypes.TableClass("INVALID"),
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for off-enum table class")
+		}
+		return expectAWSErrorCode(err, "ValidationException")
+	}))
+
+	// --- Table-level replica auto-scaling members ------------------------
+	asGsiTable := fmt.Sprintf("baseline-autoscaling-gsi-%d", suffix)
+	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName: aws.String(asGsiTable),
+		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
+			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+			{AttributeName: aws.String("gpk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
+		},
+		KeySchema: []dynamodbtypes.KeySchemaElement{
+			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
+		},
+		GlobalSecondaryIndexes: []dynamodbtypes.GlobalSecondaryIndex{
+			{
+				IndexName: aws.String("gsi-index"),
+				KeySchema: []dynamodbtypes.KeySchemaElement{
+					{AttributeName: aws.String("gpk"), KeyType: dynamodbtypes.KeyTypeHash},
+				},
+				Projection: &dynamodbtypes.Projection{ProjectionType: dynamodbtypes.ProjectionTypeAll},
+			},
+		},
+		BillingMode: dynamodbtypes.BillingModePayPerRequest,
+	}); err != nil {
+		return setupErr("UpdateTableReplicaAutoScaling_TableLevelMembersRoundTrip", fmt.Errorf("create GSI table: %v", err))
+	}
+	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(asGsiTable)})
+	if err := waitKinesisDestTableActive(ctx, client, asGsiTable); err != nil {
+		return setupErr("UpdateTableReplicaAutoScaling_TableLevelMembersRoundTrip", fmt.Errorf("wait active: %v", err))
+	}
+
+	results = append(results, r.RunTest("dynamodb", "UpdateTableReplicaAutoScaling_TableLevelMembersRoundTrip", func() error {
+		_, err := client.UpdateTableReplicaAutoScaling(ctx, &dynamodb.UpdateTableReplicaAutoScalingInput{
+			TableName: aws.String(asGsiTable),
+			ProvisionedWriteCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+				MinimumUnits: aws.Int64(2),
+				MaximumUnits: aws.Int64(30),
+			},
+			GlobalSecondaryIndexUpdates: []dynamodbtypes.GlobalSecondaryIndexAutoScalingUpdate{
+				{
+					IndexName: aws.String("gsi-index"),
+					ProvisionedWriteCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+						MinimumUnits: aws.Int64(4),
+						MaximumUnits: aws.Int64(40),
+					},
+				},
+			},
+			ReplicaUpdates: []dynamodbtypes.ReplicaAutoScalingUpdate{
+				{
+					RegionName: aws.String(r.region),
+					ReplicaProvisionedReadCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+						MinimumUnits: aws.Int64(1),
+						MaximumUnits: aws.Int64(10),
+					},
+					ReplicaGlobalSecondaryIndexUpdates: []dynamodbtypes.ReplicaGlobalSecondaryIndexAutoScalingUpdate{
+						{
+							IndexName: aws.String("gsi-index"),
+							ProvisionedReadCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+								MinimumUnits: aws.Int64(5),
+								MaximumUnits: aws.Int64(50),
+							},
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		after, err := client.DescribeTableReplicaAutoScaling(ctx, &dynamodb.DescribeTableReplicaAutoScalingInput{
+			TableName: aws.String(asGsiTable),
+		})
+		if err != nil {
+			return err
+		}
+		replicas := after.TableAutoScalingDescription.Replicas
+		found := false
+		for _, replica := range replicas {
+			if aws.ToString(replica.RegionName) != r.region {
+				continue
+			}
+			found = true
+			if replica.ReplicaProvisionedWriteCapacityAutoScalingSettings == nil ||
+				aws.ToInt64(replica.ReplicaProvisionedWriteCapacityAutoScalingSettings.MinimumUnits) != 2 {
+				return fmt.Errorf("expected table-level write auto-scaling minimum 2 on the replica, got %+v", replica.ReplicaProvisionedWriteCapacityAutoScalingSettings)
+			}
+			var gsi *dynamodbtypes.ReplicaGlobalSecondaryIndexAutoScalingDescription
+			for i := range replica.GlobalSecondaryIndexes {
+				if aws.ToString(replica.GlobalSecondaryIndexes[i].IndexName) == "gsi-index" {
+					gsi = &replica.GlobalSecondaryIndexes[i]
+					break
+				}
+			}
+			if gsi == nil {
+				return fmt.Errorf("gsi-index not described: %+v", replica.GlobalSecondaryIndexes)
+			}
+			if gsi.ProvisionedReadCapacityAutoScalingSettings == nil ||
+				aws.ToInt64(gsi.ProvisionedReadCapacityAutoScalingSettings.MinimumUnits) != 5 {
+				return fmt.Errorf("expected GSI read auto-scaling minimum 5, got %+v", gsi.ProvisionedReadCapacityAutoScalingSettings)
+			}
+			if gsi.ProvisionedWriteCapacityAutoScalingSettings == nil ||
+				aws.ToInt64(gsi.ProvisionedWriteCapacityAutoScalingSettings.MinimumUnits) != 4 {
+				return fmt.Errorf("expected GSI write auto-scaling minimum 4, got %+v", gsi.ProvisionedWriteCapacityAutoScalingSettings)
+			}
+			break
+		}
+		if !found {
+			return fmt.Errorf("replica %s not described: %+v", r.region, replicas)
+		}
+		return nil
 	}))
 
 	return results

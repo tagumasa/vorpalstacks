@@ -13,24 +13,58 @@ import (
 // ---------------------------------------------------------------------------
 
 // SetV2LoggingOptionsInput carries the parsed SetV2LoggingOptions request.
+// EventConfigurations is the raw wire list of LogEventConfiguration
+// entries.
 type SetV2LoggingOptionsInput struct {
-	RoleArn         string
-	DefaultLogLevel string
-	DisableAllLogs  bool
+	RoleArn             string
+	DefaultLogLevel     string
+	DisableAllLogs      bool
+	EventConfigurations []interface{}
 }
 
-// setV2LoggingOptionsCore persists the account default V2 logging options.
+// setV2LoggingOptionsCore validates and persists the account default V2
+// logging options including the per-event-type configuration list. Every
+// event configuration entry requires its eventType member and a LogLevel
+// enum value when a log level is supplied.
 func (s *IoTService) setV2LoggingOptionsCore(store iotstore.IotStoreInterface, in SetV2LoggingOptionsInput) error {
+	if err := validateLogEventConfigurations(in.EventConfigurations); err != nil {
+		return err
+	}
 	defaultLogLevel := in.DefaultLogLevel
 	if defaultLogLevel == "" {
 		defaultLogLevel = "INFO"
+	}
+	if defaultLogLevel != "" && !logLevels[defaultLogLevel] {
+		return iotstore.ErrInvalidRequest
 	}
 	rec := map[string]interface{}{
 		"roleArn":         in.RoleArn,
 		"defaultLogLevel": defaultLogLevel,
 		"disableAllLogs":  in.DisableAllLogs,
 	}
+	if in.EventConfigurations != nil {
+		rec["eventConfigurations"] = in.EventConfigurations
+	}
 	return store.PutGeneric("config/v2Logging", rec)
+}
+
+// validateLogEventConfigurations enforces the LogEventConfiguration shape:
+// the eventType member is required and the logLevel member carries the
+// LogLevel enum.
+func validateLogEventConfigurations(entries []interface{}) error {
+	for _, raw := range entries {
+		entry, ok := raw.(map[string]interface{})
+		if !ok {
+			return iotstore.ErrInvalidRequest
+		}
+		if eventType, _ := entry["eventType"].(string); eventType == "" {
+			return iotstore.ErrMissingParam
+		}
+		if logLevel, _ := entry["logLevel"].(string); logLevel != "" && !logLevels[logLevel] {
+			return iotstore.ErrInvalidRequest
+		}
+	}
+	return nil
 }
 
 // getV2LoggingOptionsCore loads the account default V2 logging options and

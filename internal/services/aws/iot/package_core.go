@@ -31,9 +31,10 @@ type CreatePackageResult struct {
 // UpdatePackageInput carries the fields for UpdatePackage. Empty values
 // leave the stored fields untouched.
 type UpdatePackageInput struct {
-	PackageName        string
-	Description        string
-	DefaultVersionName string
+	PackageName         string
+	Description         string
+	DefaultVersionName  string
+	UnsetDefaultVersion bool
 }
 
 // CreatePackageVersionInput carries the fields for CreatePackageVersion.
@@ -136,9 +137,14 @@ func (s *IoTService) getPackageCore(store iotstore.IotStoreInterface, name strin
 }
 
 // updatePackageCore applies the supplied fields to an existing package.
+// Setting and unsetting the default version in one request is rejected;
+// unsetDefaultVersion alone clears the stored default.
 func (s *IoTService) updatePackageCore(store iotstore.IotStoreInterface, in UpdatePackageInput) error {
 	if in.PackageName == "" {
 		return iotstore.ErrMissingParam
+	}
+	if in.UnsetDefaultVersion && in.DefaultVersionName != "" {
+		return iotstore.ErrInvalidRequest
 	}
 	rec := map[string]interface{}{}
 	exists, err := store.GetGenericExists("iot-package/"+in.PackageName, &rec)
@@ -154,8 +160,23 @@ func (s *IoTService) updatePackageCore(store iotstore.IotStoreInterface, in Upda
 	if in.DefaultVersionName != "" {
 		rec["defaultVersionName"] = in.DefaultVersionName
 	}
+	if in.UnsetDefaultVersion {
+		delete(rec, "defaultVersionName")
+	}
 	rec["lastModifiedDate"] = time.Now().UTC().Unix()
 	return store.PutGeneric("iot-package/"+in.PackageName, rec)
+}
+
+// listSbomValidationResultsCore enforces the model-required packageName and
+// versionName path labels. SBOM validation requires an external validator
+// service which is not part of the on-prem platform, so no validation
+// results ever exist and the summary list stays empty — per AWS behaviour
+// when no validation results exist.
+func (s *IoTService) listSbomValidationResultsCore(packageName, versionName string) ([]map[string]interface{}, error) {
+	if packageName == "" || versionName == "" {
+		return nil, iotstore.ErrValidation
+	}
+	return []map[string]interface{}{}, nil
 }
 
 // deletePackageCore removes a package, cascading to its versions and tags.

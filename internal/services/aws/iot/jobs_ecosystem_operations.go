@@ -2,9 +2,11 @@ package iot
 
 import (
 	"context"
+	"strconv"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/tags"
+	iotstore "vorpalstacks/internal/store/aws/iot"
 )
 
 func (s *IoTService) CreateJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -13,9 +15,18 @@ func (s *IoTService) CreateJobTemplate(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 	result, err := s.createJobTemplateCore(store, CreateJobTemplateInput{
-		JobTemplateID: request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId"),
-		Description:   request.GetParamCaseInsensitive(req.Parameters, "description"),
-		Document:      request.GetParamCaseInsensitive(req.Parameters, "document"),
+		JobTemplateID:              request.GetParamCaseInsensitive(req.Parameters, "jobTemplateId"),
+		JobArn:                     request.GetParamCaseInsensitive(req.Parameters, "jobArn"),
+		Description:                request.GetParamCaseInsensitive(req.Parameters, "description"),
+		Document:                   request.GetParamCaseInsensitive(req.Parameters, "document"),
+		DocumentSource:             request.GetParamCaseInsensitive(req.Parameters, "documentSource"),
+		PresignedUrlConfig:         req.Parameters["presignedUrlConfig"],
+		JobExecutionsRolloutConfig: req.Parameters["jobExecutionsRolloutConfig"],
+		AbortConfig:                req.Parameters["abortConfig"],
+		TimeoutConfig:              req.Parameters["timeoutConfig"],
+		JobExecutionsRetryConfig:   req.Parameters["jobExecutionsRetryConfig"],
+		MaintenanceWindows:         req.Parameters["maintenanceWindows"],
+		DestinationPackageVersions: req.Parameters["destinationPackageVersions"],
 	})
 	if err != nil {
 		return nil, err
@@ -59,8 +70,7 @@ func (s *IoTService) ListJobTemplates(ctx context.Context, reqCtx *request.Reque
 
 func (s *IoTService) DescribeManagedJobTemplate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return s.describeManagedJobTemplateCore(
-		reqCtx.GetAccountID(), reqCtx.GetRegion(),
-		request.GetParamCaseInsensitive(req.Parameters, "templateName")), nil
+		request.GetParamCaseInsensitive(req.Parameters, "templateName"))
 }
 
 func (s *IoTService) ListManagedJobTemplates(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -73,9 +83,12 @@ func (s *IoTService) CancelJobExecution(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 	if err := s.cancelJobExecutionCore(store, CancelJobExecutionInput{
-		JobID:     request.GetParamCaseInsensitive(req.Parameters, "jobId"),
-		ThingName: request.GetParamCaseInsensitive(req.Parameters, "thingName"),
-		Force:     request.GetBoolParam(req.Parameters, "force"),
+		JobID:                   request.GetParamCaseInsensitive(req.Parameters, "jobId"),
+		ThingName:               request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		Force:                   request.GetBoolParam(req.Parameters, "force"),
+		ExpectedVersion:         request.GetInt64Param(req.Parameters, "expectedVersion"),
+		ExpectedVersionProvided: request.HasParam(req.Parameters, "expectedVersion"),
+		StatusDetails:           req.Parameters["statusDetails"],
 	}); err != nil {
 		return nil, err
 	}
@@ -87,9 +100,23 @@ func (s *IoTService) DeleteJobExecution(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, err
 	}
-	if err := s.deleteJobExecutionCore(store,
-		request.GetParamCaseInsensitive(req.Parameters, "jobId"),
-		request.GetParamCaseInsensitive(req.Parameters, "thingName")); err != nil {
+	// executionNumber travels as a URI path label, so it arrives as a
+	// string on the wire.
+	numberRaw := request.GetParamCaseInsensitive(req.Parameters, "executionNumber")
+	executionNumber := int64(0)
+	if numberRaw != "" {
+		parsed, parseErr := strconv.ParseInt(numberRaw, 10, 64)
+		if parseErr != nil {
+			return nil, iotstore.ErrValidation
+		}
+		executionNumber = parsed
+	}
+	if err := s.deleteJobExecutionCore(store, DeleteJobExecutionInput{
+		JobID:           request.GetParamCaseInsensitive(req.Parameters, "jobId"),
+		ThingName:       request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		ExecutionNumber: executionNumber,
+		Force:           request.GetBoolParam(req.Parameters, "force"),
+	}); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -147,10 +174,11 @@ func (s *IoTService) CreateOTAUpdate(ctx context.Context, reqCtx *request.Reques
 		Targets:                       request.GetStringList(req.Parameters, "targets"),
 		Protocols:                     request.GetStringList(req.Parameters, "protocols"),
 		TargetSelection:               request.GetParamCaseInsensitive(req.Parameters, "targetSelection"),
-		AwsJobExecutionsRolloutConfig: request.GetParamCaseInsensitive(req.Parameters, "awsJobExecutionsRolloutConfig"),
-		AwsJobPresignedUrlConfig:      request.GetParamCaseInsensitive(req.Parameters, "awsJobPresignedUrlConfig"),
-		AwsJobAbortConfig:             request.GetParamCaseInsensitive(req.Parameters, "awsJobAbortConfig"),
-		AwsJobTimeoutConfig:           request.GetParamCaseInsensitive(req.Parameters, "awsJobTimeoutConfig"),
+		AwsJobExecutionsRolloutConfig: req.Parameters["awsJobExecutionsRolloutConfig"],
+		AwsJobPresignedUrlConfig:      req.Parameters["awsJobPresignedUrlConfig"],
+		AwsJobAbortConfig:             req.Parameters["awsJobAbortConfig"],
+		AwsJobTimeoutConfig:           req.Parameters["awsJobTimeoutConfig"],
+		Files:                         req.Parameters["files"],
 		RoleArn:                       request.GetParamCaseInsensitive(req.Parameters, "roleArn"),
 		Tags:                          recTags,
 	})
@@ -171,7 +199,11 @@ func (s *IoTService) DeleteOTAUpdate(ctx context.Context, reqCtx *request.Reques
 	if err != nil {
 		return nil, err
 	}
-	if err := s.deleteOTAUpdateCore(store, request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId")); err != nil {
+	if err := s.deleteOTAUpdateCore(store, DeleteOTAUpdateInput{
+		OtaUpdateID:       request.GetParamCaseInsensitive(req.Parameters, "otaUpdateId"),
+		DeleteStream:      request.GetBoolParam(req.Parameters, "deleteStream"),
+		ForceDeleteAWSJob: request.GetBoolParam(req.Parameters, "forceDeleteAWSJob"),
+	}); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{}, nil
@@ -190,7 +222,7 @@ func (s *IoTService) ListOTAUpdates(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	items, err := s.listOTAUpdatesCore(store)
+	items, err := s.listOTAUpdatesCore(store, request.GetParamCaseInsensitive(req.Parameters, "otaUpdateStatus"))
 	if err != nil {
 		return nil, err
 	}

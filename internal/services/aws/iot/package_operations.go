@@ -45,9 +45,10 @@ func (s *IoTService) UpdatePackage(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 	if err := s.updatePackageCore(store, UpdatePackageInput{
-		PackageName:        request.GetParamCaseInsensitive(req.Parameters, "packageName"),
-		Description:        request.GetParamCaseInsensitive(req.Parameters, "description"),
-		DefaultVersionName: request.GetParamCaseInsensitive(req.Parameters, "defaultVersionName"),
+		PackageName:         request.GetParamCaseInsensitive(req.Parameters, "packageName"),
+		Description:         request.GetParamCaseInsensitive(req.Parameters, "description"),
+		DefaultVersionName:  request.GetParamCaseInsensitive(req.Parameters, "defaultVersionName"),
+		UnsetDefaultVersion: request.GetBoolParam(req.Parameters, "unsetDefaultVersion"),
 	}); err != nil {
 		return nil, err
 	}
@@ -216,8 +217,11 @@ func (s *IoTService) DisassociateSbomFromPackageVersion(ctx context.Context, req
 }
 
 func (s *IoTService) ListSbomValidationResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	// SBOM validation requires an external validator service which is not
-	// part of the on-prem platform. Return an empty list per AWS behaviour
-	// when no validation results exist.
-	return paginatedMaps("validationResultSummaries", []map[string]interface{}{}, req.Parameters)
+	summaries, err := s.listSbomValidationResultsCore(
+		request.GetParamCaseInsensitive(req.Parameters, "packageName"),
+		request.GetParamCaseInsensitive(req.Parameters, "versionName"))
+	if err != nil {
+		return nil, err
+	}
+	return paginatedMaps("validationResultSummaries", summaries, req.Parameters)
 }

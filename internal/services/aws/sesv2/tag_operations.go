@@ -4,37 +4,8 @@ import (
 	"context"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 )
-
-func sesv2TagConfig(s *SESv2Service, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
-	return tagutil.TagHandlerConfig{
-		Param: tagutil.StandardConfig,
-		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return err
-			}
-			return store.TagFromSlice(resourceKey, tags)
-		},
-		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return err
-			}
-			return store.Untag(resourceKey, tagKeys)
-		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return nil, err
-			}
-			return store.ListAsSlice(resourceKey)
-		},
-		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
-	}
-}
 
 // TagResource adds tags to an SESv2 resource.
 func (s *SESv2Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

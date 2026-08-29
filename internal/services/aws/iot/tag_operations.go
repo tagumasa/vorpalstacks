@@ -80,9 +80,18 @@ func (s *IoTService) ListActiveViolations(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	violations, err := s.listActiveViolationsCore(store,
-		request.GetParamCaseInsensitive(req.Parameters, "thingName"),
-		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"))
+	var listSuppressed *bool
+	if request.HasParam(req.Parameters, "listSuppressedAlerts") {
+		v := request.GetBoolParam(req.Parameters, "listSuppressedAlerts")
+		listSuppressed = &v
+	}
+	violations, err := s.listActiveViolationsCore(store, ListActiveViolationsInput{
+		ThingName:            request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		SecurityProfileName:  request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		BehaviorCriteriaType: request.GetParamCaseInsensitive(req.Parameters, "behaviorCriteriaType"),
+		VerificationState:    request.GetParamCaseInsensitive(req.Parameters, "verificationState"),
+		ListSuppressedAlerts: listSuppressed,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +107,22 @@ func (s *IoTService) ListViolationEvents(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	events, err := s.listViolationEventsCore(store, parseListOptions(req.Parameters),
-		request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
-		request.GetParamCaseInsensitive(req.Parameters, "thingName"))
+	var listSuppressed *bool
+	if request.HasParam(req.Parameters, "listSuppressedAlerts") {
+		v := request.GetBoolParam(req.Parameters, "listSuppressedAlerts")
+		listSuppressed = &v
+	}
+	events, err := s.listViolationEventsCore(store, parseListOptions(req.Parameters), ListViolationEventsInput{
+		StartTime:            timestampMemberParam(req.Parameters, "startTime"),
+		EndTime:              timestampMemberParam(req.Parameters, "endTime"),
+		StartTimeProvided:    request.HasParam(req.Parameters, "startTime"),
+		EndTimeProvided:      request.HasParam(req.Parameters, "endTime"),
+		SecurityProfileName:  request.GetParamCaseInsensitive(req.Parameters, "securityProfileName"),
+		ThingName:            request.GetParamCaseInsensitive(req.Parameters, "thingName"),
+		BehaviorCriteriaType: request.GetParamCaseInsensitive(req.Parameters, "behaviorCriteriaType"),
+		VerificationState:    request.GetParamCaseInsensitive(req.Parameters, "verificationState"),
+		ListSuppressedAlerts: listSuppressed,
+	})
 	if err != nil {
 		return nil, err
 	}
