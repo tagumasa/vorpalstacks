@@ -1,11 +1,14 @@
 package testutil
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 )
@@ -142,6 +145,21 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 		if err2 := AssertErrorContains(err, "ResourceAlreadyExistsException"); err2 != nil {
 			return fmt.Errorf("duplicate name: %v", err)
 		}
+
+		// A lookup table sourced from an unknown queryId fails with
+		// ResourceNotFoundException over HTTP 400, the status every
+		// CloudWatch Logs client error carries on the wire.
+		_, err = client.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
+			LookupTableName: aws.String(uniqueTableName("q_missing")),
+			QueryId:         aws.String("nonexistent-query-id"),
+		})
+		if err2 := AssertErrorContains(err, "ResourceNotFoundException"); err2 != nil {
+			return fmt.Errorf("unknown queryId: %v", err)
+		}
+		var respErr *awshttp.ResponseError
+		if !errors.As(err, &respErr) || respErr.Response.StatusCode != http.StatusBadRequest {
+			return fmt.Errorf("unknown queryId must be HTTP 400, got %v", err)
+		}
 		return nil
 	}))
 
@@ -157,11 +175,23 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 				})
 			}
 		}()
-		existing, err := client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{})
-		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+		existingTotal := 0
+		var countToken *string
+		for {
+			existing, err := client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{
+				MaxResults: 100,
+				NextToken:  countToken,
+			})
+			if err != nil {
+				return fmt.Errorf("describe: %v", err)
+			}
+			existingTotal += len(existing.LookupTables)
+			countToken = existing.NextToken
+			if countToken == nil {
+				break
+			}
 		}
-		budget := 100 - len(existing.LookupTables)
+		budget := 100 - existingTotal
 		for i := 0; i < budget; i++ {
 			resp, err := client.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
 				LookupTableName: aws.String(fmt.Sprintf("%s_%d", prefix, i)),
@@ -172,12 +202,64 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 			}
 			arns = append(arns, aws.ToString(resp.LookupTableArn))
 		}
-		_, err = client.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
+		_, err := client.CreateLookupTable(tc.ctx, &cloudwatchlogs.CreateLookupTableInput{
 			LookupTableName: aws.String(prefix + "_overflow"),
 			TableBody:       aws.String("a\n1\n"),
 		})
 		if err2 := AssertErrorContains(err, "LimitExceededException"); err2 != nil {
 			return fmt.Errorf("101st table: %v", err)
+		}
+
+		// With the quota exhausted, an omitted maxResults serves the
+		// documented default page of 50 entries and a next token for the
+		// rest; walking the default pages covers every stored table.
+		firstPage, err := client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{})
+		if err != nil {
+			return fmt.Errorf("default-page describe: %v", err)
+		}
+		if len(firstPage.LookupTables) != 50 {
+			return fmt.Errorf("default page returned %d tables, want 50", len(firstPage.LookupTables))
+		}
+		if firstPage.NextToken == nil || *firstPage.NextToken == "" {
+			return fmt.Errorf("default page missing next token with 100 tables stored")
+		}
+		walked := len(firstPage.LookupTables)
+		token := firstPage.NextToken
+		for token != nil && *token != "" {
+			page, err := client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{
+				NextToken: token,
+			})
+			if err != nil {
+				return fmt.Errorf("token-page describe: %v", err)
+			}
+			walked += len(page.LookupTables)
+			token = page.NextToken
+		}
+		if walked != 100 {
+			return fmt.Errorf("default pages walked %d tables, want 100", walked)
+		}
+		return nil
+	}))
+
+	// maxResults outside its documented window is rejected with
+	// InvalidParameterException; the window's maximum is accepted.
+	results = append(results, tc.runner.RunTest("logs", "LookupTable_DescribeMaxResultsWindow", func() error {
+		_, err := client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{
+			MaxResults: 101,
+		})
+		if err2 := AssertErrorContains(err, "InvalidParameterException"); err2 != nil {
+			return fmt.Errorf("maxResults above the maximum: %v", err)
+		}
+		_, err = client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{
+			MaxResults: -1,
+		})
+		if err2 := AssertErrorContains(err, "InvalidParameterException"); err2 != nil {
+			return fmt.Errorf("negative maxResults: %v", err)
+		}
+		if _, err = client.DescribeLookupTables(tc.ctx, &cloudwatchlogs.DescribeLookupTablesInput{
+			MaxResults: 100,
+		}); err != nil {
+			return fmt.Errorf("maxResults at the maximum: %v", err)
 		}
 		return nil
 	}))

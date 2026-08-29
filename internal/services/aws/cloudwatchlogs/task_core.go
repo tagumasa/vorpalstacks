@@ -244,26 +244,29 @@ func (s *LogsService) describeImportTaskBatchesCore(store *logsstore.Store, impo
 	return task, nil
 }
 
-// cancelImportTaskCore validates input and cancels an import task.
-func (s *LogsService) cancelImportTaskCore(store *logsstore.Store, importId string) error {
+// cancelImportTaskCore validates input, cancels an import task, and re-reads
+// the persisted record for the response. A read failure degrades to a nil
+// task, to which the caller responds with the minimal member set.
+func (s *LogsService) cancelImportTaskCore(store *logsstore.Store, importId string) (*logsstore.ImportTask, error) {
 	if importId == "" {
-		return ErrMissingParameter
+		return nil, ErrMissingParameter
 	}
 
 	task, err := store.GetImportTask(importId)
 	if err != nil {
-		return mapStoreError(err)
+		return nil, mapStoreError(err)
 	}
 
 	if task.ImportStatus == "COMPLETED" || task.ImportStatus == "FAILED" || task.ImportStatus == "CANCELLED" {
-		return NewLogsError("InvalidOperationException",
+		return nil, NewLogsError("InvalidOperationException",
 			fmt.Sprintf("Cannot cancel import task in %s state", task.ImportStatus), 400)
 	}
 
 	task.ImportStatus = "CANCELLED"
 	task.LastUpdatedTime = time.Now().UTC().UnixMilli()
 	if err := store.PutImportTask(task); err != nil {
-		return mapStoreError(err)
+		return nil, mapStoreError(err)
 	}
-	return nil
+	saved, _ := store.GetImportTask(importId)
+	return saved, nil
 }

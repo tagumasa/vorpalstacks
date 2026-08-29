@@ -271,11 +271,11 @@ func (s *LogsService) CancelImportTask(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if err := s.cancelImportTaskCore(store, importId); err != nil {
+	task, err := s.cancelImportTaskCore(store, importId)
+	if err != nil {
 		return nil, err
 	}
 
-	task, _ := store.GetImportTask(importId)
 	resp := map[string]interface{}{
 		"importId":     importId,
 		"importStatus": "CANCELLED",

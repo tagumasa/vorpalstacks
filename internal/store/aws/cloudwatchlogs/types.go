@@ -15,6 +15,12 @@ const (
 	// MaxLookupTables is the documented per-account, per-Region quota of
 	// lookup tables.
 	MaxLookupTables = 100
+	// DefaultDescribeLookupTablesResults is the documented default of the
+	// maxResults parameter of DescribeLookupTables.
+	DefaultDescribeLookupTablesResults = 50
+	// MaxDescribeLookupTablesResults is the documented maximum of the
+	// maxResults parameter of DescribeLookupTables.
+	MaxDescribeLookupTablesResults = 100
 	// MaxLookupTableBodyBytes is the documented size ceiling of a lookup
 	// table's CSV content (10 MB).
 	MaxLookupTableBodyBytes = 10485760

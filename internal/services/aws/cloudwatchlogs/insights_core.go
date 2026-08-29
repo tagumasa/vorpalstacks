@@ -66,7 +66,7 @@ func (s *LogsService) stopQueryCore(queryId string) error {
 	val, ok := s.queries.Load(queryId)
 	if !ok {
 		return NewLogsError("ResourceNotFoundException",
-			fmt.Sprintf("Query %s not found", queryId), 404)
+			fmt.Sprintf("Query %s not found", queryId), 400)
 	}
 
 	qs := val.(*queryState)
@@ -145,7 +145,7 @@ func (s *LogsService) getQueryResultsCore(input *GetQueryResultsInput) (*GetQuer
 	val, ok := s.queries.Load(input.QueryId)
 	if !ok {
 		return nil, NewLogsError("ResourceNotFoundException",
-			fmt.Sprintf("Query %s not found", input.QueryId), 404)
+			fmt.Sprintf("Query %s not found", input.QueryId), 400)
 	}
 
 	qs := val.(*queryState)

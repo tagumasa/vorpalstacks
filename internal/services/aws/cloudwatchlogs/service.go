@@ -79,25 +79,17 @@ func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, e
 // getLogsStoreByRegion resolves the CloudWatch Logs store for the given region.
 // Used by bus handlers that operate outside of an HTTP request context.
 func (s *LogsService) getLogsStoreByRegion(region string) (*logsstore.Store, error) {
-	if cached, ok := s.logsStores.Load(region); ok {
-		if typed, ok := cached.(*logsstore.Store); ok {
-			return typed, nil
+	return storecommon.GetOrCreateStoreE(&s.logsStores, region, func() (*logsstore.Store, error) {
+		regionStorage, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
 		}
-	}
-	regionStorage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage for region %q: %w", region, err)
-	}
-	store, err := logsstore.NewStore(regionStorage, regionStorage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
-	}
-	if actual, loaded := s.logsStores.LoadOrStore(region, store); loaded {
-		if typed, ok := actual.(*logsstore.Store); ok {
-			return typed, nil
+		store, err := logsstore.NewStore(regionStorage, regionStorage.Bucket("logs-"+region), s.accountID, region, s.dataPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create CloudWatch Logs store: %w", err)
 		}
-	}
-	return store, nil
+		return store, nil
+	})
 }
 
 // GetStoreForRegion resolves the CloudWatch Logs store for the given region,
