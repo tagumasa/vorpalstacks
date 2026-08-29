@@ -348,5 +348,86 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		return nil
 	}))
 
+	// The Smithy model declares each operation's primary required member
+	// ahead of EventBusName (PutTargetsRequest lists Rule first,
+	// PutRuleRequest lists Name first, ListRuleNamesByTargetRequest lists
+	// TargetArn first), so a request whose primary member and EventBusName
+	// are both provided empty must fail on the primary member. The
+	// operations without a primary required member resolve the event bus
+	// name first, so the empty EventBusName error wins there.
+	results = append(results, r.RunTest("events", "RuleTarget_RequiredMemberPrecedence", func() error {
+		empty := aws.String("")
+		cases := []struct {
+			op      string
+			call    func() error
+			wantMsg string
+		}{
+			{"PutRule", func() error {
+				_, err := client.PutRule(ctx, &eventbridge.PutRuleInput{Name: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"DeleteRule", func() error {
+				_, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"DescribeRule", func() error {
+				_, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{Name: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"EnableRule", func() error {
+				_, err := client.EnableRule(ctx, &eventbridge.EnableRuleInput{Name: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"DisableRule", func() error {
+				_, err := client.DisableRule(ctx, &eventbridge.DisableRuleInput{Name: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"PutTargets", func() error {
+				// The typed SDK rejects a nil Targets list client-side, so an
+				// empty non-nil list carries the doubly-invalid request to
+				// the server.
+				_, err := client.PutTargets(ctx, &eventbridge.PutTargetsInput{Rule: empty, EventBusName: empty, Targets: []types.Target{}})
+				return err
+			}, "Rule name is required"},
+			{"RemoveTargets", func() error {
+				// The typed SDK rejects a nil Ids list client-side, so an
+				// empty non-nil list carries the doubly-invalid request to
+				// the server.
+				_, err := client.RemoveTargets(ctx, &eventbridge.RemoveTargetsInput{Rule: empty, EventBusName: empty, Ids: []string{}})
+				return err
+			}, "Rule name is required"},
+			{"ListTargetsByRule", func() error {
+				_, err := client.ListTargetsByRule(ctx, &eventbridge.ListTargetsByRuleInput{Rule: empty, EventBusName: empty})
+				return err
+			}, "Rule name is required"},
+			{"ListRuleNamesByTarget", func() error {
+				_, err := client.ListRuleNamesByTarget(ctx, &eventbridge.ListRuleNamesByTargetInput{TargetArn: empty, EventBusName: empty})
+				return err
+			}, "TargetArn is required"},
+			{"ListRules", func() error {
+				_, err := client.ListRules(ctx, &eventbridge.ListRulesInput{EventBusName: empty})
+				return err
+			}, "EventBusName must not be empty"},
+			{"PutPermission", func() error {
+				_, err := client.PutPermission(ctx, &eventbridge.PutPermissionInput{EventBusName: empty, Principal: empty, StatementId: empty})
+				return err
+			}, "EventBusName must not be empty"},
+			{"RemovePermission", func() error {
+				_, err := client.RemovePermission(ctx, &eventbridge.RemovePermissionInput{EventBusName: empty, StatementId: empty})
+				return err
+			}, "EventBusName must not be empty"},
+		}
+		for _, c := range cases {
+			err := c.call()
+			if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
+				return fmt.Errorf("%s: %v", c.op, codeErr)
+			}
+			if msgErr := AssertErrorContains(err, c.wantMsg); msgErr != nil {
+				return fmt.Errorf("%s: %v", c.op, msgErr)
+			}
+		}
+		return nil
+	}))
+
 	return results
 }

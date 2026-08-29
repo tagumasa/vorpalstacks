@@ -2,9 +2,7 @@ package eventbridge
 
 import (
 	"context"
-	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -35,61 +33,61 @@ func apiDestinationToMap(d *eventsstore.ApiDestination) map[string]interface{} {
 	return result
 }
 
+// parseCreateApiDestinationInput reads the CreateApiDestination wire request
+// into the transport-agnostic Core input.
+func parseCreateApiDestinationInput(req *request.ParsedRequest) CreateApiDestinationInput {
+	input := CreateApiDestinationInput{
+		Name:               request.GetParamLowerFirst(req.Parameters, "Name"),
+		ConnectionArn:      request.GetParamLowerFirst(req.Parameters, "ConnectionArn"),
+		HttpMethod:         request.GetParamLowerFirst(req.Parameters, "HttpMethod"),
+		InvocationEndpoint: request.GetParamLowerFirst(req.Parameters, "InvocationEndpoint"),
+	}
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		input.DescriptionSet = true
+		input.Description = desc
+	}
+	input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	return input
+}
+
+// parseUpdateApiDestinationInput reads the UpdateApiDestination wire request
+// into the transport-agnostic Core input.
+func parseUpdateApiDestinationInput(req *request.ParsedRequest) UpdateApiDestinationInput {
+	input := UpdateApiDestinationInput{
+		Name: request.GetParamLowerFirst(req.Parameters, "Name"),
+	}
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		input.DescriptionSet = true
+		input.Description = desc
+	}
+	if httpMethod, ok := req.Parameters["HttpMethod"].(string); ok {
+		input.HttpMethodSet = true
+		input.HttpMethod = httpMethod
+	}
+	if endpoint, ok := req.Parameters["InvocationEndpoint"].(string); ok {
+		input.InvocationEndpointSet = true
+		input.InvocationEndpoint = endpoint
+	}
+	if connArn, ok := req.Parameters["ConnectionArn"].(string); ok {
+		input.ConnectionArnSet = true
+		input.ConnectionArn = connArn
+	}
+	input.InvocationRateLimit = int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond"))
+	return input
+}
+
 // CreateApiDestination creates an API destination for EventBridge.
 func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Api destination name is required")
-	}
-	if !validateResourceName(name, "api-destination") {
-		return nil, awserrors.NewValidationException("Api destination name must match the pattern and be 1-64 characters")
-	}
-
-	connectionArn := request.GetParamLowerFirst(req.Parameters, "ConnectionArn")
-	if connectionArn == "" {
-		return nil, awserrors.NewValidationException("ConnectionArn is required")
-	}
-
-	httpMethod := request.GetParamLowerFirst(req.Parameters, "HttpMethod")
-	if httpMethod == "" {
-		httpMethod = "POST"
-	}
-	if !validHttpMethods[httpMethod] {
-		return nil, awserrors.NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
-	}
-
-	invocationEndpoint := request.GetParamLowerFirst(req.Parameters, "InvocationEndpoint")
-	if invocationEndpoint == "" {
-		return nil, awserrors.NewValidationException("InvocationEndpoint is required")
-	}
-
-	apiDest := &eventsstore.ApiDestination{
-		Name:               name,
-		ConnectionARN:      connectionArn,
-		HttpMethod:         httpMethod,
-		InvocationEndpoint: invocationEndpoint,
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		apiDest.Description = desc
-	}
-
-	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
-		if !validateInvocationRateLimit(rateLimit) {
-			return nil, awserrors.NewValidationException("InvocationRateLimitPerSecond must be between 1 and 300")
-		}
-		apiDest.InvocationRateLimitPerSecond = rateLimit
-	}
+	input := parseCreateApiDestinationInput(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.CreateApiDestination(ctx, apiDest); err != nil {
-		return nil, mapStoreError(err, name)
+
+	apiDest, err := s.createApiDestinationCore(ctx, store, input)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -102,16 +100,14 @@ func (s *EventsService) CreateApiDestination(ctx context.Context, reqCtx *reques
 // DeleteApiDestination deletes an API destination.
 func (s *EventsService) DeleteApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Api destination name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteApiDestination(ctx, name); err != nil {
-		return nil, mapStoreError(err, name)
+
+	if err := s.deleteApiDestinationCore(ctx, store, name); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -120,17 +116,15 @@ func (s *EventsService) DeleteApiDestination(ctx context.Context, reqCtx *reques
 // DescribeApiDestination returns information about an API destination.
 func (s *EventsService) DescribeApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Api destination name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	apiDest, err := store.GetApiDestination(ctx, name)
+
+	apiDest, err := s.getApiDestinationCore(ctx, store, name)
 	if err != nil {
-		return nil, mapStoreError(err, name)
+		return nil, err
 	}
 
 	result := apiDestinationToMap(apiDest)
@@ -141,49 +135,15 @@ func (s *EventsService) DescribeApiDestination(ctx context.Context, reqCtx *requ
 
 // UpdateApiDestination updates an existing EventBridge API destination.
 func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Api destination name is required")
-	}
+	input := parseUpdateApiDestinationInput(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	apiDest, err := store.GetApiDestination(ctx, name)
+	apiDest, err := s.updateApiDestinationCore(ctx, store, input)
 	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		apiDest.Description = desc
-	}
-	if httpMethod, ok := req.Parameters["HttpMethod"].(string); ok && httpMethod != "" {
-		if !validHttpMethods[httpMethod] {
-			return nil, awserrors.NewValidationException("HttpMethod must be one of: GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
-		}
-		apiDest.HttpMethod = httpMethod
-	}
-	if endpoint, ok := req.Parameters["InvocationEndpoint"].(string); ok && endpoint != "" {
-		apiDest.InvocationEndpoint = endpoint
-	}
-	if connArn, ok := req.Parameters["ConnectionArn"].(string); ok && connArn != "" {
-		apiDest.ConnectionARN = connArn
-	}
-	if rateLimit := int32(request.GetIntParam(req.Parameters, "InvocationRateLimitPerSecond")); rateLimit > 0 {
-		if !validateInvocationRateLimit(rateLimit) {
-			return nil, awserrors.NewValidationException("InvocationRateLimitPerSecond must be between 1 and 300")
-		}
-		apiDest.InvocationRateLimitPerSecond = rateLimit
-	}
-
-	apiDest.LastModifiedAt = time.Now().UTC()
-
-	if err := store.UpdateApiDestination(ctx, apiDest); err != nil {
 		return nil, err
 	}
 
@@ -197,25 +157,19 @@ func (s *EventsService) UpdateApiDestination(ctx context.Context, reqCtx *reques
 
 // ListApiDestinations lists API destinations with optional filtering.
 func (s *EventsService) ListApiDestinations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
-	connectionArn := request.GetStringParam(req.Parameters, "ConnectionArn")
-
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit < 0 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	input := ListApiDestinationsInput{
+		NamePrefix:    request.GetParamLowerFirst(req.Parameters, "NamePrefix"),
+		ConnectionArn: request.GetStringParam(req.Parameters, "ConnectionArn"),
+		Limit:         int32(request.GetIntParam(req.Parameters, "Limit")),
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
 	}
-	if limit == 0 {
-		limit = 50
-	}
-
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := store.ListApiDestinations(ctx, namePrefix, connectionArn, limit, nextToken)
+	result, err := s.listApiDestinationsCore(ctx, store, input)
 	if err != nil {
 		return nil, err
 	}

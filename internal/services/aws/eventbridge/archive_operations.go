@@ -3,12 +3,10 @@ package eventbridge
 import (
 	"context"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
-	"vorpalstacks/internal/utils/aws/arn"
 )
 
 var validAuthTypes = map[string]bool{
@@ -66,69 +64,45 @@ func archiveToDescribeMap(a *eventsstore.Archive) map[string]interface{} {
 	return result
 }
 
+// parseArchiveMergeInput reads the create/update archive merge members from
+// the wire request into the presence-flag carrier.
+func parseArchiveMergeInput(req *request.ParsedRequest) ArchiveMergeMembers {
+	var m ArchiveMergeMembers
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		m.DescriptionSet = true
+		m.Description = desc
+	}
+	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
+		m.EventPatternSet = true
+		m.EventPattern = pattern
+	}
+	if _, ok := req.Parameters["RetentionDays"]; ok {
+		m.RetentionDaysSet = true
+		m.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
+	}
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		m.KmsKeyIdentifierSet = true
+		m.KmsKeyIdentifier = kms
+	}
+	return m
+}
+
 // CreateArchive creates an archive of events.
 func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Archive name is required")
+	input := CreateArchiveInput{
+		ArchiveName:         request.GetParamLowerFirst(req.Parameters, "ArchiveName"),
+		EventSourceArn:      request.GetParamLowerFirst(req.Parameters, "EventSourceArn"),
+		ArchiveMergeMembers: parseArchiveMergeInput(req),
 	}
-	if !validateResourceName(name, "archive") {
-		return nil, awserrors.NewValidationException("Archive name must match the pattern and be 1-48 characters")
-	}
-
-	eventSourceArn := request.GetParamLowerFirst(req.Parameters, "EventSourceArn")
-	if eventSourceArn == "" {
-		return nil, awserrors.NewValidationException("EventSourceArn is required")
-	}
-
-	eventBusName := arn.ExtractEventBusNameFromARN(eventSourceArn)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if event bus exists
-	if _, err := store.GetEventBus(ctx, eventBusName); err != nil {
-		return nil, mapStoreError(err, eventBusName)
-	}
-
-	archive := &eventsstore.Archive{
-		Name:           name,
-		EventBusName:   eventBusName,
-		EventSourceARN: eventSourceArn,
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		archive.Description = desc
-	}
-
-	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
-		if !validateEventPatternLength(pattern) {
-			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
-		}
-		if !isValidEventPattern(pattern) {
-			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
-		}
-		archive.EventPattern = pattern
-	}
-
-	if _, ok := req.Parameters["RetentionDays"]; ok {
-		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
-	}
-
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
-		if !validateKmsKeyIdentifier(kms) {
-			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
-		}
-		archive.KmsKeyIdentifier = kms
-	}
-
-	if err := store.CreateArchive(ctx, archive); err != nil {
-		return nil, mapStoreError(err, name)
+	archive, err := s.createArchiveCore(ctx, store, input)
+	if err != nil {
+		return nil, err
 	}
 
 	resp := map[string]interface{}{
@@ -145,19 +119,14 @@ func (s *EventsService) CreateArchive(ctx context.Context, reqCtx *request.Reque
 // DeleteArchive deletes an archive.
 func (s *EventsService) DeleteArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Archive name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.DeleteArchive(ctx, name); err != nil {
-		return nil, mapStoreError(err, name)
+	if err := s.deleteArchiveCore(ctx, store, name); err != nil {
+		return nil, err
 	}
-
-	_ = store.DeleteArchiveEvents(ctx, name)
 
 	return response.EmptyResponse(), nil
 }
@@ -165,17 +134,14 @@ func (s *EventsService) DeleteArchive(ctx context.Context, reqCtx *request.Reque
 // DescribeArchive returns information about an archive.
 func (s *EventsService) DescribeArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Archive name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	archive, err := store.GetArchive(ctx, name)
+	archive, err := s.getArchiveCore(ctx, store, name)
 	if err != nil {
-		return nil, mapStoreError(err, name)
+		return nil, err
 	}
 
 	return archiveToDescribeMap(archive), nil
@@ -183,26 +149,20 @@ func (s *EventsService) DescribeArchive(ctx context.Context, reqCtx *request.Req
 
 // ListArchives lists archives with optional filtering.
 func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
-	stateStr := request.GetParamLowerFirst(req.Parameters, "State")
-	eventSourceArn := request.GetStringParam(req.Parameters, "EventSourceArn")
-
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit < 0 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	input := ListArchivesInput{
+		NamePrefix:     request.GetParamLowerFirst(req.Parameters, "NamePrefix"),
+		State:          request.GetParamLowerFirst(req.Parameters, "State"),
+		EventSourceArn: request.GetStringParam(req.Parameters, "EventSourceArn"),
+		Limit:          int32(request.GetIntParam(req.Parameters, "Limit")),
+		NextToken:      pagination.GetMarker(req.Parameters, "NextToken"),
 	}
-	if limit == 0 {
-		limit = 50
-	}
-
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := store.ListArchives(ctx, namePrefix, eventSourceArn, stateStr, limit, nextToken)
+	result, err := s.listArchivesCore(ctx, store, input)
 	if err != nil {
 		return nil, err
 	}
@@ -222,9 +182,9 @@ func (s *EventsService) ListArchives(ctx context.Context, reqCtx *request.Reques
 
 // UpdateArchive updates an existing EventBridge archive.
 func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "ArchiveName")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Archive name is required")
+	input := UpdateArchiveInput{
+		ArchiveName:         request.GetParamLowerFirst(req.Parameters, "ArchiveName"),
+		ArchiveMergeMembers: parseArchiveMergeInput(req),
 	}
 
 	store, err := s.store(reqCtx)
@@ -232,37 +192,8 @@ func (s *EventsService) UpdateArchive(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	archive, err := store.GetArchive(ctx, name)
+	archive, err := s.updateArchiveCore(ctx, store, input)
 	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		archive.Description = desc
-	}
-	if pattern, ok := req.Parameters["EventPattern"].(string); ok {
-		if !validateEventPatternLength(pattern) {
-			return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
-		}
-		if pattern != "" && !isValidEventPattern(pattern) {
-			return nil, awserrors.NewValidationException("EventPattern must be a valid JSON object")
-		}
-		archive.EventPattern = pattern
-	}
-	if _, ok := req.Parameters["RetentionDays"]; ok {
-		archive.RetentionDays = int32(request.GetIntParam(req.Parameters, "RetentionDays"))
-	}
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
-		if !validateKmsKeyIdentifier(kms) {
-			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
-		}
-		archive.KmsKeyIdentifier = kms
-	}
-
-	if err := store.UpdateArchive(ctx, archive); err != nil {
 		return nil, err
 	}
 

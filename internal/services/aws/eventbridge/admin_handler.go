@@ -64,13 +64,10 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	eventBusName := req.Msg.GetEventbusname()
-	if eventBusName == "" {
-		eventBusName = "default"
-	}
-
+	// The console cannot distinguish an explicitly empty event bus name from
+	// an omitted one, so an empty field addresses the default bus.
 	result, err := h.service.listRulesCore(ctx, store, ListRulesInput{
-		EventBusName: eventBusName,
+		EventBusName: req.Msg.GetEventbusname(),
 		NamePrefix:   req.Msg.GetNameprefix(),
 		Limit:        req.Msg.GetLimit(),
 		NextToken:    req.Msg.GetNexttoken(),

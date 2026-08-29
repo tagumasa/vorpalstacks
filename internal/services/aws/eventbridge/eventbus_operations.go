@@ -2,8 +2,6 @@ package eventbridge
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
@@ -123,11 +121,13 @@ func (s *EventsService) CreateEventBus(ctx context.Context, reqCtx *request.Requ
 		}
 	}
 	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
-		input.LogConfig = &eventsstore.BusLogConfig{}
+		input.LogConfig = &BusLogConfigInput{}
 		if id, ok := lc["IncludeDetail"].(string); ok {
+			input.LogConfig.IncludeDetailSet = true
 			input.LogConfig.IncludeDetail = id
 		}
 		if lvl, ok := lc["Level"].(string); ok {
+			input.LogConfig.LevelSet = true
 			input.LogConfig.Level = lvl
 		}
 	}
@@ -195,20 +195,19 @@ func (s *EventsService) DeleteEventBus(ctx context.Context, reqCtx *request.Requ
 	return response.EmptyResponse(), nil
 }
 
-// resolveEventBusName returns the event bus name, defaulting to "default"
-// when the EventBusName parameter is absent. An explicitly empty value is
-// rejected per Smithy @length(min=1).
-func resolveEventBusName(req *request.ParsedRequest) (string, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "EventBusName")
-	if name != "" {
-		return name, nil
+// eventBusNameParam extracts the raw EventBusName value with presence
+// semantics across the case variants, distinguishing an omitted member
+// from one provided as an empty (or non-string) value. The defaulting and
+// the empty-value rejection run at the Core layer through
+// resolveEventBusNameCore.
+func eventBusNameParam(req *request.ParsedRequest) (string, bool) {
+	for _, k := range []string{"EventBusName", "eventBusName"} {
+		if _, ok := req.Parameters[k]; ok {
+			str, _ := req.Parameters[k].(string)
+			return str, true
+		}
 	}
-	_, hasUpper := req.Parameters["EventBusName"]
-	_, hasLower := req.Parameters["eventBusName"]
-	if !hasUpper && !hasLower {
-		return "default", nil
-	}
-	return "", awserrors.NewValidationException("EventBusName must not be empty")
+	return "", false
 }
 
 // DescribeEventBus returns information about an event bus.
@@ -225,22 +224,18 @@ func (s *EventsService) DescribeEventBus(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	eventBus, err := store.GetEventBus(ctx, name)
+
+	result, err := s.describeEventBusCore(ctx, store, name)
 	if err != nil {
-		return nil, mapStoreError(err, name)
+		return nil, err
 	}
 
-	result := eventBusToDescribeMap(eventBus)
-
-	if tagSlice, err := store.TagStore.ListAsSlice(eventBus.ARN); err == nil && len(tagSlice) > 0 {
-		tagMaps := make([]map[string]string, 0, len(tagSlice))
-		for _, t := range tagSlice {
-			tagMaps = append(tagMaps, map[string]string{"Key": t.Key, "Value": t.Value})
-		}
-		result["Tags"] = tagMaps
+	response := eventBusToDescribeMap(result.EventBus)
+	if len(result.Tags) > 0 {
+		response["Tags"] = tagListToMaps(result.Tags)
 	}
 
-	return result, nil
+	return response, nil
 }
 
 // ListEventBuses returns a list of event buses.
@@ -276,59 +271,57 @@ func (s *EventsService) ListEventBuses(ctx context.Context, reqCtx *request.Requ
 	return response, nil
 }
 
+// parseUpdateEventBusInput reads the UpdateEventBus wire request into the
+// transport-agnostic Core input.
+func parseUpdateEventBusInput(req *request.ParsedRequest) UpdateEventBusInput {
+	input := UpdateEventBusInput{
+		Name: request.GetParamLowerFirst(req.Parameters, "Name"),
+	}
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		input.DescriptionSet = true
+		input.Description = desc
+	}
+	if policy, ok := req.Parameters["Policy"].(string); ok {
+		input.PolicySet = true
+		input.Policy = policy
+	}
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		input.KmsKeyIdentifierSet = true
+		input.KmsKeyIdentifier = kms
+	}
+	if dlc, ok := req.Parameters["DeadLetterConfig"].(map[string]interface{}); ok {
+		input.DeadLetterConfigSet = true
+		input.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
+		if arn, ok := dlc["Arn"].(string); ok {
+			input.DeadLetterConfig.Arn = arn
+		}
+	}
+	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
+		input.LogConfigSet = true
+		input.LogConfig = &BusLogConfigInput{}
+		if id, ok := lc["IncludeDetail"].(string); ok {
+			input.LogConfig.IncludeDetailSet = true
+			input.LogConfig.IncludeDetail = id
+		}
+		if lvl, ok := lc["Level"].(string); ok {
+			input.LogConfig.LevelSet = true
+			input.LogConfig.Level = lvl
+		}
+	}
+	return input
+}
+
 // UpdateEventBus updates an event bus.
 func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Event bus name is required")
-	}
+	input := parseUpdateEventBusInput(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	eventBus, err := store.GetEventBus(ctx, name)
+
+	eventBus, err := s.updateEventBusCore(ctx, store, input)
 	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		eventBus.Description = desc
-	}
-
-	if policy, ok := req.Parameters["Policy"].(string); ok {
-		eventBus.Policy = policy
-	}
-
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
-		eventBus.KmsKeyIdentifier = kms
-	}
-	if dlc, ok := req.Parameters["DeadLetterConfig"].(map[string]interface{}); ok {
-		eventBus.DeadLetterConfig = &eventsstore.DeadLetterConfig{}
-		if arn, ok := dlc["Arn"].(string); ok {
-			eventBus.DeadLetterConfig.Arn = arn
-		}
-	}
-	if lc, ok := req.Parameters["LogConfig"].(map[string]interface{}); ok {
-		eventBus.LogConfig = &eventsstore.BusLogConfig{}
-		if id, ok := lc["IncludeDetail"].(string); ok {
-			if !isValidLogIncludeDetail(id) {
-				return nil, awserrors.NewValidationException("LogConfig.IncludeDetail must be one of: NONE, FULL")
-			}
-			eventBus.LogConfig.IncludeDetail = id
-		}
-		if lvl, ok := lc["Level"].(string); ok {
-			if !isValidLogLevel(lvl) {
-				return nil, awserrors.NewValidationException("LogConfig.Level must be one of: OFF, ERROR, INFO, TRACE")
-			}
-			eventBus.LogConfig.Level = lvl
-		}
-	}
-
-	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
 		return nil, err
 	}
 
@@ -340,9 +333,19 @@ func (s *EventsService) UpdateEventBus(ctx context.Context, reqCtx *request.Requ
 // (1) individual parameters (Principal, StatementId, Action, Condition) and
 // (2) a complete policy document via the Policy parameter.
 func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	busName, err := resolveEventBusName(req)
-	if err != nil {
-		return nil, err
+	busName, busNameProvided := eventBusNameParam(req)
+
+	input := PutPermissionInput{
+		BusName:         busName,
+		BusNameProvided: busNameProvided,
+		Principal:       request.GetStringParam(req.Parameters, "Principal"),
+		StatementId:     request.GetStringParam(req.Parameters, "StatementId"),
+		Action:          request.GetStringParam(req.Parameters, "Action"),
+		Condition:       request.GetStringParam(req.Parameters, "Condition"),
+	}
+	if policyStr, ok := req.Parameters["Policy"].(string); ok {
+		input.PolicySet = true
+		input.Policy = policyStr
 	}
 
 	store, err := s.store(reqCtx)
@@ -350,94 +353,7 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	eventBus, err := store.GetEventBus(ctx, busName)
-	if err != nil {
-		return nil, mapStoreError(err, busName)
-	}
-
-	// Mode 1: Full policy document provided via the Policy parameter.
-	if policyStr, ok := req.Parameters["Policy"].(string); ok && policyStr != "" {
-		if err := validateEventBusPolicySize(policyStr); err != nil {
-			return nil, err
-		}
-		var policyDoc map[string]interface{}
-		if err := json.Unmarshal([]byte(policyStr), &policyDoc); err != nil {
-			return nil, awserrors.NewValidationException("Invalid policy document")
-		}
-		if _, ok := policyDoc["Version"]; !ok {
-			policyDoc["Version"] = "2012-10-17"
-		}
-		policyBytes, err := json.Marshal(policyDoc)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal policy: %w", err)
-		}
-		eventBus.Policy = string(policyBytes)
-		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
-			return nil, err
-		}
-		return response.EmptyResponse(), nil
-	}
-
-	// Mode 2: Individual parameters (Principal, StatementId, Action, Condition).
-	principal := request.GetStringParam(req.Parameters, "Principal")
-	statementID := request.GetStringParam(req.Parameters, "StatementId")
-	action := request.GetStringParam(req.Parameters, "Action")
-	if action == "" {
-		action = "events:PutEvents"
-	}
-
-	if principal == "" || statementID == "" {
-		return nil, awserrors.NewValidationException("Principal and StatementId are required")
-	}
-
-	var policyDoc map[string]interface{}
-	if eventBus.Policy != "" {
-		if err := json.Unmarshal([]byte(eventBus.Policy), &policyDoc); err != nil {
-			policyDoc = make(map[string]interface{})
-		}
-	}
-	if _, ok := policyDoc["Version"]; !ok {
-		policyDoc["Version"] = "2012-10-17"
-	}
-
-	statement := map[string]interface{}{
-		"Sid":       statementID,
-		"Effect":    "Allow",
-		"Principal": map[string]interface{}{"AWS": principal},
-		"Action":    action,
-		"Resource":  eventBus.ARN,
-	}
-	if condition, ok := req.Parameters["Condition"].(string); ok && condition != "" {
-		var cond map[string]interface{}
-		if err := json.Unmarshal([]byte(condition), &cond); err != nil {
-			return nil, awserrors.NewValidationException("Condition must be valid JSON: " + err.Error())
-		}
-		statement["Condition"] = cond
-	}
-
-	statements, _ := policyDoc["Statement"].([]interface{})
-	replaced := false
-	for i, s := range statements {
-		if stmt, ok := s.(map[string]interface{}); ok {
-			if sid, _ := stmt["Sid"].(string); sid == statementID {
-				statements[i] = statement
-				replaced = true
-				break
-			}
-		}
-	}
-	if !replaced {
-		statements = append(statements, statement)
-	}
-	policyDoc["Statement"] = statements
-
-	policyBytes, err := json.Marshal(policyDoc)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal policy: %w", err)
-	}
-	eventBus.Policy = string(policyBytes)
-
-	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+	if err := s.putPermissionCore(ctx, store, input); err != nil {
 		return nil, err
 	}
 
@@ -447,74 +363,21 @@ func (s *EventsService) PutPermission(ctx context.Context, reqCtx *request.Reque
 // RemovePermission removes a resource policy statement from the specified
 // event bus identified by its StatementId.
 func (s *EventsService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	busName, err := resolveEventBusName(req)
-	if err != nil {
-		return nil, err
-	}
+	busName, busNameProvided := eventBusNameParam(req)
 
-	statementID := request.GetStringParam(req.Parameters, "StatementId")
-	removeAll, _ := req.Parameters["RemoveAllPermissions"].(bool)
-
-	// AWS requires either StatementId or RemoveAllPermissions=true.
-	if !removeAll && statementID == "" {
-		return nil, awserrors.NewValidationException("StatementId is required when RemoveAllPermissions is not true")
+	input := RemovePermissionInput{
+		BusName:         busName,
+		BusNameProvided: busNameProvided,
+		StatementId:     request.GetStringParam(req.Parameters, "StatementId"),
 	}
+	input.RemoveAll, _ = req.Parameters["RemoveAllPermissions"].(bool)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	eventBus, err := store.GetEventBus(ctx, busName)
-	if err != nil {
-		return nil, mapStoreError(err, busName)
-	}
-
-	if eventBus.Policy == "" {
-		return response.EmptyResponse(), nil
-	}
-
-	// RemoveAllPermissions clears the policy entirely.
-	if removeAll {
-		eventBus.Policy = ""
-		if err := store.UpdateEventBus(ctx, eventBus); err != nil {
-			return nil, err
-		}
-		return response.EmptyResponse(), nil
-	}
-
-	var policyDoc map[string]interface{}
-	if err := json.Unmarshal([]byte(eventBus.Policy), &policyDoc); err != nil {
-		return response.EmptyResponse(), nil
-	}
-
-	statements, ok := policyDoc["Statement"].([]interface{})
-	if !ok {
-		return response.EmptyResponse(), nil
-	}
-
-	filtered := make([]interface{}, 0, len(statements))
-	for _, s := range statements {
-		if stmt, ok := s.(map[string]interface{}); ok {
-			if sid, _ := stmt["Sid"].(string); sid != statementID {
-				filtered = append(filtered, s)
-			}
-		}
-	}
-
-	if len(filtered) == 0 {
-		delete(policyDoc, "Statement")
-	} else {
-		policyDoc["Statement"] = filtered
-	}
-
-	policyBytes, err := json.Marshal(policyDoc)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal policy: %w", err)
-	}
-	eventBus.Policy = string(policyBytes)
-
-	if err := store.UpdateEventBus(ctx, eventBus); err != nil {
+	if err := s.removePermissionCore(ctx, store, input); err != nil {
 		return nil, err
 	}
 

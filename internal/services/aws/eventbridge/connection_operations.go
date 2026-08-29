@@ -302,63 +302,65 @@ func validateAuthParameters(authType string, p *eventsstore.AuthParameters) erro
 	return nil
 }
 
+// parseCreateConnectionInput reads the CreateConnection wire request into
+// the transport-agnostic Core input.
+func parseCreateConnectionInput(req *request.ParsedRequest) CreateConnectionInput {
+	input := CreateConnectionInput{
+		Name:              request.GetParamLowerFirst(req.Parameters, "Name"),
+		Description:       request.GetStringParam(req.Parameters, "Description"),
+		AuthorizationType: request.GetParamLowerFirst(req.Parameters, "AuthorizationType"),
+		AuthParameters:    parseAuthParameters(req.Parameters["AuthParameters"]),
+	}
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		input.DescriptionSet = true
+		input.Description = desc
+	}
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		input.KmsKeyIdentifierSet = true
+		input.KmsKeyIdentifier = kms
+	}
+	input.InvocationConnectivityParameters = parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters")
+	return input
+}
+
+// parseUpdateConnectionInput reads the UpdateConnection wire request into
+// the transport-agnostic Core input.
+func parseUpdateConnectionInput(req *request.ParsedRequest) UpdateConnectionInput {
+	input := UpdateConnectionInput{
+		Name: request.GetParamLowerFirst(req.Parameters, "Name"),
+	}
+	if desc, ok := req.Parameters["Description"].(string); ok {
+		input.DescriptionSet = true
+		input.Description = desc
+	}
+	if authType, ok := req.Parameters["AuthorizationType"].(string); ok {
+		input.AuthorizationTypeSet = true
+		input.AuthorizationType = authType
+	}
+	if rawAuth, ok := req.Parameters["AuthParameters"]; ok {
+		input.AuthParametersSet = true
+		input.AuthParameters = parseAuthParameters(rawAuth)
+	}
+	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok {
+		input.KmsKeyIdentifierSet = true
+		input.KmsKeyIdentifier = kms
+	}
+	input.InvocationConnectivityParameters = parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters")
+	return input
+}
+
 // CreateConnection creates a new EventBridge connection.
 func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Connection name is required")
-	}
-	if !validateResourceName(name, "connection") {
-		return nil, awserrors.NewValidationException("Connection name must match ^[.\\-_A-Za-z0-9]+$ and be 1-64 characters")
-	}
-
-	desc := request.GetStringParam(req.Parameters, "Description")
-	if desc != "" && !validateDescription(desc) {
-		return nil, errDescriptionTooLong()
-	}
-
-	authType := request.GetParamLowerFirst(req.Parameters, "AuthorizationType")
-	if authType == "" {
-		return nil, awserrors.NewValidationException("AuthorizationType is required")
-	}
-	if !validAuthTypes[authType] {
-		return nil, awserrors.NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
-	}
-
-	authParams := parseAuthParameters(req.Parameters["AuthParameters"])
-	if err := validateAuthParameters(authType, authParams); err != nil {
-		return nil, err
-	}
-
-	connection := &eventsstore.Connection{
-		Name:              name,
-		AuthorizationType: authType,
-		AuthParameters:    authParams,
-		State:             eventsstore.ConnectionStateAuthorized,
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		connection.Description = desc
-	}
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok && kms != "" {
-		if !validateKmsKeyIdentifier(kms) {
-			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
-		}
-		connection.KmsKeyIdentifier = kms
-	}
-	if icp := parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters"); icp != nil {
-		connection.InvocationConnectivityParameters = icp
-	}
+	input := parseCreateConnectionInput(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.CreateConnection(ctx, connection); err != nil {
-		return nil, mapStoreError(err, name)
+
+	connection, err := s.createConnectionCore(ctx, store, input)
+	if err != nil {
+		return nil, err
 	}
 
 	now := time.Now().UTC()
@@ -373,58 +375,34 @@ func (s *EventsService) CreateConnection(ctx context.Context, reqCtx *request.Re
 // DeleteConnection deletes an EventBridge connection.
 func (s *EventsService) DeleteConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Connection name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	connection, err := store.GetConnection(ctx, name)
-	if err != nil {
-		if err == eventsstore.ErrConnectionNotFound {
-			return nil, NewResourceNotFoundException("Connection '" + name + "' does not exist")
-		}
-		return nil, err
-	}
-
-	allDests, err := store.ListApiDestinations(ctx, "", "", 1000, "")
+	// The status fields of the removed connection are reported back to the
+	// caller so they can confirm which connection was deleted.
+	connection, err := s.deleteConnectionCore(ctx, store, name)
 	if err != nil {
 		return nil, err
 	}
-	for _, d := range allDests.ApiDestinations {
-		if d.ConnectionARN == connection.ARN {
-			return nil, awserrors.NewValidationException("Connection '" + name + "' is in use by API destination '" + d.Name + "'")
-		}
-	}
 
-	// Capture status fields before deletion so callers can confirm the
-	// connection that was removed.
-	snapshot := connectionToStatusMap(connection)
-
-	if err := store.DeleteConnection(ctx, name); err != nil {
-		return nil, err
-	}
-
-	return snapshot, nil
+	return connectionToStatusMap(connection), nil
 }
 
 // DescribeConnection returns information about a connection.
 func (s *EventsService) DescribeConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Connection name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	connection, err := store.GetConnection(ctx, name)
+
+	connection, err := s.getConnectionCore(ctx, store, name)
 	if err != nil {
-		return nil, mapStoreError(err, name)
+		return nil, err
 	}
 
 	return connectionToDescribeMap(connection), nil
@@ -432,63 +410,15 @@ func (s *EventsService) DescribeConnection(ctx context.Context, reqCtx *request.
 
 // UpdateConnection updates an existing EventBridge connection.
 func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Connection name is required")
-	}
+	input := parseUpdateConnectionInput(req)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	connection, err := store.GetConnection(ctx, name)
+	connection, err := s.updateConnectionCore(ctx, store, input)
 	if err != nil {
-		return nil, mapStoreError(err, name)
-	}
-
-	if desc, ok := req.Parameters["Description"].(string); ok {
-		if !validateDescription(desc) {
-			return nil, errDescriptionTooLong()
-		}
-		connection.Description = desc
-	}
-	authChanged := false
-	if authType, ok := req.Parameters["AuthorizationType"].(string); ok && authType != "" {
-		if !validAuthTypes[authType] {
-			return nil, awserrors.NewValidationException("AuthorizationType must be one of: API_KEY, BASIC, OAUTH_CLIENT_CREDENTIALS")
-		}
-		connection.AuthorizationType = authType
-		authChanged = true
-	}
-	// Re-parse and validate AuthParameters when supplied. AuthorizationType
-	// may be omitted on update (in which case the existing type is retained
-	// but the caller must still supply credentials consistent with it).
-	if rawAuth, ok := req.Parameters["AuthParameters"]; ok {
-		authParams := parseAuthParameters(rawAuth)
-		if err := validateAuthParameters(connection.AuthorizationType, authParams); err != nil {
-			return nil, err
-		}
-		connection.AuthParameters = authParams
-		connection.LastAuthorizedAt = time.Now().UTC()
-		authChanged = true
-	}
-	if kms, ok := req.Parameters["KmsKeyIdentifier"].(string); ok && kms != "" {
-		if !validateKmsKeyIdentifier(kms) {
-			return nil, awserrors.NewValidationException("KmsKeyIdentifier must be a valid KMS ARN")
-		}
-		connection.KmsKeyIdentifier = kms
-	}
-	if icp := parseConnectivityParameters(req.Parameters, "InvocationConnectivityParameters"); icp != nil {
-		connection.InvocationConnectivityParameters = icp
-	}
-
-	connection.LastModifiedAt = time.Now().UTC()
-	if authChanged {
-		connection.State = eventsstore.ConnectionStateAuthorized
-	}
-
-	if err := store.UpdateConnection(ctx, connection); err != nil {
 		return nil, err
 	}
 
@@ -507,61 +437,44 @@ func (s *EventsService) UpdateConnection(ctx context.Context, reqCtx *request.Re
 // DeauthorizeConnection deauthorises an EventBridge connection, revoking its authorisation.
 func (s *EventsService) DeauthorizeConnection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamLowerFirst(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewValidationException("Connection name is required")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.DeauthorizeConnection(ctx, name); err != nil {
-		return nil, mapStoreError(err, name)
-	}
-
-	connection, err := store.GetConnection(ctx, name)
+	connection, err := s.deauthorizeConnectionCore(ctx, store, name)
 	if err != nil {
-		return nil, mapStoreError(err, name)
+		return nil, err
 	}
-	connArn := connection.ARN
-	createdAt := connection.CreatedAt.Unix()
-	modifiedAt := connection.LastModifiedAt.Unix()
-	authorizedAt := connection.LastAuthorizedAt.Unix()
 
 	resp := map[string]interface{}{
-		"ConnectionArn":   connArn,
+		"ConnectionArn":   connection.ARN,
 		"ConnectionState": string(eventsstore.ConnectionStateDeauthorized),
 	}
-	resp["CreationTime"] = createdAt
-	resp["LastModifiedTime"] = modifiedAt
+	resp["CreationTime"] = connection.CreatedAt.Unix()
+	resp["LastModifiedTime"] = connection.LastModifiedAt.Unix()
 	if !connection.LastAuthorizedAt.IsZero() {
-		resp["LastAuthorizedTime"] = authorizedAt
+		resp["LastAuthorizedTime"] = connection.LastAuthorizedAt.Unix()
 	}
 	return resp, nil
 }
 
 // ListConnections lists connections with optional filtering.
 func (s *EventsService) ListConnections(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namePrefix := request.GetParamLowerFirst(req.Parameters, "NamePrefix")
-	stateStr := request.GetParamLowerFirst(req.Parameters, "ConnectionState")
-
-	limit := int32(request.GetIntParam(req.Parameters, "Limit"))
-	if limit < 0 || limit > 100 {
-		return nil, awserrors.NewValidationException("Limit must be between 0 and 100")
+	input := ListConnectionsInput{
+		NamePrefix: request.GetParamLowerFirst(req.Parameters, "NamePrefix"),
+		State:      request.GetParamLowerFirst(req.Parameters, "ConnectionState"),
+		Limit:      int32(request.GetIntParam(req.Parameters, "Limit")),
+		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
 	}
-	if limit == 0 {
-		limit = 50
-	}
-
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := store.ListConnections(ctx, namePrefix, stateStr, limit, nextToken)
+	result, err := s.listConnectionsCore(ctx, store, input)
 	if err != nil {
 		return nil, err
 	}

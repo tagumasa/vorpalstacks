@@ -147,5 +147,104 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 		return nil
 	}))
 
+	results = append(results, r.RunTest("events", "EventBus_LogConfigRoundTrip", func() error {
+		lcBus := fmt.Sprintf("LcBus-%d", time.Now().UnixNano())
+		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
+			Name: aws.String(lcBus),
+			LogConfig: &types.LogConfig{
+				IncludeDetail: types.IncludeDetailNone,
+				Level:         types.LevelInfo,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create bus with log config: %v", err)
+		}
+		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(lcBus)})
+
+		desc, err := client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{
+			Name: aws.String(lcBus),
+		})
+		if err != nil {
+			return fmt.Errorf("describe: %v", err)
+		}
+		if desc.LogConfig == nil {
+			return fmt.Errorf("log config is nil after create")
+		}
+		if desc.LogConfig.IncludeDetail != types.IncludeDetailNone || desc.LogConfig.Level != types.LevelInfo {
+			return fmt.Errorf("create echo mismatch: got %s/%s, want NONE/INFO",
+				desc.LogConfig.IncludeDetail, desc.LogConfig.Level)
+		}
+
+		resp, err := client.UpdateEventBus(ctx, &eventbridge.UpdateEventBusInput{
+			Name: aws.String(lcBus),
+			LogConfig: &types.LogConfig{
+				IncludeDetail: types.IncludeDetailFull,
+				Level:         types.LevelTrace,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("update log config: %v", err)
+		}
+		if resp.LogConfig == nil || resp.LogConfig.IncludeDetail != types.IncludeDetailFull ||
+			resp.LogConfig.Level != types.LevelTrace {
+			return fmt.Errorf("update echo mismatch: got %+v, want FULL/TRACE", resp.LogConfig)
+		}
+
+		desc, err = client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{
+			Name: aws.String(lcBus),
+		})
+		if err != nil {
+			return fmt.Errorf("describe after update: %v", err)
+		}
+		if desc.LogConfig == nil || desc.LogConfig.IncludeDetail != types.IncludeDetailFull ||
+			desc.LogConfig.Level != types.LevelTrace {
+			return fmt.Errorf("persisted log config mismatch: got %+v, want FULL/TRACE", desc.LogConfig)
+		}
+		return nil
+	}))
+
+	// A non-empty out-of-enum value must be rejected on both the create and
+	// update paths. The typed SDK omits empty enum members on the wire, so
+	// the explicit-empty-string rejection is pinned by the Core-layer unit
+	// tests of the service package instead.
+	results = append(results, r.RunTest("events", "EventBus_LogConfigEnumRejected", func() error {
+		leBus := fmt.Sprintf("LeBus-%d", time.Now().UnixNano())
+		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
+			Name: aws.String(leBus),
+			LogConfig: &types.LogConfig{
+				IncludeDetail: types.IncludeDetail("BOGUS"),
+			},
+		})
+		if err == nil {
+			defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(leBus)})
+			return fmt.Errorf("expected error for out-of-enum IncludeDetail on create")
+		}
+		if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
+			return fmt.Errorf("create rejection: %v", codeErr)
+		}
+
+		_, err = client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
+			Name: aws.String(leBus),
+		})
+		if err != nil {
+			return fmt.Errorf("create plain bus: %v", err)
+		}
+		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(leBus)})
+
+		_, err = client.UpdateEventBus(ctx, &eventbridge.UpdateEventBusInput{
+			Name: aws.String(leBus),
+			LogConfig: &types.LogConfig{
+				Level: types.Level("BOGUS"),
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for out-of-enum Level on update")
+		}
+		if codeErr := expectAWSErrorCode(err, "ValidationException"); codeErr != nil {
+			return fmt.Errorf("update rejection: %v", codeErr)
+		}
+		return nil
+	}))
+
 	return results
 }
