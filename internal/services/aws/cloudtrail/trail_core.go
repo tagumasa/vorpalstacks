@@ -1,7 +1,11 @@
 package cloudtrail
 
 import (
+	"context"
+	"fmt"
+
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/iam"
 	tags "vorpalstacks/internal/common/tags"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -42,22 +46,29 @@ type ListTrailsInput struct {
 	MaxItems  int
 }
 
-// TrailResult is the transport-agnostic result of createTrailCore.
-type TrailResult struct {
-	Name                       string
-	TrailARN                   string
-	S3BucketName               string
-	S3KeyPrefix                string
-	SnsTopicName               string
-	SnsTopicARN                string
-	IncludeGlobalServiceEvents bool
-	IsMultiRegionTrail         bool
-	IsOrganizationTrail        bool
-	LogFileValidationEnabled   bool
-	CloudWatchLogsLogGroupARN  string
-	CloudWatchLogsRoleARN      string
-	KMSKeyID                   string
-	HomeRegion                 string
+// TrailNameInput carries the trail name or ARN for single-trail operations
+// (StartLogging, StopLogging).
+type TrailNameInput struct {
+	Name string
+}
+
+// UpdateTrailInput carries the raw update members for UpdateTrail. The
+// members are presence-checked by the Core so that explicitly-provided empty
+// strings clear the corresponding field (AWS spec behaviour), which requires
+// the raw wire values rather than pre-formatted strings.
+type UpdateTrailInput struct {
+	Name                  string
+	CloudWatchLogsRoleArn string
+	IAMValidator          *iam.IAMValidator
+	Params                map[string]interface{}
+}
+
+// DescribeTrailsInput carries the optional TrailNameList filter. When
+// NamesProvided is true (even with an empty list) only the named trails are
+// resolved; otherwise every trail is listed.
+type DescribeTrailsInput struct {
+	Names         []string
+	NamesProvided bool
 }
 
 // ListTrailsResult is the transport-agnostic result of listTrailsCore.
@@ -233,24 +244,149 @@ func (s *CloudTrailService) listTrailsCore(store cloudtrailstore.CloudTrailStore
 	}, nil
 }
 
-// trailToTrailResult converts a store Trail to a TrailResult for transport-
-// agnostic consumption.
-func trailToTrailResult(t *cloudtrailstore.Trail) *TrailResult {
-	return &TrailResult{
-		Name:                       t.Name,
-		TrailARN:                   t.TrailARN,
-		S3BucketName:               t.S3BucketName,
-		S3KeyPrefix:                t.S3KeyPrefix,
-		SnsTopicName:               t.SnsTopicName,
-		SnsTopicARN:                t.SnsTopicARN,
-		IncludeGlobalServiceEvents: t.IncludeGlobalServiceEvents,
-		IsMultiRegionTrail:         t.IsMultiRegionTrail,
-		IsOrganizationTrail:        t.IsOrganizationTrail,
-		LogFileValidationEnabled:   t.LogFileValidationEnabled,
-		CloudWatchLogsLogGroupARN:  t.CloudWatchLogsLogGroupARN,
-		CloudWatchLogsRoleARN:      t.CloudWatchLogsRoleARN,
-		KMSKeyID:                   t.KMSKeyID,
-		HomeRegion:                 t.HomeRegion,
+// resolveTrailCore resolves a trail by name or ARN, rejecting an empty
+// selector with InvalidParameterException before the store lookup.
+func (s *CloudTrailService) resolveTrailCore(store cloudtrailstore.CloudTrailStoreInterface, name string) (*cloudtrailstore.Trail, error) {
+	if name == "" {
+		return nil, ErrInvalidParameter
+	}
+	trail, err := store.ResolveTrail(name)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+	return trail, nil
+}
+
+// updateTrailCore is the single entry point for UpdateTrail: it resolves the
+// trail, validates the CloudWatchLogs role against IAM when one is supplied,
+// applies the presence-checked update members, and persists the result.
+func (s *CloudTrailService) updateTrailCore(ctx context.Context, store cloudtrailstore.CloudTrailStoreInterface, in UpdateTrailInput) (*cloudtrailstore.Trail, error) {
+	if in.Name == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	trail, err := store.ResolveTrail(in.Name)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	if in.IAMValidator != nil && in.CloudWatchLogsRoleArn != "" {
+		if err := in.IAMValidator.ValidateRoleForService(ctx, in.CloudWatchLogsRoleArn, iam.ServicePrincipalCloudTrail); err != nil {
+			return nil, err
+		}
+	}
+
+	applyTrailUpdates(trail, in.Params)
+
+	if err := store.UpdateTrail(trail); err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	return trail, nil
+}
+
+// describeTrailsCore is the single entry point for DescribeTrails: when a
+// TrailNameList was supplied only those trails are resolved (unresolvable
+// names are silently skipped, per AWS behaviour), otherwise every trail in
+// the store is returned.
+func (s *CloudTrailService) describeTrailsCore(store cloudtrailstore.CloudTrailStoreInterface, in DescribeTrailsInput) ([]*cloudtrailstore.Trail, error) {
+	if in.NamesProvided {
+		var trails []*cloudtrailstore.Trail
+		for _, name := range in.Names {
+			trail, err := store.ResolveTrail(name)
+			if err != nil {
+				continue
+			}
+			trails = append(trails, trail)
+		}
+		return trails, nil
+	}
+	trails, err := listAllTrails(store)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+	return trails, nil
+}
+
+// startLoggingCore is the single entry point for StartLogging.
+func (s *CloudTrailService) startLoggingCore(store cloudtrailstore.CloudTrailStoreInterface, in TrailNameInput) error {
+	if in.Name == "" {
+		return ErrInvalidParameter
+	}
+	if err := store.StartLogging(in.Name); err != nil {
+		return s.mapStoreError(err)
+	}
+	return nil
+}
+
+// stopLoggingCore is the single entry point for StopLogging.
+func (s *CloudTrailService) stopLoggingCore(store cloudtrailstore.CloudTrailStoreInterface, in TrailNameInput) error {
+	if in.Name == "" {
+		return ErrInvalidParameter
+	}
+	if err := store.StopLogging(in.Name); err != nil {
+		return s.mapStoreError(err)
+	}
+	return nil
+}
+
+// listAllTrails paginates through all trails across multiple pages.
+func listAllTrails(store cloudtrailstore.CloudTrailStoreInterface) ([]*cloudtrailstore.Trail, error) {
+	var allTrails []*cloudtrailstore.Trail
+	var marker string
+	for {
+		opts := storecommon.ListOptions{MaxItems: 1000}
+		if marker != "" {
+			opts.Marker = marker
+		}
+		result, err := store.ListTrails(opts)
+		if err != nil {
+			return nil, err
+		}
+		allTrails = append(allTrails, result.Items...)
+		if result.NextMarker == "" {
+			break
+		}
+		marker = result.NextMarker
+	}
+	return allTrails, nil
+}
+
+// applyTrailUpdates applies UpdateTrail parameters using existence checks so
+// that explicitly-provided empty strings clear the field (AWS spec behaviour).
+func applyTrailUpdates(trail *cloudtrailstore.Trail, params map[string]interface{}) {
+	if v, ok := params["S3BucketName"]; ok {
+		trail.S3BucketName = fmt.Sprintf("%v", v)
+	}
+	if v, ok := params["S3KeyPrefix"]; ok {
+		trail.S3KeyPrefix = fmt.Sprintf("%v", v)
+	}
+	if v, ok := params["SnsTopicName"]; ok {
+		trail.SnsTopicName = fmt.Sprintf("%v", v)
+	}
+	if v, ok := params["SnsTopicArn"]; ok {
+		trail.SnsTopicARN = fmt.Sprintf("%v", v)
+	}
+	if b := resolveBool(params, "IncludeGlobalServiceEvents"); b != nil {
+		trail.IncludeGlobalServiceEvents = *b
+	}
+	if b := resolveBool(params, "IsMultiRegionTrail"); b != nil {
+		trail.IsMultiRegionTrail = *b
+	}
+	if b := resolveBool(params, "IsOrganizationTrail"); b != nil {
+		trail.IsOrganizationTrail = *b
+	}
+	if b := resolveBool(params, "EnableLogFileValidation"); b != nil {
+		trail.LogFileValidationEnabled = *b
+	}
+	if v, ok := params["CloudWatchLogsLogGroupArn"]; ok {
+		trail.CloudWatchLogsLogGroupARN = fmt.Sprintf("%v", v)
+	}
+	if v, ok := params["CloudWatchLogsRoleArn"]; ok {
+		trail.CloudWatchLogsRoleARN = fmt.Sprintf("%v", v)
+	}
+	if v, ok := params["KmsKeyId"]; ok {
+		trail.KMSKeyID = fmt.Sprintf("%v", v)
 	}
 }
 

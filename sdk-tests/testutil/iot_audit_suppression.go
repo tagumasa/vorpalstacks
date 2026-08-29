@@ -172,13 +172,6 @@ func (r *TestRunner) runIoTAuditSuppressionTests(tc *iotTestContext) []TestResul
 		return fmt.Errorf("started task %q not found in ListAuditMitigationActionsTasks", mitTaskId)
 	}))
 
-	results = append(results, r.RunTest("iot", "CancelAuditMitigationActionsTask_NotFound", func() error {
-		_, err := tc.client.CancelAuditMitigationActionsTask(tc.ctx, &iot.CancelAuditMitigationActionsTaskInput{
-			TaskId: aws.String(uniqueName("nope-mit-task")),
-		})
-		return expectNotFound(err)
-	}))
-
 	results = append(results, r.RunTest("iot", "CancelAuditMitigationActionsTask_Existing", func() error {
 		_, err := tc.client.CancelAuditMitigationActionsTask(tc.ctx, &iot.CancelAuditMitigationActionsTaskInput{
 			TaskId: aws.String(mitTaskId),

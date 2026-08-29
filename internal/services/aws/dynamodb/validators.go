@@ -71,22 +71,26 @@ const (
 	autoScalingPolicyNameMaxLen = 256
 	autoScalingRoleArnMinLen    = 1
 	autoScalingRoleArnMaxLen    = 1600
-	csvHeaderListMaxLen         = 255
-	batchGetMaxTotalItems       = 100
-	batchWriteMaxItems          = 25
-	transactMaxItems            = 100
-	listExportsMaxLimit         = 25
-	listImportsMaxLimit         = 25
-	listBackupsMaxLimit         = 100
-	listContributorMaxLimit     = 100
-	listTablesMaxLimit          = 100
-	listGlobalTablesMinLimit    = 1
-	recoveryPeriodMin           = 1
-	recoveryPeriodMax           = 35
-	scanSegmentMin              = 0
-	scanSegmentMax              = 999999
-	scanTotalSegmentsMin        = 1
-	scanTotalSegmentsMax        = 1000000
+	// TargetTrackingScalingPolicyConfiguration.TargetValue documented
+	// range (Base 10): 8.515920e-109 to 1.174271e+108.
+	autoScalingTargetValueMin = 8.515920e-109
+	autoScalingTargetValueMax = 1.174271e+108
+	csvHeaderListMaxLen       = 255
+	batchGetMaxTotalItems     = 100
+	batchWriteMaxItems        = 25
+	transactMaxItems          = 100
+	listExportsMaxLimit       = 25
+	listImportsMaxLimit       = 25
+	listBackupsMaxLimit       = 100
+	listContributorMaxLimit   = 100
+	listTablesMaxLimit        = 100
+	listGlobalTablesMinLimit  = 1
+	recoveryPeriodMin         = 1
+	recoveryPeriodMax         = 35
+	scanSegmentMin            = 0
+	scanSegmentMax            = 999999
+	scanTotalSegmentsMin      = 1
+	scanTotalSegmentsMax      = 1000000
 
 	// Pagination defaults and caps used by List operations that do not
 	// have an explicit Smithy Limit trait but follow AWS documented

@@ -10,49 +10,7 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cloudtrailstore "vorpalstacks/internal/store/aws/cloudtrail"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
-
-// listAllTrails paginates through all trails across multiple pages.
-func (s *CloudTrailService) listAllTrails(store cloudtrailstore.CloudTrailStoreInterface) ([]*cloudtrailstore.Trail, error) {
-	var allTrails []*cloudtrailstore.Trail
-	var marker string
-	for {
-		opts := storecommon.ListOptions{MaxItems: 1000}
-		if marker != "" {
-			opts.Marker = marker
-		}
-		result, err := store.ListTrails(opts)
-		if err != nil {
-			return nil, err
-		}
-		allTrails = append(allTrails, result.Items...)
-		if result.NextMarker == "" {
-			break
-		}
-		marker = result.NextMarker
-	}
-	return allTrails, nil
-}
-
-// resolveTrailFromRequest resolves a trail by the Name or TrailArn parameter.
-func (s *CloudTrailService) resolveTrailFromRequest(reqCtx *request.RequestContext, req *request.ParsedRequest, paramName string) (cloudtrailstore.CloudTrailStoreInterface, *cloudtrailstore.Trail, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, nil, s.mapStoreError(err)
-	}
-
-	name := req.GetParam(paramName)
-	if name == "" {
-		return nil, nil, ErrInvalidParameter
-	}
-
-	trail, err := store.ResolveTrail(name)
-	if err != nil {
-		return nil, nil, s.mapStoreError(err)
-	}
-	return store, trail, nil
-}
 
 // resolveBool extracts a boolean from request parameters, accepting both
 // bool and string ("true"/"false") representations.
@@ -69,44 +27,6 @@ func resolveBool(params map[string]interface{}, key string) *bool {
 		return &val
 	}
 	return nil
-}
-
-// applyTrailUpdates applies UpdateTrail parameters using existence checks so
-// that explicitly-provided empty strings clear the field (AWS spec behaviour).
-func applyTrailUpdates(trail *cloudtrailstore.Trail, req *request.ParsedRequest) {
-	if v, ok := req.Parameters["S3BucketName"]; ok {
-		trail.S3BucketName = fmt.Sprintf("%v", v)
-	}
-	if v, ok := req.Parameters["S3KeyPrefix"]; ok {
-		trail.S3KeyPrefix = fmt.Sprintf("%v", v)
-	}
-	if v, ok := req.Parameters["SnsTopicName"]; ok {
-		trail.SnsTopicName = fmt.Sprintf("%v", v)
-	}
-	if v, ok := req.Parameters["SnsTopicArn"]; ok {
-		trail.SnsTopicARN = fmt.Sprintf("%v", v)
-	}
-	if b := resolveBool(req.Parameters, "IncludeGlobalServiceEvents"); b != nil {
-		trail.IncludeGlobalServiceEvents = *b
-	}
-	if b := resolveBool(req.Parameters, "IsMultiRegionTrail"); b != nil {
-		trail.IsMultiRegionTrail = *b
-	}
-	if b := resolveBool(req.Parameters, "IsOrganizationTrail"); b != nil {
-		trail.IsOrganizationTrail = *b
-	}
-	if b := resolveBool(req.Parameters, "EnableLogFileValidation"); b != nil {
-		trail.LogFileValidationEnabled = *b
-	}
-	if v, ok := req.Parameters["CloudWatchLogsLogGroupArn"]; ok {
-		trail.CloudWatchLogsLogGroupARN = fmt.Sprintf("%v", v)
-	}
-	if v, ok := req.Parameters["CloudWatchLogsRoleArn"]; ok {
-		trail.CloudWatchLogsRoleARN = fmt.Sprintf("%v", v)
-	}
-	if v, ok := req.Parameters["KmsKeyId"]; ok {
-		trail.KMSKeyID = fmt.Sprintf("%v", v)
-	}
 }
 
 // CreateTrail creates a new CloudTrail trail.
@@ -179,32 +99,19 @@ func (s *CloudTrailService) DeleteTrail(ctx context.Context, reqCtx *request.Req
 
 // UpdateTrail updates the settings for a CloudTrail trail.
 func (s *CloudTrailService) UpdateTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	trail, err := store.ResolveTrail(name)
+	trail, err := s.updateTrailCore(ctx, store, UpdateTrailInput{
+		Name:                  req.GetParam("Name"),
+		CloudWatchLogsRoleArn: req.GetParam("CloudWatchLogsRoleArn"),
+		IAMValidator:          reqCtx.GetIAMValidator(),
+		Params:                req.Parameters,
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	if cwRoleARN := req.GetParam("CloudWatchLogsRoleArn"); cwRoleARN != "" {
-		validator := reqCtx.GetIAMValidator()
-		if err := validator.ValidateRoleForService(ctx, cwRoleARN, iam.ServicePrincipalCloudTrail); err != nil {
-			return nil, err
-		}
-	}
-
-	applyTrailUpdates(trail, req)
-
-	if err := store.UpdateTrail(trail); err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
 	return s.formatTrail(trail), nil
@@ -217,7 +124,8 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 		return nil, s.mapStoreError(err)
 	}
 
-	var trails []*cloudtrailstore.Trail
+	var names []string
+	namesProvided := false
 
 	trailNameListRaw := req.Parameters["TrailNameList"]
 	if trailNameListRaw == nil {
@@ -225,22 +133,22 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 	}
 
 	if trailNameListRaw != nil {
+		namesProvided = true
 		if arr, ok := trailNameListRaw.([]interface{}); ok && len(arr) > 0 {
 			for _, name := range arr {
 				if nameStr, ok := name.(string); ok {
-					trail, err := store.ResolveTrail(nameStr)
-					if err != nil {
-						continue
-					}
-					trails = append(trails, trail)
+					names = append(names, nameStr)
 				}
 			}
 		}
-	} else {
-		trails, err = s.listAllTrails(store)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
+	}
+
+	trails, err := s.describeTrailsCore(store, DescribeTrailsInput{
+		Names:         names,
+		NamesProvided: namesProvided,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	formattedTrails := make([]map[string]interface{}, 0)
@@ -255,7 +163,12 @@ func (s *CloudTrailService) DescribeTrails(ctx context.Context, reqCtx *request.
 
 // GetTrail retrieves the settings for the specified CloudTrail trail.
 func (s *CloudTrailService) GetTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_, trail, err := s.resolveTrailFromRequest(reqCtx, req, "Name")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	trail, err := s.resolveTrailCore(store, req.GetParam("Name"))
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +180,12 @@ func (s *CloudTrailService) GetTrail(ctx context.Context, reqCtx *request.Reques
 
 // GetTrailStatus retrieves the status of the specified CloudTrail trail.
 func (s *CloudTrailService) GetTrailStatus(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	_, trail, err := s.resolveTrailFromRequest(reqCtx, req, "Name")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, s.mapStoreError(err)
+	}
+
+	trail, err := s.resolveTrailCore(store, req.GetParam("Name"))
 	if err != nil {
 		return nil, err
 	}
@@ -325,18 +243,13 @@ func (s *CloudTrailService) ListTrails(ctx context.Context, reqCtx *request.Requ
 
 // StartLogging starts recording AWS API calls for a trail.
 func (s *CloudTrailService) StartLogging(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	if err := store.StartLogging(name); err != nil {
-		return nil, s.mapStoreError(err)
+	if err := s.startLoggingCore(store, TrailNameInput{Name: req.GetParam("Name")}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -344,18 +257,13 @@ func (s *CloudTrailService) StartLogging(ctx context.Context, reqCtx *request.Re
 
 // StopLogging stops recording AWS API calls for a trail.
 func (s *CloudTrailService) StopLogging(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, s.mapStoreError(err)
 	}
 
-	if err := store.StopLogging(name); err != nil {
-		return nil, s.mapStoreError(err)
+	if err := s.stopLoggingCore(store, TrailNameInput{Name: req.GetParam("Name")}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

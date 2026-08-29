@@ -194,11 +194,12 @@ func parseAutoScalingSettings(m map[string]interface{}) (map[string]interface{},
 			policy["PolicyName"] = name
 		}
 		// The description form carries the target tracking configuration
-		// alongside the policy name; its TargetValue member is required.
+		// alongside the policy name; its TargetValue member is required and
+		// bounded by the documented metric range.
 		if tt, ok := pol["TargetTrackingScalingPolicyConfiguration"].(map[string]interface{}); ok {
 			if target, ok := tt["TargetValue"].(float64); !ok {
 				return nil, ErrInvalidParameter
-			} else if target <= 0 {
+			} else if target < autoScalingTargetValueMin || target > autoScalingTargetValueMax {
 				return nil, ErrInvalidParameter
 			}
 			ttDesc := map[string]interface{}{}

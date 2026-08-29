@@ -514,7 +514,37 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if err == nil {
 			return fmt.Errorf("expected error for over-length nested AutoScalingRoleArn")
 		}
-		return expectAWSErrorCode(err, "ValidationException")
+		if err := expectAWSErrorCode(err, "ValidationException"); err != nil {
+			return err
+		}
+		// TargetTrackingScalingPolicyConfiguration.TargetValue is bounded
+		// by the documented metric range: zero, sub-minimum and
+		// over-maximum values are all rejected.
+		for _, bad := range []float64{0, 1e-200, 2e108} {
+			_, err := client.UpdateTableReplicaAutoScaling(ctx, &dynamodb.UpdateTableReplicaAutoScalingInput{
+				TableName: aws.String(asTable),
+				ReplicaUpdates: []dynamodbtypes.ReplicaAutoScalingUpdate{
+					{
+						RegionName: aws.String(r.region),
+						ReplicaProvisionedReadCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+							ScalingPolicyUpdate: &dynamodbtypes.AutoScalingPolicyUpdate{
+								PolicyName: aws.String("range-policy"),
+								TargetTrackingScalingPolicyConfiguration: &dynamodbtypes.AutoScalingTargetTrackingScalingPolicyConfigurationUpdate{
+									TargetValue: aws.Float64(bad),
+								},
+							},
+						},
+					},
+				},
+			})
+			if err == nil {
+				return fmt.Errorf("expected error for out-of-range TargetValue %v", bad)
+			}
+			if err := expectAWSErrorCode(err, "ValidationException"); err != nil {
+				return err
+			}
+		}
+		return nil
 	}))
 
 	// --- Global-table settings optional members -------------------------
