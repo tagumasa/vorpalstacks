@@ -75,6 +75,48 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 		return nil
 	}))
 
+	results = append(results, r.RunTest("kinesis", "ListShards_MaxResultsWindow", func() error {
+		sn := kinesisStream(ts, "mrw")
+		if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
+			StreamName: aws.String(sn),
+			ShardCount: aws.Int32(2),
+		}); err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
+		time.Sleep(1 * time.Second)
+
+		// The MaxResults wire member must bound the page, and the accepted
+		// input window is 1-10000.
+		one, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+			StreamName: aws.String(sn),
+			MaxResults: aws.Int32(1),
+		})
+		if err != nil {
+			return err
+		}
+		if len(one.Shards) != 1 {
+			return fmt.Errorf("MaxResults 1: got %d shards, want 1", len(one.Shards))
+		}
+		if one.NextToken == nil {
+			return fmt.Errorf("MaxResults 1: NextToken missing")
+		}
+
+		for _, maxResults := range []int32{0, 10001} {
+			_, err := client.ListShards(ctx, &kinesis.ListShardsInput{
+				StreamName: aws.String(sn),
+				MaxResults: aws.Int32(maxResults),
+			})
+			if err == nil {
+				return fmt.Errorf("MaxResults %d: expected InvalidArgumentException, got success", maxResults)
+			}
+			if err := AssertErrorContains(err, "InvalidArgumentException"); err != nil {
+				return fmt.Errorf("MaxResults %d: %v", maxResults, err)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("kinesis", "UpdateShardCount", func() error {
 		sn := kinesisStream(ts, "usc")
 		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{

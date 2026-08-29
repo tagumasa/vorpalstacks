@@ -13,27 +13,9 @@ import (
 
 // ListShards lists the shards in a Kinesis stream.
 func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamNameOptional(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	if streamName != "" {
-		stream, err := store.GetStream(streamName)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		// Verify StreamCreationTimestamp matches when provided
-		// (used to disambiguate deleted+recreated streams)
-		if tsStr := request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"); tsStr != "" {
-			if unixTs, err := strconv.ParseFloat(tsStr, 64); err == nil {
-				// Compare at second precision: stream.CreatedAt has nanosecond
-				// resolution but the client timestamp is epoch seconds.
-				if stream.CreatedAt.Unix() != int64(unixTs) {
-					return nil, s.mapStoreError(kinesisstore.ErrStreamNotFound)
-				}
-			}
-		}
 	}
 
 	var filter *kinesisstore.ShardFilter
@@ -66,9 +48,14 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	limit := int(request.GetIntParam(req.Parameters, "Limit"))
-	if limit <= 0 {
-		limit = 1000
+	// The wire member is MaxResults; the value and its presence travel to
+	// the Core so an explicit out-of-window value is rejected instead of
+	// being folded into the default page.
+	maxResults := 0
+	hasMaxResults := false
+	if _, ok := req.Parameters["MaxResults"]; ok {
+		maxResults = request.GetIntParam(req.Parameters, "MaxResults")
+		hasMaxResults = true
 	}
 
 	var nextToken string
@@ -78,10 +65,20 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		}
 	}
 
-	shards, err := store.ListShards(streamName, filter, nextToken, limit)
+	result, err := s.listShardsCore(store, ListShardsInput{
+		StreamName:              request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:               request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		StreamCreationTimestamp: request.GetParamLowerFirst(req.Parameters, "StreamCreationTimestamp"),
+		ShardFilter:             filter,
+		MaxResults:              maxResults,
+		HasMaxResults:           hasMaxResults,
+		NextToken:               nextToken,
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
+
+	shards := result.Shards
 
 	// Apply ShardOrder (ASCENDING is default, DESCENDING reverses)
 	shardOrder := request.GetParamLowerFirst(req.Parameters, "ShardOrder")
@@ -95,7 +92,7 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 		"Shards": formatShards(shards),
 	}
 
-	if len(shards) == limit {
+	if len(shards) == result.EffectiveLimit {
 		lastShard := shards[len(shards)-1]
 		resp["NextToken"] = base64.StdEncoding.EncodeToString([]byte(lastShard.ShardID))
 	}
@@ -105,78 +102,69 @@ func (s *KinesisService) ListShards(ctx context.Context, reqCtx *request.Request
 
 // SplitShard splits a shard in a Kinesis stream.
 func (s *KinesisService) SplitShard(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	shardID := request.GetParamLowerFirst(req.Parameters, "ShardToSplit")
-	newHashKey := request.GetParamLowerFirst(req.Parameters, "NewStartingHashKey")
-	if shardID == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	if err := store.SplitShard(streamName, shardID, newHashKey); err != nil {
-		return nil, s.mapStoreError(err)
+	streamARN, err := s.splitShardCore(store, SplitShardInput{
+		StreamName:         request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:          request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		ShardToSplit:       request.GetParamLowerFirst(req.Parameters, "ShardToSplit"),
+		NewStartingHashKey: request.GetParamLowerFirst(req.Parameters, "NewStartingHashKey"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"StreamARN": store.BuildStreamARN(streamName),
+		"StreamARN": streamARN,
 	}, nil
 }
 
 // MergeShards merges two adjacent shards in a Kinesis stream.
 func (s *KinesisService) MergeShards(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	shardID1 := request.GetParamLowerFirst(req.Parameters, "ShardToMerge")
-	shardID2 := request.GetParamLowerFirst(req.Parameters, "AdjacentShardToMerge")
-	if shardID1 == "" || shardID2 == "" {
-		return nil, ErrInvalidArgument
-	}
-
-	if err := store.MergeShards(streamName, shardID1, shardID2); err != nil {
-		return nil, s.mapStoreError(err)
+	streamARN, err := s.mergeShardsCore(store, MergeShardsInput{
+		StreamName:           request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:            request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		ShardToMerge:         request.GetParamLowerFirst(req.Parameters, "ShardToMerge"),
+		AdjacentShardToMerge: request.GetParamLowerFirst(req.Parameters, "AdjacentShardToMerge"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"StreamARN": store.BuildStreamARN(streamName),
+		"StreamARN": streamARN,
 	}, nil
 }
 
 // UpdateShardCount updates the shard count of a Kinesis stream.
 func (s *KinesisService) UpdateShardCount(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	targetCount := int32(request.GetIntParam(req.Parameters, "TargetShardCount"))
-	if !validateShardCount(targetCount) {
-		return nil, ErrInvalidArgument
-	}
-
-	scalingType := request.GetParamLowerFirst(req.Parameters, "ScalingType")
-	if scalingType != "" && scalingType != "UNIFORM_SCALING" {
-		return nil, ErrInvalidArgument
-	}
-
-	if err := store.UpdateShardCount(streamName, targetCount); err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	stream, err := store.GetStream(streamName)
+	result, err := s.updateShardCountCore(store, UpdateShardCountInput{
+		StreamName:       request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:        request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		TargetShardCount: int32(request.GetIntParam(req.Parameters, "TargetShardCount")),
+		ScalingType:      request.GetParamLowerFirst(req.Parameters, "ScalingType"),
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"StreamName":        streamName,
-		"CurrentShardCount": stream.ShardCount,
-		"TargetShardCount":  targetCount,
-		"StreamARN":         stream.StreamARN,
+		"StreamName":        result.StreamName,
+		"CurrentShardCount": result.CurrentShardCount,
+		"TargetShardCount":  result.TargetShardCount,
+		"StreamARN":         result.StreamARN,
 	}, nil
 }

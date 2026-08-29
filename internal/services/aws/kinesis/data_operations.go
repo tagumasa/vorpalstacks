@@ -11,103 +11,52 @@ import (
 
 // PutRecord writes a single data record into a Kinesis stream.
 func (s *KinesisService) PutRecord(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	data := request.GetParamLowerFirst(req.Parameters, "Data")
-	partitionKey := request.GetParamLowerFirst(req.Parameters, "PartitionKey")
-	explicitHashKey := request.GetParamLowerFirst(req.Parameters, "ExplicitHashKey")
-	if !validatePartitionKey(partitionKey) {
-		return nil, ErrInvalidArgument
-	}
-
-	stream, err := store.GetStream(streamName)
+	result, err := s.putRecordCore(store, PutRecordInput{
+		StreamName:      request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:       request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		Data:            request.GetParamLowerFirst(req.Parameters, "Data"),
+		PartitionKey:    request.GetParamLowerFirst(req.Parameters, "PartitionKey"),
+		ExplicitHashKey: request.GetParamLowerFirst(req.Parameters, "ExplicitHashKey"),
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	if !validateRecordDataSize(data, stream.MaxRecordSizeInKiB) {
-		return nil, ErrValidation
-	}
-
-	record, targetShardID, err := store.PutRecordWithShardSelection(streamName, partitionKey, data, explicitHashKey)
-	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"ShardId":        targetShardID,
-		"SequenceNumber": record.SequenceNumber,
-		"EncryptionType": resolveEncryptionType(stream),
+		"ShardId":        result.ShardID,
+		"SequenceNumber": result.SequenceNumber,
+		"EncryptionType": result.EncryptionType,
 	}, nil
 }
 
 // PutRecords writes multiple data records into a Kinesis stream.
 func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := store.GetStream(streamName)
+	result, err := s.putRecordsCore(store, PutRecordsInput{
+		StreamName: request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:  request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		Records:    req.Parameters["Records"],
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
-
-	recordsRaw := req.Parameters["Records"]
-	if recordsRaw == nil {
-		return nil, ErrInvalidArgument
-	}
-
-	var requests []kinesisstore.PutRecordRequest
-	switch v := recordsRaw.(type) {
-	case []interface{}:
-		for _, r := range v {
-			rm, ok := r.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			data, _ := rm["Data"].(string)
-			pk, _ := rm["PartitionKey"].(string)
-			ehk, _ := rm["ExplicitHashKey"].(string)
-			if !validatePartitionKey(pk) {
-				return nil, ErrValidation
-			}
-			if !validateRecordDataSize(data, stream.MaxRecordSizeInKiB) {
-				return nil, ErrValidation
-			}
-			requests = append(requests, kinesisstore.PutRecordRequest{
-				Data:            data,
-				PartitionKey:    pk,
-				ExplicitHashKey: ehk,
-			})
-		}
-	}
-
-	if len(requests) == 0 {
-		return nil, ErrInvalidArgument
-	}
-
-	if len(requests) > 500 {
-		return nil, ErrValidation
-	}
-
-	results, err := store.PutRecords(streamName, requests)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	encType := resolveEncryptionType(stream)
 
 	var failedCount int32
-	formattedResults := make([]map[string]interface{}, len(results))
-	for i, r := range results {
+	formattedResults := make([]map[string]interface{}, len(result.Results))
+	for i, r := range result.Results {
 		entry := map[string]interface{}{
 			"SequenceNumber": r.SequenceNumber,
 			"ShardId":        r.ShardID,
-			"EncryptionType": encType,
+			"EncryptionType": result.EncryptionType,
 		}
 		if r.ErrorCode != "" {
 			failedCount++
@@ -120,137 +69,57 @@ func (s *KinesisService) PutRecords(ctx context.Context, reqCtx *request.Request
 	return map[string]interface{}{
 		"FailedRecordCount": failedCount,
 		"Records":           formattedResults,
-		"EncryptionType":    encType,
+		"EncryptionType":    result.EncryptionType,
 	}, nil
 }
 
 // GetRecords retrieves records from a Kinesis stream shard.
 func (s *KinesisService) GetRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	iteratorID := request.GetParamLowerFirst(req.Parameters, "ShardIterator")
 	limit := int32(10000)
-	if val := request.GetParamLowerFirst(req.Parameters, "Limit"); val != "" {
+	if _, ok := req.Parameters["Limit"]; ok {
 		limit = int32(request.GetIntParam(req.Parameters, "Limit"))
 	}
-	if !validateGetRecordsLimit(limit) {
-		return nil, ErrInvalidArgument
-	}
 
-	store, err := s.store(reqCtx)
+	result, err := s.getRecordsCore(reqCtx, GetRecordsInput{
+		ShardIterator: request.GetParamLowerFirst(req.Parameters, "ShardIterator"),
+		Limit:         limit,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	iterator, err := store.GetShardIterator(iteratorID)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	includeStart := iterator.IteratorType == "AT_SEQUENCE_NUMBER"
-	records, lastSeqNum, err := store.GetRecords(
-		iterator.StreamName,
-		iterator.ShardID,
-		iterator.SequenceNumber,
-		limit,
-		includeStart,
-	)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	stream, _ := store.GetStream(iterator.StreamName)
-	encType := resolveEncryptionType(stream)
-
-	// Filter out records older than the retention period.
-	retentionCutoff := time.Now().UTC().Add(-time.Duration(stream.RetentionPeriodHours) * time.Hour)
-	if len(records) > 0 {
-		filtered := records[:0]
-		for _, r := range records {
-			if !r.ApproximateArrivalTimestamp.Before(retentionCutoff) {
-				filtered = append(filtered, r)
-			}
-		}
-		records = filtered
-		if len(records) == 0 {
-			lastSeqNum = iterator.SequenceNumber
-		} else {
-			lastSeqNum = records[len(records)-1].SequenceNumber
-		}
-	}
-
-	// Calculate MillisBehindLatest from the last record's arrival time.
-	var millisBehindLatest int64
-	if len(records) > 0 {
-		last := records[len(records)-1]
-		millisBehindLatest = time.Since(last.ApproximateArrivalTimestamp).Milliseconds()
-		if millisBehindLatest < 0 {
-			millisBehindLatest = 0
-		}
-	}
-
-	formattedRecords := make([]map[string]interface{}, len(records))
-	for i, r := range records {
+	formattedRecords := make([]map[string]interface{}, len(result.Records))
+	for i, r := range result.Records {
 		formattedRecords[i] = map[string]interface{}{
 			"SequenceNumber":              r.SequenceNumber,
 			"ApproximateArrivalTimestamp": r.ApproximateArrivalTimestamp.Unix(),
 			"Data":                        r.Data,
 			"PartitionKey":                r.PartitionKey,
-			"EncryptionType":              encType,
+			"EncryptionType":              result.EncryptionType,
 		}
 	}
 
-	var nextIterator interface{}
-	shard, _ := store.GetShard(iterator.StreamName, iterator.ShardID)
-	shardClosed := shard != nil && shard.SequenceNumberRange != nil && shard.SequenceNumberRange.EndingSequenceNumber != ""
-
-	if len(records) > 0 {
-		newIterator, err := store.CreateShardIterator(
-			iterator.StreamName,
-			iterator.ShardID,
-			"AFTER_SEQUENCE_NUMBER",
-			lastSeqNum,
-			nil,
-		)
-		if err == nil {
-			nextIterator = newIterator.IteratorID
-		}
-	} else if !shardClosed {
-		newIterator, err := store.CreateShardIterator(
-			iterator.StreamName,
-			iterator.ShardID,
-			"AFTER_SEQUENCE_NUMBER",
-			iterator.SequenceNumber,
-			nil,
-		)
-		if err == nil {
-			nextIterator = newIterator.IteratorID
-		}
-	}
-
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"Records":            formattedRecords,
-		"NextShardIterator":  nextIterator,
-		"MillisBehindLatest": millisBehindLatest,
+		"NextShardIterator":  result.NextShardIterator,
+		"MillisBehindLatest": result.MillisBehindLatest,
 	}
 
 	// When the shard is closed (split or merged), include ChildShards so
 	// consumers know which shards to read from next.
-	if shardClosed {
-		childShards, _ := store.GetChildShards(iterator.StreamName, iterator.ShardID)
-		if len(childShards) > 0 {
-			result["ChildShards"] = formatChildShards(childShards)
-		}
+	if len(result.ChildShards) > 0 {
+		resp["ChildShards"] = formatChildShards(result.ChildShards)
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // GetShardIterator gets a shard iterator for reading from a Kinesis stream shard.
 func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamName := request.GetParamLowerFirst(req.Parameters, "StreamName")
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	shardID := request.GetParamLowerFirst(req.Parameters, "ShardId")
-	iteratorType := request.GetParamLowerFirst(req.Parameters, "ShardIteratorType")
-	startingSeqNum := request.GetParamLowerFirst(req.Parameters, "StartingSequenceNumber")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
 	var timestamp *time.Time
 	if ts := request.GetParamLowerFirst(req.Parameters, "Timestamp"); ts != "" {
@@ -260,30 +129,20 @@ func (s *KinesisService) GetShardIterator(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	store, err := s.store(reqCtx)
+	iteratorID, err := s.getShardIteratorCore(store, GetShardIteratorInput{
+		StreamName:             request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:              request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		ShardId:                request.GetParamLowerFirst(req.Parameters, "ShardId"),
+		ShardIteratorType:      request.GetParamLowerFirst(req.Parameters, "ShardIteratorType"),
+		StartingSequenceNumber: request.GetParamLowerFirst(req.Parameters, "StartingSequenceNumber"),
+		Timestamp:              timestamp,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if streamARN != "" {
-		stream, err := store.GetStreamByARN(streamARN)
-		if err != nil {
-			return nil, s.mapStoreError(err)
-		}
-		streamName = stream.StreamName
-	}
-
-	if streamName == "" || shardID == "" || !validateIteratorType(iteratorType) {
-		return nil, ErrInvalidArgument
-	}
-
-	iterator, err := store.CreateShardIterator(streamName, shardID, iteratorType, startingSeqNum, timestamp)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
 	return map[string]interface{}{
-		"ShardIterator": iterator.IteratorID,
+		"ShardIterator": iteratorID,
 	}, nil
 }
 

@@ -43,6 +43,9 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	result, err := h.service.listStreamsCore(stores, ListStreamsInput{
 		ExclusiveStartStreamName: req.Msg.Exclusivestartstreamname,
 		Limit:                    int(req.Msg.GetLimit()),
+		// The console's zero limit means "no limit chosen", matching the
+		// proto default for an absent member.
+		HasLimit: req.Msg.GetLimit() > 0,
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

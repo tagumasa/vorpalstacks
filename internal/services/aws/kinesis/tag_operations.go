@@ -2,102 +2,10 @@ package kinesis
 
 import (
 	"context"
-	"sort"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
-	kinesisstore "vorpalstacks/internal/store/aws/kinesis"
 )
-
-func (s *KinesisService) kinesisTagConfig(store *kinesisstore.KinesisStore, req *request.ParsedRequest) tags.TagHandlerConfig {
-	return tags.TagHandlerConfig{
-		Param: tags.KinesisStreamConfig,
-		ResourceKey: func(rawKey string) string {
-			name := request.GetParamLowerFirst(req.Parameters, "StreamName")
-			if name != "" {
-				return name
-			}
-			arn := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-			if arn == "" {
-				arn = request.GetParamLowerFirst(req.Parameters, "ResourceARN")
-			}
-			if arn == "" {
-				return rawKey
-			}
-			stream, err := store.GetStreamByARN(arn)
-			if err != nil {
-				return ""
-			}
-			return stream.StreamName
-		},
-		ValidateResource: func(ctx context.Context, resourceKey string) error {
-			_, err := store.GetStream(resourceKey)
-			return err
-		},
-		ParseTags: func(params map[string]interface{}) []tags.Tag {
-			return tags.ParseTags(params, "Tags")
-		},
-		TagFunc: func(ctx context.Context, resourceKey string, tagList []tags.Tag) error {
-			return store.Tag(resourceKey, tags.ToMap(tagList))
-		},
-		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			return store.Untag(resourceKey, tagKeys)
-		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]tags.Tag, error) {
-			return store.ListAsSlice(resourceKey)
-		},
-		FormatResponse: func(tagList []tags.Tag, _ string) (interface{}, error) {
-			// Implement pagination with ExclusiveStartTagKey and Limit
-			startKey := request.GetStringParam(req.Parameters, "ExclusiveStartTagKey")
-			limit := request.GetIntParam(req.Parameters, "Limit")
-			if limit <= 0 || limit > 50 {
-				limit = 50
-			}
-
-			// Sort first so that ExclusiveStartTagKey filtering is lexical
-			sort.Slice(tagList, func(i, j int) bool {
-				return tagList[i].Key < tagList[j].Key
-			})
-
-			// Apply ExclusiveStartTagKey: keep only keys > startKey
-			if startKey != "" {
-				filtered := tagList[:0]
-				for _, t := range tagList {
-					if t.Key > startKey {
-						filtered = append(filtered, t)
-					}
-				}
-				tagList = filtered
-			}
-
-			hasMore := false
-			if int32(len(tagList)) > int32(limit) {
-				hasMore = true
-				tagList = tagList[:limit]
-			}
-
-			return map[string]interface{}{
-				"Tags":        tags.ToResponse(tagList),
-				"HasMoreTags": hasMore,
-			}, nil
-		},
-		EmptyResponse: func() (interface{}, error) {
-			return response.EmptyResponse(), nil
-		},
-		MapError: func(err error) error {
-			switch err.(type) {
-			case *tags.MissingResourceError:
-				return ErrInvalidArgument
-			case *tags.MissingTagsError:
-				return ErrInvalidArgument
-			case *tags.MissingTagKeysError:
-				return ErrInvalidArgument
-			}
-			return s.mapStoreError(err)
-		},
-	}
-}
 
 // AddTagsToStream adds or overwrites tags on a Kinesis data stream.
 func (s *KinesisService) AddTagsToStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

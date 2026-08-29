@@ -92,15 +92,20 @@ func (s *KinesisService) DescribeStream(ctx context.Context, reqCtx *request.Req
 
 // DescribeStreamSummary returns summary information about a Kinesis stream.
 func (s *KinesisService) DescribeStreamSummary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	store, streamName, err := s.resolveStreamName(reqCtx, req.Parameters)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := store.GetStream(streamName)
+	result, err := s.describeStreamSummaryCore(store, DescribeStreamSummaryInput{
+		StreamName: request.GetParamLowerFirst(req.Parameters, "StreamName"),
+		StreamARN:  request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+	})
 	if err != nil {
-		return nil, s.mapStoreError(err)
+		return nil, err
 	}
+
+	stream := result.Stream
 
 	return map[string]interface{}{
 		"StreamDescriptionSummary": map[string]interface{}{
@@ -127,9 +132,11 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
+	_, hasLimit := req.Parameters["Limit"]
 	result, err := s.listStreamsCore(store, ListStreamsInput{
 		ExclusiveStartStreamName: request.GetStringParam(req.Parameters, "ExclusiveStartStreamName"),
 		Limit:                    request.GetIntParam(req.Parameters, "Limit"),
+		HasLimit:                 hasLimit,
 		NextToken:                request.GetStringParam(req.Parameters, "NextToken"),
 	})
 	if err != nil {
@@ -162,40 +169,19 @@ func (s *KinesisService) ListStreams(ctx context.Context, reqCtx *request.Reques
 
 // UpdateStreamMode updates the stream mode of a Kinesis stream.
 func (s *KinesisService) UpdateStreamMode(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamARN := request.GetParamLowerFirst(req.Parameters, "StreamARN")
-	streamMode := parseStreamModeDetails(req.Parameters)
-
-	if streamARN == "" || !validateStreamMode(string(streamMode)) {
-		return nil, ErrInvalidArgument
-	}
-
-	store, err := s.store(reqCtx)
+	_, hasWarmThroughput := req.Parameters["WarmThroughputMiBps"]
+	result, err := s.updateStreamModeCore(reqCtx, UpdateStreamModeInput{
+		StreamARN:           request.GetParamLowerFirst(req.Parameters, "StreamARN"),
+		StreamMode:          parseStreamModeDetails(req.Parameters),
+		WarmThroughputMiBps: int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps")),
+		HasWarmThroughput:   hasWarmThroughput,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := store.GetStreamByARN(streamARN)
-	if err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
-	stream.StreamModeDetails = &kinesisstore.StreamModeDetails{StreamMode: streamMode}
-
-	// Parse optional WarmThroughputMiBps
-	if _, ok := req.Parameters["WarmThroughputMiBps"]; ok {
-		warm := int32(request.GetIntParam(req.Parameters, "WarmThroughputMiBps"))
-		if !validateWarmThroughputMiBps(warm) {
-			return nil, ErrInvalidArgument
-		}
-		stream.WarmThroughputMiBps = warm
-	}
-
-	if err := store.UpdateStream(stream); err != nil {
-		return nil, s.mapStoreError(err)
-	}
-
 	return map[string]interface{}{
-		"StreamARN": stream.StreamARN,
+		"StreamARN": result.StreamARN,
 	}, nil
 }
 
