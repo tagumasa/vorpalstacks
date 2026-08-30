@@ -6,26 +6,14 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	store "vorpalstacks/internal/store/aws/apigateway"
+	"vorpalstacks/internal/store/aws/apigateway"
 )
 
 // CreateRequestValidator creates a new request validator in API Gateway.
 func (s *APIGatewayService) CreateRequestValidator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if len(name) > 128 {
-		return nil, NewBadRequestException("name must be 1 to 128 characters")
-	}
-
-	validator := &store.RequestValidator{
-		Name:                      name,
+	in := &RequestValidatorInput{
+		Name:                      request.GetStringParam(req.Parameters, "name"),
 		ValidateRequestBody:       request.GetBoolParam(req.Parameters, "validateRequestBody"),
 		ValidateRequestParameters: request.GetBoolParam(req.Parameters, "validateRequestParameters"),
 	}
@@ -34,124 +22,76 @@ func (s *APIGatewayService) CreateRequestValidator(ctx context.Context, reqCtx *
 	if err != nil {
 		return nil, err
 	}
-
-	created, err := stores.restApis.CreateRequestValidator(apiId, validator)
+	created, err := s.createRequestValidatorCore(stores, apiId, in)
 	if err != nil {
 		return nil, err
 	}
-
 	return s.toRequestValidatorResponse(created), nil
 }
 
 // GetRequestValidator retrieves a request validator from API Gateway.
 func (s *APIGatewayService) GetRequestValidator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	validatorId := request.GetStringParam(req.Parameters, "requestValidatorId")
 	if validatorId == "" {
 		validatorId = getPathParam(req, "requestValidatorId")
-	}
-	if validatorId == "" {
-		return nil, NewBadRequestException("requestValidatorId is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	validator, err := stores.restApis.GetRequestValidator(apiId, validatorId)
+	validator, err := s.getRequestValidatorCore(stores, apiId, validatorId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, err
 	}
-
 	return s.toRequestValidatorResponse(validator), nil
 }
 
 // DeleteRequestValidator deletes a request validator from API Gateway.
 func (s *APIGatewayService) DeleteRequestValidator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	validatorId := request.GetStringParam(req.Parameters, "requestValidatorId")
 	if validatorId == "" {
 		validatorId = getPathParam(req, "requestValidatorId")
-	}
-	if validatorId == "" {
-		return nil, NewBadRequestException("requestValidatorId is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteRequestValidator(apiId, validatorId); err != nil {
-		return nil, ErrNotFoundException
+	if err := s.deleteRequestValidatorCore(stores, apiId, validatorId); err != nil {
+		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // UpdateRequestValidator updates an existing request validator in API Gateway.
 func (s *APIGatewayService) UpdateRequestValidator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	validatorId := request.GetStringParam(req.Parameters, "requestValidatorId")
 	if validatorId == "" {
 		validatorId = getPathParam(req, "requestValidatorId")
-	}
-	if validatorId == "" {
-		return nil, NewBadRequestException("requestValidatorId is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	stores.keyLocker.Lock(apiId + ":" + validatorId)
-	defer stores.keyLocker.Unlock(apiId + ":" + validatorId)
-
-	validator, err := stores.restApis.GetRequestValidator(apiId, validatorId)
-	if err != nil {
-		return nil, ErrNotFoundException
-	}
-
 	ops, err := parsePatchOperations(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	for _, po := range ops {
-		switch po.Path {
-		case "/name":
-			validator.Name = po.Value
-		case "/validateRequestBody":
-			validator.ValidateRequestBody = po.Value == "true"
-		case "/validateRequestParameters":
-			validator.ValidateRequestParameters = po.Value == "true"
-		}
-	}
-
-	if err := stores.restApis.UpdateRequestValidator(apiId, validator); err != nil {
+	validator, err := s.updateRequestValidatorCore(stores, apiId, validatorId, ops)
+	if err != nil {
 		return nil, err
 	}
-
 	return s.toRequestValidatorResponse(validator), nil
 }
 
 // GetRequestValidators retrieves all request validators for an API in API Gateway.
 func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
 
 	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
@@ -163,7 +103,7 @@ func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	validators, err := stores.restApis.ListRequestValidators(apiId)
+	validators, err := s.listRequestValidatorsCore(stores, apiId)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +126,7 @@ func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *re
 	return result, nil
 }
 
-func (s *APIGatewayService) toRequestValidatorResponse(v *store.RequestValidator) map[string]interface{} {
+func (s *APIGatewayService) toRequestValidatorResponse(v *apigateway.RequestValidator) map[string]interface{} {
 	return map[string]interface{}{
 		"id":                        v.Id,
 		"name":                      v.Name,
@@ -198,102 +138,64 @@ func (s *APIGatewayService) toRequestValidatorResponse(v *store.RequestValidator
 // CreateModel creates a new model in API Gateway.
 func (s *APIGatewayService) CreateModel(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
-	name := request.GetStringParam(req.Parameters, "name")
-	if name == "" {
-		return nil, NewBadRequestException("name is required")
-	}
-	if !validateModelName(name) {
-		return nil, NewBadRequestException("name must be alphanumeric")
-	}
-
-	model := &store.Model{
-		Name:        name,
+	in := &ModelInput{
+		Name:        request.GetStringParam(req.Parameters, "name"),
 		Description: request.GetStringParam(req.Parameters, "description"),
 		Schema:      request.GetStringParam(req.Parameters, "schema"),
 		ContentType: request.GetStringParam(req.Parameters, "contentType"),
-	}
-	if !validateModelSchemaSize(model.Schema) {
-		return nil, NewBadRequestException("schema must not exceed 400 KB")
-	}
-	if model.ContentType == "" {
-		return nil, NewBadRequestException("contentType is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := stores.restApis.CreateModel(apiId, model)
+	created, err := s.createModelCore(stores, apiId, in)
 	if err != nil {
 		return nil, err
 	}
-
 	return s.toModelResponse(created), nil
 }
 
 // GetModel retrieves a model from API Gateway.
 func (s *APIGatewayService) GetModel(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	modelName := request.GetStringParam(req.Parameters, "modelName")
 	if modelName == "" {
 		modelName = getPathParam(req, "modelName")
-	}
-	if modelName == "" {
-		return nil, NewBadRequestException("modelName is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	model, err := stores.restApis.GetModel(apiId, modelName)
+	model, err := s.getModelCore(stores, apiId, modelName)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, err
 	}
-
 	return s.toModelResponse(model), nil
 }
 
 // DeleteModel deletes a model from API Gateway.
 func (s *APIGatewayService) DeleteModel(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
-
 	modelName := request.GetStringParam(req.Parameters, "modelName")
 	if modelName == "" {
 		modelName = getPathParam(req, "modelName")
-	}
-	if modelName == "" {
-		return nil, NewBadRequestException("modelName is required")
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteModel(apiId, modelName); err != nil {
-		return nil, ErrNotFoundException
+	if err := s.deleteModelCore(stores, apiId, modelName); err != nil {
+		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // GetModels retrieves all models for an API in API Gateway.
 func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	if apiId == "" {
-		return nil, NewBadRequestException("restApiId is required")
-	}
 
 	limit, err := ResolvePaginationLimit(req.Parameters)
 	if err != nil {
@@ -305,7 +207,7 @@ func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.Reque
 	if err != nil {
 		return nil, err
 	}
-	models, err := stores.restApis.ListModels(apiId)
+	models, err := s.listModelsCore(stores, apiId)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +230,7 @@ func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.Reque
 	return result, nil
 }
 
-func (s *APIGatewayService) toModelResponse(m *store.Model) map[string]interface{} {
+func (s *APIGatewayService) toModelResponse(m *apigateway.Model) map[string]interface{} {
 	response := map[string]interface{}{
 		"id":     m.Id,
 		"name":   m.Name,

@@ -27,7 +27,7 @@ func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := h.service.tagResource(stores, req.Msg.Resourcearn, req.Msg.Tags); err != nil {
+	if err := h.service.tagResourceCore(stores, req.Msg.Resourcearn, req.Msg.Tags); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
@@ -48,7 +48,7 @@ func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[p
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if err := h.service.untagResource(stores, req.Msg.Resourcearn, req.Msg.Tagkeys); err != nil {
+	if err := h.service.untagResourceCore(stores, req.Msg.Resourcearn, req.Msg.Tagkeys); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
@@ -66,7 +66,7 @@ func (h *AdminHandler) GetTags(ctx context.Context, req *connect.Request[pb.GetT
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	tagsList, err := h.service.getResourceTags(stores, req.Msg.Resourcearn)
+	tagsList, err := h.service.getResourceTagsCore(stores, req.Msg.Resourcearn)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

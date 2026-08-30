@@ -1,6 +1,9 @@
 package apigateway
 
 import (
+	"strconv"
+	"strings"
+
 	"vorpalstacks/internal/store/aws/apigateway"
 )
 
@@ -284,6 +287,263 @@ func (s *APIGatewayService) getIntegrationResponseCore(
 		return nil, ErrNotFoundException
 	}
 	return response, nil
+}
+
+// updateMethodCore applies JSON Patch operations to a method under the api
+// key lock.
+func (s *APIGatewayService) updateMethodCore(
+	stores *apiGatewayStores,
+	apiId, resourceId, httpMethod string,
+	ops []PatchOperation,
+) (*apigateway.Method, error) {
+	if apiId == "" || resourceId == "" || httpMethod == "" {
+		return nil, NewBadRequestException("restApiId, resourceId, and httpMethod are required")
+	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
+	method, err := stores.restApis.GetMethod(apiId, resourceId, httpMethod)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	for _, po := range ops {
+		switch {
+		case po.Path == "/authorizationType":
+			if !validateAuthorizationType(po.Value) {
+				return nil, NewBadRequestException("Invalid authorization type: " + po.Value)
+			}
+			method.AuthorizationType = po.Value
+		case po.Path == "/authorizerId":
+			method.AuthorizerId = po.Value
+		case po.Path == "/apiKeyRequired":
+			method.ApiKeyRequired = po.Value == "true"
+		case po.Path == "/requestValidatorId":
+			method.RequestValidatorId = po.Value
+		case po.Path == "/operationName":
+			method.OperationName = po.Value
+		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			if method.RequestParameters == nil {
+				method.RequestParameters = make(map[string]bool)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(method.RequestParameters, paramName)
+			} else {
+				method.RequestParameters[paramName] = po.Value == "true"
+			}
+		case strings.HasPrefix(po.Path, "/requestModels/"):
+			if method.RequestModels == nil {
+				method.RequestModels = make(map[string]string)
+			}
+			modelName := strings.TrimPrefix(po.Path, "/requestModels/")
+			modelName = strings.ReplaceAll(modelName, "~1", "/")
+			if po.Op == "remove" {
+				delete(method.RequestModels, modelName)
+			} else {
+				method.RequestModels[modelName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/authorizationScopes"):
+			if po.Op == "remove" {
+				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/authorizationScopes/")); err == nil && idx < len(method.AuthorizationScopes) {
+					method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], method.AuthorizationScopes[idx+1:]...)
+				}
+			} else {
+				idxStr := strings.TrimPrefix(po.Path, "/authorizationScopes/")
+				if idxStr == "-" || idxStr == "" {
+					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+				} else if idx, err := strconv.Atoi(idxStr); err == nil {
+					if idx >= len(method.AuthorizationScopes) {
+						method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+					} else {
+						method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], append([]string{po.Value}, method.AuthorizationScopes[idx:]...)...)
+					}
+				} else {
+					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
+				}
+			}
+		}
+	}
+
+	_, err = stores.restApis.PutMethod(apiId, resourceId, method)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return method, nil
+}
+
+// updateIntegrationCore applies JSON Patch operations to an integration
+// under the api key lock.
+func (s *APIGatewayService) updateIntegrationCore(
+	stores *apiGatewayStores,
+	apiId, resourceId, httpMethod string,
+	ops []PatchOperation,
+) (*apigateway.Integration, error) {
+	if apiId == "" || resourceId == "" || httpMethod == "" {
+		return nil, NewBadRequestException("restApiId, resourceId, and httpMethod are required")
+	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
+	integrationRec, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	for _, po := range ops {
+		switch {
+		case po.Path == "/uri":
+			integrationRec.Uri = po.Value
+		case po.Path == "/type":
+			if !validateIntegrationType(po.Value) {
+				return nil, NewBadRequestException("Invalid integration type: " + po.Value)
+			}
+			integrationRec.Type = po.Value
+		case po.Path == "/httpMethod":
+			if po.Value != "" && !validateHTTPMethod(po.Value) {
+				return nil, NewBadRequestException("Invalid integration HTTP method: " + po.Value)
+			}
+			integrationRec.IntegrationHttpMethod = po.Value
+		case po.Path == "/credentials":
+			integrationRec.Credentials = po.Value
+		case po.Path == "/passthroughBehavior":
+			if !validatePassthroughBehavior(po.Value) {
+				return nil, NewBadRequestException("Invalid passthroughBehavior: " + po.Value)
+			}
+			integrationRec.PassthroughBehavior = po.Value
+		case po.Path == "/contentHandling":
+			if !validateContentHandling(po.Value) {
+				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
+			}
+			integrationRec.ContentHandling = po.Value
+		case po.Path == "/cacheNamespace":
+			integrationRec.CacheNamespace = po.Value
+		case po.Path == "/connectionType":
+			if !validateConnectionType(po.Value) {
+				return nil, NewBadRequestException("Invalid connectionType: " + po.Value)
+			}
+			integrationRec.ConnectionType = po.Value
+		case po.Path == "/connectionId":
+			integrationRec.ConnectionId = po.Value
+		case po.Path == "/timeoutInMillis":
+			v, err := parseInt32(po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("invalid timeoutInMillis: not a number")
+			}
+			if v <= 0 {
+				v = 29000
+			}
+			if v < 50 || v > 30000 {
+				return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
+			}
+			integrationRec.TimeoutInMillis = v
+		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			if integrationRec.RequestParameters == nil {
+				integrationRec.RequestParameters = make(map[string]string)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(integrationRec.RequestParameters, paramName)
+			} else {
+				integrationRec.RequestParameters[paramName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/requestTemplates/"):
+			if integrationRec.RequestTemplates == nil {
+				integrationRec.RequestTemplates = make(map[string]string)
+			}
+			tplName := strings.TrimPrefix(po.Path, "/requestTemplates/")
+			tplName = strings.ReplaceAll(tplName, "~1", "/")
+			if po.Op == "remove" {
+				delete(integrationRec.RequestTemplates, tplName)
+			} else {
+				integrationRec.RequestTemplates[tplName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/cacheKeyParameters"):
+			if po.Op == "remove" {
+				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/cacheKeyParameters/")); err == nil && idx < len(integrationRec.CacheKeyParameters) {
+					integrationRec.CacheKeyParameters = append(integrationRec.CacheKeyParameters[:idx], integrationRec.CacheKeyParameters[idx+1:]...)
+				}
+			} else {
+				integrationRec.CacheKeyParameters = append(integrationRec.CacheKeyParameters, po.Value)
+			}
+		case po.Path == "/tlsConfig/insecureSkipVerification":
+			if integrationRec.TlsConfig == nil {
+				integrationRec.TlsConfig = &apigateway.TlsConfig{}
+			}
+			integrationRec.TlsConfig.InsecureSkipVerification = po.Value == "true"
+		}
+	}
+
+	if err := stores.restApis.UpdateIntegration(apiId, resourceId, httpMethod, integrationRec); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return integrationRec, nil
+}
+
+// updateIntegrationResponseCore applies JSON Patch operations to an
+// integration response under the api key lock.
+func (s *APIGatewayService) updateIntegrationResponseCore(
+	stores *apiGatewayStores,
+	apiId, resourceId, httpMethod, statusCode string,
+	ops []PatchOperation,
+) (*apigateway.IntegrationResponse, error) {
+	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
+		return nil, NewBadRequestException("missing required parameters")
+	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
+	intResp, err := stores.restApis.GetIntegrationResponse(apiId, resourceId, httpMethod, statusCode)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	for _, po := range ops {
+		switch {
+		case po.Path == "/selectionPattern":
+			intResp.SelectionPattern = po.Value
+		case po.Path == "/contentHandling":
+			if !validateContentHandling(po.Value) {
+				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
+			}
+			intResp.ContentHandling = po.Value
+		case strings.HasPrefix(po.Path, "/responseParameters/"):
+			if intResp.ResponseParameters == nil {
+				intResp.ResponseParameters = make(map[string]string)
+			}
+			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
+			paramName = strings.ReplaceAll(paramName, "~1", "/")
+			if po.Op == "remove" {
+				delete(intResp.ResponseParameters, paramName)
+			} else {
+				intResp.ResponseParameters[paramName] = po.Value
+			}
+		case strings.HasPrefix(po.Path, "/responseTemplates/"):
+			if intResp.ResponseTemplates == nil {
+				intResp.ResponseTemplates = make(map[string]string)
+			}
+			tplName := strings.TrimPrefix(po.Path, "/responseTemplates/")
+			tplName = strings.ReplaceAll(tplName, "~1", "/")
+			if po.Op == "remove" {
+				delete(intResp.ResponseTemplates, tplName)
+			} else {
+				intResp.ResponseTemplates[tplName] = po.Value
+			}
+		}
+	}
+
+	if err := stores.restApis.UpdateIntegrationResponse(apiId, resourceId, httpMethod, statusCode, intResp); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return intResp, nil
 }
 
 // deleteIntegrationResponseCore removes an integration response.

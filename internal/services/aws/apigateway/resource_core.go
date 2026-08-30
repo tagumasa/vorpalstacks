@@ -101,6 +101,70 @@ func (s *APIGatewayService) deleteResourceCore(stores *apiGatewayStores, apiId, 
 	return NewApiGatewayError("InternalServerError", fmt.Sprintf("Failed to delete resource: %v", err), http.StatusInternalServerError)
 }
 
+// updateResourceCore applies JSON Patch operations to a resource under the
+// api key lock, recomputing the full path when pathPart changes.
+func (s *APIGatewayService) updateResourceCore(
+	stores *apiGatewayStores,
+	apiId, resourceId string,
+	ops []PatchOperation,
+) (*apigateway.Resource, error) {
+	if apiId == "" || resourceId == "" {
+		return nil, NewBadRequestException("restApiId and resourceId are required")
+	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
+	resource, err := stores.restApis.GetResource(apiId, resourceId)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	for _, po := range ops {
+		switch po.Path {
+		case "/pathPart":
+			// The root resource's path part is the API's root path ("/") and
+			// is immutable in AWS; DeleteResource already rejects deleting it.
+			if resource.ParentId == "" {
+				return nil, NewBadRequestException("cannot modify the pathPart of the root resource")
+			}
+			if po.Value == "" {
+				return nil, NewBadRequestException("pathPart cannot be empty")
+			}
+			if !validatePathPart(po.Value) {
+				return nil, NewBadRequestException("Invalid pathPart: malformed path parameter")
+			}
+			// Check for path collision with siblings under the same parent.
+			siblings, err := stores.restApis.ListResources(apiId)
+			if err != nil {
+				return nil, err
+			}
+			for _, sib := range siblings {
+				if sib.Id != resourceId && sib.ParentId == resource.ParentId && sib.PathPart == po.Value {
+					return nil, NewConflictException("pathPart already exists under this parent")
+				}
+			}
+			resource.PathPart = po.Value
+			// A non-root resource always has a parent; a failed parent
+			// lookup means the resource tree is inconsistent, and
+			// persisting the new path part with the stale full path would
+			// corrupt it further.
+			parent, err := stores.restApis.GetResource(apiId, resource.ParentId)
+			if err != nil {
+				return nil, toApiGatewayError(err)
+			}
+			parentPath := strings.TrimRight(parent.Path, "/")
+			resource.Path = parentPath + "/" + po.Value
+		}
+	}
+
+	if err := stores.restApis.UpdateResourceCascade(apiId, resource); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return resource, nil
+}
+
 // listResourcesCore returns all resources for an API; pagination is applied
 // by the caller.
 func (s *APIGatewayService) listResourcesCore(stores *apiGatewayStores, apiId string) ([]*apigateway.Resource, error) {

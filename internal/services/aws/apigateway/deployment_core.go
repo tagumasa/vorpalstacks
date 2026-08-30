@@ -139,6 +139,42 @@ func (s *APIGatewayService) deleteDeploymentCore(stores *apiGatewayStores, apiId
 	return nil
 }
 
+// updateDeploymentCore applies JSON Patch operations to a deployment under
+// the api key lock.
+func (s *APIGatewayService) updateDeploymentCore(
+	stores *apiGatewayStores,
+	apiId, deploymentId string,
+	ops []PatchOperation,
+) (*apigateway.Deployment, error) {
+	if apiId == "" {
+		return nil, NewBadRequestException("restApiId is required")
+	}
+	if deploymentId == "" {
+		return nil, NewBadRequestException("deploymentId is required")
+	}
+
+	stores.keyLocker.Lock(apiId)
+	defer stores.keyLocker.Unlock(apiId)
+
+	deployment, err := stores.restApis.GetDeployment(apiId, deploymentId)
+	if err != nil {
+		return nil, ErrNotFoundException
+	}
+
+	for _, po := range ops {
+		switch po.Path {
+		case "/description":
+			deployment.Description = po.Value
+		}
+	}
+
+	if err := stores.restApis.UpdateDeployment(apiId, deployment); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	return deployment, nil
+}
+
 // listDeploymentsCore returns all deployments for an api id.
 func (s *APIGatewayService) listDeploymentsCore(stores *apiGatewayStores, apiId string) ([]*apigateway.Deployment, error) {
 	if apiId == "" {

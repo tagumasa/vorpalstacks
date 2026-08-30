@@ -3,48 +3,49 @@ package apigateway
 
 import (
 	"context"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	store "vorpalstacks/internal/store/aws/apigateway"
+	"vorpalstacks/internal/store/aws/apigateway"
 )
 
-// PutMethodResponse creates or updates a method response for a method in API Gateway.
-func (s *APIGatewayService) PutMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	resourceId := getResourceId(req)
-	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
+// methodResponseRequestParams extracts the method-response identity members
+// from the wire request: api id, resource id, HTTP method (query, then path
+// label) and status code (query, then path label).
+func methodResponseRequestParams(req *request.ParsedRequest) (apiId, resourceId, httpMethod, statusCode string) {
+	apiId = getRestApiId(req)
+	resourceId = getResourceId(req)
+	httpMethod = request.GetStringParam(req.Parameters, "httpMethod")
 	if httpMethod == "" {
 		httpMethod = getPathParam(req, "httpMethod")
 	}
-	statusCode := request.GetStringParam(req.Parameters, "statusCode")
+	statusCode = request.GetStringParam(req.Parameters, "statusCode")
 	if statusCode == "" {
 		statusCode = getPathParam(req, "statusCode")
 	}
+	return apiId, resourceId, httpMethod, statusCode
+}
 
-	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
-		return nil, NewBadRequestException("missing required parameters")
-	}
+// PutMethodResponse creates or updates a method response for a method in API Gateway.
+func (s *APIGatewayService) PutMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	apiId, resourceId, httpMethod, statusCode := methodResponseRequestParams(req)
 
-	response := &store.MethodResponse{
+	in := &MethodResponseInput{
 		StatusCode: statusCode,
 	}
-
 	if respParams, ok := req.Parameters["responseParameters"].(map[string]interface{}); ok {
-		response.ResponseParameters = make(map[string]bool)
+		in.ResponseParameters = make(map[string]bool)
 		for k, v := range respParams {
 			if b, ok := v.(bool); ok {
-				response.ResponseParameters[k] = b
+				in.ResponseParameters[k] = b
 			}
 		}
 	}
-
 	if respModels, ok := req.Parameters["responseModels"].(map[string]interface{}); ok {
-		response.ResponseModels = make(map[string]string)
+		in.ResponseModels = make(map[string]string)
 		for k, v := range respModels {
-			if s, ok := v.(string); ok {
-				response.ResponseModels[k] = s
+			if str, ok := v.(string); ok {
+				in.ResponseModels[k] = str
 			}
 		}
 	}
@@ -53,131 +54,62 @@ func (s *APIGatewayService) PutMethodResponse(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.restApis.PutMethodResponse(apiId, resourceId, httpMethod, statusCode, response)
+	result, err := s.putMethodResponseCore(stores, apiId, resourceId, httpMethod, statusCode, in)
 	if err != nil {
-		return nil, toApiGatewayError(err)
+		return nil, err
 	}
-
 	return s.toMethodResponseResponse(result), nil
 }
 
 // GetMethodResponse retrieves a method response for a method in API Gateway.
 func (s *APIGatewayService) GetMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	resourceId := getResourceId(req)
-	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
-	if httpMethod == "" {
-		httpMethod = getPathParam(req, "httpMethod")
-	}
-	statusCode := request.GetStringParam(req.Parameters, "statusCode")
-	if statusCode == "" {
-		statusCode = getPathParam(req, "statusCode")
-	}
-
-	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
-		return nil, NewBadRequestException("missing required parameters")
-	}
+	apiId, resourceId, httpMethod, statusCode := methodResponseRequestParams(req)
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := stores.restApis.GetMethodResponse(apiId, resourceId, httpMethod, statusCode)
+	result, err := s.getMethodResponseCore(stores, apiId, resourceId, httpMethod, statusCode)
 	if err != nil {
-		return nil, toApiGatewayError(err)
+		return nil, err
 	}
-
 	return s.toMethodResponseResponse(result), nil
 }
 
 // DeleteMethodResponse deletes a method response from a method in API Gateway.
 func (s *APIGatewayService) DeleteMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	resourceId := getResourceId(req)
-	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
-	if httpMethod == "" {
-		httpMethod = getPathParam(req, "httpMethod")
-	}
-	statusCode := request.GetStringParam(req.Parameters, "statusCode")
-	if statusCode == "" {
-		statusCode = getPathParam(req, "statusCode")
-	}
-
-	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
-		return nil, NewBadRequestException("missing required parameters")
-	}
+	apiId, resourceId, httpMethod, statusCode := methodResponseRequestParams(req)
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := stores.restApis.DeleteMethodResponse(apiId, resourceId, httpMethod, statusCode); err != nil {
-		return nil, toApiGatewayError(err)
+	if err := s.deleteMethodResponseCore(stores, apiId, resourceId, httpMethod, statusCode); err != nil {
+		return nil, err
 	}
-
 	return response.EmptyResponse(), nil
 }
 
 // UpdateMethodResponse updates a method response via patch operations.
 func (s *APIGatewayService) UpdateMethodResponse(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	apiId := getRestApiId(req)
-	resourceId := getResourceId(req)
-	httpMethod := request.GetStringParam(req.Parameters, "httpMethod")
-	if httpMethod == "" {
-		httpMethod = getPathParam(req, "httpMethod")
-	}
-	statusCode := request.GetStringParam(req.Parameters, "statusCode")
-	if statusCode == "" {
-		statusCode = getPathParam(req, "statusCode")
-	}
-
-	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
-		return nil, NewBadRequestException("missing required parameters")
-	}
+	apiId, resourceId, httpMethod, statusCode := methodResponseRequestParams(req)
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	methodResp, err := stores.restApis.GetMethodResponse(apiId, resourceId, httpMethod, statusCode)
-	if err != nil {
-		return nil, toApiGatewayError(err)
-	}
-
-	patchOps, err := parsePatchOperations(req.Parameters)
+	ops, err := parsePatchOperations(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	for _, po := range patchOps {
-		switch {
-		case strings.HasPrefix(po.Path, "/responseParameters/"):
-			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
-			if po.Op == "remove" {
-				delete(methodResp.ResponseParameters, paramName)
-			} else {
-				b := po.Value == "true"
-				methodResp.ResponseParameters[paramName] = b
-			}
-		case strings.HasPrefix(po.Path, "/responseModels/"):
-			modelName := strings.TrimPrefix(po.Path, "/responseModels/")
-			if po.Op == "remove" {
-				delete(methodResp.ResponseModels, modelName)
-			} else {
-				methodResp.ResponseModels[modelName] = po.Value
-			}
-		}
-	}
-
-	updatedResp, err := stores.restApis.PutMethodResponse(apiId, resourceId, httpMethod, statusCode, methodResp)
+	updatedResp, err := s.updateMethodResponseCore(stores, apiId, resourceId, httpMethod, statusCode, ops)
 	if err != nil {
-		return nil, toApiGatewayError(err)
+		return nil, err
 	}
-
 	return s.toMethodResponseResponse(updatedResp), nil
 }
 
-func (s *APIGatewayService) toMethodResponseResponse(r *store.MethodResponse) map[string]interface{} {
+func (s *APIGatewayService) toMethodResponseResponse(r *apigateway.MethodResponse) map[string]interface{} {
 	response := map[string]interface{}{
 		"statusCode": r.StatusCode,
 	}
