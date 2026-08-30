@@ -145,6 +145,44 @@ func TestListStreamsLimitClamp(t *testing.T) {
 	}
 }
 
+// TestRegisterStreamConsumerQuota pins the documented per-stream
+// registered-consumer quota: twenty for Provisioned and On-demand Standard
+// streams, with a deregistration freeing its slot again.
+func TestRegisterStreamConsumerQuota(t *testing.T) {
+	svc, store, reqCtx := newListPageTestEnv(t)
+
+	stream, err := store.CreateStream("quota_consumers", 1, kinesisstore.StreamModeProvisioned, 0, 0)
+	if err != nil {
+		t.Fatalf("create stream: %v", err)
+	}
+	for i := 0; i < 20; i++ {
+		if _, err := store.RegisterStreamConsumer(stream.StreamARN, fmt.Sprintf("reader-%02d", i)); err != nil {
+			t.Fatalf("register consumer %d: %v", i, err)
+		}
+	}
+
+	if _, err := svc.registerStreamConsumerCore(reqCtx, RegisterStreamConsumerInput{
+		StreamARN:    stream.StreamARN,
+		ConsumerName: "reader-20",
+	}); !errors.Is(err, ErrLimitExceeded) {
+		t.Fatalf("21st consumer: expected LimitExceededException, got: %v", err)
+	}
+
+	// Deregistering one consumer frees its slot for the next registration.
+	if err := svc.deregisterStreamConsumerCore(reqCtx, DeregisterStreamConsumerInput{
+		StreamARN:    stream.StreamARN,
+		ConsumerName: "reader-00",
+	}); err != nil {
+		t.Fatalf("deregister a consumer: %v", err)
+	}
+	if _, err := svc.registerStreamConsumerCore(reqCtx, RegisterStreamConsumerInput{
+		StreamARN:    stream.StreamARN,
+		ConsumerName: "reader-20",
+	}); err != nil {
+		t.Fatalf("register after freeing a slot: %v", err)
+	}
+}
+
 // TestListShardsMaxResults pins the documented MaxResults semantics: the
 // input window is 1-10000, the effective page defaults to 1000 and never
 // exceeds 1000, and an explicitly provided out-of-window value is rejected

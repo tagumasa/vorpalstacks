@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -66,8 +65,8 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for BytesScannedCutoffPerQuery=5000000 (< 10000000)")
 		}
-		if !strings.Contains(err.Error(), "InvalidParameterException") && !strings.Contains(err.Error(), "InvalidRequestException") {
-			return fmt.Errorf("expected InvalidParameterException, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("BytesScannedCutoffPerQuery=5000000 should be rejected with InvalidRequestException, got: %v", err)
 		}
 		return nil
 	}))
@@ -81,8 +80,8 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for ClientRequestToken < 32 chars")
 		}
-		if !strings.Contains(err.Error(), "InvalidParameterException") && !strings.Contains(err.Error(), "InvalidRequestException") {
-			return fmt.Errorf("expected validation error, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("ClientRequestToken < 32 chars should be rejected with InvalidRequestException, got: %v", err)
 		}
 		return nil
 	}))
@@ -101,8 +100,8 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for invalid ExecutionRole ARN")
 		}
-		if !strings.Contains(err.Error(), "InvalidParameterException") && !strings.Contains(err.Error(), "InvalidRequestException") {
-			return fmt.Errorf("expected validation error, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("invalid ExecutionRole ARN should be rejected with InvalidRequestException, got: %v", err)
 		}
 		return nil
 	}))
@@ -126,8 +125,8 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for AdditionalConfiguration > 128 chars")
 		}
-		if !strings.Contains(err.Error(), "InvalidParameterException") && !strings.Contains(err.Error(), "InvalidRequestException") {
-			return fmt.Errorf("expected validation error, got: %v", err)
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("AdditionalConfiguration > 128 chars should be rejected with InvalidRequestException, got: %v", err)
 		}
 		return nil
 	}))
@@ -344,6 +343,114 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 			} else if v != expected {
 				return fmt.Errorf("tag %q = %q, expected %q", key, v, expected)
 			}
+		}
+		return nil
+	}))
+
+	// --- GetQueryResults MaxResults window (1-1000 per Smithy and the AWS
+	// API reference: "Valid Range: Minimum value of 1. Maximum value of
+	// 1000.") — out-of-window values must be rejected, not silently
+	// clamped to the default.
+	results = append(results, tc.runner.RunTest("athena", "GetQueryResults_MaxResultsWindow", func() error {
+		queryExecutionId, err := tc.startAndWaitForQuery("SELECT 1")
+		if err != nil {
+			return err
+		}
+
+		for _, bad := range []int32{0, 1001} {
+			_, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+				QueryExecutionId: aws.String(queryExecutionId),
+				MaxResults:       aws.Int32(bad),
+			})
+			if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+				return fmt.Errorf("MaxResults=%d should be rejected with InvalidRequestException, got: %v", bad, err)
+			}
+		}
+
+		resp, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+			QueryExecutionId: aws.String(queryExecutionId),
+			MaxResults:       aws.Int32(1),
+		})
+		if err != nil {
+			return fmt.Errorf("MaxResults=1 should be accepted: %w", err)
+		}
+		// SELECT 1 produces a header row plus one data row; MaxResults=1
+		// serves exactly one row and a continuation token.
+		if len(resp.ResultSet.Rows) != 1 {
+			return fmt.Errorf("expected 1 row at MaxResults=1, got %d", len(resp.ResultSet.Rows))
+		}
+		if resp.NextToken == nil {
+			return fmt.Errorf("expected NextToken at MaxResults=1 with 2-row result set")
+		}
+
+		resp, err = client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+			QueryExecutionId: aws.String(queryExecutionId),
+			MaxResults:       aws.Int32(1000),
+		})
+		if err != nil {
+			return fmt.Errorf("MaxResults=1000 should be accepted: %w", err)
+		}
+		if len(resp.ResultSet.Rows) != 2 {
+			return fmt.Errorf("expected the full 2-row result set at MaxResults=1000, got %d", len(resp.ResultSet.Rows))
+		}
+		return nil
+	}))
+
+	// --- ListTagsForResource MaxResults window: the Smithy MaxTagsCount
+	// shape carries only a minimum of 75 ("Valid Range: Minimum value of
+	// 75." per the AWS API reference) — values below 75 are rejected while
+	// any value of at least 75 is accepted (no documented upper bound).
+	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource_MaxResultsBelowMinimumRejected", func() error {
+		wgName := tc.uniqueName("tagmin-wg")
+		if err := tc.createWorkGroup(wgName, nil); err != nil {
+			return err
+		}
+		defer tc.deleteWorkGroup(wgName)
+
+		_, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
+			ResourceARN: aws.String(tc.workgroupARN(wgName)),
+			MaxResults:  aws.Int32(10),
+		})
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("MaxResults=10 should be rejected below the minimum of 75, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, tc.runner.RunTest("athena", "ListTagsForResource_MaxResultsAboveThousandAccepted", func() error {
+		wgName := tc.uniqueName("tagmax2-wg")
+		if err := tc.createWorkGroup(wgName, nil); err != nil {
+			return err
+		}
+		defer tc.deleteWorkGroup(wgName)
+
+		var tags []types.Tag
+		for i := 0; i < 5; i++ {
+			tags = append(tags, types.Tag{
+				Key:   aws.String(fmt.Sprintf("key%d", i)),
+				Value: aws.String(fmt.Sprintf("val%d", i)),
+			})
+		}
+		arn := tc.workgroupARN(wgName)
+		if _, err := client.TagResource(ctx, &athena.TagResourceInput{
+			ResourceARN: aws.String(arn),
+			Tags:        tags,
+		}); err != nil {
+			return err
+		}
+
+		resp, err := client.ListTagsForResource(ctx, &athena.ListTagsForResourceInput{
+			ResourceARN: aws.String(arn),
+			MaxResults:  aws.Int32(2000),
+		})
+		if err != nil {
+			return fmt.Errorf("MaxResults=2000 should be accepted (no documented upper bound), got: %v", err)
+		}
+		if len(resp.Tags) != 5 {
+			return fmt.Errorf("expected all 5 tags, got %d", len(resp.Tags))
+		}
+		if resp.NextToken != nil {
+			return fmt.Errorf("expected nil NextToken (5 tags fit in one page), got %q", aws.ToString(resp.NextToken))
 		}
 		return nil
 	}))

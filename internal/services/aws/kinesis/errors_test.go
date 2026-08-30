@@ -24,8 +24,8 @@ func TestKinesisErrors(t *testing.T) {
 	})
 
 	t.Run("ErrLimitExceeded", func(t *testing.T) {
-		assert.Equal(t, "LimitExceededException: Rate exceeded for this stream.", ErrLimitExceeded.Error())
-		assert.Equal(t, http.StatusTooManyRequests, ErrLimitExceeded.GetHTTPStatusCode())
+		assert.Equal(t, "LimitExceededException: The requested resource exceeds the maximum number allowed.", ErrLimitExceeded.Error())
+		assert.Equal(t, http.StatusBadRequest, ErrLimitExceeded.GetHTTPStatusCode())
 	})
 
 	t.Run("ErrProvisionedThroughputExceeded", func(t *testing.T) {

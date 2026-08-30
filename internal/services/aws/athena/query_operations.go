@@ -3,20 +3,13 @@ package athena
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"sort"
-	"strconv"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	athenastore "vorpalstacks/internal/store/aws/athena"
 
-	"github.com/google/uuid"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 )
 
 const (
@@ -29,172 +22,30 @@ const (
 
 // StartQueryExecution starts a new query execution in Athena.
 func (s *AthenaService) StartQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-	if queryString == "" {
-		return nil, ErrInvalidRequestException
+	input := StartQueryExecutionInput{
+		QueryString:           request.GetParamCaseInsensitive(req.Parameters, "QueryString"),
+		WorkGroup:             request.GetParamCaseInsensitive(req.Parameters, "WorkGroup"),
+		ClientRequestToken:    request.GetParamCaseInsensitive(req.Parameters, "ClientRequestToken"),
+		QueryExecutionContext: request.GetMapParamCaseInsensitive(req.Parameters, "QueryExecutionContext"),
+		ResultConfiguration:   request.GetMapParamCaseInsensitive(req.Parameters, "ResultConfiguration"),
 	}
 
-	// QueryString @length(1-262144) counts Unicode characters.
-	if err := validateQueryStringSize(queryString); err != nil {
-		return nil, err
-	}
-
-	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-	if workGroup == "" {
-		workGroup = "primary"
-	}
-
-	clientRequestToken := request.GetParamCaseInsensitive(req.Parameters, "ClientRequestToken")
-	if clientRequestToken != "" {
-		if err := validateClientRequestToken(clientRequestToken); err != nil {
-			return nil, err
-		}
-	}
-
-	st, err := s.store(reqCtx)
+	queryExecutionId, err := s.startQueryExecutionCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
-
-	// Idempotency: reserve the ClientRequestToken atomically before any
-	// validation or creation. StoreClientRequestTokenIfAbsent uses crtMu
-	// internally, so concurrent requests with the same token are
-	// serialised — no TOCTOU window. If the token is already mapped to
-	// a successful query, return that query's ID. If the token is new,
-	// it is reserved and a deferred rollback releases it when any
-	// subsequent step fails, preventing phantom ID mappings.
-	queryExecutionId := uuid.New().String()
-	tokenReserved := false
-	queryCreated := false
-
-	if clientRequestToken != "" {
-		existingId, stored, err := st.queryExecutionStore.StoreClientRequestTokenIfAbsent(clientRequestToken, queryExecutionId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to store ClientRequestToken: %w", err)
-		}
-		if !stored {
-			return map[string]interface{}{
-				"QueryExecutionId": existingId,
-			}, nil
-		}
-		tokenReserved = true
-	}
-
-	defer func() {
-		if tokenReserved && !queryCreated {
-			st.queryExecutionStore.ReleaseClientRequestToken(clientRequestToken)
-		}
-	}()
-
-	wg, err := st.workGroupStore.GetWorkGroup(workGroup)
-	if err != nil {
-		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, workGroupNotFound(workGroup)
-		}
-		return nil, err
-	}
-
-	if wg.State == athenastore.WorkGroupStateDisabled {
-		return nil, awserrors.NewAWSError("InvalidRequestException",
-			fmt.Sprintf("WorkGroup %s is DISABLED.", workGroup), http.StatusBadRequest)
-	}
-
-	var queryExecutionContext *athenastore.QueryExecutionContext
-	contextMap := request.GetMapParamCaseInsensitive(req.Parameters, "QueryExecutionContext")
-	if contextMap != nil {
-		queryExecutionContext = &athenastore.QueryExecutionContext{}
-		if db, ok := contextMap["Database"].(string); ok {
-			queryExecutionContext.Database = db
-		}
-		if catalog, ok := contextMap["Catalog"].(string); ok {
-			queryExecutionContext.Catalog = catalog
-		}
-	}
-
-	var resultConfiguration *athenastore.ResultConfiguration
-	resultConfigMap := request.GetMapParamCaseInsensitive(req.Parameters, "ResultConfiguration")
-
-	if wg.Configuration != nil && wg.Configuration.EnforceWorkGroupConfiguration {
-		if wg.Configuration.ResultConfiguration != nil {
-			resultConfiguration = wg.Configuration.ResultConfiguration
-		}
-	} else if resultConfigMap != nil {
-		resultConfiguration, err = s.parseResultConfiguration(resultConfigMap)
-		if err != nil {
-			return nil, err
-		}
-	} else if wg.Configuration != nil && wg.Configuration.ResultConfiguration != nil {
-		resultConfiguration = wg.Configuration.ResultConfiguration
-	}
-
-	var bytesScannedCutoff int64
-	if wg.Configuration != nil {
-		bytesScannedCutoff = wg.Configuration.BytesScannedCutoffPerQuery
-	}
-
-	statementType := s.detectStatementType(queryString)
-
-	now := time.Now().UTC()
-	queryExecution := &athenastore.QueryExecution{
-		QueryExecutionId:      queryExecutionId,
-		Query:                 queryString,
-		StatementType:         statementType,
-		WorkGroup:             workGroup,
-		QueryExecutionContext: queryExecutionContext,
-		ResultConfiguration:   resultConfiguration,
-		Status: &athenastore.QueryExecutionStatus{
-			State:              athenastore.QueryExecutionStateQueued,
-			SubmissionDateTime: now,
-		},
-		Statistics: &athenastore.QueryExecutionStatistics{
-			EngineExecutionTimeInMillis:   0,
-			DataScannedInBytes:            0,
-			TotalExecutionTimeInMillis:    0,
-			QueryQueueTimeInMillis:        0,
-			QueryPlanningTimeInMillis:     0,
-			ServiceProcessingTimeInMillis: 0,
-		},
-	}
-
-	if err := st.queryExecutionStore.CreateQueryExecution(queryExecution); err != nil {
-		return nil, err
-	}
-	queryCreated = true
-
-	ctx, cancel := context.WithCancel(context.Background())
-	s.setCancelFunc(queryExecution.QueryExecutionId, cancel)
-
-	s.asyncWg.Add(1)
-	go func() {
-		defer s.asyncWg.Done()
-		defer func() { resilience.RecoverPanic("athena async query") }()
-		defer cancel()
-		defer s.getAndRemoveCancelFunc(queryExecution.QueryExecutionId)
-		s.executeQueryAsync(reqCtx, ctx, queryExecution, bytesScannedCutoff)
-	}()
 
 	return map[string]interface{}{
-		"QueryExecutionId": queryExecution.QueryExecutionId,
+		"QueryExecutionId": queryExecutionId,
 	}, nil
 }
 
 // GetQueryExecution retrieves the details of a query execution.
 func (s *AthenaService) GetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
-	if queryExecutionId == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	st, err := s.store(reqCtx)
+	queryExecution, err := s.getQueryExecutionCore(reqCtx, queryExecutionId)
 	if err != nil {
-		return nil, err
-	}
-
-	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
-	if err != nil {
-		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, queryExecutionNotFound(queryExecutionId)
-		}
 		return nil, err
 	}
 
@@ -206,42 +57,9 @@ func (s *AthenaService) GetQueryExecution(ctx context.Context, reqCtx *request.R
 // StopQueryExecution stops a running or queued query execution.
 func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
-	if queryExecutionId == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	st, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.stopQueryExecutionCore(reqCtx, queryExecutionId); err != nil {
 		return nil, err
-	}
-
-	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
-	if err != nil {
-		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, queryExecutionNotFound(queryExecutionId)
-		}
-		return nil, err
-	}
-
-	if queryExecution.Status.State == athenastore.QueryExecutionStateRunning ||
-		queryExecution.Status.State == athenastore.QueryExecutionStateQueued {
-		if cancelFn, ok := s.getAndRemoveCancelFunc(queryExecutionId); ok {
-			cancelFn()
-		}
-		// Transition atomically so the async worker's QUEUED -> RUNNING
-		// write can never overwrite the cancelled state after this
-		// response returns.
-		cancelled, transitioned, err := st.queryExecutionStore.TransitionQueryExecutionState(
-			queryExecutionId, athenastore.QueryExecutionStateCancelled,
-			athenastore.QueryExecutionStateRunning, athenastore.QueryExecutionStateQueued)
-		if err != nil {
-			return nil, err
-		}
-		if !transitioned && cancelled.Status.State != athenastore.QueryExecutionStateCancelled {
-			return nil, ErrInvalidRequestException
-		}
-	} else if queryExecution.Status.State != athenastore.QueryExecutionStateCancelled {
-		return nil, ErrInvalidRequestException
 	}
 
 	return response.EmptyResponse(), nil
@@ -249,152 +67,79 @@ func (s *AthenaService) StopQueryExecution(ctx context.Context, reqCtx *request.
 
 // ListQueryExecutions returns a list of query executions.
 func (s *AthenaService) ListQueryExecutions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListQueryExecutionsInput{
+		WorkGroup:     request.GetParamCaseInsensitive(req.Parameters, "WorkGroup"),
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
+	}
 
-	maxResults, err := validateMaxResults(req.Parameters, athenaListMaxResults, 0, 50)
+	ids, nextMarker, err := s.listQueryExecutionsCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	st, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	allIds, err := st.queryExecutionStore.ListQueryExecutionIDs(workGroup, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Strings(allIds)
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(allIds, marker, maxResults, func(id string) string {
-		return id
-	})
-
-	return pagination.BuildListResponse("QueryExecutionIds", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("QueryExecutionIds", ids, nextMarker), nil
 }
 
 // BatchGetQueryExecution retrieves details for multiple query executions in a single call.
 func (s *AthenaService) BatchGetQueryExecution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryExecutionIdsRaw := request.GetArrayParam(req.Parameters, "QueryExecutionIds")
-	if len(queryExecutionIdsRaw) == 0 {
-		return nil, ErrInvalidRequestException
+	input := BatchGetQueryExecutionInput{
+		QueryExecutionIds: request.GetArrayParam(req.Parameters, "QueryExecutionIds"),
 	}
 
-	if len(queryExecutionIdsRaw) > 50 {
-		return nil, ErrInvalidRequestException
-	}
-
-	var queryExecutionIds []string
-	for _, id := range queryExecutionIdsRaw {
-		if idStr, ok := id.(string); ok {
-			queryExecutionIds = append(queryExecutionIds, idStr)
-		}
-	}
-
-	st, err := s.store(reqCtx)
+	queryExecutions, unprocessedIds, err := s.batchGetQueryExecutionCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	var queryExecutions []map[string]interface{}
-	var unprocessedIds []map[string]interface{}
+	var executionResponses []map[string]interface{}
+	for _, qe := range queryExecutions {
+		executionResponses = append(executionResponses, s.queryExecutionToResponse(qe))
+	}
 
-	for _, id := range queryExecutionIds {
-		queryExecution, err := st.queryExecutionStore.GetQueryExecution(id)
-		if err != nil {
-			unprocessedIds = append(unprocessedIds, map[string]interface{}{
-				"QueryExecutionId": id,
-			})
-			continue
-		}
-		queryExecutions = append(queryExecutions, s.queryExecutionToResponse(queryExecution))
+	var unprocessedResponses []map[string]interface{}
+	for _, id := range unprocessedIds {
+		unprocessedResponses = append(unprocessedResponses, map[string]interface{}{
+			"QueryExecutionId": id,
+		})
 	}
 
 	return map[string]interface{}{
-		"QueryExecutions":              queryExecutions,
-		"UnprocessedQueryExecutionIds": unprocessedIds,
+		"QueryExecutions":              executionResponses,
+		"UnprocessedQueryExecutionIds": unprocessedResponses,
 	}, nil
 }
 
 // GetQueryResults retrieves the results of a completed query execution.
 func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
-	if queryExecutionId == "" {
-		return nil, ErrInvalidRequestException
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := GetQueryResultsInput{
+		QueryExecutionId: request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId"),
+		MaxResults:       maxResults,
+		HasMaxResults:    hasMaxResults,
+		NextToken:        pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 
-	st, err := s.store(reqCtx)
+	result, err := s.getQueryResultsCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
-	if err != nil {
-		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, queryExecutionNotFound(queryExecutionId)
-		}
-		return nil, err
-	}
-
-	if queryExecution.Status.State != athenastore.QueryExecutionStateSucceeded {
-		return nil, ErrInvalidRequestException
-	}
-
-	result, err := st.resultStore.GetResult(queryExecutionId)
-	if err != nil {
-		return nil, err
-	}
-
-	maxRows := maxResultRows
-	if val, ok := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults"); ok && val > 0 && val < maxResultRows {
-		maxRows = val
-	}
-
-	if result.ResultSet == nil || len(result.ResultSet.Rows) == 0 {
+	if result.EmptyResultSet {
 		return map[string]interface{}{
 			"ResultSet": map[string]interface{}{
 				"Rows":              []interface{}{},
 				"ResultSetMetadata": map[string]interface{}{"ColumnInfo": []interface{}{}},
 			},
-			"QueryExecutionId": queryExecutionId,
+			"QueryExecutionId": input.QueryExecutionId,
 		}, nil
 	}
 
-	type indexedRow struct {
-		idx int
-		row map[string]interface{}
-	}
-
-	allRows := make([]indexedRow, len(result.ResultSet.Rows))
-	for i, row := range result.ResultSet.Rows {
-		var data []map[string]interface{}
-		for _, datum := range row.Data {
-			data = append(data, map[string]interface{}{
-				"VarCharValue": datum.VarCharValue,
-			})
-		}
-		allRows[i] = indexedRow{
-			idx: i,
-			row: map[string]interface{}{"Data": data},
-		}
-	}
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(allRows, marker, maxRows, func(item indexedRow) string {
-		return strconv.Itoa(item.idx)
-	})
-
-	rows := make([]map[string]interface{}, len(pageResult.Items))
-	for i, item := range pageResult.Items {
-		rows[i] = item.row
-	}
-
 	var columnInfo []map[string]interface{}
-	if result.ResultSet.ResultSetMetadata != nil {
-		for _, col := range result.ResultSet.ResultSetMetadata.ColumnInfo {
+	if result.Result.ResultSet.ResultSetMetadata != nil {
+		for _, col := range result.Result.ResultSet.ResultSetMetadata.ColumnInfo {
 			columnInfo = append(columnInfo, map[string]interface{}{
 				"Label":         col.Label,
 				"Name":          col.Name,
@@ -413,15 +158,15 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 	resp := map[string]interface{}{
 		"UpdateCount": 0,
 		"ResultSet": map[string]interface{}{
-			"Rows": rows,
+			"Rows": result.PageRows,
 			"ResultSetMetadata": map[string]interface{}{
 				"ColumnInfo": columnInfo,
 			},
 		},
-		"QueryExecutionId": queryExecutionId,
+		"QueryExecutionId": input.QueryExecutionId,
 	}
-	if pageResult.NextMarker != "" {
-		resp["NextToken"] = pageResult.NextMarker
+	if result.NextMarker != "" {
+		resp["NextToken"] = result.NextMarker
 	}
 	return resp, nil
 }
@@ -429,51 +174,20 @@ func (s *AthenaService) GetQueryResults(ctx context.Context, reqCtx *request.Req
 // GetQueryRuntimeStatistics retrieves runtime statistics for a query execution.
 func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queryExecutionId := request.GetParamCaseInsensitive(req.Parameters, "QueryExecutionId")
-	if queryExecutionId == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	st, err := s.store(reqCtx)
+	result, err := s.getQueryRuntimeStatisticsCore(reqCtx, queryExecutionId)
 	if err != nil {
 		return nil, err
-	}
-
-	queryExecution, err := st.queryExecutionStore.GetQueryExecution(queryExecutionId)
-	if err != nil {
-		if err == athenastore.ErrQueryExecutionNotFound {
-			return nil, queryExecutionNotFound(queryExecutionId)
-		}
-		return nil, err
-	}
-
-	if queryExecution.Status.State != athenastore.QueryExecutionStateSucceeded {
-		return nil, ErrInvalidRequestException
-	}
-
-	outputRows := int64(0)
-	outputBytes := int64(0)
-	if result, err := st.resultStore.GetResult(queryExecutionId); err == nil && result != nil && result.ResultSet != nil {
-		outputRows = int64(len(result.ResultSet.Rows))
-		for _, row := range result.ResultSet.Rows {
-			for _, d := range row.Data {
-				outputBytes += int64(len(d.VarCharValue))
-			}
-		}
-	}
-
-	dataScanned := int64(0)
-	if queryExecution.Statistics != nil {
-		dataScanned = queryExecution.Statistics.DataScannedInBytes
 	}
 
 	return map[string]interface{}{
 		"QueryRuntimeStatistics": map[string]interface{}{
 			"Timeline": map[string]interface{}{
-				"QueryQueueTimeInMillis":        queryExecution.Statistics.QueryQueueTimeInMillis,
-				"QueryPlanningTimeInMillis":     queryExecution.Statistics.QueryPlanningTimeInMillis,
-				"EngineExecutionTimeInMillis":   queryExecution.Statistics.EngineExecutionTimeInMillis,
-				"ServiceProcessingTimeInMillis": queryExecution.Statistics.ServiceProcessingTimeInMillis,
-				"TotalExecutionTimeInMillis":    queryExecution.Statistics.TotalExecutionTimeInMillis,
+				"QueryQueueTimeInMillis":        result.Statistics.QueryQueueTimeInMillis,
+				"QueryPlanningTimeInMillis":     result.Statistics.QueryPlanningTimeInMillis,
+				"EngineExecutionTimeInMillis":   result.Statistics.EngineExecutionTimeInMillis,
+				"ServiceProcessingTimeInMillis": result.Statistics.ServiceProcessingTimeInMillis,
+				"TotalExecutionTimeInMillis":    result.Statistics.TotalExecutionTimeInMillis,
 			},
 			"Rows": map[string]interface{}{
 				// InputRows: source row tracking is not implemented; 0 is the
@@ -481,9 +195,9 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 				// (the source data volume). OutputBytes is computed from the
 				// actual result set content.
 				"InputRows":   int64(0),
-				"InputBytes":  dataScanned,
-				"OutputRows":  outputRows,
-				"OutputBytes": outputBytes,
+				"InputBytes":  result.DataScannedInByte,
+				"OutputRows":  result.OutputRows,
+				"OutputBytes": result.OutputBytes,
 			},
 			"OutputStage": map[string]interface{}{
 				"StageId":         0,
@@ -493,7 +207,7 @@ func (s *AthenaService) GetQueryRuntimeStatistics(ctx context.Context, reqCtx *r
 				"TotalSplits":     1,
 				"QueuedSplits":    0,
 				"CompletedSplits": 1,
-				"RuntimeInMillis": queryExecution.Statistics.EngineExecutionTimeInMillis,
+				"RuntimeInMillis": result.Statistics.EngineExecutionTimeInMillis,
 			},
 		},
 	}, nil

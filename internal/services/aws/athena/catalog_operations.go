@@ -3,12 +3,10 @@ package athena
 import (
 	"context"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	athenastore "vorpalstacks/internal/store/aws/athena"
 )
 
@@ -37,16 +35,24 @@ func (s *AthenaService) ListEngineVersions(ctx context.Context, reqCtx *request.
 
 // ListDataCatalogs retrieves a list of all data catalogs in the Athena workgroup.
 func (s *AthenaService) ListDataCatalogs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListDataCatalogsInput{
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
+	}
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	catalogs, err := stores.dataCatalogStore.ListDataCatalogs()
+
+	catalogs, nextMarker, err := listDataCatalogsCore(stores, input)
 	if err != nil {
 		return nil, err
 	}
 
-	var summaries []map[string]interface{}
+	summaries := make([]map[string]interface{}, 0, len(catalogs))
 	for _, c := range catalogs {
 		summaries = append(summaries, map[string]interface{}{
 			"CatalogName": c.Name,
@@ -54,52 +60,15 @@ func (s *AthenaService) ListDataCatalogs(ctx context.Context, reqCtx *request.Re
 		})
 	}
 
-	summaries = append([]map[string]interface{}{
-		{
-			"CatalogName": "AwsDataCatalog",
-			"Type":        "GLUE",
-		},
-	}, summaries...)
-
-	maxResults, err := validateMaxResults(req.Parameters, 50, 2, 50)
-	if err != nil {
-		return nil, err
-	}
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(summaries, marker, maxResults, func(item map[string]interface{}) string {
-		return item["CatalogName"].(string)
-	})
-
-	return pagination.BuildListResponse("DataCatalogsSummary", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("DataCatalogsSummary", summaries, nextMarker), nil
 }
 
 // GetDataCatalog retrieves metadata for the specified data catalog.
 func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	if name == "AwsDataCatalog" {
-		return map[string]interface{}{
-			"DataCatalog": map[string]interface{}{
-				"Name":        "AwsDataCatalog",
-				"Type":        "GLUE",
-				"Description": "The default AWS data catalog",
-				"Parameters":  map[string]interface{}{},
-			},
-		}, nil
-	}
-
-	stores, err := s.store(reqCtx)
+	catalog, err := s.getDataCatalogCore(reqCtx, name)
 	if err != nil {
-		return nil, err
-	}
-	catalog, err := stores.dataCatalogStore.GetDataCatalog(name)
-	if err != nil {
-		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, dataCatalogNotFound(name)
-		}
 		return nil, err
 	}
 
@@ -110,61 +79,18 @@ func (s *AthenaService) GetDataCatalog(ctx context.Context, reqCtx *request.Requ
 
 // CreateDataCatalog creates a new data catalog in the Athena workgroup.
 func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
-	if name == "AwsDataCatalog" {
-		return nil, ErrInvalidRequestException
-	}
-	if err := validateCatalogNameString(name); err != nil {
-		return nil, err
-	}
-
-	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateDescriptionString(description); err != nil {
-			return nil, err
-		}
-	}
-	catalogType := request.GetParamCaseInsensitive(req.Parameters, "Type")
-	if catalogType == "" {
-		catalogType = "GLUE"
-	}
-	if err := validateDataCatalogType(catalogType); err != nil {
-		return nil, err
-	}
-
 	parametersRaw := request.GetMapParamCaseInsensitive(req.Parameters, "Parameters")
-	parameters := convertMapToStringMap(parametersRaw)
-
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if err := validateTags(tags); err != nil {
-		return nil, err
+	input := CreateDataCatalogInput{
+		Name:        request.GetParamCaseInsensitive(req.Parameters, "Name"),
+		Description: request.GetParamCaseInsensitive(req.Parameters, "Description"),
+		Type:        request.GetParamCaseInsensitive(req.Parameters, "Type"),
+		Parameters:  convertMapToStringMap(parametersRaw),
+		Tags:        tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
 	}
 
-	catalog := &athenastore.DataCatalog{
-		Name:        name,
-		Description: description,
-		Type:        catalogType,
-		Parameters:  parameters,
-	}
-
-	stores, err := s.store(reqCtx)
+	catalog, err := s.createDataCatalogCore(reqCtx, input)
 	if err != nil {
 		return nil, err
-	}
-	if err := stores.dataCatalogStore.CreateDataCatalog(catalog); err != nil {
-		if err == athenastore.ErrDataCatalogAlreadyExists {
-			return nil, ErrResourceAlreadyExistsException
-		}
-		return nil, err
-	}
-
-	if len(tags) > 0 {
-		if err := stores.dataCatalogStore.Tag(name, tags); err != nil {
-			logs.Warn("failed to tag data catalog", logs.String("catalog", name), logs.Err(err))
-		}
 	}
 
 	return map[string]interface{}{
@@ -175,23 +101,8 @@ func (s *AthenaService) CreateDataCatalog(ctx context.Context, reqCtx *request.R
 // DeleteDataCatalog deletes the specified data catalog.
 func (s *AthenaService) DeleteDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	if name == "AwsDataCatalog" {
-		return nil, ErrInvalidRequestException
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := stores.dataCatalogStore.DeleteDataCatalog(name); err != nil {
-		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, dataCatalogNotFound(name)
-		}
+	if err := s.deleteDataCatalogCore(reqCtx, name); err != nil {
 		return nil, err
 	}
 
@@ -201,51 +112,17 @@ func (s *AthenaService) DeleteDataCatalog(ctx context.Context, reqCtx *request.R
 // UpdateDataCatalog updates the specified data catalog with new metadata.
 // Per the Smithy model, Name and Type are both REQUIRED on this operation.
 func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
-
-	if name == "AwsDataCatalog" {
-		return nil, ErrInvalidRequestException
-	}
-
-	catalogType := request.GetParamCaseInsensitive(req.Parameters, "Type")
-	if catalogType == "" {
-		return nil, awserrors.NewInvalidParameterException("Type is required for UpdateDataCatalog")
-	}
-	if err := validateDataCatalogType(catalogType); err != nil {
-		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	catalog, err := stores.dataCatalogStore.GetDataCatalog(name)
-	if err != nil {
-		if err == athenastore.ErrDataCatalogNotFound {
-			return nil, dataCatalogNotFound(name)
-		}
-		return nil, err
-	}
-
-	catalog.Type = catalogType
-
-	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateDescriptionString(description); err != nil {
-			return nil, err
-		}
-		catalog.Description = description
-	}
-
 	parametersRaw := request.GetMapParamCaseInsensitive(req.Parameters, "Parameters")
-	if parametersRaw != nil {
-		catalog.Parameters = convertMapToStringMap(parametersRaw)
+	input := UpdateDataCatalogInput{
+		Name:          request.GetParamCaseInsensitive(req.Parameters, "Name"),
+		Description:   request.GetParamCaseInsensitive(req.Parameters, "Description"),
+		Type:          request.GetParamCaseInsensitive(req.Parameters, "Type"),
+		Parameters:    convertMapToStringMap(parametersRaw),
+		HasParameters: parametersRaw != nil,
 	}
 
-	if err := stores.dataCatalogStore.UpdateDataCatalog(catalog); err != nil {
+	catalog, err := s.updateDataCatalogCore(reqCtx, input)
+	if err != nil {
 		return nil, err
 	}
 
@@ -256,27 +133,20 @@ func (s *AthenaService) UpdateDataCatalog(ctx context.Context, reqCtx *request.R
 
 // ListDatabases retrieves a list of databases in the specified data catalog.
 func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
-	if catalogName == "" {
-		catalogName = "AwsDataCatalog"
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListDatabasesInput{
+		CatalogName:   request.GetParamCaseInsensitive(req.Parameters, "CatalogName"),
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 
-	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
-	if err != nil {
-		return nil, err
-	}
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	databases, err := stores.databaseStore.ListDatabases(catalogName)
+	databases, nextMarker, err := s.listDatabasesCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	var dbList []map[string]interface{}
+	dbList := make([]map[string]interface{}, 0, len(databases))
 	for _, db := range databases {
 		dbList = append(dbList, map[string]interface{}{
 			"Name":        db.Name,
@@ -284,62 +154,16 @@ func (s *AthenaService) ListDatabases(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	if catalogName == "AwsDataCatalog" {
-		hasDefault := false
-		for _, db := range dbList {
-			if db["Name"] == "default" {
-				hasDefault = true
-				break
-			}
-		}
-		if !hasDefault {
-			dbList = append(dbList, map[string]interface{}{
-				"Name":        "default",
-				"Description": "Default database",
-			})
-		}
-	}
-
-	pageResult := pagination.PaginateSlice(dbList, marker, maxResults, func(item map[string]interface{}) string {
-		return item["Name"].(string)
-	})
-
-	return pagination.BuildListResponse("DatabaseList", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("DatabaseList", dbList, nextMarker), nil
 }
 
 // GetDatabase retrieves metadata for the specified database.
 func (s *AthenaService) GetDatabase(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
-	if catalogName == "" {
-		catalogName = "AwsDataCatalog"
-	}
-
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	if catalogName == "AwsDataCatalog" && databaseName == "default" {
-		return map[string]interface{}{
-			"Database": map[string]interface{}{
-				"Name":        "default",
-				"Description": "Default database",
-				"Parameters": map[string]string{
-					"EXTERNAL": "TRUE",
-				},
-			},
-		}, nil
-	}
-
-	stores, err := s.store(reqCtx)
+	db, err := s.getDatabaseCore(reqCtx, catalogName, databaseName)
 	if err != nil {
-		return nil, err
-	}
-	db, err := stores.databaseStore.GetDatabase(catalogName, databaseName)
-	if err != nil {
-		if err == athenastore.ErrDatabaseNotFound {
-			return nil, ErrMetadataException
-		}
 		return nil, err
 	}
 
@@ -354,26 +178,21 @@ func (s *AthenaService) GetDatabase(ctx context.Context, reqCtx *request.Request
 
 // ListTableMetadata retrieves metadata for all tables in the specified database.
 func (s *AthenaService) ListTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
-	if catalogName == "" {
-		catalogName = "AwsDataCatalog"
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListTableMetadataInput{
+		CatalogName:   request.GetParamCaseInsensitive(req.Parameters, "CatalogName"),
+		DatabaseName:  request.GetParamCaseInsensitive(req.Parameters, "DatabaseName"),
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 
-	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrInvalidRequestException
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	tables, err := stores.tableStore.ListTables(catalogName, databaseName)
+	tables, nextMarker, err := s.listTableMetadataCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	var tableList []map[string]interface{}
+	tableList := make([]map[string]interface{}, 0, len(tables))
 	for _, t := range tables {
 		tableList = append(tableList, map[string]interface{}{
 			"Name":       t.Name,
@@ -382,44 +201,17 @@ func (s *AthenaService) ListTableMetadata(ctx context.Context, reqCtx *request.R
 		})
 	}
 
-	maxResults, err := validateMaxResults(req.Parameters, 50, 1, 50)
-	if err != nil {
-		return nil, err
-	}
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(tableList, marker, maxResults, func(item map[string]interface{}) string {
-		return item["Name"].(string)
-	})
-
-	return pagination.BuildListResponse("TableMetadataList", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("TableMetadataList", tableList, nextMarker), nil
 }
 
 // GetTableMetadata retrieves metadata for the specified table.
 func (s *AthenaService) GetTableMetadata(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	catalogName := request.GetParamCaseInsensitive(req.Parameters, "CatalogName")
-	if catalogName == "" {
-		catalogName = "AwsDataCatalog"
-	}
-
 	databaseName := request.GetParamCaseInsensitive(req.Parameters, "DatabaseName")
-	if databaseName == "" {
-		return nil, ErrInvalidRequestException
-	}
-
 	tableName := request.GetParamCaseInsensitive(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	stores, err := s.store(reqCtx)
+	table, err := s.getTableMetadataCore(reqCtx, catalogName, databaseName, tableName)
 	if err != nil {
-		return nil, err
-	}
-	table, err := stores.tableStore.GetTable(catalogName, databaseName, tableName)
-	if err != nil {
-		if err == athenastore.ErrTableNotFound {
-			return nil, ErrMetadataException
-		}
 		return nil, err
 	}
 

@@ -47,6 +47,7 @@ func (r *TestRunner) RunAthenaTests() []TestResult {
 	results = append(results, tc.testQueryExecution()...)
 	results = append(results, tc.testQueryResults()...)
 	results = append(results, tc.testPreparedStatements()...)
+	results = append(results, tc.testCapacityReservations()...)
 	results = append(results, tc.testTagging()...)
 	results = append(results, tc.testSQL()...)
 	results = append(results, tc.testValidation()...)

@@ -2,6 +2,7 @@ package athena
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -32,7 +33,7 @@ func validateQueryStringSize(qs string) error {
 func validateStringLength(fieldName, value string, min, max int) error {
 	return paramvalidation.StringLength(fieldName, value, min, max,
 		func(field string, length, min, max int) error {
-			return awserrors.NewInvalidParameterException(
+			return invalidRequestParameter(
 				fmt.Sprintf("%s length must be between %d and %d (got %d)", field, min, max, length))
 		})
 }
@@ -57,7 +58,7 @@ var capacityReservationNamePattern = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 // validateWorkGroupName checks a WorkGroup name against the Smithy pattern.
 func validateWorkGroupName(name string) error {
 	if !workGroupNamePattern.MatchString(name) {
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("WorkGroup name %q does not match pattern ^[a-zA-Z0-9._-]{1,128}$", name))
 	}
 	return nil
@@ -66,7 +67,7 @@ func validateWorkGroupName(name string) error {
 // validateStatementName checks a prepared-statement name against the Smithy pattern.
 func validateStatementName(name string) error {
 	if !statementNamePattern.MatchString(name) {
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("StatementName %q does not match pattern ^[a-zA-Z_][a-zA-Z0-9_@:]{0,255}$", name))
 	}
 	return nil
@@ -79,7 +80,7 @@ func validateCapacityReservationName(name string) error {
 		return err
 	}
 	if !capacityReservationNamePattern.MatchString(name) {
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("Name %q does not match pattern ^[a-zA-Z0-9._-]+$", name))
 	}
 	return nil
@@ -134,14 +135,14 @@ func validateTags(tags map[string]string) error {
 	violation, key := tagutil.CheckStringTags(tags, tagutil.StandardLimits())
 	switch violation {
 	case tagutil.TooManyTags:
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
 	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
 		return validateStringLength("TagKey", key, 1, tagutil.MaxTagKeyLength)
 	case tagutil.TagValueTooLong:
 		return validateStringLength("TagValue", tags[key], 0, tagutil.MaxTagValueLength)
 	case tagutil.ReservedTagKey:
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
 	}
 	return nil
@@ -176,7 +177,7 @@ func validateExecutionRole(role string) error {
 		return err
 	}
 	if !executionRolePattern.MatchString(role) {
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("ExecutionRole %q does not match IAM role ARN pattern", role))
 	}
 	return nil
@@ -187,10 +188,12 @@ func validateExecutionRole(role string) error {
 // ---------------------------------------------------------------------------
 
 // validateTargetDpus validates Smithy TargetDpusInteger (range [4, ∞)).
+// CapacityReservation operations declare only InternalServerException and
+// InvalidRequestException, so the violation is an InvalidRequestException.
 func validateTargetDpus(dpus int32) error {
 	if dpus < 4 {
-		return awserrors.NewValidationException(
-			fmt.Sprintf("TargetDpus must be at least 4 (got %d)", dpus))
+		return awserrors.NewAWSError("InvalidRequestException",
+			fmt.Sprintf("TargetDpus must be at least 4 (got %d)", dpus), http.StatusBadRequest)
 	}
 	return nil
 }
@@ -202,7 +205,7 @@ func validateTargetDpus(dpus int32) error {
 // WorkGroupConfigurationUpdates.
 func validateBytesScannedCutoff(value int64) error {
 	if value < 10000000 {
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("BytesScannedCutoffPerQuery must be at least 10000000 (got %d)", value))
 	}
 	return nil
@@ -219,7 +222,7 @@ func validateDataCatalogType(catalogType string) error {
 	case "LAMBDA", "GLUE", "HIVE", "FEDERATED":
 		return nil
 	default:
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("Type %q is not a valid DataCatalogType (LAMBDA, GLUE, HIVE, FEDERATED)", catalogType))
 	}
 }
@@ -231,7 +234,7 @@ func validateWorkGroupState(state string) error {
 	case "ENABLED", "DISABLED":
 		return nil
 	default:
-		return awserrors.NewInvalidParameterException(
+		return invalidRequestParameter(
 			fmt.Sprintf("State %q is not a valid WorkGroupState (ENABLED, DISABLED)", state))
 	}
 }
@@ -274,14 +277,32 @@ const athenaMaxWorkGroupsResults = 50
 // returned. A value of 0 is treated as "use service default" to prevent
 // infinite pagination loops (MaxResults=0 would produce an empty page
 // with NextToken pointing to the same offset). Out-of-range values produce
-// InvalidParameterException, matching AWS behaviour.
+// InvalidRequestException, the error every operation declares.
 func validateMaxResults(params map[string]interface{}, defaultVal, minVal, maxVal int) (int, error) {
 	val, ok := request.GetIntParamCaseInsensitive(params, "MaxResults")
 	if !ok {
 		return defaultVal, nil
 	}
 	if val < minVal || val > maxVal {
-		return 0, awserrors.NewInvalidParameterException(
+		return 0, invalidRequestParameter(
+			fmt.Sprintf("MaxResults must be between %d and %d (got %d)", minVal, maxVal, val))
+	}
+	if val == 0 {
+		return defaultVal, nil
+	}
+	return val, nil
+}
+
+// resolveMaxResults applies the same window semantics as validateMaxResults
+// to a pre-extracted MaxResults value on the Core layer: absent → default,
+// out-of-window → InvalidRequestException, explicit zero → default (the
+// zero-as-default rule prevents empty pages with self-pointing tokens).
+func resolveMaxResults(val int, present bool, defaultVal, minVal, maxVal int) (int, error) {
+	if !present {
+		return defaultVal, nil
+	}
+	if val < minVal || val > maxVal {
+		return 0, invalidRequestParameter(
 			fmt.Sprintf("MaxResults must be between %d and %d (got %d)", minVal, maxVal, val))
 	}
 	if val == 0 {

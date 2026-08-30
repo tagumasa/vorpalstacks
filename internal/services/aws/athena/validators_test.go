@@ -1,8 +1,13 @@
 package athena
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
+
+	awserrors "vorpalstacks/internal/common/errors"
 )
 
 // TestValidateTagsReportsOffenderAccurately pins that tag violation
@@ -53,5 +58,56 @@ func TestValidateQueryStringSizeUnicodeLengths(t *testing.T) {
 	}
 	if err := validateQueryStringSize(""); err == nil {
 		t.Error("empty query accepted")
+	}
+}
+
+// TestParameterViolationsEmitInvalidRequestException pins that every shared
+// parameter validator emits InvalidRequestException with HTTP 400: the Athena
+// model defines no InvalidParameterException shape and every operation's
+// errors list declares InvalidRequestException, so a constraint violation
+// must ride the operation-declared error.
+func TestParameterViolationsEmitInvalidRequestException(t *testing.T) {
+	tooManyTags := make(map[string]string, 51)
+	for i := 0; i < 51; i++ {
+		tooManyTags[fmt.Sprintf("key%d", i)] = "v"
+	}
+
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{"validateStringLength", validateStringLength("Name", "", 1, 128)},
+		{"validateWorkGroupName", validateWorkGroupName("bad name!")},
+		{"validateStatementName", validateStatementName("9starts-with-digit")},
+		{"validateCapacityReservationName", validateCapacityReservationName("bad!")},
+		{"validateTags too many", validateTags(tooManyTags)},
+		{"validateTags reserved key", validateTags(map[string]string{"aws:reserved": "v"})},
+		{"validateClientRequestToken", validateClientRequestToken("short")},
+		{"validateExecutionRole", validateExecutionRole("not-a-valid-arn-but-long-enough-to-pass-length")},
+		{"validateBytesScannedCutoff", validateBytesScannedCutoff(1)},
+		{"validateDataCatalogType", validateDataCatalogType("BOGUS")},
+		{"validateWorkGroupState", validateWorkGroupState("BOGUS")},
+		{"validateMaxResults", func() error {
+			_, err := validateMaxResults(map[string]interface{}{"MaxResults": 51}, 50, 1, 50)
+			return err
+		}()},
+		{"resolveMaxResults", func() error { _, err := resolveMaxResults(51, true, 50, 1, 50); return err }()},
+	}
+	for _, tc := range cases {
+		if tc.err == nil {
+			t.Errorf("%s: expected a violation error", tc.name)
+			continue
+		}
+		var awsErr *awserrors.AWSError
+		if !errors.As(tc.err, &awsErr) {
+			t.Errorf("%s: error is not *awserrors.AWSError: %v", tc.name, tc.err)
+			continue
+		}
+		if awsErr.Code != "InvalidRequestException" {
+			t.Errorf("%s: code = %q, want InvalidRequestException", tc.name, awsErr.Code)
+		}
+		if awsErr.HTTPStatus != http.StatusBadRequest {
+			t.Errorf("%s: HTTP status = %d, want 400", tc.name, awsErr.HTTPStatus)
+		}
 	}
 }

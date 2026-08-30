@@ -3,10 +3,8 @@ package athena
 import (
 	"context"
 	"regexp"
-	"sort"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -32,9 +30,6 @@ func normalizeAthenaARN(arn string, accountID string) string {
 // The workgroup is a container for queries and query results.
 func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
 
 	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
 
@@ -72,19 +67,9 @@ func (s *AthenaService) CreateWorkGroup(ctx context.Context, reqCtx *request.Req
 // GetWorkGroup retrieves the details of a specific workgroup.
 func (s *AthenaService) GetWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-	if name == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	stores, err := s.store(reqCtx)
+	workGroup, err := s.getWorkGroupCore(reqCtx, name)
 	if err != nil {
-		return nil, err
-	}
-	workGroup, err := stores.workGroupStore.GetWorkGroup(name)
-	if err != nil {
-		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, workGroupNotFound(name)
-		}
 		return nil, err
 	}
 
@@ -95,47 +80,14 @@ func (s *AthenaService) GetWorkGroup(ctx context.Context, reqCtx *request.Reques
 
 // UpdateWorkGroup updates an existing workgroup's configuration.
 func (s *AthenaService) UpdateWorkGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-	if name == "" {
-		return nil, ErrInvalidRequestException
+	input := UpdateWorkGroupInput{
+		WorkGroup:            request.GetParamCaseInsensitive(req.Parameters, "WorkGroup"),
+		Description:          request.GetParamCaseInsensitive(req.Parameters, "Description"),
+		State:                request.GetParamCaseInsensitive(req.Parameters, "State"),
+		ConfigurationUpdates: request.GetMapParamCaseInsensitive(req.Parameters, "ConfigurationUpdates"),
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	workGroup, err := stores.workGroupStore.GetWorkGroup(name)
-	if err != nil {
-		if err == athenastore.ErrWorkGroupNotFound {
-			return nil, workGroupNotFound(name)
-		}
-		return nil, err
-	}
-
-	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateWorkGroupDescriptionString(description); err != nil {
-			return nil, err
-		}
-		workGroup.Description = description
-	}
-
-	state := request.GetParamCaseInsensitive(req.Parameters, "State")
-	if state != "" {
-		if err := validateWorkGroupState(state); err != nil {
-			return nil, err
-		}
-		workGroup.State = athenastore.WorkGroupState(state)
-	}
-
-	configUpdatesMap := request.GetMapParamCaseInsensitive(req.Parameters, "ConfigurationUpdates")
-	if configUpdatesMap != nil {
-		if err := s.applyConfigurationUpdates(workGroup, configUpdatesMap); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := stores.workGroupStore.UpdateWorkGroup(workGroup); err != nil {
+	if err := s.updateWorkGroupCore(reqCtx, input); err != nil {
 		return nil, err
 	}
 
@@ -198,77 +150,15 @@ func (s *AthenaService) ListWorkGroups(ctx context.Context, reqCtx *request.Requ
 	return resp, nil
 }
 
-func (s *AthenaService) validateResourceExists(stores *athenaStores, resourceType, resourceName string) error {
-	switch resourceType {
-	case "workgroup":
-		_, err := stores.workGroupStore.GetWorkGroup(resourceName)
-		if err != nil {
-			return workGroupNotFound(resourceName)
-		}
-	case "datacatalog":
-		_, err := stores.dataCatalogStore.GetDataCatalog(resourceName)
-		if err != nil {
-			return dataCatalogNotFound(resourceName)
-		}
-	case "capacityreservation":
-		_, err := stores.capacityReservationStore.GetCapacityReservation(resourceName)
-		if err != nil {
-			return awserrors.NewResourceNotFoundException("CapacityReservation", resourceName)
-		}
-	default:
-		return ErrInvalidRequestException
-	}
-	return nil
-}
-
 // TagResource adds tags to an Athena resource.
 func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceArn == "" {
-		return nil, ErrInvalidRequestException
+	input := TagResourceInput{
+		ResourceARN: request.GetParamCaseInsensitive(req.Parameters, "ResourceARN"),
+		Tags:        tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags")),
 	}
 
-	matches := arnRegex.FindStringSubmatch(resourceArn)
-	if matches == nil {
-		return nil, ErrInvalidRequestException
-	}
-
-	resourceType := matches[1]
-	resourceName := matches[2]
-
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "Tags"))
-	if err := validateTags(tags); err != nil {
+	if err := s.tagResourceCore(reqCtx, input); err != nil {
 		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.validateResourceExists(stores, resourceType, resourceName); err != nil {
-		return nil, err
-	}
-
-	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
-
-	if len(tags) > 0 {
-		switch resourceType {
-		case "workgroup":
-			if err := stores.workGroupStore.Tag(resourceArn, tags); err != nil {
-				return nil, err
-			}
-		case "datacatalog":
-			if err := stores.dataCatalogStore.Tag(resourceArn, tags); err != nil {
-				return nil, err
-			}
-		case "capacityreservation":
-			if err := stores.capacityReservationStore.Tag(resourceArn, tags); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, ErrInvalidRequestException
-		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -276,46 +166,13 @@ func (s *AthenaService) TagResource(ctx context.Context, reqCtx *request.Request
 
 // UntagResource removes tags from an Athena resource.
 func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceArn == "" {
-		return nil, ErrInvalidRequestException
+	input := UntagResourceInput{
+		ResourceARN: request.GetParamCaseInsensitive(req.Parameters, "ResourceARN"),
+		TagKeys:     request.GetStringList(req.Parameters, "TagKeys"),
 	}
 
-	matches := arnRegex.FindStringSubmatch(resourceArn)
-	if matches == nil {
-		return nil, ErrInvalidRequestException
-	}
-
-	tagKeys := request.GetStringList(req.Parameters, "TagKeys")
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.untagResourceCore(reqCtx, input); err != nil {
 		return nil, err
-	}
-
-	if err := s.validateResourceExists(stores, matches[1], matches[2]); err != nil {
-		return nil, err
-	}
-
-	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
-
-	if len(tagKeys) > 0 {
-		switch matches[1] {
-		case "workgroup":
-			if err := stores.workGroupStore.Untag(resourceArn, tagKeys); err != nil {
-				return nil, err
-			}
-		case "datacatalog":
-			if err := stores.dataCatalogStore.Untag(resourceArn, tagKeys); err != nil {
-				return nil, err
-			}
-		case "capacityreservation":
-			if err := stores.capacityReservationStore.Untag(resourceArn, tagKeys); err != nil {
-				return nil, err
-			}
-		default:
-			return nil, ErrInvalidRequestException
-		}
 	}
 
 	return response.EmptyResponse(), nil
@@ -323,58 +180,20 @@ func (s *AthenaService) UntagResource(ctx context.Context, reqCtx *request.Reque
 
 // ListTagsForResource lists the tags associated with an Athena resource.
 func (s *AthenaService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetParamCaseInsensitive(req.Parameters, "ResourceARN")
-	if resourceArn == "" {
-		return nil, ErrInvalidRequestException
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListTagsForResourceInput{
+		ResourceARN:   request.GetParamCaseInsensitive(req.Parameters, "ResourceARN"),
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 
-	matches := arnRegex.FindStringSubmatch(resourceArn)
-	if matches == nil {
-		return nil, ErrInvalidRequestException
-	}
-
-	stores, err := s.store(reqCtx)
+	tagList, nextMarker, err := s.listTagsForResourceCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.validateResourceExists(stores, matches[1], matches[2]); err != nil {
-		return nil, err
-	}
-
-	resourceArn = normalizeAthenaARN(resourceArn, s.accountID)
-
-	var tags map[string]string
-	switch matches[1] {
-	case "workgroup":
-		tags, err = stores.workGroupStore.List(resourceArn)
-	case "datacatalog":
-		tags, err = stores.dataCatalogStore.List(resourceArn)
-	case "capacityreservation":
-		tags, err = stores.capacityReservationStore.List(resourceArn)
-	default:
-		return nil, ErrInvalidRequestException
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	tagList := tagutil.MapToResponse(tags)
-	sort.Slice(tagList, func(i, j int) bool {
-		return tagList[i]["Key"].(string) < tagList[j]["Key"].(string)
-	})
-
-	maxResults, err := validateMaxResults(req.Parameters, len(tagList), 75, pagination.AbsoluteMaxItems)
-	if err != nil {
-		return nil, err
-	}
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(tagList, marker, maxResults, func(item map[string]interface{}) string {
-		return item["Key"].(string)
-	})
-
-	return pagination.BuildListResponse("Tags", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("Tags", tagList, nextMarker), nil
 }
 
 // parseConfigMapToInput converts the raw HTTP Configuration map into a
@@ -438,134 +257,6 @@ func parseConfigMapToInput(config map[string]interface{}) *WorkGroupConfigInput 
 	}
 
 	return cfg
-}
-
-func (s *AthenaService) parseEngineVersion(engineVersion map[string]interface{}) *athenastore.EngineVersion {
-	ev := &athenastore.EngineVersion{}
-	if selected, ok := engineVersion["SelectedEngineVersion"].(string); ok {
-		ev.SelectedEngineVersion = selected
-	}
-	if effective, ok := engineVersion["EffectiveEngineVersion"].(string); ok {
-		ev.EffectiveEngineVersion = effective
-	}
-	if ev.SelectedEngineVersion == "" {
-		ev.SelectedEngineVersion = "AUTO"
-	}
-	if ev.EffectiveEngineVersion == "" {
-		ev.EffectiveEngineVersion = "Athena engine version 3"
-	}
-	return ev
-}
-
-func (s *AthenaService) applyConfigurationUpdates(workGroup *athenastore.WorkGroup, updates map[string]interface{}) error {
-	if workGroup.Configuration == nil {
-		workGroup.Configuration = &athenastore.WorkGroupConfiguration{}
-	}
-
-	if resultConfigUpdatesRaw, ok := updates["ResultConfigurationUpdates"]; ok {
-		if resultConfigUpdates, ok := resultConfigUpdatesRaw.(map[string]interface{}); ok {
-			if workGroup.Configuration.ResultConfiguration == nil {
-				workGroup.Configuration.ResultConfiguration = &athenastore.ResultConfiguration{}
-			}
-			rc := workGroup.Configuration.ResultConfiguration
-
-			if outputLocation, ok := resultConfigUpdates["OutputLocation"].(string); ok {
-				rc.OutputLocation = outputLocation
-			}
-			if encConfigMap, ok := resultConfigUpdates["EncryptionConfiguration"].(map[string]interface{}); ok {
-				rc.EncryptionConfiguration = &athenastore.EncryptionConfiguration{}
-				if encOption, ok := encConfigMap["EncryptionOption"].(string); ok {
-					rc.EncryptionConfiguration.EncryptionOption = encOption
-				}
-				if kmsKey, ok := encConfigMap["KmsKey"].(string); ok {
-					rc.EncryptionConfiguration.KmsKey = kmsKey
-				}
-			}
-			if expectedBucketOwner, ok := resultConfigUpdates["ExpectedBucketOwner"].(string); ok {
-				rc.ExpectedBucketOwner = expectedBucketOwner
-			}
-			if aclConfigMap, ok := resultConfigUpdates["AclConfiguration"].(map[string]interface{}); ok {
-				aclOption, _ := aclConfigMap["S3AclOption"].(string)
-				if aclOption != "BUCKET_OWNER_FULL_CONTROL" {
-					return ErrInvalidParameterException
-				}
-				rc.ACLConfiguration = &athenastore.ACLConfiguration{S3ACLOption: aclOption}
-			}
-
-			if remove, ok := resultConfigUpdates["RemoveOutputLocation"].(bool); ok && remove {
-				rc.OutputLocation = ""
-			}
-			if remove, ok := resultConfigUpdates["RemoveEncryptionConfiguration"].(bool); ok && remove {
-				rc.EncryptionConfiguration = nil
-			}
-			if remove, ok := resultConfigUpdates["RemoveExpectedBucketOwner"].(bool); ok && remove {
-				rc.ExpectedBucketOwner = ""
-			}
-			if remove, ok := resultConfigUpdates["RemoveAclConfiguration"].(bool); ok && remove {
-				rc.ACLConfiguration = nil
-			}
-		}
-	}
-
-	if enforce, ok := updates["EnforceWorkGroupConfiguration"].(bool); ok {
-		workGroup.Configuration.EnforceWorkGroupConfiguration = enforce
-	}
-
-	if bytesScanned, ok := updates["BytesScannedCutoffPerQuery"].(float64); ok {
-		workGroup.Configuration.BytesScannedCutoffPerQuery = int64(bytesScanned)
-		if err := validateBytesScannedCutoff(workGroup.Configuration.BytesScannedCutoffPerQuery); err != nil {
-			return err
-		}
-	}
-
-	if remove, ok := updates["RemoveBytesScannedCutoffPerQuery"].(bool); ok && remove {
-		workGroup.Configuration.BytesScannedCutoffPerQuery = 0
-	}
-
-	if requesterPays, ok := updates["RequesterPaysEnabled"].(bool); ok {
-		workGroup.Configuration.RequesterPaysEnabled = requesterPays
-	}
-
-	if publish, ok := updates["PublishCloudWatchMetricsEnabled"].(bool); ok {
-		workGroup.Configuration.PublishCloudWatchMetricsEnabled = publish
-	}
-
-	if engineVersionRaw, ok := updates["EngineVersion"]; ok {
-		if engineVersion, ok := engineVersionRaw.(map[string]interface{}); ok {
-			workGroup.Configuration.EngineVersion = s.parseEngineVersion(engineVersion)
-		}
-	}
-
-	if additional, ok := updates["AdditionalConfiguration"].(string); ok {
-		if err := validateAdditionalConfiguration(additional); err != nil {
-			return err
-		}
-		workGroup.Configuration.AdditionalConfiguration = additional
-	}
-
-	if executionRole, ok := updates["ExecutionRole"].(string); ok {
-		if err := validateExecutionRole(executionRole); err != nil {
-			return err
-		}
-		workGroup.Configuration.ExecutionRole = executionRole
-	}
-
-	if custEncMap, ok := updates["CustomerContentEncryptionConfiguration"].(map[string]interface{}); ok {
-		workGroup.Configuration.CustomerContentEncryptionConfiguration = &athenastore.CustomerContentEncryptionConfiguration{}
-		if kmsKey, ok := custEncMap["KmsKey"].(string); ok {
-			workGroup.Configuration.CustomerContentEncryptionConfiguration.KmsKey = kmsKey
-		}
-	}
-
-	if remove, ok := updates["RemoveCustomerContentEncryptionConfiguration"].(bool); ok && remove {
-		workGroup.Configuration.CustomerContentEncryptionConfiguration = nil
-	}
-
-	if enableMin, ok := updates["EnableMinimumEncryptionConfiguration"].(bool); ok {
-		workGroup.Configuration.EnableMinimumEncryptionConfiguration = enableMin
-	}
-
-	return nil
 }
 
 func (s *AthenaService) workGroupToResponse(wg *athenastore.WorkGroup) map[string]interface{} {

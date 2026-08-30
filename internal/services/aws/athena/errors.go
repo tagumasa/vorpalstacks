@@ -10,18 +10,8 @@ import (
 var (
 	// ErrInvalidRequestException is returned when the input fails constraints.
 	ErrInvalidRequestException = awserrors.NewAWSError("InvalidRequestException", "The input failed to satisfy the constraints specified by an AWS service.", http.StatusBadRequest)
-	// ErrInternalServerException is returned when an internal server error occurs.
-	ErrInternalServerException = awserrors.NewInternalErrorException("An internal server error occurred.")
-	// ErrInvalidParameterException is returned when a parameter value is invalid.
-	ErrInvalidParameterException = awserrors.NewInvalidParameterException("Invalid parameter value.")
-	// ErrResourceAlreadyExistsException is returned when a resource already exists.
-	ErrResourceAlreadyExistsException = awserrors.NewResourceAlreadyExistsException("Resource")
-	// ErrTooManyRequestsException is returned when too many requests are received.
-	ErrTooManyRequestsException = awserrors.NewThrottlingException("Too many requests have been received.")
 	// ErrMetadataException is returned when an error occurs while accessing metadata.
 	ErrMetadataException = awserrors.NewAWSError("MetadataException", "An error occurred while accessing metadata.", http.StatusBadRequest)
-	// ErrInvalidConfigurationException is returned when the configuration is invalid.
-	ErrInvalidConfigurationException = awserrors.NewBadRequestException("The configuration is invalid.")
 )
 
 // workGroupNotFound returns a ResourceNotFoundException for the specified work group.
@@ -56,4 +46,21 @@ func preparedStatementNotFound(name string) *awserrors.AWSError {
 func capacityReservationNotFound(name string) *awserrors.AWSError {
 	return awserrors.NewAWSError("InvalidRequestException",
 		fmt.Sprintf("CapacityReservation %s not found", name), http.StatusBadRequest)
+}
+
+// alreadyExistsInvalidRequest returns the InvalidRequestException every
+// Athena create operation declares for a duplicate resource name — the
+// model defines no ResourceAlreadyExistsException shape and the create
+// operations list only InternalServerException and InvalidRequestException.
+func alreadyExistsInvalidRequest(resourceType, name string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidRequestException",
+		fmt.Sprintf("%s %s already exists", resourceType, name), http.StatusBadRequest)
+}
+
+// invalidRequestParameter returns the InvalidRequestException every Athena
+// operation declares for a constraint-violating parameter — the model
+// defines no InvalidParameterException shape, so parameter-constraint
+// violations ride the operation-declared InvalidRequestException.
+func invalidRequestParameter(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("InvalidRequestException", message, http.StatusBadRequest)
 }

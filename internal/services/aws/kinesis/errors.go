@@ -14,8 +14,10 @@ var (
 	ErrResourceInUse = awserrors.NewAWSError("ResourceInUseException", "The resource is in use.", http.StatusBadRequest)
 	// ErrInvalidArgument is returned when an argument is invalid.
 	ErrInvalidArgument = awserrors.NewAWSError("InvalidArgumentException", "Invalid argument.", http.StatusBadRequest)
-	// ErrLimitExceeded is returned when the rate limit for the stream is exceeded.
-	ErrLimitExceeded = awserrors.NewAWSError("LimitExceededException", "Rate exceeded for this stream.", http.StatusTooManyRequests)
+	// ErrLimitExceeded is returned when a resource quota is exceeded —
+	// the per-stream registered-consumer limit. The API reference maps
+	// LimitExceededException to HTTP 400.
+	ErrLimitExceeded = awserrors.NewAWSError("LimitExceededException", "The requested resource exceeds the maximum number allowed.", http.StatusBadRequest)
 	// ErrProvisionedThroughputExceeded is returned when the provisioned throughput is exceeded.
 	ErrProvisionedThroughputExceeded = awserrors.NewAWSError("ProvisionedThroughputExceededException", "Rate exceeded for this shard.", http.StatusTooManyRequests)
 	// ErrExpiredIterator is returned when the iterator has expired.

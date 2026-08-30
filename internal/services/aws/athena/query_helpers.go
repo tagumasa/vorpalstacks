@@ -141,7 +141,7 @@ func (s *AthenaService) parseResultConfiguration(resultConfigMap map[string]inte
 	if aclConfigMap, ok := resultConfigMap["AclConfiguration"].(map[string]interface{}); ok {
 		aclOption, _ := aclConfigMap["S3AclOption"].(string)
 		if aclOption != "BUCKET_OWNER_FULL_CONTROL" {
-			return nil, ErrInvalidParameterException
+			return nil, invalidRequestParameter("AclConfiguration.S3AclOption must be BUCKET_OWNER_FULL_CONTROL")
 		}
 		resultConfiguration.ACLConfiguration = &athenastore.ACLConfiguration{S3ACLOption: aclOption}
 	}

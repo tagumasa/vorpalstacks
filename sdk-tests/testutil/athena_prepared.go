@@ -44,6 +44,11 @@ func (tc *athenaTestContext) testPreparedStatements() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for duplicate prepared statement")
 		}
+		// Per the Smithy model, CreatePreparedStatement declares only
+		// InternalServerException and InvalidRequestException.
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("expected InvalidRequestException for duplicate prepared statement, got: %v", err)
+		}
 		return nil
 	}))
 

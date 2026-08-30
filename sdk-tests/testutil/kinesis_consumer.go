@@ -199,10 +199,10 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 	}
 
 	results = append(results, r.RunTest("kinesis", "ListStreamConsumers_MaxResultsWindow", func() error {
-		// Cross the documented default page so the paging rules are
-		// observable: the accepted input window is 1-10000 while the
-		// effective page defaults to 100 and never exceeds 100.
-		for i := 1; i <= 100; i++ {
+		// Fill the stream to its per-stream consumer quota so the paging
+		// rules are observable: the accepted input window is 1-10000 and
+		// every provided value bounds the page.
+		for i := 1; i <= 19; i++ {
 			if _, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
 				StreamARN:    aws.String(streamARN),
 				ConsumerName: aws.String(fmt.Sprintf("%s-reader%03d", consumerName, i)),
@@ -211,39 +211,42 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 			}
 		}
 
-		first, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
+		// An omitted MaxResults returns every registered consumer — well
+		// below the documented default page of 100 — without a token.
+		all, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
 			StreamARN: aws.String(streamARN),
 		})
 		if err != nil {
 			return err
 		}
-		if len(first.Consumers) != 100 {
-			return fmt.Errorf("default page: got %d consumers, want 100", len(first.Consumers))
+		if len(all.Consumers) != 20 {
+			return fmt.Errorf("omitted MaxResults: got %d consumers, want 20", len(all.Consumers))
 		}
-		if first.NextToken == nil {
-			return fmt.Errorf("default page: NextToken missing")
+		if all.NextToken != nil {
+			return fmt.Errorf("omitted MaxResults: unexpected NextToken for a complete page")
 		}
 
-		above, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
+		// A provided value bounds the page and reports the remainder.
+		five, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
 			StreamARN:  aws.String(streamARN),
-			MaxResults: aws.Int32(150),
+			MaxResults: aws.Int32(5),
 		})
 		if err != nil {
 			return err
 		}
-		if len(above.Consumers) != 100 {
-			return fmt.Errorf("MaxResults 150: got %d consumers, want the capped 100", len(above.Consumers))
+		if len(five.Consumers) != 5 || five.NextToken == nil {
+			return fmt.Errorf("MaxResults 5: got %d consumers, want 5 with a token", len(five.Consumers))
 		}
 
 		tail, err := client.ListStreamConsumers(ctx, &kinesis.ListStreamConsumersInput{
 			StreamARN: aws.String(streamARN),
-			NextToken: first.NextToken,
+			NextToken: five.NextToken,
 		})
 		if err != nil {
 			return err
 		}
-		if len(tail.Consumers) != 1 {
-			return fmt.Errorf("token follow-up: got %d consumers, want 1", len(tail.Consumers))
+		if len(tail.Consumers) != 15 || tail.NextToken != nil {
+			return fmt.Errorf("token follow-up: got %d consumers, want 15 without more", len(tail.Consumers))
 		}
 
 		for _, maxResults := range []int32{0, 10001} {
@@ -259,6 +262,20 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 			}
 		}
 		return nil
+	}))
+
+	results = append(results, r.RunTest("kinesis", "RegisterStreamConsumer_PerStreamQuota", func() error {
+		// The stream already carries its twenty registered consumers from
+		// the preceding rows; the documented per-stream quota is twenty
+		// for Provisioned and On-demand Standard streams.
+		_, err := client.RegisterStreamConsumer(ctx, &kinesis.RegisterStreamConsumerInput{
+			StreamARN:    aws.String(streamARN),
+			ConsumerName: aws.String(fmt.Sprintf("%s-over", consumerName)),
+		})
+		if err == nil {
+			return fmt.Errorf("expected LimitExceededException at the quota boundary, got success")
+		}
+		return AssertErrorContains(err, "LimitExceededException")
 	}))
 
 	results = append(results, r.RunTest("kinesis", "DeregisterStreamConsumer", func() error {

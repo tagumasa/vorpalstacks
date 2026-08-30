@@ -2,9 +2,7 @@ package athena
 
 import (
 	"context"
-	"sort"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -13,83 +11,30 @@ import (
 
 // CreateNamedQuery creates a new named query in the Athena workgroup.
 func (s *AthenaService) CreateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, ErrInvalidRequestException
+	input := CreateNamedQueryInput{
+		Name:        request.GetParamCaseInsensitive(req.Parameters, "Name"),
+		Description: request.GetParamCaseInsensitive(req.Parameters, "Description"),
+		Database:    request.GetParamCaseInsensitive(req.Parameters, "Database"),
+		QueryString: request.GetParamCaseInsensitive(req.Parameters, "QueryString"),
+		WorkGroup:   request.GetParamCaseInsensitive(req.Parameters, "WorkGroup"),
 	}
 
-	if err := validateNameString(name); err != nil {
-		return nil, err
-	}
-
-	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateNamedQueryDescriptionString(description); err != nil {
-			return nil, err
-		}
-	}
-
-	database := request.GetParamCaseInsensitive(req.Parameters, "Database")
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-
-	if err := validateQueryStringSize(queryString); err != nil {
-		return nil, err
-	}
-
-	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-
-	if workGroup == "" {
-		workGroup = "primary"
-	}
-
-	if database == "" || queryString == "" {
-		return nil, ErrInvalidRequestException
-	}
-
-	if err := validateDatabaseString(database); err != nil {
-		return nil, err
-	}
-
-	namedQuery := &athenastore.NamedQuery{
-		Name:        name,
-		Description: description,
-		Database:    database,
-		QueryString: queryString,
-		WorkGroup:   workGroup,
-	}
-
-	stores, err := s.store(reqCtx)
+	namedQueryId, err := s.createNamedQueryCore(reqCtx, input)
 	if err != nil {
-		return nil, err
-	}
-	if err := stores.namedQueryStore.CreateNamedQuery(namedQuery); err != nil {
-		if err == athenastore.ErrNamedQueryAlreadyExists {
-			return nil, ErrResourceAlreadyExistsException
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"NamedQueryId": namedQuery.NamedQueryId,
+		"NamedQueryId": namedQueryId,
 	}, nil
 }
 
 // GetNamedQuery retrieves the specified named query.
 func (s *AthenaService) GetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
-	if namedQueryId == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	stores, err := s.store(reqCtx)
+	namedQuery, err := s.getNamedQueryCore(reqCtx, namedQueryId)
 	if err != nil {
-		return nil, err
-	}
-	namedQuery, err := stores.namedQueryStore.GetNamedQuery(namedQueryId)
-	if err != nil {
-		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, namedQueryNotFound(namedQueryId)
-		}
 		return nil, err
 	}
 
@@ -101,18 +46,8 @@ func (s *AthenaService) GetNamedQuery(ctx context.Context, reqCtx *request.Reque
 // DeleteNamedQuery deletes the specified named query.
 func (s *AthenaService) DeleteNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
-	if namedQueryId == "" {
-		return nil, ErrInvalidRequestException
-	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	if err := stores.namedQueryStore.DeleteNamedQuery(namedQueryId); err != nil {
-		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, namedQueryNotFound(namedQueryId)
-		}
+	if err := s.deleteNamedQueryCore(reqCtx, namedQueryId); err != nil {
 		return nil, err
 	}
 
@@ -121,90 +56,38 @@ func (s *AthenaService) DeleteNamedQuery(ctx context.Context, reqCtx *request.Re
 
 // ListNamedQueries retrieves a list of named queries in the specified workgroup.
 func (s *AthenaService) ListNamedQueries(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	workGroup := request.GetParamCaseInsensitive(req.Parameters, "WorkGroup")
-	if workGroup == "" {
-		workGroup = "primary"
+	maxResults, hasMaxResults := request.GetIntParamCaseInsensitive(req.Parameters, "MaxResults")
+	input := ListNamedQueriesInput{
+		WorkGroup:     request.GetParamCaseInsensitive(req.Parameters, "WorkGroup"),
+		MaxResults:    maxResults,
+		HasMaxResults: hasMaxResults,
+		NextToken:     pagination.GetMarker(req.Parameters, "NextToken"),
 	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	namedQueries, err := stores.namedQueryStore.ListNamedQueries(workGroup)
+
+	ids, nextMarker, err := listNamedQueriesCore(stores, input)
 	if err != nil {
 		return nil, err
 	}
 
-	ids := make([]string, 0, len(namedQueries))
-	for _, nq := range namedQueries {
-		ids = append(ids, nq.NamedQueryId)
-	}
-	sort.Strings(ids)
-
-	maxResults, err := validateMaxResults(req.Parameters, 50, 0, 50)
-	if err != nil {
-		return nil, err
-	}
-
-	marker := pagination.GetMarker(req.Parameters, "NextToken")
-	pageResult := pagination.PaginateSlice(ids, marker, maxResults, func(id string) string {
-		return id
-	})
-
-	return pagination.BuildListResponse("NamedQueryIds", pageResult.Items, pageResult.NextMarker), nil
+	return pagination.BuildListResponse("NamedQueryIds", ids, nextMarker), nil
 }
 
 // UpdateNamedQuery updates the specified named query.
 // Per the Smithy model, NamedQueryId, Name, and QueryString are all REQUIRED.
 func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namedQueryId := request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId")
-	if namedQueryId == "" {
-		return nil, ErrInvalidRequestException
+	input := UpdateNamedQueryInput{
+		NamedQueryId: request.GetParamCaseInsensitive(req.Parameters, "NamedQueryId"),
+		Name:         request.GetParamCaseInsensitive(req.Parameters, "Name"),
+		Description:  request.GetParamCaseInsensitive(req.Parameters, "Description"),
+		QueryString:  request.GetParamCaseInsensitive(req.Parameters, "QueryString"),
 	}
 
-	name := request.GetParamCaseInsensitive(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewInvalidParameterException("Name is required for UpdateNamedQuery")
-	}
-	if err := validateNameString(name); err != nil {
-		return nil, err
-	}
-
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-	if queryString == "" {
-		return nil, awserrors.NewInvalidParameterException("QueryString is required for UpdateNamedQuery")
-	}
-	if err := validateQueryStringSize(queryString); err != nil {
-		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	namedQuery, err := stores.namedQueryStore.GetNamedQuery(namedQueryId)
-	if err != nil {
-		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, namedQueryNotFound(namedQueryId)
-		}
-		return nil, err
-	}
-
-	namedQuery.Name = name
-	namedQuery.QueryString = queryString
-
-	description := request.GetParamCaseInsensitive(req.Parameters, "Description")
-	if description != "" {
-		if err := validateNamedQueryDescriptionString(description); err != nil {
-			return nil, err
-		}
-		namedQuery.Description = description
-	}
-
-	if err := stores.namedQueryStore.UpdateNamedQuery(namedQueryId, namedQuery); err != nil {
-		if err == athenastore.ErrNamedQueryNotFound {
-			return nil, namedQueryNotFound(namedQueryId)
-		}
+	if err := s.updateNamedQueryCore(reqCtx, input); err != nil {
 		return nil, err
 	}
 
@@ -213,43 +96,30 @@ func (s *AthenaService) UpdateNamedQuery(ctx context.Context, reqCtx *request.Re
 
 // BatchGetNamedQuery retrieves multiple named queries in a single request.
 func (s *AthenaService) BatchGetNamedQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	namedQueryIdsRaw := request.GetArrayParam(req.Parameters, "NamedQueryIds")
-	if len(namedQueryIdsRaw) == 0 {
-		return nil, ErrInvalidRequestException
+	input := BatchGetNamedQueryInput{
+		NamedQueryIds: request.GetArrayParam(req.Parameters, "NamedQueryIds"),
 	}
 
-	if len(namedQueryIdsRaw) > 50 {
-		return nil, ErrInvalidRequestException
-	}
-
-	var namedQueryIds []string
-	for _, id := range namedQueryIdsRaw {
-		if idStr, ok := id.(string); ok {
-			namedQueryIds = append(namedQueryIds, idStr)
-		}
-	}
-
-	stores, err := s.store(reqCtx)
+	namedQueries, unprocessedIds, err := s.batchGetNamedQueryCore(reqCtx, input)
 	if err != nil {
 		return nil, err
 	}
-	var namedQueries []map[string]interface{}
-	var unprocessedIds []map[string]interface{}
 
-	for _, id := range namedQueryIds {
-		namedQuery, err := stores.namedQueryStore.GetNamedQuery(id)
-		if err != nil {
-			unprocessedIds = append(unprocessedIds, map[string]interface{}{
-				"NamedQueryId": id,
-			})
-			continue
-		}
-		namedQueries = append(namedQueries, s.namedQueryToResponse(namedQuery))
+	var queryResponses []map[string]interface{}
+	for _, nq := range namedQueries {
+		queryResponses = append(queryResponses, s.namedQueryToResponse(nq))
+	}
+
+	var unprocessedResponses []map[string]interface{}
+	for _, id := range unprocessedIds {
+		unprocessedResponses = append(unprocessedResponses, map[string]interface{}{
+			"NamedQueryId": id,
+		})
 	}
 
 	return map[string]interface{}{
-		"NamedQueries":             namedQueries,
-		"UnprocessedNamedQueryIds": unprocessedIds,
+		"NamedQueries":             queryResponses,
+		"UnprocessedNamedQueryIds": unprocessedResponses,
 	}, nil
 }
 

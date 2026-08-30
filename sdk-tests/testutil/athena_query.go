@@ -131,7 +131,7 @@ func (tc *athenaTestContext) testNamedQueries() []TestResult {
 			QueryString: aws.String("SELECT duplicate"),
 		})
 		if err == nil {
-			return fmt.Errorf("creating query with renamed name should fail with ResourceAlreadyExistsException")
+			return fmt.Errorf("creating query with renamed name should fail with InvalidRequestException")
 		}
 		return nil
 	}))

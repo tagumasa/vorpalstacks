@@ -114,5 +114,26 @@ func (tc *athenaTestContext) testDataCatalogs() []TestResult {
 		return nil
 	}))
 
+	// Per the Smithy model, CreateDataCatalog declares only
+	// InternalServerException and InvalidRequestException — a duplicate
+	// name must be rejected with InvalidRequestException.
+	results = append(results, tc.runner.RunTest("athena", "CreateDataCatalog_DuplicateRejected", func() error {
+		dupCatalogName := tc.uniqueName("dup-cat")
+		if err := tc.createDataCatalog(dupCatalogName, "duplicate target"); err != nil {
+			return err
+		}
+		defer tc.deleteDataCatalog(dupCatalogName)
+
+		_, err := tc.client.CreateDataCatalog(tc.ctx, &athena.CreateDataCatalogInput{
+			Name:        aws.String(dupCatalogName),
+			Type:        types.DataCatalogTypeGlue,
+			Description: aws.String("duplicate"),
+		})
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("expected InvalidRequestException for duplicate data catalog, got: %v", err)
+		}
+		return nil
+	}))
+
 	return results
 }

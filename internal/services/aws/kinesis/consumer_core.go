@@ -78,6 +78,12 @@ const (
 	MaxListStreamConsumersResults     = 100
 )
 
+// The documented per-stream registered-consumer quota for enhanced
+// fan-out: twenty for On-demand Standard and Provisioned streams, fifty
+// for On-demand Advantage streams. The platform carries no Advantage
+// tier, so twenty applies to every stream mode it implements.
+const MaxConsumersPerStream = 20
+
 // registerStreamConsumerCore registers a consumer on a stream and applies the
 // create-time tags to the consumer ARN.
 func (s *KinesisService) registerStreamConsumerCore(reqCtx *request.RequestContext, input RegisterStreamConsumerInput) (ConsumerResult, error) {
@@ -88,6 +94,18 @@ func (s *KinesisService) registerStreamConsumerCore(reqCtx *request.RequestConte
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return ConsumerResult{}, err
+	}
+
+	stream, err := store.GetStreamByARN(input.StreamARN)
+	if err != nil {
+		return ConsumerResult{}, s.mapStoreError(err)
+	}
+	consumers, err := store.ListStreamConsumers(stream.StreamName)
+	if err != nil {
+		return ConsumerResult{}, s.mapStoreError(err)
+	}
+	if len(consumers) >= MaxConsumersPerStream {
+		return ConsumerResult{}, ErrLimitExceeded
 	}
 
 	consumer, err := store.RegisterStreamConsumer(input.StreamARN, input.ConsumerName)

@@ -69,8 +69,10 @@ func (tc *athenaTestContext) testEdgeCases() []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for duplicate work group")
 		}
-		if err := AssertErrorContains(err, "ResourceAlreadyExistsException"); err != nil {
-			return fmt.Errorf("expected ResourceAlreadyExistsException for duplicate, got: %v", err)
+		// Per the Smithy model, CreateWorkGroup declares only
+		// InternalServerException and InvalidRequestException.
+		if err := AssertErrorContains(err, "InvalidRequestException"); err != nil {
+			return fmt.Errorf("expected InvalidRequestException for duplicate, got: %v", err)
 		}
 		return nil
 	}))
