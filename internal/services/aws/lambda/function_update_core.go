@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 
 	"vorpalstacks/internal/core/logs"
@@ -62,6 +63,59 @@ type UpdateFunctionConfigurationInput struct {
 // ---------------------------------------------------------------------------
 // Core functions
 // ---------------------------------------------------------------------------
+
+// prepareFunctionCodeUpdateCore resolves the wire code members of an
+// UpdateFunctionCode request into persisted code metadata. UpdateFunctionCode
+// carries the code members at the top level of the request (only
+// CreateFunction nests them under Code); a ZipFile member is decoded in
+// place while an S3 bucket reference fetches the archive. Both are
+// persisted under the function's $LATEST code directory with their hash
+// recorded.
+func (s *LambdaService) prepareFunctionCodeUpdateCore(ctx context.Context, region, functionName, zipFileStr, imageUri, s3Bucket, s3Key, s3Version string) (*functionCodeMetadata, error) {
+	if zipFileStr == "" && imageUri == "" && s3Bucket == "" {
+		return nil, NewInvalidParameter("Code", "Either ZipFile, ImageUri, or S3Bucket/S3Key must be provided")
+	}
+
+	meta := &functionCodeMetadata{}
+	if zipFileStr != "" {
+		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
+		if err != nil {
+			return nil, NewInvalidParameter("ZipFile", "Invalid base64 encoding")
+		}
+		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+		if err != nil {
+			return nil, err
+		}
+		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
+		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	} else if s3Bucket != "" {
+		if s3Key == "" {
+			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
+		}
+		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, region)
+		if err != nil {
+			return nil, NewInvalidParameter("Code", err.Error())
+		}
+		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+		if err != nil {
+			return nil, err
+		}
+		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
+		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	}
+
+	return meta, nil
+}
+
+// getFunctionForDryRunCore fetches a function for the UpdateFunctionCode
+// DryRun branch, which validates the request without modifying the code.
+func (s *LambdaService) getFunctionForDryRunCore(stores *lambdaStore, functionName string) (*lambdastore.Function, error) {
+	current, err := stores.Functions.Get(functionName)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+	return current, nil
+}
 
 // updateFunctionCodeCore is the single entry point for function code update
 // logic shared by the HTTP API and the admin gRPC handler. It performs

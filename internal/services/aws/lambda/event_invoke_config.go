@@ -28,6 +28,26 @@ func resolveEventInvokeTarget(params map[string]interface{}) (string, string, er
 	return functionName, qualifier, nil
 }
 
+// eventInvokeConfigInput builds the Core input from the wire request.
+func eventInvokeConfigInput(req *request.ParsedRequest, functionName, qualifier string) *EventInvokeConfigInput {
+	in := &EventInvokeConfigInput{
+		FunctionName: functionName,
+		Qualifier:    qualifier,
+	}
+	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
+		in.HasMaximumEventAgeInSeconds = true
+		in.MaximumEventAgeInSeconds = int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
+	}
+	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
+		in.HasMaximumRetryAttempts = true
+		in.MaximumRetryAttempts = int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
+	}
+	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
+		in.DestinationConfig = parseDestinationConfig(destMap)
+	}
+	return in
+}
+
 // PutFunctionEventInvokeConfig creates or updates the configuration for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName, qualifier, err := resolveEventInvokeTarget(req.Parameters)
@@ -35,41 +55,8 @@ func (s *LambdaService) PutFunctionEventInvokeConfig(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	config := &lambdastore.EventInvokeConfig{}
-
-	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
-		val := int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
-		if err := validateMaximumEventAgeInSeconds(val); err != nil {
-			return nil, err
-		}
-		config.MaximumEventAgeInSeconds = val
-	} else {
-		// Put replaces the whole configuration; omitted members fall back
-		// to the AWS defaults rather than zero.
-		config.MaximumEventAgeInSeconds = lambdastore.DefaultMaximumEventAgeInSeconds
-	}
-	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
-		if err := validateMaximumRetryAttempts(val); err != nil {
-			return nil, err
-		}
-		config.MaximumRetryAttempts = val
-	} else {
-		config.MaximumRetryAttempts = lambdastore.DefaultMaximumRetryAttempts
-	}
-	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
-		config.DestinationConfig = parseDestinationConfig(destMap)
-	}
-
-	store, err := s.store(reqCtx)
+	config, err := s.putFunctionEventInvokeConfigCore(reqCtx, eventInvokeConfigInput(req, functionName, qualifier))
 	if err != nil {
-		return nil, err
-	}
-
-	if err := store.Functions.SetEventInvokeConfig(functionName, qualifier, config); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
 	}
 
@@ -88,11 +75,8 @@ func (s *LambdaService) GetFunctionEventInvokeConfig(ctx context.Context, reqCtx
 		return nil, err
 	}
 
-	config, err := store.Functions.GetEventInvokeConfig(functionName, qualifier)
+	config, err := s.getFunctionEventInvokeConfigCore(store, functionName, qualifier)
 	if err != nil {
-		if err == lambdastore.ErrEventInvokeConfigNotFound || err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
 	}
 
@@ -111,10 +95,7 @@ func (s *LambdaService) DeleteFunctionEventInvokeConfig(ctx context.Context, req
 		return nil, err
 	}
 
-	if err := store.Functions.DeleteEventInvokeConfig(functionName, qualifier); err != nil {
-		if err == lambdastore.ErrEventInvokeConfigNotFound || err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
+	if err := s.deleteFunctionEventInvokeConfigCore(store, functionName, qualifier); err != nil {
 		return nil, err
 	}
 
@@ -137,11 +118,8 @@ func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqC
 		return nil, err
 	}
 
-	configs, err := store.Functions.ListEventInvokeConfigs(functionName)
+	configs, err := s.listFunctionEventInvokeConfigsCore(store, functionName)
 	if err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
 	}
 
@@ -170,43 +148,8 @@ func (s *LambdaService) UpdateFunctionEventInvokeConfig(ctx context.Context, req
 		return nil, err
 	}
 
-	// Attempt to load existing config; if not found, create a blank one.
-	config, err := store.Functions.GetEventInvokeConfig(functionName, qualifier)
-	if err != nil && err != lambdastore.ErrEventInvokeConfigNotFound && err != lambdastore.ErrFunctionNotFound {
-		return nil, err
-	}
-	if config == nil {
-		// Creating the configuration through an update: fields the update
-		// does not specify take the AWS defaults.
-		config = &lambdastore.EventInvokeConfig{
-			MaximumEventAgeInSeconds: lambdastore.DefaultMaximumEventAgeInSeconds,
-			MaximumRetryAttempts:     lambdastore.DefaultMaximumRetryAttempts,
-		}
-	}
-
-	// Overwrite only the fields that were explicitly provided in the request.
-	if _, ok := req.Parameters["MaximumEventAgeInSeconds"]; ok {
-		val := int32(request.GetIntParam(req.Parameters, "MaximumEventAgeInSeconds"))
-		if err := validateMaximumEventAgeInSeconds(val); err != nil {
-			return nil, err
-		}
-		config.MaximumEventAgeInSeconds = val
-	}
-	if _, ok := req.Parameters["MaximumRetryAttempts"]; ok {
-		val := int32(request.GetIntParam(req.Parameters, "MaximumRetryAttempts"))
-		if err := validateMaximumRetryAttempts(val); err != nil {
-			return nil, err
-		}
-		config.MaximumRetryAttempts = val
-	}
-	if destMap := request.GetMapParam(req.Parameters, "DestinationConfig"); destMap != nil {
-		config.DestinationConfig = parseDestinationConfig(destMap)
-	}
-
-	if err := store.Functions.SetEventInvokeConfig(functionName, qualifier, config); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
+	config, err := s.updateFunctionEventInvokeConfigCore(store, eventInvokeConfigInput(req, functionName, qualifier))
+	if err != nil {
 		return nil, err
 	}
 

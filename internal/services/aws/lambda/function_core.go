@@ -2,8 +2,10 @@ package lambda
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"vorpalstacks/internal/core/logs"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -294,6 +296,139 @@ func (s *LambdaService) listFunctionsCore(stores *lambdaStore, in *ListFunctions
 	}
 
 	return result.Items, result.NextMarker, nil
+}
+
+// functionCodeMetadata carries the code metadata a create or update
+// request resolved from its wire code members.
+type functionCodeMetadata struct {
+	CodeLocation string
+	CodeSize     int64
+	CodeSha256   string
+}
+
+// prepareCreateFunctionCodeCore resolves the wire Code map of a
+// CreateFunction request into persisted code metadata: an ImageUri member
+// switches the package type to Image; an S3 bucket reference fetches the
+// archive; a ZipFile member is decoded in place. Fetched and decoded
+// archives are persisted under the function's $LATEST code directory with
+// their hash recorded.
+func (s *LambdaService) prepareCreateFunctionCodeCore(ctx context.Context, region, functionName string, codeMap map[string]interface{}, packageType string) (*functionCodeMetadata, string, string, error) {
+	if codeMap == nil {
+		return nil, "", "", NewInvalidParameter("Code", "Code is required")
+	}
+
+	meta := &functionCodeMetadata{}
+	var imageUri string
+
+	if uri, ok := codeMap["ImageUri"].(string); ok && uri != "" {
+		imageUri = uri
+		packageType = "Image"
+	}
+
+	if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
+		s3Key, _ := codeMap["S3Key"].(string)
+		if s3Key == "" {
+			return nil, "", "", NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
+		}
+		s3Version, _ := codeMap["S3ObjectVersion"].(string)
+		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, region)
+		if err != nil {
+			return nil, "", "", NewInvalidParameter("Code", err.Error())
+		}
+		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+		if err != nil {
+			return nil, "", "", err
+		}
+		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
+		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	}
+
+	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
+		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
+		if err != nil {
+			return nil, "", "", NewInvalidParameter("Code.ZipFile", "Invalid base64 encoding: "+err.Error())
+		}
+		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+		if err != nil {
+			return nil, "", "", err
+		}
+		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
+		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	}
+
+	return meta, imageUri, packageType, nil
+}
+
+// getAccountSettingsCore computes the account limits and usage summary
+// over every function in the region.
+func (s *LambdaService) getAccountSettingsCore(stores *lambdaStore) (map[string]interface{}, error) {
+	result, err := stores.Functions.ListAllFunctions()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list functions: %w", err)
+	}
+
+	var totalCodeSize int64
+	var reservedSum int64
+	for _, fn := range result {
+		totalCodeSize += fn.CodeSize
+		if fn.ReservedConcurrency != nil {
+			reservedSum += *fn.ReservedConcurrency
+		}
+	}
+	// The unreserved concurrency is the regional limit minus the reserved
+	// amounts of every function in the region.
+	unreserved := lambdastore.AccountLimitConcurrentExecutions - reservedSum
+	if unreserved < 0 {
+		unreserved = 0
+	}
+
+	return map[string]interface{}{
+		"AccountLimit": map[string]interface{}{
+			"TotalCodeSize":                  lambdastore.AccountLimitTotalCodeSize,
+			"CodeSizeUnzipped":               lambdastore.AccountLimitCodeSizeUnzipped,
+			"CodeSizeZipped":                 lambdastore.AccountLimitCodeSizeZipped,
+			"ConcurrentExecutions":           lambdastore.AccountLimitConcurrentExecutions,
+			"UnreservedConcurrentExecutions": unreserved,
+		},
+		"AccountUsage": map[string]interface{}{
+			"TotalCodeSize": totalCodeSize,
+			"FunctionCount": len(result),
+		},
+	}, nil
+}
+
+// publishVersionWithCode publishes a new version of the function and
+// persists the version's code snapshot under its own version directory, so
+// the published version stays executable after the $LATEST code changes or
+// all containers are recycled. Container image packages carry no zip
+// archive and skip the code persistence step. This mirrors how layer
+// versions persist their content at publish time.
+func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *lambdastore.Function, description, region string) (*lambdastore.Version, error) {
+	var latestCode []byte
+	if function.PackageType != "Image" && function.ImageUri == "" {
+		var err error
+		latestCode, err = s.loadCode(function.FunctionName, "$LATEST", region)
+		if err != nil {
+			return nil, NewLambdaError("ServiceException",
+				fmt.Sprintf("The $LATEST code of function %s is not available for publishing.", function.FunctionName),
+				http.StatusInternalServerError)
+		}
+	}
+
+	version, err := stores.Functions.PublishVersion(function, description)
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	if latestCode != nil {
+		if _, _, err := s.storeCode(function.FunctionName, version.Version, latestCode, region); err != nil {
+			return nil, NewLambdaError("ServiceException",
+				fmt.Sprintf("Failed to persist the code of version %s: %v", version.Version, err),
+				http.StatusInternalServerError)
+		}
+	}
+
+	return version, nil
 }
 
 // getOrCreateLambdaStore returns the full lambdaStore for the given region,

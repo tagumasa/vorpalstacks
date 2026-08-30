@@ -2,7 +2,6 @@ package lambda
 
 import (
 	"context"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -19,19 +18,20 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	authType := request.GetStringParam(req.Parameters, "AuthType")
-	if err := validateAuthType(authType); err != nil {
-		return nil, err
-	}
+	// The URL qualifier names an alias of the function ("The alias name" —
+	// API model); numeric versions are not valid URL qualifiers. An
+	// embedded ":qualifier" suffix on the FunctionName reference is
+	// equivalent to the Qualifier parameter.
+	_, embeddedQualifier := resolveFunctionRef(request.GetStringParam(req.Parameters, "FunctionName"))
+	qualifier := mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier)
 
-	// AWS returns ResourceConflictException when a URL config already exists.
-	if function.UrlConfig != nil {
-		return nil, NewResourceConflict(fmt.Sprintf("Function URL already exists for function: %s", function.FunctionName))
+	in := &FunctionUrlConfigInput{
+		AuthType:   request.GetStringParam(req.Parameters, "AuthType"),
+		InvokeMode: request.GetStringParam(req.Parameters, "InvokeMode"),
+		Qualifier:  qualifier,
 	}
-
-	invokeMode := request.GetStringParam(req.Parameters, "InvokeMode")
-	if err := validateInvokeMode(invokeMode); err != nil {
-		return nil, err
+	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {
+		in.Cors = parseCorsConfig(corsMap)
 	}
 
 	store, err := s.store(reqCtx)
@@ -39,30 +39,9 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	// The URL qualifier names an alias of the function ("The alias name" —
-	// API model); numeric versions are not valid URL qualifiers. An
-	// embedded ":qualifier" suffix on the FunctionName reference is
-	// equivalent to the Qualifier parameter.
-	_, embeddedQualifier := resolveFunctionRef(request.GetStringParam(req.Parameters, "FunctionName"))
-	qualifier := mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier)
-	if qualifier != "" && qualifier != "$LATEST" {
-		if _, _, _, err := store.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
-			return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
-		}
-	}
-
-	config := &lambdastore.FunctionUrlConfig{
-		AuthType:   authType,
-		InvokeMode: invokeMode,
-		Qualifier:  qualifier,
-	}
-
-	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {
-		config.Cors = parseCorsConfig(corsMap)
-	}
-
-	if err := store.Functions.SetFunctionUrlConfig(function.FunctionName, config); err != nil {
-		return nil, mapStoreError(err)
+	config, err := s.createFunctionUrlConfigCore(store, function, in)
+	if err != nil {
+		return nil, err
 	}
 
 	result := map[string]interface{}{
@@ -90,14 +69,13 @@ func (s *LambdaService) DeleteFunctionUrlConfig(ctx context.Context, reqCtx *req
 	if functionName == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
-	functionName = extractFunctionName(functionName)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Functions.DeleteFunctionUrlConfig(functionName); err != nil {
-		return nil, NewResourceNotFound("Function", functionName)
+	if err := s.deleteFunctionUrlConfigCore(store, functionName); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -130,51 +108,22 @@ func (s *LambdaService) UpdateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, ErrResourceNotFound
 	}
 
-	if authType := request.GetStringParam(req.Parameters, "AuthType"); authType != "" {
-		if err := validateAuthType(authType); err != nil {
-			return nil, err
-		}
-		function.UrlConfig.AuthType = authType
-	}
-	if invokeMode := request.GetStringParam(req.Parameters, "InvokeMode"); invokeMode != "" {
-		if err := validateInvokeMode(invokeMode); err != nil {
-			return nil, err
-		}
-		function.UrlConfig.InvokeMode = invokeMode
-	}
-	if corsMap := request.GetMapParam(req.Parameters, "Cors"); corsMap != nil {
-		if function.UrlConfig.Cors == nil {
-			function.UrlConfig.Cors = &lambdastore.CorsConfig{}
-		}
-		function.UrlConfig.Cors = updateCorsConfig(function.UrlConfig.Cors, corsMap)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// The URL qualifier names an alias of the function; numeric versions
-	// are rejected like on create.
-	if qualifier := request.GetStringParam(req.Parameters, "Qualifier"); qualifier != "" {
-		if qualifier != "$LATEST" {
-			if _, _, _, err := store.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
-				return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
-			}
-		}
-		function.UrlConfig.Qualifier = qualifier
-	}
-
-	if err := store.Functions.SetFunctionUrlConfig(function.FunctionName, function.UrlConfig); err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	updatedFunction, err := store.Functions.Get(function.FunctionName)
+	config, err := s.updateFunctionUrlConfigCore(store, function, &FunctionUrlConfigUpdateInput{
+		AuthType:   request.GetStringParam(req.Parameters, "AuthType"),
+		InvokeMode: request.GetStringParam(req.Parameters, "InvokeMode"),
+		Cors:       request.GetMapParam(req.Parameters, "Cors"),
+		Qualifier:  request.GetStringParam(req.Parameters, "Qualifier"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return s.toFunctionUrlConfig(updatedFunction.UrlConfig), nil
+	return s.toFunctionUrlConfig(config), nil
 }
 
 // ListFunctionUrlConfigs lists the function URL configurations for a Lambda function.

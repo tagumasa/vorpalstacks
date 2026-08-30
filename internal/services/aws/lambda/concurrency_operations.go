@@ -2,11 +2,9 @@ package lambda
 
 import (
 	"context"
-	"errors"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
 // resolveConcurrencyFunction resolves the FunctionName reference forms for
@@ -32,20 +30,11 @@ func (s *LambdaService) PutFunctionConcurrency(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	concurrency := int64(request.GetIntParam(req.Parameters, "ReservedConcurrentExecutions"))
-	if concurrency < 0 {
-		return nil, NewInvalidParameter("ReservedConcurrentExecutions", "Must be non-negative. Use DeleteFunctionConcurrency to remove concurrency limits.")
-	}
-
-	store, err := s.store(reqCtx)
+	concurrency, err := s.putFunctionConcurrencyCore(reqCtx, &ConcurrencyInput{
+		FunctionName: functionName,
+		Reserved:     int64(request.GetIntParam(req.Parameters, "ReservedConcurrentExecutions")),
+	})
 	if err != nil {
-		return nil, err
-	}
-	concurrencyPtr := &concurrency
-	if err := store.Functions.SetReservedConcurrency(functionName, concurrencyPtr); err != nil {
-		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
 	}
 
@@ -65,22 +54,14 @@ func (s *LambdaService) GetFunctionConcurrency(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-	concurrency, err := store.Functions.GetReservedConcurrency(functionName)
+
+	concurrency, err := s.getFunctionConcurrencyCore(store, functionName)
 	if err != nil {
-		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
-	}
-	if concurrency == nil {
-		// AWS answers with ResourceNotFoundException when the function has
-		// never had reserved concurrency configured: the concurrency
-		// sub-resource does not exist until PutFunctionConcurrency sets it.
-		return nil, ErrResourceNotFound
 	}
 
 	return map[string]interface{}{
-		"ReservedConcurrentExecutions": *concurrency,
+		"ReservedConcurrentExecutions": concurrency,
 	}, nil
 }
 
@@ -95,10 +76,8 @@ func (s *LambdaService) DeleteFunctionConcurrency(ctx context.Context, reqCtx *r
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Functions.SetReservedConcurrency(functionName, nil); err != nil {
-		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
-			return nil, ErrResourceNotFound
-		}
+
+	if err := s.deleteFunctionConcurrencyCore(store, functionName); err != nil {
 		return nil, err
 	}
 

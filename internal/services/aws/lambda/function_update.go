@@ -3,7 +3,6 @@ package lambda
 
 import (
 	"context"
-	"encoding/base64"
 	"os"
 
 	"vorpalstacks/internal/common/iam"
@@ -81,36 +80,9 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		}
 	}
 
-	if zipFileStr == "" && imageUri == "" && s3Bucket == "" {
-		return nil, NewInvalidParameter("Code", "Either ZipFile, ImageUri, or S3Bucket/S3Key must be provided")
-	}
-
-	var codeLocation string
-	var codeSize int64
-	var codeSha256 string
-	if zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, NewInvalidParameter("ZipFile", "Invalid base64 encoding")
-		}
-		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	} else if s3Bucket != "" {
-		if s3Key == "" {
-			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, reqCtx.GetRegion())
-		if err != nil {
-			return nil, NewInvalidParameter("Code", err.Error())
-		}
-		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	codeMeta, err := s.prepareFunctionCodeUpdateCore(ctx, reqCtx.GetRegion(), functionName, zipFileStr, imageUri, s3Bucket, s3Key, s3Version)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse architectures into string slice.
@@ -126,18 +98,18 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 
 	// DryRun validates the request without modifying the code.
 	if request.GetBoolParam(req.Parameters, "DryRun") {
-		current, getErr := store.Functions.Get(functionName)
-		if getErr != nil {
-			return nil, mapStoreError(getErr)
+		current, err := s.getFunctionForDryRunCore(store, functionName)
+		if err != nil {
+			return nil, err
 		}
 		return s.toFunctionConfiguration(current), nil
 	}
 
 	function, published, err := s.updateFunctionCodeCore(store, &UpdateFunctionCodeInput{
 		FunctionName:  functionName,
-		CodeLocation:  codeLocation,
-		CodeSize:      codeSize,
-		CodeSha256:    codeSha256,
+		CodeLocation:  codeMeta.CodeLocation,
+		CodeSize:      codeMeta.CodeSize,
+		CodeSha256:    codeMeta.CodeSha256,
 		ImageUri:      imageUri,
 		Architectures: architectures,
 		Publish:       request.GetBoolParam(req.Parameters, "Publish"),

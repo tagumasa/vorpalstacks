@@ -3,7 +3,6 @@ package lambda
 
 import (
 	"context"
-	"encoding/base64"
 	"os"
 
 	"vorpalstacks/internal/common/iam"
@@ -38,48 +37,10 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 
 	// Code handling — fetch from S3, decode ZipFile, or accept ImageUri.
 	// Results are passed to createFunctionCore as pre-processed metadata.
-	codeMap := request.GetMapParam(req.Parameters, "Code")
-	if codeMap == nil {
-		return nil, NewInvalidParameter("Code", "Code is required")
-	}
-
-	var codeLocation string
-	var codeSize int64
-	var codeSha256 string
-	var imageUri string
-
-	if uri, ok := codeMap["ImageUri"].(string); ok && uri != "" {
-		imageUri = uri
-		packageType = "Image"
-	}
-
-	if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
-		s3Key, _ := codeMap["S3Key"].(string)
-		if s3Key == "" {
-			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		s3Version, _ := codeMap["S3ObjectVersion"].(string)
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, reqCtx.GetRegion())
-		if err != nil {
-			return nil, NewInvalidParameter("Code", err.Error())
-		}
-		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	}
-
-	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, NewInvalidParameter("Code.ZipFile", "Invalid base64 encoding: "+err.Error())
-		}
-		codeLocation, codeSize, err = s.storeCode(functionName, "$LATEST", zipFile, reqCtx.GetRegion())
-		if err != nil {
-			return nil, err
-		}
-		codeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	codeMeta, imageUri, packageType, err := s.prepareCreateFunctionCodeCore(ctx, reqCtx.GetRegion(), functionName,
+		request.GetMapParam(req.Parameters, "Code"), packageType)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse optional configurations.
@@ -203,9 +164,9 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		Publish:              request.GetBoolParam(req.Parameters, "Publish"),
 		CodeSigningConfigArn: request.GetStringParam(req.Parameters, "CodeSigningConfigArn"),
 		Region:               reqCtx.GetRegion(),
-		CodeLocation:         codeLocation,
-		CodeSize:             codeSize,
-		CodeSha256:           codeSha256,
+		CodeLocation:         codeMeta.CodeLocation,
+		CodeSize:             codeMeta.CodeSize,
+		CodeSha256:           codeMeta.CodeSha256,
 		ImageUri:             imageUri,
 		Timeout:              int32(request.GetIntParam(req.Parameters, "Timeout")),
 		MemorySize:           int32(request.GetIntParam(req.Parameters, "MemorySize")),

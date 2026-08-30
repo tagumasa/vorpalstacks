@@ -274,22 +274,6 @@ func (s *LambdaService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("lambda", "GetAccountSettings", s.GetAccountSettings)
 }
 
-func (s *LambdaService) resolveQualifier(store *lambdastore.FunctionStore, functionName, qualifier string) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
-	function, version, alias, err := store.ResolveQualifier(functionName, qualifier)
-	if err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
-			return nil, nil, nil, ErrResourceNotFound
-		}
-		if err == lambdastore.ErrVersionNotFound {
-			return nil, nil, nil, NewLambdaError("ResourceNotFoundException",
-				fmt.Sprintf("Qualifier '%s' not found for function '%s'.", qualifier, functionName),
-				http.StatusNotFound)
-		}
-		return nil, nil, nil, err
-	}
-	return function, version, alias, nil
-}
-
 func (s *LambdaService) initDataDir() string {
 	s.dataDirOnce.Do(func() {
 		if s.dataDir == "" {
@@ -374,44 +358,6 @@ func (s *LambdaService) loadCode(functionName, version string, region string) ([
 	return code, nil
 }
 
-// publishVersionWithCode publishes a new version of the function and
-// persists the version's code snapshot under its own version directory, so
-// the published version stays executable after the $LATEST code changes or
-// all containers are recycled. Container image packages carry no zip
-// archive and skip the code persistence step. This mirrors how layer
-// versions persist their content at publish time.
-func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *lambdastore.Function, description, region string) (*lambdastore.Version, error) {
-	var latestCode []byte
-	if function.PackageType != "Image" && function.ImageUri == "" {
-		var err error
-		latestCode, err = s.loadCode(function.FunctionName, "$LATEST", region)
-		if err != nil {
-			return nil, NewLambdaError("ServiceException",
-				fmt.Sprintf("The $LATEST code of function %s is not available for publishing.", function.FunctionName),
-				http.StatusInternalServerError)
-		}
-	}
-
-	version, err := stores.Functions.PublishVersion(function, description)
-	if err != nil {
-		return nil, mapStoreError(err)
-	}
-
-	if latestCode != nil {
-		if _, _, err := s.storeCode(function.FunctionName, version.Version, latestCode, region); err != nil {
-			return nil, NewLambdaError("ServiceException",
-				fmt.Sprintf("Failed to persist the code of version %s: %v", version.Version, err),
-				http.StatusInternalServerError)
-		}
-	}
-
-	return version, nil
-}
-
-func (s *LambdaService) getRuntimeImage(runtime lambdastore.Runtime) string {
-	return lambdastore.GetImageForRuntime(runtime)
-}
-
 // executionConfig carries the runtime parameters an execution must use.
 // Published versions execute their own immutable snapshot; only $LATEST
 // follows the live function configuration.
@@ -443,138 +389,6 @@ func executionConfigFor(function *lambdastore.Function, ver *lambdastore.Version
 		ImageUri:    function.ImageUri,
 		Environment: function.Environment,
 	}
-}
-
-func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string) (string, error) {
-	ctx := context.Background()
-
-	version := "$LATEST"
-	if ver != nil {
-		version = ver.Version
-	}
-
-	containerName := fmt.Sprintf("lambda-%s-%s-%s", region, function.FunctionName, sanitizeForContainerName(version))
-
-	containerID := function.ContainerID
-	if ver != nil && ver.ContainerID != "" {
-		containerID = ver.ContainerID
-	}
-
-	if containerID != "" {
-		status, err := s.dockerClient.GetContainerStatus(ctx, containerID)
-		if err == nil && status == mobyclient.ContainerStatusRunning {
-			return containerID, nil
-		}
-	}
-
-	// Serialise creation per container name. Waiters re-check the cache
-	// after acquiring: the goroutine that held the lock created the
-	// container and recorded its ID.
-	muAny, _ := s.containerEnsureMu.LoadOrStore(containerName, &sync.Mutex{})
-	mu := muAny.(*sync.Mutex)
-	mu.Lock()
-	defer mu.Unlock()
-
-	if hintAny, ok := s.containerIDs.Load(containerName); ok {
-		if hint, _ := hintAny.(string); hint != "" {
-			if status, err := s.dockerClient.GetContainerStatus(ctx, hint); err == nil && status == mobyclient.ContainerStatusRunning {
-				return hint, nil
-			}
-		}
-	}
-
-	execCfg := executionConfigFor(function, ver)
-
-	image := s.getRuntimeImage(execCfg.Runtime)
-	if execCfg.ImageUri != "" {
-		image = execCfg.ImageUri
-	}
-
-	envVars := map[string]string{
-		"AWS_LAMBDA_FUNCTION_TIMEOUT":     fmt.Sprintf("%d", execCfg.Timeout),
-		"AWS_LAMBDA_FUNCTION_MEMORY_SIZE": fmt.Sprintf("%d", execCfg.MemorySize),
-		"AWS_LAMBDA_FUNCTION_HANDLER":     execCfg.Handler,
-		"AWS_LAMBDA_FUNCTION_NAME":        function.FunctionName,
-		"AWS_LAMBDA_FUNCTION_VERSION":     version,
-		"AWS_REGION":                      region,
-	}
-
-	if execCfg.Environment != nil {
-		for k, v := range execCfg.Environment.Variables {
-			envVars[k] = v
-		}
-	}
-
-	if _, ok := envVars["AWS_ENDPOINT_URL"]; !ok && s.hostEndpoint != "" {
-		envVars["AWS_ENDPOINT_URL"] = s.hostEndpoint
-	}
-
-	cfg := mobyclient.AdvancedContainerConfig{
-		Name:       containerName,
-		Image:      image,
-		PullImage:  true,
-		Env:        envVars,
-		Entrypoint: []string{"/lambda-entrypoint.sh"},
-		Cmd:        []string{execCfg.Handler},
-		Network:    "bridge",
-		AutoRemove: false,
-		ExtraHosts: []string{"host.docker.internal:host-gateway"},
-	}
-
-	result, err := s.dockerClient.CreateContainerFromConfig(ctx, cfg)
-	if err != nil {
-		return "", fmt.Errorf("failed to create container: %w", err)
-	}
-
-	if err := s.dockerClient.StartContainer(ctx, result.ID); err != nil {
-		if rmErr := s.dockerClient.RemoveContainer(ctx, result.ID, true); rmErr != nil {
-			logs.Warn("Failed to remove container after start failure", logs.String("containerID", result.ID), logs.Err(rmErr))
-		}
-		return "", fmt.Errorf("failed to start container: %w", err)
-	}
-
-	if version == "$LATEST" {
-		originalContainerID := function.ContainerID
-		function.ContainerID = result.ID
-		function.ContainerImageID = result.ID
-		if err := store.Update(function); err != nil {
-			function.ContainerID = originalContainerID
-			function.ContainerImageID = originalContainerID
-			if rmErr := s.dockerClient.RemoveContainer(ctx, result.ID, true); rmErr != nil {
-				logs.Warn("Failed to remove container during rollback", logs.String("containerID", result.ID), logs.Err(rmErr))
-			}
-			return "", fmt.Errorf("failed to update function: %w", err)
-		}
-		// Clean up the previous container to prevent resource leaks when the
-		// function is updated or the old container has crashed.
-		if originalContainerID != "" && originalContainerID != result.ID {
-			if rmErr := s.dockerClient.RemoveContainer(ctx, originalContainerID, true); rmErr != nil {
-				logs.Warn("Failed to remove previous container", logs.String("containerID", originalContainerID), logs.Err(rmErr))
-			}
-		}
-	} else if ver != nil {
-		originalVerContainerID := ver.ContainerID
-		ver.ContainerID = result.ID
-		ver.ContainerImageID = result.ID
-		if err := store.Update(function); err != nil {
-			ver.ContainerID = originalVerContainerID
-			ver.ContainerImageID = originalVerContainerID
-			if rmErr := s.dockerClient.RemoveContainer(ctx, result.ID, true); rmErr != nil {
-				logs.Warn("Failed to remove container during rollback", logs.String("containerID", result.ID), logs.Err(rmErr))
-			}
-			return "", fmt.Errorf("failed to update function version: %w", err)
-		}
-		// Clean up the previous version container to prevent resource leaks.
-		if originalVerContainerID != "" && originalVerContainerID != result.ID {
-			if rmErr := s.dockerClient.RemoveContainer(ctx, originalVerContainerID, true); rmErr != nil {
-				logs.Warn("Failed to remove previous version container", logs.String("containerID", originalVerContainerID), logs.Err(rmErr))
-			}
-		}
-	}
-
-	s.containerIDs.Store(containerName, result.ID)
-
-	return result.ID, nil
 }
 
 func (s *LambdaService) copyCodeToContainer(containerID string, code []byte, runtime lambdastore.Runtime) error {
@@ -1047,39 +861,7 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	result, err := store.Functions.ListAllFunctions()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list functions: %w", err)
-	}
-
-	var totalCodeSize int64
-	var reservedSum int64
-	for _, fn := range result {
-		totalCodeSize += fn.CodeSize
-		if fn.ReservedConcurrency != nil {
-			reservedSum += *fn.ReservedConcurrency
-		}
-	}
-	// The unreserved concurrency is the regional limit minus the reserved
-	// amounts of every function in the region.
-	unreserved := lambdastore.AccountLimitConcurrentExecutions - reservedSum
-	if unreserved < 0 {
-		unreserved = 0
-	}
-
-	return map[string]interface{}{
-		"AccountLimit": map[string]interface{}{
-			"TotalCodeSize":                  lambdastore.AccountLimitTotalCodeSize,
-			"CodeSizeUnzipped":               lambdastore.AccountLimitCodeSizeUnzipped,
-			"CodeSizeZipped":                 lambdastore.AccountLimitCodeSizeZipped,
-			"ConcurrentExecutions":           lambdastore.AccountLimitConcurrentExecutions,
-			"UnreservedConcurrentExecutions": unreserved,
-		},
-		"AccountUsage": map[string]interface{}{
-			"TotalCodeSize": totalCodeSize,
-			"FunctionCount": len(result),
-		},
-	}, nil
+	return s.getAccountSettingsCore(store)
 }
 
 // Shutdown gracefully shuts down the Lambda service by stopping the ESM

@@ -3,13 +3,9 @@ package lambda
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
-	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
 // buildPermissionStatement constructs the IAM statement map for a
@@ -68,58 +64,26 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 	}
 
 	statementId := request.GetStringParam(req.Parameters, "StatementId")
-	if statementId == "" {
-		return nil, NewInvalidParameter("StatementId", "Statement ID is required")
-	}
-	if err := validateStatementId(statementId); err != nil {
-		return nil, err
-	}
-
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
-	if functionUrlAuthType := request.GetStringParam(req.Parameters, "FunctionUrlAuthType"); functionUrlAuthType != "" {
-		if err := validateAuthType(functionUrlAuthType); err != nil {
-			return nil, err
-		}
-	}
+	principal := request.GetStringParam(req.Parameters, "Principal")
+	action := request.GetStringParam(req.Parameters, "Action")
+	condition := parsePermissionCondition(req.Parameters)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// A qualifier scopes the permission to a published version or alias
-	// and must resolve before the statement is recorded.
-	resource := function.FunctionArn
-	if qualifier != "" && qualifier != "$LATEST" {
-		if _, _, _, err := store.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
-			return nil, NewResourceNotFound("Qualifier", qualifier)
-		}
-		resource = function.FunctionArn + ":" + qualifier
-	}
-
-	principal := request.GetStringParam(req.Parameters, "Principal")
-	action := request.GetStringParam(req.Parameters, "Action")
-
-	condition := parsePermissionCondition(req.Parameters)
-
-	policy := &lambdastore.FunctionPolicy{
-		Id:        statementId,
-		Principal: principal,
-		Action:    action,
-		Statement: request.GetStringParam(req.Parameters, "Statement"),
-		Resource:  resource,
-		Condition: condition,
-	}
-
-	if err := validatePermission(policy); err != nil {
+	resource, revisionId, err := s.addPermissionCore(store, function, &AddPermissionInput{
+		StatementId:         statementId,
+		Qualifier:           request.GetStringParam(req.Parameters, "Qualifier"),
+		FunctionUrlAuthType: request.GetStringParam(req.Parameters, "FunctionUrlAuthType"),
+		Principal:           principal,
+		Action:              action,
+		Statement:           request.GetStringParam(req.Parameters, "Statement"),
+		Condition:           condition,
+	})
+	if err != nil {
 		return nil, err
-	}
-
-	if err := store.Functions.AddPolicyAtomically(function.FunctionName, policy); err != nil {
-		if errors.Is(err, lambdastore.ErrPolicyAlreadyExists) {
-			return nil, NewResourceConflict(fmt.Sprintf("StatementId %s already exists", statementId))
-		}
-		return nil, mapStoreError(err)
 	}
 
 	statement := buildPermissionStatement(statementId, principal, action, resource, condition)
@@ -132,16 +96,8 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 	result := map[string]interface{}{
 		"Statement": string(statementJSON),
 	}
-
-	// Include RevisionId so clients can use conditional updates.
-	updated, getErr := store.Functions.Get(function.FunctionName)
-	if getErr != nil {
-		logs.Warn("Failed to fetch function for RevisionId after AddPermission",
-			logs.String("function", function.FunctionName),
-			logs.Err(getErr))
-	}
-	if getErr == nil && updated.RevisionId != "" {
-		result["RevisionId"] = updated.RevisionId
+	if revisionId != "" {
+		result["RevisionId"] = revisionId
 	}
 
 	return result, nil
@@ -174,10 +130,7 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Functions.RemovePolicy(function.FunctionName, statementId); err != nil {
-		if errors.Is(err, lambdastore.ErrPolicyNotFound) {
-			return nil, NewResourceNotFound("Statement", statementId)
-		}
+	if err := s.removePermissionCore(store, function, statementId); err != nil {
 		return nil, err
 	}
 
@@ -197,13 +150,10 @@ func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	policies, err := store.Functions.GetPolicy(functionName)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
 
-	if len(policies) == 0 {
-		return nil, ErrResourceNotFound
+	policies, revisionId, err := s.getPolicyCore(store, functionName)
+	if err != nil {
+		return nil, err
 	}
 
 	statements := make([]map[string]interface{}, 0)
@@ -224,8 +174,8 @@ func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestCo
 	result := map[string]interface{}{
 		"Policy": string(policyJSON),
 	}
-	if fn, getErr := store.Functions.Get(functionName); getErr == nil && fn.RevisionId != "" {
-		result["RevisionId"] = fn.RevisionId
+	if revisionId != "" {
+		result["RevisionId"] = revisionId
 	}
 
 	return result, nil

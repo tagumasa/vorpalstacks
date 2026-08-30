@@ -144,47 +144,6 @@ func findVersion(function *lambdastore.Function, versionStr string) *lambdastore
 	return nil
 }
 
-func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, error) {
-	functionName := request.GetStringParam(params, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	functionName = extractFunctionName(functionName)
-	if err := validateFunctionName(functionName); err != nil {
-		return nil, err
-	}
-
-	store, err := s.store(ctx)
-	if err != nil {
-		return nil, err
-	}
-	function, err := store.Functions.Get(functionName)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-	return function, nil
-}
-
-func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
-	functionNameRaw := request.GetStringParam(params, "FunctionName")
-	if functionNameRaw == "" {
-		return nil, nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
-	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
-		return nil, nil, nil, err
-	}
-
-	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
-	store, err := s.store(ctx)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return s.resolveQualifier(store.Functions, functionName, qualifier)
-}
-
 func parseVpcConfig(params map[string]interface{}) *lambdastore.VpcConfig {
 	vpcMap := request.GetMapParam(params, "VpcConfig")
 	if vpcMap == nil {

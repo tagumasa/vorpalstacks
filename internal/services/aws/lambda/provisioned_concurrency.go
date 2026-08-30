@@ -6,7 +6,6 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -38,65 +37,12 @@ func (s *LambdaService) PutProvisionedConcurrencyConfig(ctx context.Context, req
 		return nil, err
 	}
 
-	concurrentExecutions := int32(request.GetIntParam(req.Parameters, "ProvisionedConcurrentExecutions"))
-	if concurrentExecutions < 1 {
-		return nil, NewInvalidParameter("ProvisionedConcurrentExecutions", "Provisioned concurrent executions must be at least 1")
-	}
-
-	// Provisioned concurrency applies to a published version or alias, not
-	// to $LATEST.
-	if qualifier == "$LATEST" {
-		return nil, NewInvalidParameter("Qualifier", "Provisioned concurrency cannot be configured on the $LATEST version. Publish a version or use an alias.")
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := store.Functions.Get(functionName); err != nil {
-		return nil, mapStoreError(err)
-	}
-	if _, version, alias, err := store.Functions.ResolveQualifier(functionName, qualifier); err != nil || (version == nil && alias == nil) {
-		return nil, NewResourceNotFound("Qualifier", qualifier)
-	}
-
-	if err := store.Functions.SetProvisionedConcurrency(functionName, qualifier, concurrentExecutions); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
-			return nil, ErrResourceNotFound
-		}
-		return nil, err
-	}
-
-	// Pre-warm the function container for the resolved qualifier.  This
-	// eliminates cold-start latency on the first invocation.
-	if s.dockerClient != nil {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					logs.Error("Panic in provisioned concurrency pre-warm goroutine",
-						logs.String("function", functionName),
-						logs.String("qualifier", qualifier),
-						logs.Any("panic", r))
-				}
-			}()
-			fn, err := store.Functions.Get(functionName)
-			if err != nil {
-				return
-			}
-			_, version, alias, err := store.Functions.ResolveQualifier(functionName, qualifier)
-			if err != nil {
-				return
-			}
-			ver := version
-			if alias != nil {
-				ver = resolveAliasTargetVersion(fn, alias)
-			}
-			_, _ = s.ensureFunctionContainer(fn, ver, store.Functions, reqCtx.GetRegion())
-		}()
-	}
-
-	config, err := store.Functions.GetProvisionedConcurrency(functionName, qualifier)
+	config, err := s.putProvisionedConcurrencyCore(reqCtx, &ProvisionedConcurrencyInput{
+		FunctionName:                    functionName,
+		Qualifier:                       qualifier,
+		ProvisionedConcurrentExecutions: int32(request.GetIntParam(req.Parameters, "ProvisionedConcurrentExecutions")),
+		Region:                          reqCtx.GetRegion(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -116,11 +62,8 @@ func (s *LambdaService) GetProvisionedConcurrencyConfig(ctx context.Context, req
 		return nil, err
 	}
 
-	config, err := store.Functions.GetProvisionedConcurrency(functionName, qualifier)
+	config, err := s.getProvisionedConcurrencyCore(store, functionName, qualifier)
 	if err != nil {
-		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
-			return nil, ErrResourceNotFound
-		}
 		return nil, err
 	}
 
@@ -139,10 +82,7 @@ func (s *LambdaService) DeleteProvisionedConcurrencyConfig(ctx context.Context, 
 		return nil, err
 	}
 
-	if err := store.Functions.DeleteProvisionedConcurrency(functionName, qualifier); err != nil {
-		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
-			return nil, ErrResourceNotFound
-		}
+	if err := s.deleteProvisionedConcurrencyCore(store, functionName, qualifier); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +105,7 @@ func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, r
 		return nil, err
 	}
 
-	configs, err := store.Functions.ListProvisionedConcurrency(functionName)
+	configs, err := s.listProvisionedConcurrencyConfigsCore(store, functionName)
 	if err != nil {
 		return nil, err
 	}
@@ -182,14 +122,14 @@ func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, r
 		items = append(items, s.toProvisionedConcurrencyConfig(&c))
 	}
 
-	response := map[string]interface{}{
+	resp := map[string]interface{}{
 		"ProvisionedConcurrencyConfigs": items,
 	}
 	if pageResult.IsTruncated {
-		response["NextMarker"] = pageResult.NextMarker
+		resp["NextMarker"] = pageResult.NextMarker
 	}
 
-	return response, nil
+	return resp, nil
 }
 
 func (s *LambdaService) toProvisionedConcurrencyConfig(c *lambdastore.ProvisionedConcurrencyConfig) map[string]interface{} {

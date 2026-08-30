@@ -4,11 +4,9 @@ package lambda
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
@@ -421,32 +419,6 @@ func parseRoutingConfig(routingMap map[string]interface{}) *lambdastore.RoutingC
 	return routingConfig
 }
 
-// validateRoutingConfig enforces the routing rules: each weight lies in
-// [0, 1] (the model range for Weight), the additional versions must be
-// published versions of the function, and the additional weights must not
-// exceed the primary version's share.
-func validateRoutingConfig(function *lambdastore.Function, routingConfig *lambdastore.RoutingConfig) error {
-	if routingConfig == nil {
-		return nil
-	}
-	total := 0.0
-	for version, weight := range routingConfig.AdditionalVersionWeights {
-		if weight < 0 || weight > 1 {
-			return NewInvalidParameter("RoutingConfig",
-				fmt.Sprintf("Routing weight for version %s must be between 0 and 1, got %v", version, weight))
-		}
-		if findVersion(function, version) == nil {
-			return NewResourceNotFound("FunctionVersion", version)
-		}
-		total += weight
-	}
-	if total > 1 {
-		return NewInvalidParameter("RoutingConfig",
-			fmt.Sprintf("The sum of additional version weights must not exceed 1, got %v", total))
-	}
-	return nil
-}
-
 // CreateAlias creates an alias for a Lambda function.
 // An alias points to a specific version and can be used for traffic shifting.
 func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -455,56 +427,22 @@ func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	aliasName := request.GetStringParam(req.Parameters, "Name")
-	if aliasName == "" {
-		return nil, NewInvalidParameter("Name", "Alias name is required")
-	}
-	if err := validateAliasName(aliasName); err != nil {
-		return nil, err
-	}
-
-	functionVersion := request.GetStringParam(req.Parameters, "FunctionVersion")
-	if functionVersion == "" {
-		functionVersion = "$LATEST"
-	}
-
-	if functionVersion != "$LATEST" {
-		versionExists := false
-		for _, v := range function.Versions {
-			if v.Version == functionVersion {
-				versionExists = true
-				break
-			}
-		}
-		if !versionExists {
-			return nil, NewResourceNotFound("FunctionVersion", functionVersion)
-		}
-	}
-
-	alias := &lambdastore.Alias{
-		Name:            aliasName,
-		FunctionVersion: functionVersion,
+	in := &AliasCreateInput{
+		Name:            request.GetStringParam(req.Parameters, "Name"),
+		FunctionVersion: request.GetStringParam(req.Parameters, "FunctionVersion"),
 		Description:     request.GetStringParam(req.Parameters, "Description"),
 	}
-
 	if routingMap := request.GetMapParam(req.Parameters, "RoutingConfig"); routingMap != nil {
-		alias.RoutingConfig = parseRoutingConfig(routingMap)
-	}
-	if err := validateRoutingConfig(function, alias.RoutingConfig); err != nil {
-		return nil, err
+		in.RoutingConfig = parseRoutingConfig(routingMap)
 	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := store.Functions.CreateAliasAtomically(function.FunctionName, func(fn *lambdastore.Function) (*lambdastore.Alias, error) {
-		return alias, nil
-	})
+
+	created, err := s.createAliasCore(store, function, in)
 	if err != nil {
-		if errors.Is(err, lambdastore.ErrAliasAlreadyExists) {
-			return nil, NewResourceConflict(fmt.Sprintf("Alias already exists: %s", alias.Name))
-		}
 		return nil, err
 	}
 
@@ -528,8 +466,9 @@ func (s *LambdaService) DeleteAlias(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	if err := store.Functions.DeleteAlias(functionName, aliasName); err != nil {
-		return nil, NewResourceNotFound("Alias", aliasName)
+
+	if err := s.deleteAliasCore(store, functionName, aliasName); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -552,9 +491,10 @@ func (s *LambdaService) GetAlias(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	alias, err := store.Functions.GetAlias(functionName, aliasName)
+
+	alias, err := s.getAliasCore(store, functionName, aliasName)
 	if err != nil {
-		return nil, NewResourceNotFound("Alias", aliasName)
+		return nil, err
 	}
 
 	return s.toAliasResponse(alias), nil
@@ -582,47 +522,17 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 		return nil, err
 	}
 
-	description := request.GetStringParam(req.Parameters, "Description")
-	_, hasDescription := req.Parameters["Description"]
-	functionVersion := request.GetStringParam(req.Parameters, "FunctionVersion")
-
-	var routingConfig *lambdastore.RoutingConfig
+	in := &AliasUpdateInput{
+		Description:     request.GetStringParam(req.Parameters, "Description"),
+		FunctionVersion: request.GetStringParam(req.Parameters, "FunctionVersion"),
+	}
+	_, in.HasDescription = req.Parameters["Description"]
 	if routingMap := request.GetMapParam(req.Parameters, "RoutingConfig"); routingMap != nil {
-		routingConfig = parseRoutingConfig(routingMap)
+		in.RoutingConfig = parseRoutingConfig(routingMap)
 	}
 
-	alias, err := store.Functions.UpdateAliasAtomically(functionName, aliasName, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
-		if functionVersion != "" && functionVersion != "$LATEST" {
-			versionExists := false
-			for _, v := range fn.Versions {
-				if v.Version == functionVersion {
-					versionExists = true
-					break
-				}
-			}
-			if !versionExists {
-				return NewResourceNotFound("FunctionVersion", functionVersion)
-			}
-		}
-		if err := validateRoutingConfig(fn, routingConfig); err != nil {
-			return err
-		}
-		// An explicitly provided empty Description clears the value.
-		if hasDescription {
-			existing.Description = description
-		}
-		if functionVersion != "" {
-			existing.FunctionVersion = functionVersion
-		}
-		if routingConfig != nil {
-			existing.RoutingConfig = routingConfig
-		}
-		return nil
-	})
+	alias, err := s.updateAliasCore(store, functionName, aliasName, in)
 	if err != nil {
-		if err == lambdastore.ErrAliasNotFound {
-			return nil, NewResourceNotFound("Alias", aliasName)
-		}
 		return nil, err
 	}
 
@@ -641,21 +551,14 @@ func (s *LambdaService) ListAliases(ctx context.Context, reqCtx *request.Request
 	if err != nil {
 		return nil, err
 	}
-	function, err := store.Functions.Get(functionName)
+
+	allAliases, err := s.listAliasesCore(store, functionName)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, err
 	}
 
 	maxItems := validateMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 	marker := request.GetStringParam(req.Parameters, "Marker")
-
-	// AWS returns aliases sorted by name. Work on a sorted copy so that
-	// pagination (marker-based) is deterministic and matches AWS ordering.
-	allAliases := make([]lambdastore.Alias, len(function.Aliases))
-	copy(allAliases, function.Aliases)
-	sort.Slice(allAliases, func(i, j int) bool {
-		return allAliases[i].Name < allAliases[j].Name
-	})
 
 	pageResult := pagination.PaginateSlice(allAliases, marker, maxItems, func(a lambdastore.Alias) string {
 		return a.Name
