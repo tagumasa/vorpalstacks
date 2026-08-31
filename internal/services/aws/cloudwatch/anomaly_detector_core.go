@@ -81,6 +81,43 @@ func (s *CloudWatchService) putAnomalyDetectorCore(stores *cloudwatchStores, inp
 	return saved, nil
 }
 
+// putMetricMathAnomalyDetectorCore validates the MetricMathAnomalyDetector
+// form of PutAnomalyDetector and stores the detector. The raw member map is
+// carried as-is so member parsing keeps its original order. Returns the
+// saved detector with its assigned ID.
+func (s *CloudWatchService) putMetricMathAnomalyDetectorCore(stores *cloudwatchStores, raw interface{}) (*cwstore.AnomalyDetector, error) {
+	mmad, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil, awserrors.NewInvalidParameterValueException(
+			"MetricMathAnomalyDetector must be an object")
+	}
+
+	queries := parseMetricDataQueries(mmad["MetricDataQueries"])
+	if len(queries) == 0 {
+		queries = parseMetricDataQueries(mmad["metricDataQueries"])
+	}
+	if len(queries) == 0 {
+		return nil, awserrors.NewMissingParameter(
+			"MetricDataQueries is required in MetricMathAnomalyDetector")
+	}
+
+	detector := &cwstore.AnomalyDetector{
+		MetricDataQueries: queries,
+	}
+
+	if cfg, ok := mmad["Configuration"]; ok {
+		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
+	} else if cfg, ok := mmad["configuration"]; ok {
+		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
+	}
+
+	saved, err := stores.anomalyDetectors.PutMetricMathAnomalyDetector(detector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to put metric math anomaly detector: %w", err)
+	}
+	return saved, nil
+}
+
 // deleteAnomalyDetectorCore validates input and deletes an anomaly
 // detector. Returns a descriptive identifier for error reporting.
 func (s *CloudWatchService) deleteAnomalyDetectorCore(stores *cloudwatchStores, input *DeleteAnomalyDetectorInput) error {

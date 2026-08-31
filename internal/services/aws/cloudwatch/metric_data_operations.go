@@ -114,7 +114,7 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	metricStore, err := s.getMetricDataCore(stores, &GetMetricDataInput{
+	outcomes, err := s.getMetricDataCore(stores, &GetMetricDataInput{
 		StartTime:         startTime,
 		EndTime:           endTime,
 		MetricDataQueries: metricDataQueries,
@@ -124,167 +124,21 @@ func (s *CloudWatchService) GetMetricData(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	results := make([]map[string]interface{}, 0)
-
-	// Determine whether any expression queries exist. If so, we need
-	// to generate a period-aligned grid for MetricStat results so that
-	// FILL() and other functions can operate on missing data points.
-	hasExpressions := false
-	for i := range metricDataQueries {
-		if metricDataQueries[i].Expression != "" {
-			hasExpressions = true
-			break
-		}
-	}
-
-	// Phase 1: Evaluate all MetricStat queries and store results by ID
-	// for use by Expression queries that reference them.
-	queryResults := make(map[string][]metricmath.DataPoint, len(metricDataQueries))
-	queryErrors := make(map[string]string)
-	queryOrder := make([]string, 0, len(metricDataQueries))
-	queryLookup := make(map[string]*cwstore.MetricDataQuery, len(metricDataQueries))
-
-	for i := range metricDataQueries {
-		query := &metricDataQueries[i]
-		queryLookup[query.Id] = query
-		queryOrder = append(queryOrder, query.Id)
-
-		if query.MetricStat != nil {
-			statLower := strings.ToLower(query.MetricStat.Stat)
-			isExtended := !isBasicStatistic(statLower)
-
-			mq := cwstore.MetricQuery{
-				Namespace:  query.MetricStat.Metric.Namespace,
-				MetricName: query.MetricStat.Metric.MetricName,
-				Dimensions: query.MetricStat.Metric.Dimensions,
-				StartTime:  startTime,
-				EndTime:    endTime,
-				Period:     query.MetricStat.Period,
-			}
-			if isExtended {
-				mq.ExtendedStatistics = []string{query.MetricStat.Stat}
-			} else {
-				mq.Statistics = []string{query.MetricStat.Stat}
-			}
-
-			stats, err := metricStore.GetMetricStatistics(mq)
-			if err != nil {
-				queryResults[query.Id] = nil
-				queryErrors[query.Id] = fmt.Sprintf("failed to query metric statistics: %v", err)
-				continue
-			}
-
-			// Convert MetricStatistics to DataPoint series for the
-			// expression evaluator. Extract the requested stat value
-			// rather than defaulting to Average.
-			dataPoints := make([]metricmath.DataPoint, 0, len(stats))
-			for _, s := range stats {
-				val := extractStatValue(s, statLower, query.MetricStat.Stat, isExtended)
-				dataPoints = append(dataPoints, metricmath.DataPoint{
-					Timestamp: s.Timestamp,
-					Value:     val,
-				})
-			}
-
-			// When expressions are present, expand the series onto a
-			// period-aligned grid with NaN for missing periods. This
-			// enables FILL() and other functions to operate on gaps.
-			if hasExpressions && query.MetricStat.Period > 0 {
-				dataPoints = expandToPeriodGrid(dataPoints, startTime, endTime, query.MetricStat.Period)
-			}
-
-			queryResults[query.Id] = dataPoints
-		}
-	}
-
-	// Phase 2: Evaluate Expression queries in dependency order.
-	// Expressions can reference other queries by ID (e.g., m1 + m2).
-	// We iterate until all expressions are resolved or no progress is
-	// made (indicating a circular or unresolved reference).
-	exprPending := make(map[string]string)
-	for _, id := range queryOrder {
-		q := queryLookup[id]
-		if q.Expression != "" {
-			// ANOMALY_DETECTION_BAND is handled specially because it
-			// produces two series (upper and lower bounds) and needs
-			// the referenced metric's data already computed.
-			if containsAnomalyDetectionBand(q.Expression) {
-				resolveAnomalyDetectionBand(q, queryResults)
-				continue
-			}
-			exprPending[id] = q.Expression
-		}
-	}
-
-	for len(exprPending) > 0 {
-		progress := false
-		for id, expr := range exprPending {
-			ast, err := metricmath.Parse(expr)
-			if err != nil {
-				delete(exprPending, id)
-				queryErrors[id] = fmt.Sprintf("failed to parse expression: %v", err)
-				continue
-			}
-
-			// Check if all referenced variables are available.
-			refs := ast.References()
-			ready := true
-			for _, ref := range refs {
-				if _, ok := queryResults[ref]; !ok {
-					if _, isExpr := exprPending[ref]; isExpr {
-						ready = false
-						break
-					}
-				}
-			}
-			if !ready {
-				continue
-			}
-
-			result, err := ast.Eval(queryResults)
-			if err != nil {
-				queryErrors[id] = fmt.Sprintf("failed to evaluate expression: %v", err)
-			} else {
-				queryResults[id] = result
-			}
-			delete(exprPending, id)
-			progress = true
-		}
-		if !progress {
-			break
-		}
-	}
-
-	// Phase 3: Build response for queries with ReturnData=true (default).
-	// Queries with ReturnData=false are intermediate values used only
-	// for expression resolution and must not appear in the response.
-	// NaN values (from period grid expansion) are filtered out so that
-	// the response only contains periods with actual data.
-	for _, id := range queryOrder {
-		query := queryLookup[id]
-		if !query.ReturnData {
-			continue
-		}
-		if errMsg, hasErr := queryErrors[id]; hasErr {
+	results := make([]map[string]interface{}, 0, len(outcomes))
+	for _, outcome := range outcomes {
+		if outcome.ErrMessage != "" {
 			results = append(results, map[string]interface{}{
-				"Id":         id,
-				"Label":      query.Label,
+				"Id":         outcome.Query.Id,
+				"Label":      outcome.Query.Label,
 				"StatusCode": "InternalError",
-				"Messages":   []map[string]string{{"Code": "InternalError", "Value": errMsg}},
+				"Messages":   []map[string]string{{"Code": "InternalError", "Value": outcome.ErrMessage}},
 			})
 			continue
 		}
-		if query.Expression != "" && query.MetricStat == nil {
-			dataPoints, ok := queryResults[id]
-			if !ok {
-				continue
-			}
-			result := buildExpressionResult(*query, filterNaN(dataPoints))
-			results = append(results, result)
-		} else if query.MetricStat != nil {
-			dataPoints := filterNaN(queryResults[id])
-			result := buildMetricDataResultFromPoints(*query, dataPoints)
-			results = append(results, result)
+		if outcome.Query.Expression != "" && outcome.Query.MetricStat == nil {
+			results = append(results, buildExpressionResult(outcome.Query, outcome.Points))
+		} else {
+			results = append(results, buildMetricDataResultFromPoints(outcome.Query, outcome.Points))
 		}
 	}
 
@@ -511,12 +365,10 @@ type chartSeries struct {
 	Color  color.Color
 }
 
-func (s *CloudWatchService) queryWidgetMetrics(ctx context.Context, reqCtx *request.RequestContext, def *widgetDef) ([]chartSeries, error) {
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
+// buildChartSeries maps the queried widget statistics onto chart series:
+// each series takes its palette colour from the metric's position in the
+// widget definition and extracts the requested statistic per data point.
+func buildChartSeries(data []WidgetMetricData) []chartSeries {
 	colors := []color.Color{
 		color.RGBA{66, 133, 244, 255},
 		color.RGBA{234, 67, 53, 255},
@@ -529,40 +381,19 @@ func (s *CloudWatchService) queryWidgetMetrics(ctx context.Context, reqCtx *requ
 	}
 
 	var series []chartSeries
-	for i, m := range def.Metrics {
-		if m.Namespace == "" || m.MetricName == "" {
-			continue
-		}
-
-		mq := cwstore.MetricQuery{
-			Namespace:  m.Namespace,
-			MetricName: m.MetricName,
-			Dimensions: m.Dimensions,
-			StartTime:  def.Start,
-			EndTime:    def.End,
-			Period:     m.Period,
-		}
+	for _, d := range data {
+		m := d.Metric
 		statLower := strings.ToLower(m.Stat)
-		if isBasicStatistic(statLower) {
-			mq.Statistics = []string{m.Stat}
-		} else {
-			mq.ExtendedStatistics = []string{m.Stat}
-		}
-
-		stats, err := store.metrics.GetMetricStatistics(mq)
-		if err != nil {
-			continue
-		}
 
 		cs := chartSeries{
 			Label: m.MetricName,
-			Color: colors[i%len(colors)],
+			Color: colors[d.MetricIndex%len(colors)],
 		}
 		if m.Label != "" {
 			cs.Label = m.Label
 		}
 
-		for _, dp := range stats {
+		for _, dp := range d.Stats {
 			cs.Times = append(cs.Times, dp.Timestamp)
 			var val float64
 			switch statLower {
@@ -588,7 +419,7 @@ func (s *CloudWatchService) queryWidgetMetrics(ctx context.Context, reqCtx *requ
 
 		series = append(series, cs)
 	}
-	return series, nil
+	return series
 }
 
 func renderChartPNG(def *widgetDef, series []chartSeries) ([]byte, error) {
@@ -978,12 +809,17 @@ func (s *CloudWatchService) GetMetricWidgetImage(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	series, err := s.queryWidgetMetrics(ctx, reqCtx, def)
+	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	imgData, err := renderChartPNG(def, series)
+	data, err := s.queryWidgetMetricsCore(stores, def)
+	if err != nil {
+		return nil, err
+	}
+
+	imgData, err := renderChartPNG(def, buildChartSeries(data))
 	if err != nil {
 		return nil, err
 	}

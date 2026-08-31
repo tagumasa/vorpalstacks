@@ -29,10 +29,22 @@ func (s *CloudWatchService) PutAnomalyDetector(ctx context.Context, reqCtx *requ
 
 	// Check for MetricMathAnomalyDetector parameter.
 	if mmad, ok := req.Parameters["MetricMathAnomalyDetector"]; ok {
-		return s.putMetricMathAnomalyDetector(store, mmad)
+		saved, err := s.putMetricMathAnomalyDetectorCore(store, mmad)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{
+			"AnomalyDetectorId": saved.ID,
+		}, nil
 	}
 	if mmad, ok := req.Parameters["metricMathAnomalyDetector"]; ok {
-		return s.putMetricMathAnomalyDetector(store, mmad)
+		saved, err := s.putMetricMathAnomalyDetectorCore(store, mmad)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{
+			"AnomalyDetectorId": saved.ID,
+		}, nil
 	}
 
 	// Legacy form: flat Namespace/MetricName/Dimensions/Stat parameters.
@@ -119,42 +131,6 @@ func (s *CloudWatchService) putSingleMetricAnomalyDetector(store *cloudwatchStor
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	return map[string]interface{}{
-		"AnomalyDetectorId": saved.ID,
-	}, nil
-}
-
-func (s *CloudWatchService) putMetricMathAnomalyDetector(store *cloudwatchStores, raw interface{}) (interface{}, error) {
-	mmad, ok := raw.(map[string]interface{})
-	if !ok {
-		return nil, awserrors.NewInvalidParameterValueException(
-			"MetricMathAnomalyDetector must be an object")
-	}
-
-	queries := parseMetricDataQueries(mmad["MetricDataQueries"])
-	if len(queries) == 0 {
-		queries = parseMetricDataQueries(mmad["metricDataQueries"])
-	}
-	if len(queries) == 0 {
-		return nil, awserrors.NewMissingParameter(
-			"MetricDataQueries is required in MetricMathAnomalyDetector")
-	}
-
-	detector := &cwstore.AnomalyDetector{
-		MetricDataQueries: queries,
-	}
-
-	if cfg, ok := mmad["Configuration"]; ok {
-		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
-	} else if cfg, ok := mmad["configuration"]; ok {
-		detector.AnomalyDetectorConfiguration = parseAnomalyDetectorConfiguration(cfg)
-	}
-
-	saved, err := store.anomalyDetectors.PutMetricMathAnomalyDetector(detector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to put metric math anomaly detector: %w", err)
 	}
 
 	return map[string]interface{}{

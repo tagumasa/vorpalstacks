@@ -3,9 +3,7 @@ package cloudwatch
 import (
 	"context"
 	"fmt"
-	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
@@ -88,15 +86,6 @@ func (s *CloudWatchService) DisassociateDatasetKmsKey(ctx context.Context, reqCt
 
 // --- Other operations ---
 
-// alarmContributor represents a single contributor to an anomaly
-// detection alarm evaluation.
-type alarmContributor struct {
-	Timestamp   string  `json:"timestamp"`
-	MetricValue float64 `json:"metricValue"`
-	BandUpper   float64 `json:"bandUpper"`
-	BandLower   float64 `json:"bandLower"`
-}
-
 // DescribeAlarmContributors returns the top contributors for an alarm
 // that uses anomaly detection. It resolves the alarm's
 // ANOMALY_DETECTION_BAND expression, computes the EWMA band from the
@@ -110,15 +99,9 @@ func (s *CloudWatchService) DescribeAlarmContributors(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	alarm, metricStore, err := s.describeAlarmContributorsCore(store, alarmName)
+	contributors, err := s.describeAlarmContributorsCore(store, alarmName)
 	if err != nil {
 		return nil, err
-	}
-
-	contributors, err := computeAlarmContributors(alarm, metricStore)
-	if err != nil {
-		return nil, awserrors.NewInternalFailureException(
-			fmt.Sprintf("failed to compute alarm contributors: %v", err))
 	}
 
 	return map[string]interface{}{
@@ -218,32 +201,4 @@ func (s *CloudWatchService) PutLogAlarm(ctx context.Context, reqCtx *request.Req
 	return map[string]interface{}{
 		"AlarmArn": arn,
 	}, nil
-}
-
-// computeAlarmContributors computes the anomaly band for the given
-// alarm and returns data points that fall outside the band as
-// contributors.
-func computeAlarmContributors(alarm *cwstore.Alarm, metricStore *cwstore.MetricChunkStore) ([]alarmContributor, error) {
-	ctx := prepareAnomalyBand(alarm, metricStore)
-	if ctx == nil {
-		return nil, fmt.Errorf("no anomaly detection band or metric data available")
-	}
-
-	var contributors []alarmContributor
-	for i, s := range ctx.stats {
-		if s.Timestamp.Before(ctx.startTime) || s.Timestamp.After(ctx.endTime) {
-			continue
-		}
-		val := statisticValue(s, ctx.statLower)
-		if val < ctx.lower[i] || val > ctx.upper[i] {
-			contributors = append(contributors, alarmContributor{
-				Timestamp:   s.Timestamp.Format(time.RFC3339),
-				MetricValue: val,
-				BandUpper:   ctx.upper[i],
-				BandLower:   ctx.lower[i],
-			})
-		}
-	}
-
-	return contributors, nil
 }

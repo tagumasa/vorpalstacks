@@ -724,34 +724,6 @@ func addAlarmActionHistory(store *cwstore.AlarmStore, alarmName, summary string)
 	}
 }
 
-func cwAlarmTagConfig(s *CloudWatchService, reqCtx *request.RequestContext) tagutil.TagHandlerConfig {
-	return tagutil.TagHandlerConfig{
-		Param: tagutil.StandardARNConfig,
-		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return err
-			}
-			return store.alarms.TagFromSlice(resourceKey, tags)
-		},
-		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return err
-			}
-			return store.alarms.Untag(resourceKey, tagKeys)
-		},
-		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			store, err := s.store(reqCtx)
-			if err != nil {
-				return nil, err
-			}
-			return store.alarms.ListAsSlice(resourceKey)
-		},
-		EmptyResponse: func() (interface{}, error) { return response.EmptyResponse(), nil },
-	}
-}
-
 // TagResource adds tags to a CloudWatch alarm.
 func (s *CloudWatchService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	return tagutil.HandleTag(ctx, req, cwAlarmTagConfig(s, reqCtx))
