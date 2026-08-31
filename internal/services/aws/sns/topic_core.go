@@ -3,6 +3,7 @@ package sns
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -171,6 +172,100 @@ func (s *SNSService) listTopicsCore(store snsstore.SNSStoreInterface, in ListTop
 		Topics:    topics,
 		NextToken: nextToken,
 	}, nil
+}
+
+// GetTopicAttributesInput carries the topic ARN whose attributes are read.
+type GetTopicAttributesInput struct {
+	TopicArn string
+}
+
+// SetTopicAttributesInput carries a single attribute update for a topic.
+type SetTopicAttributesInput struct {
+	TopicArn       string
+	AttributeName  string
+	AttributeValue string
+}
+
+// getTopicAttributesCore is the single validation and persistence path for
+// GetTopicAttributes, including the default-policy synthesis and
+// AddPermission statement injection that shape the returned Policy attribute.
+func (s *SNSService) getTopicAttributesCore(store snsstore.SNSStoreInterface, in GetTopicAttributesInput) (interface{}, error) {
+	if in.TopicArn == "" {
+		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+	}
+
+	topic, err := store.GetTopic(in.TopicArn)
+	if err != nil {
+		if err == snsstore.ErrTopicNotFound {
+			return nil, ErrTopicNotFound
+		}
+		return nil, err
+	}
+
+	attrs := make(map[string]string)
+	attrs["TopicArn"] = topic.Arn
+	attrs["DisplayName"] = topic.GetDisplayName()
+	attrs["Owner"] = topic.Owner
+	attrs["SubscriptionsConfirmed"] = fmt.Sprintf("%d", topic.SubscriptionsConfirmed)
+	attrs["SubscriptionsDeleted"] = fmt.Sprintf("%d", topic.SubscriptionsDeleted)
+	attrs["SubscriptionsPending"] = fmt.Sprintf("%d", topic.SubscriptionsPending)
+
+	for k, v := range topic.Attributes {
+		if k == "DataProtectionPolicy" {
+			continue
+		}
+		if k == "Policy" && v == "" {
+			continue
+		}
+		attrs[k] = v
+	}
+
+	if _, hasPolicy := attrs["Policy"]; !hasPolicy {
+		// Default policy uses version 2012-10-17 (the current AWS standard),
+		// replacing the legacy 2008-10-17 default.
+		attrs["Policy"] = formatDefaultPolicy(topic.Arn, topic.Owner)
+	}
+
+	if len(topic.Permissions) > 0 {
+		attrs["Policy"] = injectPermissionsIntoPolicy(attrs["Policy"], topic.Arn, topic.Permissions)
+	}
+
+	if !topic.CreatedDate.IsZero() {
+		attrs["CreatedDate"] = topic.CreatedDate.UTC().Format(time.RFC3339)
+	}
+	if !topic.LastModifiedTime.IsZero() {
+		attrs["LastModifiedTime"] = topic.LastModifiedTime.UTC().Format(time.RFC3339)
+	}
+
+	return map[string]interface{}{
+		"Attributes": attrs,
+	}, nil
+}
+
+// setTopicAttributesCore is the single validation and persistence path for
+// SetTopicAttributes.
+func (s *SNSService) setTopicAttributesCore(store snsstore.SNSStoreInterface, in SetTopicAttributesInput) error {
+	if in.TopicArn == "" {
+		return awserrors.NewInvalidParameterException("TopicArn is required")
+	}
+	if in.AttributeName == "" {
+		return awserrors.NewInvalidParameterException("AttributeName is required")
+	}
+
+	if err := validateTopicAttribute(in.AttributeName, in.AttributeValue); err != nil {
+		return err
+	}
+
+	attrs := map[string]string{in.AttributeName: in.AttributeValue}
+
+	if err := store.SetTopicAttributes(in.TopicArn, attrs); err != nil {
+		if err == snsstore.ErrTopicNotFound {
+			return ErrTopicNotFound
+		}
+		return err
+	}
+
+	return nil
 }
 
 // ---------------------------------------------------------------------------

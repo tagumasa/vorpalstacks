@@ -71,6 +71,10 @@ func (tc *lambdaTestContext) createFunction(name, roleARN, handlerSource string,
 		return "", nil, err
 	}
 	cleanup := func() {
+		// A mapping that outlives its test blocks DeleteFunction and leaves
+		// the pair behind as permanent residue, so remove any survivors
+		// first.
+		deleteFunctionEventSourceMappings(tc.client, tc.ctx, name)
 		tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)})
 		deleteLambdaLogGroup(tc.cwl, tc.ctx, name)
 	}
@@ -131,6 +135,33 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	results = append(results, runLambdaReferenceTests(tc)...)
 
 	return results
+}
+
+// deleteFunctionEventSourceMappings removes every event source mapping
+// attached to the named function. Cleanup paths call it before deleting the
+// function because DeleteFunction is rejected while a mapping still
+// references the function; a mapping whose deletion failed silently would
+// otherwise leave the pair behind as permanent residue.
+func deleteFunctionEventSourceMappings(client *lambda.Client, ctx context.Context, functionName string) {
+	var marker *string
+	for {
+		out, err := client.ListEventSourceMappings(ctx, &lambda.ListEventSourceMappingsInput{
+			FunctionName: aws.String(functionName),
+			Marker:       marker,
+		})
+		if err != nil {
+			return
+		}
+		for _, m := range out.EventSourceMappings {
+			if m.UUID != nil {
+				client.DeleteEventSourceMapping(ctx, &lambda.DeleteEventSourceMappingInput{UUID: m.UUID})
+			}
+		}
+		if out.NextMarker == nil || *out.NextMarker == "" {
+			return
+		}
+		marker = out.NextMarker
+	}
 }
 
 func deleteLambdaLogGroup(cwlClient *cloudwatchlogs.Client, ctx context.Context, functionName string) {

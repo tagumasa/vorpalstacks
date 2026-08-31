@@ -32,6 +32,9 @@ func main() {
 	// Remove stale Lambda Docker containers from previous runs.
 	tester.CleanupStaleContainers()
 
+	// Remove Lambda fixture functions leaked by aborted runs.
+	tester.CleanupResidualLambdaFixtures()
+
 	var targetServices []string
 	if *services == "" || *services == "all" {
 		cat := testutil.TestCategory(*testType)

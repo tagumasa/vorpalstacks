@@ -6,273 +6,87 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 
 	"github.com/google/uuid"
 )
 
-// autoConfirmedProtocols lists protocols that vorpalstacks auto-confirms at
-// Subscribe time, matching AWS behaviour. These subscriptions become
-// immediately active without a confirmation round-trip.
-var autoConfirmedProtocols = map[string]bool{
-	"sqs":         true,
-	"lambda":      true,
-	"application": true,
-}
-
 // Subscribe creates a subscription to an SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_Subscribe.html
 func (s *SNSService) Subscribe(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	protocol := request.GetParamLowerFirst(req.Parameters, "Protocol")
-	endpoint := request.GetParamLowerFirst(req.Parameters, "Endpoint")
-
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-	// Validate protocol value against the nine AWS-supported protocols.
-	if err := validateProtocol(protocol); err != nil {
-		return nil, err
-	}
-	if endpoint == "" {
-		return nil, awserrors.NewInvalidParameterException("Endpoint is required")
-	}
-	// Validate endpoint format per protocol to catch grossly invalid
-	// endpoints at Subscribe time rather than silently failing at delivery.
-	if err := validateEndpointForProtocol(protocol, endpoint); err != nil {
-		return nil, err
-	}
-
-	subscription := &snsstore.Subscription{
-		TopicArn: topicArn,
-		Protocol: protocol,
-		Endpoint: endpoint,
-		Owner:    reqCtx.GetAccountID(),
-	}
-
-	subscription.Attributes = parseAttributes(req.Parameters)
-
-	for attrName, attrValue := range subscription.Attributes {
-		if err := validateSubscriptionAttribute(attrName, attrValue); err != nil {
-			return nil, err
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	created, err := store.CreateSubscription(subscription)
-	if err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
-	}
 
-	needsConfirmation := !autoConfirmedProtocols[protocol]
-
-	returnSubscriptionArn := request.GetParamLowerFirst(req.Parameters, "ReturnSubscriptionArn")
-	if !needsConfirmation {
-		if err := store.AutoConfirmSubscription(created); err != nil {
-			return nil, err
-		}
-	} else if protocol == "http" || protocol == "https" {
-		s.deliveryWg.Add(1)
-		go func() {
-			defer s.deliveryWg.Done()
-			defer func() {
-				if r := recover(); r != nil {
-					logs.Error("SNS subscription confirmation panicked",
-						logs.String("endpoint", created.Endpoint),
-						logs.Any("panic", r))
-				}
-			}()
-			s.sendSubscriptionConfirmation(created, reqCtx.GetRegion())
-		}()
-	}
-
-	subArn := created.SubscriptionArn
-	if needsConfirmation && strings.ToLower(returnSubscriptionArn) != "true" {
-		subArn = "pending confirmation"
-	}
-
-	return map[string]interface{}{
-		"SubscriptionArn": subArn,
-	}, nil
+	return s.subscribeCore(store, reqCtx, SubscribeInput{
+		TopicArn:              request.GetParamLowerFirst(req.Parameters, "TopicArn"),
+		Protocol:              request.GetParamLowerFirst(req.Parameters, "Protocol"),
+		Endpoint:              request.GetParamLowerFirst(req.Parameters, "Endpoint"),
+		ReturnSubscriptionArn: request.GetParamLowerFirst(req.Parameters, "ReturnSubscriptionArn"),
+		Attributes:            parseAttributes(req.Parameters),
+	})
 }
 
 // Unsubscribe deletes a subscription.
 // https://docs.aws.amazon.com/sns/latest/api/API_Unsubscribe.html
 func (s *SNSService) Unsubscribe(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	subscriptionArn := request.GetParamLowerFirst(req.Parameters, "SubscriptionArn")
-	if subscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	subscription, err := store.GetSubscription(subscriptionArn)
-	if err != nil {
-		if err == snsstore.ErrSubscriptionNotFound {
-			return nil, NewNotFoundException("Subscription does not exist")
-		}
-		return nil, err
-	}
-
-	// When the subscription was confirmed with AuthenticateOnUnsubscribe,
-	// only the topic owner and the subscription owner may unsubscribe the
-	// endpoint, and the request must be AWS-authenticated.
-	if strings.EqualFold(subscription.Attributes["AuthenticateOnUnsubscribe"], "true") {
-		if reqCtx.PrincipalType == request.PrincipalTypeAnonymous {
-			return nil, ErrAuthorizationError
-		}
-		principalAccount := reqCtx.GetAccountID()
-		if principalAccount != subscription.Owner {
-			topic, err := store.GetTopic(subscription.TopicArn)
-			if err != nil {
-				if err == snsstore.ErrTopicNotFound {
-					return nil, ErrTopicNotFound
-				}
-				return nil, err
-			}
-			if principalAccount != topic.Owner {
-				return nil, ErrAuthorizationError
-			}
-		}
-	}
-
-	if err := store.DeleteSubscription(subscriptionArn); err != nil {
-		if err == snsstore.ErrSubscriptionNotFound {
-			return nil, NewNotFoundException("Subscription does not exist")
-		}
-		return nil, err
-	}
-
-	return response.EmptyResponse(), nil
+	return s.unsubscribeCore(store, reqCtx, UnsubscribeInput{
+		SubscriptionArn: request.GetParamLowerFirst(req.Parameters, "SubscriptionArn"),
+	})
 }
 
 // ConfirmSubscription confirms a subscription request.
 // https://docs.aws.amazon.com/sns/latest/api/API_ConfirmSubscription.html
 func (s *SNSService) ConfirmSubscription(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	token := request.GetParamLowerFirst(req.Parameters, "Token")
-
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-	if token == "" {
-		return nil, awserrors.NewInvalidParameterException("Token is required")
-	}
-
-	// AuthenticateOnUnsubscribe disallows unauthenticated unsubscribes of
-	// this subscription. The parameter accepts only the boolean literals
-	// "true" and "false"; nil means the parameter was not sent. A non-nil
-	// value is persisted as the AuthenticateOnUnsubscribe subscription
-	// attribute which Unsubscribe enforces.
-	var authenticateOnUnsubscribe *bool
-	if raw := request.GetParamLowerFirst(req.Parameters, "AuthenticateOnUnsubscribe"); raw != "" {
-		switch strings.ToLower(raw) {
-		case "true":
-			val := true
-			authenticateOnUnsubscribe = &val
-		case "false":
-			val := false
-			authenticateOnUnsubscribe = &val
-		default:
-			return nil, awserrors.NewInvalidParameterException(
-				fmt.Sprintf("Invalid AuthenticateOnUnsubscribe value %q: must be \"true\" or \"false\"", raw))
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	sub, err := store.FindSubscriptionByToken(topicArn, token)
-	if err != nil {
-		return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
-	}
 
-	confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, token, authenticateOnUnsubscribe)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"SubscriptionArn": confirmed.SubscriptionArn,
-	}, nil
+	return s.confirmSubscriptionCore(store, ConfirmSubscriptionInput{
+		TopicArn:                  request.GetParamLowerFirst(req.Parameters, "TopicArn"),
+		Token:                     request.GetParamLowerFirst(req.Parameters, "Token"),
+		AuthenticateOnUnsubscribe: request.GetParamLowerFirst(req.Parameters, "AuthenticateOnUnsubscribe"),
+	})
 }
 
 // GetSubscriptionAttributes returns the attributes of a subscription.
 // https://docs.aws.amazon.com/sns/latest/api/API_GetSubscriptionAttributes.html
 func (s *SNSService) GetSubscriptionAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	subscriptionArn := request.GetParamLowerFirst(req.Parameters, "SubscriptionArn")
-	if subscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	attrs, err := store.GetSubscriptionAttributes(subscriptionArn)
-	if err != nil {
-		if err == snsstore.ErrSubscriptionNotFound {
-			return nil, NewNotFoundException("Subscription does not exist")
-		}
-		return nil, err
-	}
 
-	return map[string]interface{}{
-		"Attributes": attrs,
-	}, nil
+	return s.getSubscriptionAttributesCore(store, GetSubscriptionAttributesInput{
+		SubscriptionArn: request.GetParamLowerFirst(req.Parameters, "SubscriptionArn"),
+	})
 }
 
 // SetSubscriptionAttributes sets the attributes of a subscription.
 // https://docs.aws.amazon.com/sns/latest/api/API_SetSubscriptionAttributes.html
 func (s *SNSService) SetSubscriptionAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	subscriptionArn := request.GetParamLowerFirst(req.Parameters, "SubscriptionArn")
-	attributeName := request.GetParamLowerFirst(req.Parameters, "AttributeName")
-	attributeValue := request.GetParamLowerFirst(req.Parameters, "AttributeValue")
-
-	if subscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
-	}
-	if attributeName == "" {
-		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
-	}
-
-	if err := validateSubscriptionAttribute(attributeName, attributeValue); err != nil {
-		return nil, err
-	}
-
-	attrs := map[string]string{attributeName: attributeValue}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.SetSubscriptionAttributes(subscriptionArn, attrs); err != nil {
-		if err == snsstore.ErrSubscriptionNotFound {
-			return nil, NewNotFoundException("Subscription does not exist")
-		}
-		return nil, err
-	}
 
-	return response.EmptyResponse(), nil
+	return s.setSubscriptionAttributesCore(store, SetSubscriptionAttributesInput{
+		SubscriptionArn: request.GetParamLowerFirst(req.Parameters, "SubscriptionArn"),
+		AttributeName:   request.GetParamLowerFirst(req.Parameters, "AttributeName"),
+		AttributeValue:  request.GetParamLowerFirst(req.Parameters, "AttributeValue"),
+	})
 }
 
 // ListSubscriptions lists the subscriptions.
@@ -282,51 +96,24 @@ func (s *SNSService) ListSubscriptions(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	result, err := store.ListSubscriptions(common.ListOptions{Marker: nextToken})
-	if err != nil {
-		return nil, err
-	}
 
-	subscriptions := buildSubscriptionList(result.Items)
-
-	nextToken = ""
-	if result.IsTruncated && result.NextMarker != "" {
-		nextToken = result.NextMarker
-	}
-	return pagination.BuildListResponse("Subscriptions", subscriptions, nextToken), nil
+	return s.listSubscriptionsCore(store, ListSubscriptionsInput{
+		NextToken: pagination.GetMarker(req.Parameters, "NextToken"),
+	})
 }
 
 // ListSubscriptionsByTopic lists the subscriptions by topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_ListSubscriptionsByTopic.html
 func (s *SNSService) ListSubscriptionsByTopic(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := store.GetTopic(topicArn); err != nil {
-		return nil, awserrors.NewNotFoundException("Topic not found: " + topicArn)
-	}
-
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-	result, err := store.ListSubscriptionsByTopic(topicArn, common.ListOptions{Marker: nextToken})
-	if err != nil {
-		return nil, err
-	}
-
-	subs := buildSubscriptionList(result.Items)
-
-	nextToken = ""
-	if result.IsTruncated && result.NextMarker != "" {
-		nextToken = result.NextMarker
-	}
-	return pagination.BuildListResponse("Subscriptions", subs, nextToken), nil
+	return s.listSubscriptionsByTopicCore(store, ListSubscriptionsByTopicInput{
+		TopicArn:  request.GetParamLowerFirst(req.Parameters, "TopicArn"),
+		NextToken: pagination.GetMarker(req.Parameters, "NextToken"),
+	})
 }
 
 // sendSubscriptionConfirmation sends a SubscriptionConfirmation message

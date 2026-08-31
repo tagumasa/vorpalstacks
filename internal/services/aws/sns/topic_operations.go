@@ -3,11 +3,8 @@ package sns
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
-	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -59,92 +56,33 @@ func (s *SNSService) DeleteTopic(ctx context.Context, reqCtx *request.RequestCon
 
 // GetTopicAttributes returns the attributes of an SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_GetTopicAttributes.html
+//
+// Attribute assembly, default-policy synthesis, and AddPermission statement
+// injection live inside the Core.
 func (s *SNSService) GetTopicAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	topic, err := store.GetTopic(topicArn)
-	if err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
-		return nil, err
-	}
 
-	attrs := make(map[string]string)
-	attrs["TopicArn"] = topic.Arn
-	attrs["DisplayName"] = topic.GetDisplayName()
-	attrs["Owner"] = topic.Owner
-	attrs["SubscriptionsConfirmed"] = fmt.Sprintf("%d", topic.SubscriptionsConfirmed)
-	attrs["SubscriptionsDeleted"] = fmt.Sprintf("%d", topic.SubscriptionsDeleted)
-	attrs["SubscriptionsPending"] = fmt.Sprintf("%d", topic.SubscriptionsPending)
-
-	for k, v := range topic.Attributes {
-		if k == "DataProtectionPolicy" {
-			continue
-		}
-		if k == "Policy" && v == "" {
-			continue
-		}
-		attrs[k] = v
-	}
-
-	if _, hasPolicy := attrs["Policy"]; !hasPolicy {
-		// Default policy uses version 2012-10-17 (the current AWS standard),
-		// replacing the legacy 2008-10-17 default.
-		attrs["Policy"] = formatDefaultPolicy(topic.Arn, topic.Owner)
-	}
-
-	if len(topic.Permissions) > 0 {
-		attrs["Policy"] = injectPermissionsIntoPolicy(attrs["Policy"], topic.Arn, topic.Permissions)
-	}
-
-	if !topic.CreatedDate.IsZero() {
-		attrs["CreatedDate"] = topic.CreatedDate.UTC().Format(time.RFC3339)
-	}
-	if !topic.LastModifiedTime.IsZero() {
-		attrs["LastModifiedTime"] = topic.LastModifiedTime.UTC().Format(time.RFC3339)
-	}
-
-	return map[string]interface{}{
-		"Attributes": attrs,
-	}, nil
+	return s.getTopicAttributesCore(store, GetTopicAttributesInput{
+		TopicArn: request.GetParamLowerFirst(req.Parameters, "TopicArn"),
+	})
 }
 
 // SetTopicAttributes sets the attributes of an SNS topic.
 // https://docs.aws.amazon.com/sns/latest/api/API_SetTopicAttributes.html
 func (s *SNSService) SetTopicAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	topicArn := request.GetParamLowerFirst(req.Parameters, "TopicArn")
-	attributeName := request.GetParamLowerFirst(req.Parameters, "AttributeName")
-	attributeValue := request.GetParamLowerFirst(req.Parameters, "AttributeValue")
-
-	if topicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
-	}
-	if attributeName == "" {
-		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
-	}
-
-	if err := validateTopicAttribute(attributeName, attributeValue); err != nil {
-		return nil, err
-	}
-
-	attrs := map[string]string{attributeName: attributeValue}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := store.SetTopicAttributes(topicArn, attrs); err != nil {
-		if err == snsstore.ErrTopicNotFound {
-			return nil, ErrTopicNotFound
-		}
+
+	if err := s.setTopicAttributesCore(store, SetTopicAttributesInput{
+		TopicArn:       request.GetParamLowerFirst(req.Parameters, "TopicArn"),
+		AttributeName:  request.GetParamLowerFirst(req.Parameters, "AttributeName"),
+		AttributeValue: request.GetParamLowerFirst(req.Parameters, "AttributeValue"),
+	}); err != nil {
 		return nil, err
 	}
 

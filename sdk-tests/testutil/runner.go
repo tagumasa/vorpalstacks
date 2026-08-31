@@ -9,12 +9,16 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"vorpalstacks-sdk-tests/config"
 )
@@ -156,6 +160,64 @@ func (r *TestRunner) CleanupStaleContainers() {
 	}
 
 	fmt.Printf("  Cleaned up %d stale Lambda container(s)\n", len(ids))
+}
+
+// residualLambdaFixtureName matches the nanosecond-timestamp suffix every
+// Lambda test fixture carries (lambdaTestContext.unique and the integration
+// suites both build names as "<prefix>-<UnixNano>"). A hand-named function
+// does not end in a 19-digit nanosecond timestamp, so the suffix targets
+// only test residue.
+var residualLambdaFixtureName = regexp.MustCompile(`-\d{19}$`)
+
+// CleanupResidualLambdaFixtures deletes Lambda functions left behind by
+// aborted or failed test runs. Interrupted runs never execute their defers,
+// and a leaked event source mapping blocks DeleteFunction, so the pair
+// survives as residue and accumulates across runs until list-walking tests
+// skew. Mappings are deleted before their function, mirroring the per-test
+// cleanup ordering.
+func (r *TestRunner) CleanupResidualLambdaFixtures() {
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return
+	}
+	ctx := context.TODO()
+	lambdaClient := lambda.NewFromConfig(cfg)
+	cwlClient := cloudwatchlogs.NewFromConfig(cfg)
+
+	var names []string
+	var marker *string
+	for {
+		out, err := lambdaClient.ListFunctions(ctx, &lambda.ListFunctionsInput{Marker: marker})
+		if err != nil {
+			return
+		}
+		for _, f := range out.Functions {
+			if f.FunctionName != nil && residualLambdaFixtureName.MatchString(*f.FunctionName) {
+				names = append(names, *f.FunctionName)
+			}
+		}
+		if out.NextMarker == nil || *out.NextMarker == "" {
+			break
+		}
+		marker = out.NextMarker
+	}
+	if len(names) == 0 {
+		return
+	}
+
+	removed := 0
+	for _, name := range names {
+		deleteFunctionEventSourceMappings(lambdaClient, ctx, name)
+		if _, err := lambdaClient.DeleteFunction(ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)}); err != nil {
+			continue
+		}
+		deleteLambdaLogGroup(cwlClient, ctx, name)
+		removed++
+	}
+	fmt.Printf("  Cleaned up %d residual Lambda fixture function(s)\n", removed)
 }
 
 func (r *TestRunner) GetAllServices() []string {

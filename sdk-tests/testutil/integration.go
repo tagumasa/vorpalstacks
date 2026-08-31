@@ -124,6 +124,10 @@ func (ic *integClients) createLambda(name, roleName string) (string, error) {
 }
 
 func (ic *integClients) deleteLambda(name string) {
+	// Mappings go first: DeleteFunction is rejected while an event source
+	// mapping still references the function, and a silently failed mapping
+	// deletion would otherwise leave the pair behind as residue.
+	deleteFunctionEventSourceMappings(ic.lambda, ic.ctx, name)
 	ic.lambda.DeleteFunction(ic.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(name)})
 }
 

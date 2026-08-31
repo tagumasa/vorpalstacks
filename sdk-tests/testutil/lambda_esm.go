@@ -22,10 +22,12 @@ func runLambdaESMTests(tc *lambdaTestContext) []TestResult {
 
 	esmEventSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:test-queue", tc.r.region, tc.r.accountID)
 
-	if _, _, err := tc.createFunction(esmFuncName, esmRole, "exports.handler = async () => { return 1; };"); err != nil {
+	_, cleanupEsmFunc, err := tc.createFunction(esmFuncName, esmRole, "exports.handler = async () => { return 1; };")
+	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateEventSourceMapping_Setup", Status: "FAIL",
 			Error: fmt.Sprintf("Failed to create function: %v", err)}}
 	}
+	defer cleanupEsmFunc()
 
 	var esmUUID string
 
