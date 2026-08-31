@@ -33,11 +33,8 @@ func validateSingleEnum(value, paramName string, validSet map[string]bool) error
 
 func parseCertificateArn(params map[string]interface{}, paramName string) (string, error) {
 	arn := request.GetStringParam(params, paramName)
-	if arn == "" {
-		return "", awserrors.NewValidationException(paramName + " is required")
-	}
-	if !isValidCertificateArn(arn) {
-		return "", NewInvalidArnError(arn)
+	if err := requireCertificateArn(arn, paramName); err != nil {
+		return "", err
 	}
 	return arn, nil
 }

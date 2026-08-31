@@ -7,18 +7,6 @@ package aws
 // entry, or adding entries for newly written handlers, is prohibited —
 // the list only ever shrinks.
 var guardAllowlist = map[string]struct{}{
-	"acm/account_configuration.go:GetAccountConfiguration":                   {},
-	"acm/account_configuration.go:PutAccountConfiguration":                   {},
-	"acm/certificate_operations.go:DescribeCertificate":                      {},
-	"acm/certificate_operations.go:ExportCertificate":                        {},
-	"acm/certificate_operations.go:GetCertificate":                           {},
-	"acm/certificate_operations.go:ImportCertificate":                        {},
-	"acm/certificate_operations.go:RenewCertificate":                         {},
-	"acm/certificate_operations.go:ResendValidationEmail":                    {},
-	"acm/certificate_operations.go:RevokeCertificate":                        {},
-	"acm/certificate_operations.go:UpdateCertificateOptions":                 {},
-	"acm/certificate_operations.go:acmTagConfig":                             {},
-	"acm/search.go:SearchCertificates":                                       {},
 	"cloudfront/distribution_operations.go:CreateDistribution":               {},
 	"cloudfront/distribution_operations.go:CreateDistributionWithTags":       {},
 	"cloudfront/distribution_operations.go:GetDistribution":                  {},

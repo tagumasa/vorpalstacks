@@ -2,12 +2,17 @@ package acm
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 	types "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
+
+	vcrypto "vorpalstacks/internal/utils/crypto"
 )
 
 // ---------------------------------------------------------------------------
@@ -153,8 +158,8 @@ func (s *ACMService) requestCertificateCore(ctx context.Context, stores *acmStor
 		if len(in.Tags) == 0 {
 			return "", awserrors.NewValidationException("Tags must contain at least 1 entry when provided")
 		}
-		if len(in.Tags) > 50 {
-			return "", NewTooManyTagsException("Tags must not exceed 50 entries")
+		if len(in.Tags) > maxTagsPerCertificate {
+			return "", NewTooManyTagsException(fmt.Sprintf("Tags must not exceed %d entries", maxTagsPerCertificate))
 		}
 	}
 	if err := validateACMTags(in.Tags); err != nil {
@@ -374,4 +379,558 @@ func certSummaryStoreToService(sc *acmstorelib.CertificateSummary) CertSummaryOu
 		ExportOption:                         sc.ExportOption,
 		RevokedAt:                            sc.RevokedAt,
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Certificate read / lifecycle Core functions
+// ---------------------------------------------------------------------------
+
+// Smithy length and range limits for the import/export paths (decoded byte
+// counts) plus the per-certificate tag cap. These are the single definition
+// sites for the raw numbers.
+const (
+	maxCertificateBodyBytes  = 32768
+	maxPrivateKeyBytes       = 5120
+	maxCertificateChainBytes = 2097152
+	minPassphraseBytes       = 4
+	maxPassphraseBytes       = 128
+	maxTagsPerCertificate    = 50
+)
+
+// requireCertificateArn is the validation half of parseCertificateArn: it
+// rejects an absent or malformed certificate ARN. It lives in the core file so
+// that handlers carry wire extraction only; parseCertificateArn (helpers.go)
+// delegates here for the tag handlers that still parse from parameters.
+func requireCertificateArn(arn, paramName string) error {
+	if arn == "" {
+		return awserrors.NewValidationException(paramName + " is required")
+	}
+	return validateCertificateArn(arn)
+}
+
+// getCertificateCore fetches a certificate by ARN, mapping a missing
+// certificate to ResourceNotFoundException. Shared by the GetCertificate and
+// DescribeCertificate handlers.
+func (s *ACMService) getCertificateCore(reqCtx *request.RequestContext, arn string) (*acmstorelib.Certificate, error) {
+	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
+		return nil, err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	cert, err := stores.certificates.Get(arn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return nil, awserrors.NewResourceNotFoundException("certificate", arn)
+		}
+		return nil, err
+	}
+	return cert, nil
+}
+
+// ResendValidationEmailInput carries the wire-extracted fields of
+// ResendValidationEmail.
+type ResendValidationEmailInput struct {
+	CertificateArn   string
+	Domain           string
+	ValidationDomain string
+}
+
+// resendValidationEmailCore is the single validation + persistence path for
+// ResendValidationEmail.
+func (s *ACMService) resendValidationEmailCore(reqCtx *request.RequestContext, in ResendValidationEmailInput) error {
+	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
+		return err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+	cert, err := stores.certificates.Get(in.CertificateArn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
+		}
+		return err
+	}
+
+	if cert.Type == "IMPORTED" {
+		return NewInvalidStateException("Certificate is not in PENDING_VALIDATION state")
+	}
+	// AWS only allows ResendValidationEmail for certificates in
+	// PENDING_VALIDATION status. ISSUED certificates have already completed
+	// validation and resend is a no-op that AWS rejects.
+	if cert.Status != "PENDING_VALIDATION" {
+		return NewInvalidStateException("Certificate is not in PENDING_VALIDATION state")
+	}
+
+	// Domain and ValidationDomain are required per Smithy model.
+	if in.Domain == "" {
+		return awserrors.NewValidationException("Domain is required")
+	}
+	if in.ValidationDomain == "" {
+		return awserrors.NewValidationException("ValidationDomain is required")
+	}
+
+	// In AWS, ResendValidationEmail resends the domain validation email.
+	// For edge deployment, email sending is not available, but we honour the
+	// parameters by updating ValidationDomain.
+	changed := false
+	for _, dvo := range cert.DomainValidationOptions {
+		if dvo.DomainName != in.Domain {
+			continue
+		}
+		dvo.ValidationDomain = in.ValidationDomain
+		changed = true
+	}
+
+	if !changed {
+		return NewInvalidDomainValidationOptionsException(fmt.Sprintf("Domain %s not found in certificate validation options", in.Domain))
+	}
+
+	return stores.certificates.Update(cert)
+}
+
+// ImportCertificateInput carries the raw (still base64-encoded) wire values of
+// ImportCertificate. Decoding and length validation happen in the Core so the
+// handler performs wire extraction only.
+type ImportCertificateInput struct {
+	Certificate      string
+	PrivateKey       string
+	CertificateChain string
+	ExistingArn      string
+	Tags             []types.Tag
+}
+
+// importCertificateCore imports a certificate into ACM. When ExistingArn is
+// provided, the existing certificate is updated (re-import); otherwise a new
+// IMPORTED certificate is created.
+func (s *ACMService) importCertificateCore(reqCtx *request.RequestContext, in ImportCertificateInput) (string, error) {
+	certificate := in.Certificate
+	if certificate == "" {
+		return "", awserrors.NewValidationException("Certificate is required")
+	}
+	certificate, err := decodeBase64PEM(certificate)
+	if err != nil {
+		return "", err
+	}
+	if len(certificate) > maxCertificateBodyBytes {
+		return "", awserrors.NewValidationException(fmt.Sprintf("Certificate exceeds maximum length of %d bytes", maxCertificateBodyBytes))
+	}
+
+	privateKey := in.PrivateKey
+
+	existingArn := in.ExistingArn
+
+	// PrivateKey is required for initial import (no existingArn).
+	// For re-import (existingArn set), PrivateKey is optional — the
+	// existing key is retained if not provided.
+	if existingArn == "" && privateKey == "" {
+		return "", awserrors.NewValidationException("PrivateKey is required for initial certificate import")
+	}
+	if privateKey != "" {
+		privateKey, err = decodeBase64PEM(privateKey)
+		if err != nil {
+			return "", err
+		}
+		if len(privateKey) > maxPrivateKeyBytes {
+			return "", awserrors.NewValidationException(fmt.Sprintf("PrivateKey exceeds maximum length of %d bytes", maxPrivateKeyBytes))
+		}
+	}
+	certificateChain := in.CertificateChain
+	if certificateChain != "" {
+		certificateChain, err = decodeBase64PEM(certificateChain)
+		if err != nil {
+			return "", err
+		}
+		if len(certificateChain) > maxCertificateChainBytes {
+			return "", awserrors.NewValidationException(fmt.Sprintf("CertificateChain exceeds maximum length of %d bytes", maxCertificateChainBytes))
+		}
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return "", err
+	}
+
+	// --- Re-import path: update an existing certificate ---
+	if existingArn != "" {
+		if err := validateCertificateArn(existingArn); err != nil {
+			return "", err
+		}
+		existing, err := stores.certificates.Get(existingArn)
+		if err != nil {
+			if acmstorelib.IsNotFound(err) {
+				return "", awserrors.NewResourceNotFoundException("certificate", existingArn)
+			}
+			return "", err
+		}
+
+		// Only IMPORTED certificates can be re-imported.
+		if existing.Type != "IMPORTED" {
+			return "", awserrors.NewInvalidParameterException("Only imported certificates can be re-imported")
+		}
+
+		// If Tags are provided on re-import, validate and replace.
+		// If not provided, existing tags are retained.
+		if len(in.Tags) > 0 {
+			if len(in.Tags) > maxTagsPerCertificate {
+				return "", NewTooManyTagsException(fmt.Sprintf("Tags must not exceed %d entries", maxTagsPerCertificate))
+			}
+			if err := validateACMTags(in.Tags); err != nil {
+				return "", err
+			}
+			existing.Tags = in.Tags
+		}
+
+		// Replace certificate material. Fields not provided on re-import
+		// (e.g. PrivateKey) retain their existing values.
+		existing.Certificate = certificate
+		if certificateChain != "" {
+			existing.CertificateChain = certificateChain
+		}
+		if privateKey != "" {
+			existing.PrivateKey = privateKey
+		}
+		existing.ImportedAt = time.Now().UTC()
+
+		// Re-extract X.509 attributes from the updated certificate PEM.
+		if parsedCert, _ := vcrypto.ParseCertificatePEM([]byte(certificate)); parsedCert != nil {
+			existing.NotBefore = parsedCert.NotBefore
+			existing.NotAfter = parsedCert.NotAfter
+			existing.KeyAlgorithm = determineKeyAlgorithmFromParsed(parsedCert)
+			existing.SignatureAlgorithm = determineSignatureAlgorithmFromParsed(parsedCert)
+			existing.Subject = parsedCert.Subject.String()
+			existing.Issuer = parsedCert.Issuer.String()
+			if len(parsedCert.DNSNames) > 0 {
+				existing.DomainName = parsedCert.DNSNames[0]
+			} else if parsedCert.Subject.CommonName != "" {
+				existing.DomainName = parsedCert.Subject.CommonName
+			}
+		}
+
+		if err := stores.certificates.Update(existing); err != nil {
+			return "", err
+		}
+
+		return existingArn, nil
+	}
+
+	// --- Initial import path: create a new certificate ---
+	tags := in.Tags
+	if err := validateACMTags(tags); err != nil {
+		return "", err
+	}
+
+	certId := acmstorelib.GenerateCertificateId()
+	certificateArn := stores.arnBuilder.BuildCertificateARN(certId)
+
+	now := time.Now().UTC()
+	domainName, err := extractDomainFromCert(certificate)
+	if err != nil {
+		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid certificate: %v", err))
+	}
+	cert := &acmstorelib.Certificate{
+		CertificateArn:           certificateArn,
+		DomainName:               domainName,
+		Serial:                   extractSerialFromPEM(certificate),
+		Status:                   "ISSUED",
+		Type:                     "IMPORTED",
+		KeyAlgorithm:             determineKeyAlgorithm(certificate),
+		SignatureAlgorithm:       "SHA256WITHRSA",
+		RenewalEligibility:       "INELIGIBLE",
+		CreatedAt:                now,
+		ImportedAt:               now,
+		NotBefore:                now,
+		NotAfter:                 now.AddDate(1, 0, 0),
+		Certificate:              certificate,
+		CertificateChain:         certificateChain,
+		PrivateKey:               privateKey,
+		Tags:                     tags,
+		AccountID:                reqCtx.GetAccountID(),
+		Region:                   reqCtx.GetRegion(),
+		CertificateKeyPairOrigin: "CUSTOMER_PROVIDED",
+	}
+
+	if parsedCert, _ := vcrypto.ParseCertificatePEM([]byte(certificate)); parsedCert != nil {
+		cert.NotBefore = parsedCert.NotBefore
+		cert.NotAfter = parsedCert.NotAfter
+		cert.KeyAlgorithm = determineKeyAlgorithmFromParsed(parsedCert)
+		cert.SignatureAlgorithm = determineSignatureAlgorithmFromParsed(parsedCert)
+		cert.Subject = parsedCert.Subject.String()
+		cert.Issuer = parsedCert.Issuer.String()
+	}
+
+	if err := stores.certificates.Create(cert); err != nil {
+		if acmstorelib.IsAlreadyExists(err) {
+			return "", awserrors.NewConflictException("Certificate already exists")
+		}
+		return "", err
+	}
+
+	return certificateArn, nil
+}
+
+// UpdateCertificateOptionsInput carries the raw wire values of
+// UpdateCertificateOptions; the Options structure is type-checked in the Core.
+type UpdateCertificateOptionsInput struct {
+	CertificateArn string
+	OptionsRaw     interface{}
+}
+
+// updateCertificateOptionsCore is the single validation + persistence path for
+// UpdateCertificateOptions.
+func (s *ACMService) updateCertificateOptionsCore(reqCtx *request.RequestContext, in UpdateCertificateOptionsInput) error {
+	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
+		return err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+	cert, err := stores.certificates.Get(in.CertificateArn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
+		}
+		return err
+	}
+
+	// Smithy declares InvalidStateException for UpdateCertificateOptions —
+	// only ISSUED certs can have their options updated.
+	if cert.Status != "ISSUED" {
+		return NewInvalidStateException("Certificate is not in a valid state for updating options.")
+	}
+
+	optionsMap, ok := in.OptionsRaw.(map[string]interface{})
+	if !ok {
+		return awserrors.NewValidationException("Options are required")
+	}
+
+	ctlp, err := parseCertificateTransparencyLoggingPreference(optionsMap)
+	if err != nil {
+		return err
+	}
+	exportOpt, err := parseExportOption(optionsMap)
+	if err != nil {
+		return err
+	}
+	cert.Options = &acmstorelib.CertificateOptions{
+		CertificateTransparencyLoggingPreference: ctlp,
+		Export:                                   exportOpt,
+	}
+
+	return stores.certificates.Update(cert)
+}
+
+// renewCertificateCore is the single validation + persistence path for
+// RenewCertificate.
+func (s *ACMService) renewCertificateCore(reqCtx *request.RequestContext, arn string) error {
+	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
+		return err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return err
+	}
+	cert, err := stores.certificates.Get(arn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return awserrors.NewResourceNotFoundException("certificate", arn)
+		}
+		return err
+	}
+
+	if cert.Type != "AMAZON_ISSUED" {
+		return awserrors.NewValidationException("Certificate type is not supported. Only Amazon-issued certificates can be renewed.")
+	}
+
+	// Smithy declares RequestInProgressException for RenewCertificate —
+	// a PENDING_VALIDATION cert is already being processed.
+	if cert.Status == "PENDING_VALIDATION" {
+		return NewRequestInProgressException("Certificate request is in progress.")
+	}
+
+	// Only ISSUED or EXPIRED certs can be renewed. All other states
+	// (FAILED, REVOKED, etc.) are invalid for renewal.
+	if cert.Status != "ISSUED" && cert.Status != "EXPIRED" {
+		return awserrors.NewValidationException("Certificate is not in a valid state for renewal.")
+	}
+
+	if cert.RenewalEligibility == "INELIGIBLE" {
+		return awserrors.NewValidationException("Certificate is not eligible for renewal.")
+	}
+
+	// Regenerate the X.509 certificate material (new key pair, new serial,
+	// new PEM). The ARN is preserved per AWS specification: "When ACM renews
+	// a certificate, the certificate's Amazon Resource Name (ARN) remains
+	// the same."
+	if err := renewCertificateMaterial(cert); err != nil {
+		return NewInternalServerException(fmt.Sprintf("Failed to regenerate certificate material: %v", err))
+	}
+
+	now := time.Now().UTC()
+	// Populate RenewalSummary.DomainValidationOptions (Smithy REQUIRED)
+	// by deep-copying the existing DVOs with updated validation status.
+	renewalDVOs := make([]*acmstorelib.DomainValidation, len(cert.DomainValidationOptions))
+	for i, dvo := range cert.DomainValidationOptions {
+		renewalDVOs[i] = &acmstorelib.DomainValidation{
+			DomainName:       dvo.DomainName,
+			ValidationDomain: dvo.ValidationDomain,
+			ValidationMethod: dvo.ValidationMethod,
+			ValidationStatus: "SUCCESS",
+			ValidationEmails: dvo.ValidationEmails,
+			ResourceRecord:   dvo.ResourceRecord,
+			HttpRedirect:     dvo.HttpRedirect,
+		}
+	}
+	cert.RenewalSummary = &acmstorelib.RenewalSummary{
+		RenewalStatus:           "SUCCESS",
+		UpdatedAt:               now,
+		DomainValidationOptions: renewalDVOs,
+	}
+	for i := range cert.DomainValidationOptions {
+		cert.DomainValidationOptions[i].ValidationStatus = "SUCCESS"
+	}
+
+	return stores.certificates.Update(cert)
+}
+
+// ExportCertificateInput carries the wire-extracted fields of
+// ExportCertificate; Passphrase is still base64-encoded wire text.
+type ExportCertificateInput struct {
+	CertificateArn string
+	Passphrase     string
+}
+
+// ExportCertificateResult is the transport-agnostic export payload. The
+// private key is encrypted with the caller-supplied passphrase.
+type ExportCertificateResult struct {
+	Certificate      string
+	CertificateChain string
+	PrivateKey       string
+}
+
+// exportCertificateCore is the single validation + persistence path for
+// ExportCertificate.
+func (s *ACMService) exportCertificateCore(reqCtx *request.RequestContext, in ExportCertificateInput) (*ExportCertificateResult, error) {
+	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
+		return nil, err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	cert, err := stores.certificates.Get(in.CertificateArn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return nil, awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
+		}
+		return nil, err
+	}
+
+	if cert.PrivateKey == "" {
+		return nil, awserrors.NewValidationException("Certificate does not have an exportable private key. Only imported certificates with private keys can be exported.")
+	}
+
+	if in.Passphrase == "" {
+		return nil, awserrors.NewValidationException("Passphrase is required")
+	}
+	// Smithy defines Passphrase as a Blob (base64-encoded). Reject if the
+	// input is not valid base64 rather than silently falling back to raw
+	// bytes, which would be a fail-OPEN acceptance of malformed input.
+	passphraseBytes, err := base64.StdEncoding.DecodeString(in.Passphrase)
+	if err != nil {
+		return nil, awserrors.NewValidationException("Passphrase must be valid base64-encoded data")
+	}
+	if passLen := len(passphraseBytes); passLen < minPassphraseBytes || passLen > maxPassphraseBytes {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("Passphrase must be between %d and %d bytes", minPassphraseBytes, maxPassphraseBytes))
+	}
+
+	encryptedKey, err := encryptPrivateKey(cert.PrivateKey, string(passphraseBytes))
+	if err != nil {
+		return nil, awserrors.NewValidationException("Failed to encrypt private key")
+	}
+
+	// Record that this certificate has been exported so that ListCertificates
+	// and SearchCertificates report the correct Exported state.
+	if !cert.WasExported {
+		cert.WasExported = true
+		if err := stores.certificates.Update(cert); err != nil {
+			return nil, NewInternalServerException("Failed to update certificate export state")
+		}
+	}
+
+	return &ExportCertificateResult{
+		Certificate:      cert.Certificate,
+		CertificateChain: cert.CertificateChain,
+		PrivateKey:       encryptedKey,
+	}, nil
+}
+
+// RevokeCertificateInput carries the wire-extracted fields of
+// RevokeCertificate. RevocationReasonRaw is the raw wire value; presence,
+// type, and enum validation happen in the Core.
+type RevokeCertificateInput struct {
+	CertificateArn      string
+	RevocationReasonRaw interface{}
+}
+
+// revokeCertificateCore is the single validation + persistence path for
+// RevokeCertificate. It returns the ARN of the revoked certificate.
+func (s *ACMService) revokeCertificateCore(reqCtx *request.RequestContext, in RevokeCertificateInput) (string, error) {
+	arn := in.CertificateArn
+	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
+		return "", err
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return "", err
+	}
+	cert, err := stores.certificates.Get(arn)
+	if err != nil {
+		if acmstorelib.IsNotFound(err) {
+			return "", awserrors.NewResourceNotFoundException("certificate", arn)
+		}
+		return "", err
+	}
+
+	if cert.Status == "REVOKED" {
+		return "", awserrors.NewResourceNotFoundException("certificate", arn)
+	}
+
+	// Smithy declares ResourceInUseException for RevokeCertificate — reject
+	// when the cert is actively in use by CloudFront, API Gateway, etc.
+	if len(cert.InUseBy) > 0 {
+		return "", NewResourceInUseError("certificate", arn)
+	}
+
+	if cert.Status != "ISSUED" {
+		return "", awserrors.NewValidationException("Certificate is not in a valid state for revocation.")
+	}
+
+	// RevocationReason is required per Smithy model.
+	if in.RevocationReasonRaw == nil {
+		return "", awserrors.NewValidationException("RevocationReason is required")
+	}
+	reason, ok := in.RevocationReasonRaw.(string)
+	if !ok || !isValidRevocationReason(reason) {
+		return "", NewInvalidParameterError(fmt.Sprintf("Invalid RevocationReason: %v", in.RevocationReasonRaw))
+	}
+	cert.RevocationReason = reason
+	cert.Status = "REVOKED"
+	cert.RevokedAt = time.Now().UTC()
+
+	if err := stores.certificates.Update(cert); err != nil {
+		return "", err
+	}
+
+	return arn, nil
 }
