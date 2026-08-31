@@ -256,6 +256,75 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 		return nil
 	}))
 
+	// ReEncrypt names its algorithms through the SourceEncryptionAlgorithm
+	// and DestinationEncryptionAlgorithm members; a ciphertext encrypted
+	// under RSAES_OAEP_SHA_1 only re-encrypts when the source member names
+	// that algorithm, and the response echoes the algorithms actually used.
+	results = append(results, r.RunTest("kms", "ReEncrypt_SourceAlgorithmHonoured", func() error {
+		keyResp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+			Description: aws.String("ReEncrypt RSA source key"),
+			KeySpec:      types.KeySpecRsa2048,
+			KeyUsage:     types.KeyUsageTypeEncryptDecrypt,
+		})
+		if err != nil {
+			return fmt.Errorf("create RSA key: %v", err)
+		}
+		rsaKeyID := *keyResp.KeyMetadata.KeyId
+		tc.addCleanupKey(rsaKeyID)
+
+		plaintext := []byte("re-encrypt-sha1")
+		encResp, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
+			KeyId:               aws.String(rsaKeyID),
+			Plaintext:           plaintext,
+			EncryptionAlgorithm: types.EncryptionAlgorithmSpecRsaesOaepSha1,
+		})
+		if err != nil {
+			return fmt.Errorf("encrypt with SHA_1: %v", err)
+		}
+
+		reResp, err := tc.client.ReEncrypt(tc.ctx, &kms.ReEncryptInput{
+			CiphertextBlob:            encResp.CiphertextBlob,
+			SourceKeyId:               aws.String(rsaKeyID),
+			SourceEncryptionAlgorithm: types.EncryptionAlgorithmSpecRsaesOaepSha1,
+			DestinationKeyId:          aws.String(tc.keyID),
+		})
+		if err != nil {
+			return fmt.Errorf("re-encrypt with SourceEncryptionAlgorithm: %v", err)
+		}
+		if reResp.SourceEncryptionAlgorithm != types.EncryptionAlgorithmSpecRsaesOaepSha1 {
+			return fmt.Errorf("SourceEncryptionAlgorithm mismatch: got %q", reResp.SourceEncryptionAlgorithm)
+		}
+		if reResp.DestinationEncryptionAlgorithm != types.EncryptionAlgorithmSpecSymmetricDefault {
+			return fmt.Errorf("DestinationEncryptionAlgorithm mismatch: got %q", reResp.DestinationEncryptionAlgorithm)
+		}
+
+		decResp, err := tc.client.Decrypt(tc.ctx, &kms.DecryptInput{
+			CiphertextBlob: reResp.CiphertextBlob,
+			KeyId:          aws.String(tc.keyID),
+		})
+		if err != nil {
+			return fmt.Errorf("decrypt re-encrypted: %v", err)
+		}
+		if string(decResp.Plaintext) != string(plaintext) {
+			return fmt.Errorf("plaintext mismatch after re-encrypt")
+		}
+		return nil
+	}))
+
+	// A SourceEncryptionAlgorithm outside the Smithy enum is a shape
+	// violation rejected with SerializationException.
+	results = append(results, r.RunTest("kms", "ReEncrypt_InvalidSourceAlgorithmRejected", func() error {
+		if tc.ciphertextBlob == nil {
+			return fmt.Errorf("ciphertext not available")
+		}
+		_, err := tc.client.ReEncrypt(tc.ctx, &kms.ReEncryptInput{
+			CiphertextBlob:            tc.ciphertextBlob,
+			SourceEncryptionAlgorithm: types.EncryptionAlgorithmSpec("NotAnAlgorithmSpec"),
+			DestinationKeyId:          aws.String(tc.keyID),
+		})
+		return AssertErrorContains(err, "SerializationException")
+	}))
+
 	results = append(results, r.RunTest("kms", "GenerateDataKey", func() error {
 		if tc.keyID == "" {
 			return fmt.Errorf("key ID not available")
@@ -392,6 +461,44 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 			},
 		})
 		return AssertErrorContains(err, "UnsupportedOperationException")
+	}))
+
+	// Without KeyId the ciphertext metadata resolves a symmetric key; an
+	// explicit SYMMETRIC_DEFAULT algorithm must succeed and the response
+	// must echo the algorithm that was actually used.
+	results = append(results, r.RunTest("kms", "Decrypt_NoKeyID_SymmetricDefaultEcho", func() error {
+		if tc.ciphertextBlob == nil {
+			return fmt.Errorf("ciphertext not available")
+		}
+		resp, err := tc.client.Decrypt(tc.ctx, &kms.DecryptInput{
+			CiphertextBlob:      tc.ciphertextBlob,
+			EncryptionAlgorithm: types.EncryptionAlgorithmSpecSymmetricDefault,
+		})
+		if err != nil {
+			return err
+		}
+		if string(resp.Plaintext) != "Hello, KMS!" {
+			return fmt.Errorf("plaintext mismatch: got %q", string(resp.Plaintext))
+		}
+		if resp.EncryptionAlgorithm != types.EncryptionAlgorithmSpecSymmetricDefault {
+			return fmt.Errorf("EncryptionAlgorithm mismatch: got %q, want SYMMETRIC_DEFAULT", resp.EncryptionAlgorithm)
+		}
+		return nil
+	}))
+
+	// An EncryptionAlgorithm outside the Smithy enum is a shape violation:
+	// the aws-json-1.1 protocol rejects it with SerializationException, the
+	// protocol-level error no service model enumerates. The KMS model has no
+	// InvalidAlgorithmException code.
+	results = append(results, r.RunTest("kms", "Decrypt_NoKeyID_InvalidAlgorithmRejected", func() error {
+		if tc.ciphertextBlob == nil {
+			return fmt.Errorf("ciphertext not available")
+		}
+		_, err := tc.client.Decrypt(tc.ctx, &kms.DecryptInput{
+			CiphertextBlob:      tc.ciphertextBlob,
+			EncryptionAlgorithm: types.EncryptionAlgorithmSpec("NotAnAlgorithmSpec"),
+		})
+		return AssertErrorContains(err, "SerializationException")
 	}))
 
 	return results

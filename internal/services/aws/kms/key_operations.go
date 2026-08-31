@@ -4,15 +4,12 @@ package kms
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/services/aws/kms/hsm"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 	"vorpalstacks/internal/utils/aws/arn"
 )
@@ -133,7 +130,7 @@ func (s *KMSService) EnableKey(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	if err := stores.keys.Enable(key.KeyID); err != nil {
+	if err := s.enableKeyCore(stores, key); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +149,7 @@ func (s *KMSService) DisableKey(ctx context.Context, reqCtx *request.RequestCont
 		return nil, err
 	}
 
-	if err := stores.keys.Disable(key.KeyID); err != nil {
+	if err := s.disableKeyCore(stores, key); err != nil {
 		return nil, err
 	}
 
@@ -210,20 +207,16 @@ func (s *KMSService) CancelKeyDeletion(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if err := stores.keys.CancelDeletion(key.KeyID); err != nil {
+	keyID, keyState, err := s.cancelKeyDeletionCore(stores, key)
+	if err != nil {
 		return nil, err
-	}
-
-	updatedKey, err := stores.keys.Get(key.KeyID)
-	if err != nil || updatedKey == nil {
-		return nil, fmt.Errorf("failed to retrieve key after cancelling deletion: %w", err)
 	}
 
 	// AWS returns KeyId and KeyState. KeyState reflects the restored state
 	// (Enabled or Disabled depending on the pre-ScheduleKeyDeletion value).
 	return map[string]interface{}{
-		"KeyId":    key.KeyID,
-		"KeyState": updatedKey.KeyState,
+		"KeyId":    keyID,
+		"KeyState": keyState,
 	}, nil
 }
 
@@ -238,12 +231,7 @@ func (s *KMSService) UpdateKeyDescription(ctx context.Context, reqCtx *request.R
 		return nil, err
 	}
 
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := validateDescriptionLength(description); err != nil {
-		return nil, err
-	}
-
-	if err := stores.keys.UpdateDescription(key.KeyID, description); err != nil {
+	if err := s.updateKeyDescriptionCore(stores, key, request.GetStringParam(req.Parameters, "Description")); err != nil {
 		return nil, err
 	}
 
@@ -347,50 +335,10 @@ func (s *KMSService) GetParametersForImport(ctx context.Context, reqCtx *request
 	}
 
 	keyID := s.getKeyID(req.Parameters)
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "GetParametersForImport", keyID, nil); err != nil {
-		return nil, err
-	}
-
-	// AWS: GetParametersForImport requires the key to be in PendingImport
-	// state. Calling it on an Enabled key or a key with already-imported
-	// material returns KMSInvalidStateException.
-	key, err := stores.keys.Get(keyID)
-	if err != nil {
-		return nil, NewKeyNotFoundError(keyID)
-	}
-	if key.Origin != kmsstore.OriginTypeExternal {
-		return nil, ErrUnsupportedOperation
-	}
-	if key.KeyState != kmsstore.KeyStatePendingImport {
-		return nil, ErrKeyPendingImport
-	}
-
-	// AWS: WrappingAlgorithm selects between symmetric and RSA wrapping.
-	// The platform implements RSA_* wrapping only; SYMMETRIC_KEY_WRAPPING
-	// is rejected as unsupported until the underlying implementation lands.
-	wrappingAlgorithm := request.GetStringParam(req.Parameters, "WrappingAlgorithm")
-	switch wrappingAlgorithm {
-	case "":
-		wrappingAlgorithm = "RSAES_OAEP_SHA_256"
-	case "RSAES_OAEP_SHA_256", "RSAES_OAEP_SHA_1":
-		// supported
-	default:
-		return nil, ErrUnsupportedOperation
-	}
-
-	// AWS: WrappingKeySpec is a required parameter (smithy.api#required
-	// trait on the GetParametersForImport input). The previous code
-	// silently defaulted to RSA_2048 when omitted, diverging from the
-	// documented contract.
-	wrappingKeySpec := request.GetStringParam(req.Parameters, "WrappingKeySpec")
-	switch wrappingKeySpec {
-	case "RSA_2048", "RSA_4096":
-		// supported
-	default:
-		return nil, NewValidationError(fmt.Sprintf("WrappingKeySpec must be RSA_2048 or RSA_4096, got %q", wrappingKeySpec))
-	}
-
-	importToken, publicKey, err := stores.keys.GetParametersForImport(keyID, wrappingKeySpec, wrappingAlgorithm)
+	importToken, publicKey, err := s.getParametersForImportCore(stores, s.resolveCallerPrincipal(reqCtx, req),
+		keyID,
+		request.GetStringParam(req.Parameters, "WrappingAlgorithm"),
+		request.GetStringParam(req.Parameters, "WrappingKeySpec"))
 	if err != nil {
 		return nil, err
 	}
@@ -413,75 +361,14 @@ func (s *KMSService) ImportKeyMaterial(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	keyID := s.getKeyID(req.Parameters)
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ImportKeyMaterial", keyID, nil); err != nil {
-		return nil, err
-	}
-
-	key, err := stores.keys.Get(keyID)
-	if err != nil {
-		return nil, err
-	}
-
-	importToken := request.GetStringParam(req.Parameters, "ImportToken")
-	encryptedKeyMaterialB64 := request.GetStringParam(req.Parameters, "EncryptedKeyMaterial")
-	validTo := request.GetIntParam(req.Parameters, "ValidTo")
-	expirationModel := request.GetStringParam(req.Parameters, "ExpirationModel")
-
-	// Enforce the CiphertextType constraints: both blobs must decode to at
-	// most 6144 bytes, and oversized encoded input is rejected before the
-	// decoder allocates memory.
-	if err := validateImportTokenSize(importToken); err != nil {
-		return nil, err
-	}
-	encryptedKeyMaterial, err := decodeEncryptedKeyMaterial(encryptedKeyMaterialB64)
-	if err != nil {
-		return nil, err
-	}
-
-	// Reject expired import tokens. GetParametersForImport issues tokens
-	// with a 24-hour validity window; using an expired token returns
-	// ExpiredImportTokenException per the AWS contract.
-	if key.ImportTokenValidTo != nil && time.Now().After(*key.ImportTokenValidTo) {
-		return nil, ErrExpiredImportToken
-	}
-
-	// AWS: ExpirationModel controls whether the imported key material
-	// expires. KEY_MATERIAL_DOES_NOT_EXPIRE causes ValidTo to be ignored.
-	// When ExpirationModel is omitted but ValidTo is supplied, the default
-	// is KEY_MATERIAL_EXPIRES. When neither is supplied, the default is
-	// KEY_MATERIAL_DOES_NOT_EXPIRE.
-	var validToTime *time.Time
-	if expirationModel != "KEY_MATERIAL_DOES_NOT_EXPIRE" && validTo > 0 {
-		t := time.Unix(int64(validTo), 0)
-		validToTime = &t
-	}
-	if expirationModel == "" {
-		if validToTime != nil {
-			expirationModel = "KEY_MATERIAL_EXPIRES"
-		} else {
-			expirationModel = "KEY_MATERIAL_DOES_NOT_EXPIRE"
-		}
-	}
-
-	rawKeyMaterial, err := stores.keys.ImportKeyMaterial(keyID, importToken, encryptedKeyMaterial, validToTime)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.hsmBackend.ImportKey(keyID, rawKeyMaterial, hsm.KeySpec(key.KeySpec)); err != nil {
-		return nil, err
-	}
-
-	// Re-fetch the key because ImportKeyMaterial's atomicUpdate changed
-	// its state (PendingImport → Enabled) and we must not overwrite that
-	// with the stale pre-import copy.
-	updatedKey, err := stores.keys.Get(keyID)
-	if err != nil {
-		return nil, err
-	}
-	updatedKey.ExpirationModel = expirationModel
-	if err := stores.keys.Update(updatedKey); err != nil {
+	if err := s.importKeyMaterialCore(stores, ImportKeyMaterialInput{
+		KeyID:                   s.getKeyID(req.Parameters),
+		ImportToken:             request.GetStringParam(req.Parameters, "ImportToken"),
+		EncryptedKeyMaterialB64: request.GetStringParam(req.Parameters, "EncryptedKeyMaterial"),
+		ValidTo:                 request.GetIntParam(req.Parameters, "ValidTo"),
+		ExpirationModel:         request.GetStringParam(req.Parameters, "ExpirationModel"),
+		Principal:               s.resolveCallerPrincipal(reqCtx, req),
+	}); err != nil {
 		return nil, err
 	}
 
@@ -496,22 +383,7 @@ func (s *KMSService) DeleteImportedKeyMaterial(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	keyID := s.getKeyID(req.Parameters)
-
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "DeleteImportedKeyMaterial", keyID, nil); err != nil {
-		return nil, err
-	}
-
-	// Delete from the HSM first so that if it fails, the store still
-	// reflects the imported state (Enabled + key material present).
-	// The previous ordering (store → HSM) left an inconsistent state
-	// when the HSM delete failed: the store showed PendingImport but
-	// key material still resided in the HSM.
-	if err := s.hsmBackend.DeleteKey(keyID); err != nil {
-		logs.Error("DeleteImportedKeyMaterial: HSM DeleteKey failed", logs.String("keyId", keyID), logs.Err(err))
-		return nil, ErrKMSInternal
-	}
-	if err := stores.keys.DeleteImportedKeyMaterial(keyID); err != nil {
+	if err := s.deleteImportedKeyMaterialCore(stores, s.resolveCallerPrincipal(reqCtx, req), s.getKeyID(req.Parameters)); err != nil {
 		return nil, err
 	}
 
@@ -526,7 +398,6 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	keyID := s.getKeyID(req.Parameters)
 	replicaRegion := request.GetStringParam(req.Parameters, "ReplicaRegion")
 	if replicaRegion == "" {
 		return nil, NewValidationError("ReplicaRegion is required")
@@ -534,151 +405,19 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 	if err := validateReplicaRegion(replicaRegion); err != nil {
 		return nil, err
 	}
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "ReplicateKey", keyID, nil); err != nil {
-		return nil, err
-	}
 
-	primary, err := stores.keys.Get(keyID)
+	replicaKey, err := s.replicateKeyCore(stores, ReplicateKeyInput{
+		KeyID:         s.getKeyID(req.Parameters),
+		ReplicaRegion: replicaRegion,
+		Policy:        request.GetStringParam(req.Parameters, "Policy"),
+		Description:   request.GetStringParam(req.Parameters, "Description"),
+		BypassCheck:   request.GetBoolParam(req.Parameters, "BypassPolicyLockoutSafetyCheck"),
+		Tags:          tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue"),
+		Principal:     s.resolveCallerPrincipal(reqCtx, req),
+		AccountID:     reqCtx.GetAccountID(),
+		Region:        reqCtx.GetRegion(),
+	})
 	if err != nil {
-		return nil, NewKeyNotFoundError(keyID)
-	}
-	if !primary.MultiRegion {
-		return nil, kmsstore.ErrNotMultiRegionKey
-	}
-
-	replicaKeyID, err := kmsstore.GenerateKeyID()
-	if err != nil {
-		return nil, err
-	}
-
-	// Obtain the replica region's stores so the replica key is persisted
-	// with the correct region's ARN and bucket. The previous
-	// implementation saved the replica to the local (primary) store with
-	// a local-region ARN, making it invisible to clients in the replica
-	// region.
-	replicaStores, err := s.GetStoreForRegion(replicaRegion)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build the replica key using the replica region's ARN builder.
-	replicaArn := replicaStores.keys.ARNBuilder().KeyArn(replicaKeyID)
-	replicaKey := &kmsstore.Key{
-		KeyID:              replicaKeyID,
-		Arn:                replicaArn,
-		KeyState:           kmsstore.KeyStateEnabled,
-		KeyUsage:           primary.KeyUsage,
-		KeySpec:            primary.KeySpec,
-		Description:        primary.Description,
-		Enabled:            true,
-		CreationDate:       time.Now(),
-		Origin:             primary.Origin,
-		KeyManager:         primary.KeyManager,
-		KeyRotationEnabled: primary.KeyRotationEnabled,
-		MultiRegion:        true,
-		MultiRegionConfiguration: &kmsstore.MultiRegionConfiguration{
-			MultiRegionKeyType: "REPLICA",
-			PrimaryKey: &kmsstore.PrimaryKeyInfo{
-				Arn:    primary.Arn,
-				Region: reqCtx.GetRegion(),
-			},
-		},
-	}
-
-	// Apply optional caller-supplied parameters to the replica. Per the
-	// Smithy ReplicateKeyRequest, the caller may set Policy, Description,
-	// BypassPolicyLockoutSafetyCheck, and Tags on the replica.
-	replicaPolicy := request.GetStringParam(req.Parameters, "Policy")
-	if replicaPolicy == "" {
-		// Inherit the primary's key policy when not explicitly supplied.
-		primaryPolicy, pErr := stores.keyPolicies.GetDefault(primary.KeyID)
-		if pErr == nil {
-			replicaPolicy = primaryPolicy.PolicyDocument
-		} else {
-			replicaPolicy = kmsstore.DefaultKeyPolicy
-		}
-	}
-	bypassCheck := request.GetBoolParam(req.Parameters, "BypassPolicyLockoutSafetyCheck")
-	if err := validatePolicySize(replicaPolicy); err != nil {
-		return nil, err
-	}
-	if !bypassCheck {
-		if err := validatePolicyDoesNotLockOutRoot(replicaPolicy, reqCtx.GetAccountID()); err != nil {
-			return nil, err
-		}
-	}
-	if desc := request.GetStringParam(req.Parameters, "Description"); desc != "" {
-		if err := validateDescriptionLength(desc); err != nil {
-			return nil, err
-		}
-		replicaKey.Description = desc
-	}
-	replicaKey.BypassPolicyLockoutSafetyCheck = bypassCheck
-
-	// Step 1: Save the replica key to the replica region's store.
-	if err := replicaStores.keys.CreateReplica(replicaKey); err != nil {
-		return nil, err
-	}
-
-	// cleanupReplica removes the replica from the replica region store,
-	// the primary's MultiRegionConfiguration, and the HSM. Used on any
-	// failure after step 1.
-	cleanupReplica := func() {
-		if delErr := replicaStores.CascadeDeleteKey(s.hsmBackend, replicaKeyID); delErr != nil {
-			logs.Error("ReplicateKey: failed to cascade-delete replica from replica store",
-				logs.Err(delErr), logs.String("replicaKeyId", replicaKeyID))
-		}
-		if rmErr := stores.keys.RemoveReplicaFromPrimary(primary.KeyID, replicaRegion); rmErr != nil {
-			logs.Error("ReplicateKey: failed to remove replica from primary config",
-				logs.Err(rmErr), logs.String("replicaRegion", replicaRegion))
-		}
-	}
-
-	// Step 2: Register the replica in the primary's MultiRegionConfiguration.
-	replicaInfo := kmsstore.ReplicaKeyInfo{
-		Arn:    replicaArn,
-		Region: replicaRegion,
-	}
-	if err := stores.keys.AddReplicaToPrimary(primary.KeyID, replicaInfo); err != nil {
-		cleanupReplica()
-		return nil, err
-	}
-
-	// Step 3: Copy tags from the primary to the replica (cross-region).
-	sourceTags, err := stores.keys.TagStore.ListAsSlice(primary.KeyID)
-	if err != nil {
-		cleanupReplica()
-		return nil, err
-	}
-	if len(sourceTags) > 0 {
-		if err := replicaStores.keys.TagStore.TagFromSlice(replicaKeyID, sourceTags); err != nil {
-			cleanupReplica()
-			return nil, err
-		}
-	}
-
-	// Step 4: Apply caller-supplied tags (in addition to inherited tags).
-	replicaTags := tagutil.ParseTagsWithKeyNames(req.Parameters, "Tags", "TagKey", "TagValue")
-	if len(replicaTags) > 0 {
-		if err := validateKMSTags(replicaTags); err != nil {
-			cleanupReplica()
-			return nil, err
-		}
-		if err := replicaStores.keys.TagStore.Tag(replicaKeyID, tagutil.ToMap(replicaTags)); err != nil {
-			cleanupReplica()
-			return nil, err
-		}
-	}
-
-	// Step 5: Store the replica's key policy in the replica region.
-	if err := replicaStores.keyPolicies.PutDefault(replicaKeyID, replicaPolicy); err != nil {
-		cleanupReplica()
-		return nil, err
-	}
-
-	// Step 6: Provision the replica in the HSM with the primary's key material.
-	if err := s.hsmBackend.ReplicateKey(primary.KeyID, replicaKeyID); err != nil {
-		cleanupReplica()
 		return nil, err
 	}
 
@@ -696,20 +435,9 @@ func (s *KMSService) UpdatePrimaryRegion(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	keyID := s.getKeyID(req.Parameters)
-	primaryRegion := request.GetStringParam(req.Parameters, "PrimaryRegion")
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UpdatePrimaryRegion", keyID, nil); err != nil {
-		return nil, err
-	}
-
-	// Reject empty PrimaryRegion before it reaches the store.
-	// Without this check the store persists a broken PrimaryKeyInfo
-	// with an empty Region field.
-	if err := validatePrimaryRegion(primaryRegion); err != nil {
-		return nil, err
-	}
-
-	if err := stores.keys.UpdatePrimaryRegion(keyID, primaryRegion); err != nil {
+	if err := s.updatePrimaryRegionCore(stores, s.resolveCallerPrincipal(reqCtx, req),
+		s.getKeyID(req.Parameters),
+		request.GetStringParam(req.Parameters, "PrimaryRegion")); err != nil {
 		return nil, err
 	}
 

@@ -13,6 +13,36 @@ import (
 
 // GenerateMac generates a MAC (Message Authentication Code) for the specified message.
 
+// validMacAlgorithmSpec reports whether alg is a member of the Smithy
+// MacAlgorithmSpec enum that types the MacAlgorithm request member of
+// GenerateMac and VerifyMac.
+func validMacAlgorithmSpec(alg string) bool {
+	switch alg {
+	case string(hsm.MACAlgorithmHMACSHA224),
+		string(hsm.MACAlgorithmHMACSHA256),
+		string(hsm.MACAlgorithmHMACSHA384),
+		string(hsm.MACAlgorithmHMACSHA512):
+		return true
+	}
+	return false
+}
+
+// resolveMacAlgorithm applies the MacAlgorithm member contract: an explicit
+// value outside the MacAlgorithmSpec enum is a shape violation rejected
+// with SerializationException, and a value the key does not support is
+// rejected with InvalidKeyUsageException, whose documentation covers "the
+// encryption algorithm or signing algorithm specified for the operation is
+// incompatible with the type of key material in the KMS key".
+func resolveMacAlgorithm(algorithm string, key *kmsstore.Key) error {
+	if !validMacAlgorithmSpec(algorithm) {
+		return ErrSerializationException
+	}
+	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
+		return ErrInvalidKeyUsage
+	}
+	return nil
+}
+
 func macAlgorithmSupported(algorithm string, supported []string) bool {
 	for _, a := range supported {
 		if a == algorithm {
@@ -56,8 +86,8 @@ func (s *KMSService) GenerateMac(ctx context.Context, reqCtx *request.RequestCon
 	if algorithm == "" {
 		return nil, ErrValidation
 	}
-	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
-		return nil, ErrInvalidAlgorithm
+	if err := resolveMacAlgorithm(algorithm, key); err != nil {
+		return nil, err
 	}
 
 	if err := checkKMSDryRun(req.Parameters); err != nil {
@@ -112,9 +142,8 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	}
 	macValue, err := base64.StdEncoding.DecodeString(macB64)
 	if err != nil {
-		// Previous code returned ErrInvalidAlgorithm for malformed Mac
-		// which conflated the input validation failure with the
-		// algorithm check. ValidationException is the correct AWS error.
+		// A malformed Mac is an input validation failure, not an
+		// algorithm-contract violation; ValidationException is the AWS error.
 		return nil, ErrValidation
 	}
 
@@ -122,8 +151,8 @@ func (s *KMSService) VerifyMac(ctx context.Context, reqCtx *request.RequestConte
 	if algorithm == "" {
 		return nil, ErrValidation
 	}
-	if !macAlgorithmSupported(algorithm, key.MacAlgorithms) {
-		return nil, ErrInvalidAlgorithm
+	if err := resolveMacAlgorithm(algorithm, key); err != nil {
+		return nil, err
 	}
 
 	if err := checkKMSDryRun(req.Parameters); err != nil {

@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"strings"
 	"testing"
+
+	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // TestValidateDescriptionLengthUnicodeLengths pins that DescriptionType
@@ -77,5 +79,77 @@ func TestValidateImportBlobDecodedSize(t *testing.T) {
 	}
 	if _, err := decodeEncryptedKeyMaterial(""); err == nil {
 		t.Error("empty key material accepted")
+	}
+}
+
+// TestAlgorithmContractErrors pins the error codes of the algorithm member
+// contract: a value outside the modelled enum is a shape violation rejected
+// with SerializationException (the aws-json-1.1 protocol contract, which no
+// service model enumerates), while an enum value the key does not support is
+// rejected with InvalidKeyUsageException ("the encryption algorithm or
+// signing algorithm specified for the operation is incompatible with the
+// type of key material in the KMS key"). The InvalidAlgorithmException code
+// appears nowhere in the KMS model.
+func TestAlgorithmContractErrors(t *testing.T) {
+	symmetric := &kmsstore.Key{
+		KeySpec:              kmsstore.KeySpecSymmetricDefault,
+		EncryptionAlgorithms: []string{"SYMMETRIC_DEFAULT"},
+	}
+	rsaKey := &kmsstore.Key{
+		KeySpec:              kmsstore.KeySpecRSA2048,
+		EncryptionAlgorithms: []string{"RSAES_OAEP_SHA_1", "RSAES_OAEP_SHA_256"},
+	}
+
+	// Enum violations are shape violations.
+	if _, err := resolveEncryptionAlgorithm(symmetric, map[string]interface{}{
+		"EncryptionAlgorithm": "InvalidAlgorithmValue",
+	}, "EncryptionAlgorithm"); err == nil || !strings.Contains(err.Error(), "SerializationException") {
+		t.Errorf("enum-invalid encryption algorithm: got %v, want SerializationException", err)
+	}
+	if err := resolveSigningAlgorithm("NOT_AN_ALGORITHM", rsaKey); err == nil || !strings.Contains(err.Error(), "SerializationException") {
+		t.Errorf("enum-invalid signing algorithm: got %v, want SerializationException", err)
+	}
+	macKey := &kmsstore.Key{MacAlgorithms: []string{"HMAC_SHA_256"}}
+	if err := resolveMacAlgorithm("HMAC_NOT_REAL", macKey); err == nil || !strings.Contains(err.Error(), "SerializationException") {
+		t.Errorf("enum-invalid MAC algorithm: got %v, want SerializationException", err)
+	}
+
+	// Enum values unsupported by the key are InvalidKeyUsageException.
+	if _, err := resolveEncryptionAlgorithm(symmetric, map[string]interface{}{
+		"EncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+	}, "EncryptionAlgorithm"); err == nil || !strings.Contains(err.Error(), "InvalidKeyUsageException") {
+		t.Errorf("unsupported encryption algorithm: got %v, want InvalidKeyUsageException", err)
+	}
+	rsaSignKey := &kmsstore.Key{SigningAlgorithms: []string{"RSASSA_PKCS1_V1_5_SHA_256"}}
+	if err := resolveSigningAlgorithm("ECDSA_SHA_256", rsaSignKey); err == nil || !strings.Contains(err.Error(), "InvalidKeyUsageException") {
+		t.Errorf("unsupported signing algorithm: got %v, want InvalidKeyUsageException", err)
+	}
+	if err := resolveMacAlgorithm("HMAC_SHA_512", macKey); err == nil || !strings.Contains(err.Error(), "InvalidKeyUsageException") {
+		t.Errorf("unsupported MAC algorithm: got %v, want InvalidKeyUsageException", err)
+	}
+
+	// Explicit supported values and omitted members resolve.
+	if alg, err := resolveEncryptionAlgorithm(rsaKey, map[string]interface{}{
+		"EncryptionAlgorithm": "RSAES_OAEP_SHA_1",
+	}, "EncryptionAlgorithm"); err != nil || alg != "RSAES_OAEP_SHA_1" {
+		t.Errorf("explicit supported encryption algorithm: %q %v", alg, err)
+	}
+	if alg, err := resolveEncryptionAlgorithm(rsaKey, map[string]interface{}{}, "EncryptionAlgorithm"); err != nil || alg != "RSAES_OAEP_SHA_256" {
+		t.Errorf("omitted encryption algorithm default: %q %v", alg, err)
+	}
+
+	// The ReEncrypt members resolve through their own member names.
+	if alg, err := resolveEncryptionAlgorithm(rsaKey, map[string]interface{}{
+		"SourceEncryptionAlgorithm": "RSAES_OAEP_SHA_1",
+	}, "SourceEncryptionAlgorithm"); err != nil || alg != "RSAES_OAEP_SHA_1" {
+		t.Errorf("SourceEncryptionAlgorithm: %q %v", alg, err)
+	}
+	// An operation reading the Source member must not pick up a value sent
+	// under the single-operation member name: the lookup is by member name,
+	// so the keyspec default applies.
+	if alg, err := resolveEncryptionAlgorithm(rsaKey, map[string]interface{}{
+		"EncryptionAlgorithm": "RSAES_OAEP_SHA_1",
+	}, "SourceEncryptionAlgorithm"); err != nil || alg != "RSAES_OAEP_SHA_256" {
+		t.Errorf("SourceEncryptionAlgorithm fell back to the EncryptionAlgorithm member: %q %v", alg, err)
 	}
 }

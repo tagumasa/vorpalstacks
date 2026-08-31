@@ -4,14 +4,9 @@ package kms
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // defaultRotationPeriodInDays is the AWS default rotation period when
@@ -32,32 +27,16 @@ func (s *KMSService) EnableKeyRotation(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
-		return nil, ErrKeyPendingDeletion
-	}
-	if key.KeyState == kmsstore.KeyStatePendingImport {
-		// AWS: PendingImport is a distinct KMSInvalidStateException. The
-		// previous code conflated the two states under ErrKeyPendingDeletion,
-		// which is misleading for PendingImport keys.
-		return nil, ErrKeyPendingImport
-	}
-	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
-		return nil, ErrKeyDisabled
-	}
-	if err := validateRotationKeyEligibility(key.KeySpec, key.Origin); err != nil {
-		return nil, err
-	}
-
 	// AWS: RotationPeriodInDays is optional, range 90-2560, default 365.
-	rotationPeriod := defaultRotationPeriodInDays
+	// The existence check distinguishes unset from explicit values; range
+	// validation is performed by enableKeyRotationCore.
+	in := EnableKeyRotationInput{}
 	if _, ok := req.Parameters["RotationPeriodInDays"]; ok {
-		rotationPeriod = int32(request.GetIntParam(req.Parameters, "RotationPeriodInDays"))
-		if rotationPeriod < 90 || rotationPeriod > 2560 {
-			return nil, ErrValidation
-		}
+		in.HasRotationPeriod = true
+		in.RotationPeriodInDays = int32(request.GetIntParam(req.Parameters, "RotationPeriodInDays"))
 	}
 
-	if err := stores.keys.SetKeyRotationWithPeriod(key.KeyID, true, rotationPeriod); err != nil {
+	if err := s.enableKeyRotationCore(stores, key, in); err != nil {
 		return nil, err
 	}
 
@@ -77,24 +56,7 @@ func (s *KMSService) DisableKeyRotation(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
-		return nil, ErrKeyPendingDeletion
-	}
-	if key.KeyState == kmsstore.KeyStatePendingImport {
-		return nil, ErrKeyPendingImport
-	}
-	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
-		return nil, ErrKeyDisabled
-	}
-	// DisableKeyRotation must apply the same KeySpec/Origin
-	// eligibility check as EnableKeyRotation. Without this, callers
-	// can invoke DisableKeyRotation on asymmetric/HMAC keys without
-	// error, violating the API contract.
-	if err := validateRotationKeyEligibility(key.KeySpec, key.Origin); err != nil {
-		return nil, err
-	}
-
-	if err := stores.keys.SetKeyRotation(key.KeyID, false); err != nil {
+	if err := s.disableKeyRotationCore(stores, key); err != nil {
 		return nil, err
 	}
 
@@ -165,41 +127,8 @@ func (s *KMSService) RotateKeyOnDemand(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
-		return nil, ErrKeyPendingDeletion
-	}
-	if key.KeyState == kmsstore.KeyStatePendingImport {
-		return nil, ErrKeyPendingImport
-	}
-	if key.KeyState == kmsstore.KeyStateDisabled || !key.Enabled {
-		return nil, ErrKeyDisabled
-	}
-	if key.KeySpec != kmsstore.KeySpecSymmetricDefault || key.Origin != kmsstore.OriginTypeAWSKMS {
-		return nil, ErrUnsupportedOperation
-	}
-
-	if key.OnDemandRotationCount >= maxOnDemandRotations {
-		return nil, awserrors.NewAWSError("LimitExceededException",
-			fmt.Sprintf("Maximum on-demand rotations (%d) exceeded for this key", maxOnDemandRotations),
-			http.StatusTooManyRequests)
-	}
-
-	// Rotate the key material in the HSM. Previous versions are preserved
-	// so that ciphertexts encrypted before rotation remain decryptable.
-	if err := s.hsmBackend.RotateKey(key.KeyID); err != nil {
-		return nil, err
-	}
-
-	// Record the rotation event.
-	now := time.Now().UTC()
-	key.OnDemandRotationCount++
-	key.OnDemandRotationStartDate = &now
-	key.RotationHistory = append(key.RotationHistory, kmsstore.RotationEntry{
-		RotationDate:  now,
-		RotationType:  "ON_DEMAND",
-		KeyMaterialId: fmt.Sprintf("v%d", key.OnDemandRotationCount),
-	})
-	if err := stores.keys.Update(key); err != nil {
+	key, err = s.rotateKeyOnDemandCore(stores, key)
+	if err != nil {
 		return nil, err
 	}
 

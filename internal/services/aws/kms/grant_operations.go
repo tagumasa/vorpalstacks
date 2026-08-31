@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	"vorpalstacks/internal/core/logs"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
@@ -29,69 +28,7 @@ func (s *KMSService) CreateGrant(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	granteePrincipal := request.GetStringParam(req.Parameters, "GranteePrincipal")
-	if granteePrincipal == "" {
-		// AWS: GranteePrincipal is a required field; missing is a
-		// ValidationException, not AccessDenied.
-		return nil, ErrValidation
-	}
-	if err := validatePrincipalId(granteePrincipal); err != nil {
-		return nil, err
-	}
-
-	retiringPrincipal := request.GetStringParam(req.Parameters, "RetiringPrincipal")
-	if retiringPrincipal != "" {
-		if err := validatePrincipalId(retiringPrincipal); err != nil {
-			return nil, err
-		}
-	}
-
-	name := request.GetStringParam(req.Parameters, "Name")
-	// AWS: Name is optional but if present must be 1-256 chars matching
-	// the grantNamePattern (alnum, colon, slash, underscore, hyphen).
-	if name != "" && !grantNamePattern.MatchString(name) {
-		return nil, ErrValidation
-	}
-
-	var operations []string
-	if ops, ok := req.Parameters["Operations"]; ok {
-		if opList, ok := ops.([]interface{}); ok {
-			for _, op := range opList {
-				if opStr, ok := op.(string); ok {
-					operations = append(operations, opStr)
-				}
-			}
-		}
-	}
-	// AWS: Operations is a required field for CreateGrant.
-	if len(operations) == 0 {
-		return nil, ErrValidation
-	}
-
-	// Smithy GrantTokenList: length 0-10.
-	if gt, ok := req.Parameters["GrantTokens"]; ok {
-		if gtList, ok := gt.([]interface{}); ok {
-			if err := validateGrantTokenListSize(gtList); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	constraints, err := parseGrantConstraints(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := checkKMSDryRun(req.Parameters); err != nil {
-		return nil, err
-	}
-
-	grantToken, err := kmsstore.GenerateGrantToken()
-	if err != nil {
-		return nil, err
-	}
-
-	grant, err := stores.grants.CreateWithToken(key.KeyID, granteePrincipal, retiringPrincipal, operations, name, constraints, grantToken)
+	grant, grantToken, err := s.createGrantCore(stores, key, GrantCreateInput{Params: req.Parameters})
 	if err != nil {
 		return nil, err
 	}
@@ -113,55 +50,27 @@ func (s *KMSService) ListGrants(ctx context.Context, reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	marker := pagination.GetMarker(req.Parameters)
-	if err := validateMarkerLength(marker); err != nil {
-		return nil, err
-	}
-	maxItems := pagination.GetMaxItems(req.Parameters, 100)
-	granteePrincipal := request.GetStringParam(req.Parameters, "GranteePrincipal")
-	grantIDFilter := request.GetStringParam(req.Parameters, "GrantId")
-	if grantIDFilter != "" {
-		if err := validateGrantIdLength(grantIDFilter); err != nil {
-			return nil, err
-		}
-	}
-	granteeServicePrincipal := request.GetStringParam(req.Parameters, "GranteeServicePrincipal")
 
-	// When GrantId is specified, fetch the single grant directly instead
-	// of paginating through the full list. GrantId uniquely identifies a
-	// grant, so post-filter pagination is unnecessary and would return
-	// incorrect IsTruncated/NextMarker values.
-	if grantIDFilter != "" {
-		grant, err := stores.grants.Get(grantIDFilter)
-		if err != nil {
-			if kmsstore.IsNotFound(err) {
-				return nil, ErrGrantNotFound
-			}
-			return nil, err
-		}
-		if grant.KeyID != key.KeyID {
-			return nil, ErrGrantNotFound
-		}
-		if granteeServicePrincipal != "" && grant.GranteePrincipal != granteeServicePrincipal {
-			return s.buildGrantsListResponse([]map[string]interface{}{}, false, ""), nil
-		}
-		return s.buildGrantsListResponse([]map[string]interface{}{s.buildGrantResponse(grant, key.Arn)}, false, ""), nil
-	}
-
-	result, err := stores.grants.List(key.KeyID, granteePrincipal, marker, maxItems)
+	result, err := s.listGrantsCore(stores, key,
+		pagination.GetMarker(req.Parameters),
+		pagination.GetMaxItems(req.Parameters, 100),
+		request.GetStringParam(req.Parameters, "GranteePrincipal"),
+		request.GetStringParam(req.Parameters, "GrantId"),
+		request.GetStringParam(req.Parameters, "GranteeServicePrincipal"))
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply GranteeServicePrincipal filter (post-filter is acceptable
-	// here because GranteeServicePrincipal is a coarse filter that rarely
-	// splits across pages in practice).
+	// The Core applies the GranteeServicePrincipal filter with the
+	// original branch semantics; preserve the nil-ness of the grant list
+	// when mapping to the wire shape (a nil list serialises as null, an
+	// empty one as []).
 	var grants []map[string]interface{}
-	for _, g := range result.Grants {
-		if granteeServicePrincipal != "" && g.GranteePrincipal != granteeServicePrincipal {
-			continue
+	if result.Grants != nil {
+		grants = make([]map[string]interface{}, 0, len(result.Grants))
+		for _, g := range result.Grants {
+			grants = append(grants, s.buildGrantResponse(g, key.Arn))
 		}
-		grants = append(grants, s.buildGrantResponse(g, key.Arn))
 	}
 
 	return s.buildGrantsListResponse(grants, result.IsTruncated, result.NextMarker), nil
@@ -174,40 +83,17 @@ func (s *KMSService) ListRetirableGrants(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 
-	retiringPrincipal := request.GetStringParam(req.Parameters, "RetiringPrincipal")
-	if retiringPrincipal == "" {
-		return nil, ErrValidation
-	}
-
-	marker := pagination.GetMarker(req.Parameters)
-	if err := validateMarkerLength(marker); err != nil {
-		return nil, err
-	}
-	maxItems := pagination.GetMaxItems(req.Parameters, 100)
-
-	result, err := stores.grants.ListByRetiringPrincipal(retiringPrincipal, marker, maxItems)
+	result, err := s.listRetirableGrantsCore(stores,
+		request.GetStringParam(req.Parameters, "RetiringPrincipal"),
+		pagination.GetMarker(req.Parameters),
+		pagination.GetMaxItems(req.Parameters, 100))
 	if err != nil {
 		return nil, err
 	}
 
-	var grants []map[string]interface{}
-	grants = make([]map[string]interface{}, 0)
-	for _, g := range result.Grants {
-		key, err := stores.keys.Get(g.KeyID)
-		if err != nil {
-			// A grant whose key cannot be resolved is an orphan — typically
-			// the result of a partially-failed cascade-delete. Skip the
-			// entry (matching AWS behaviour where retired/deleted keys do
-			// not appear in ListRetirableGrants) but log loudly so the
-			// operator detects the data-integrity issue. The previous
-			// code returned ErrKMSInternal here, which broke the entire
-			// list response for a single orphaned grant.
-			logs.Error("ListRetirableGrants: skipping orphaned grant (key not found)", logs.String("keyId", g.KeyID), logs.String("grantId", g.GrantID), logs.Err(err))
-			continue
-		}
-
-		grant := s.buildGrantResponse(g, key.Arn)
-		grants = append(grants, grant)
+	grants := make([]map[string]interface{}, 0, len(result.Grants))
+	for _, entry := range result.Grants {
+		grants = append(grants, s.buildGrantResponse(entry.Grant, entry.KeyArn))
 	}
 
 	return s.buildGrantsListResponse(grants, result.IsTruncated, result.NextMarker), nil
@@ -277,33 +163,10 @@ func (s *KMSService) RevokeGrant(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	grantID := request.GetStringParam(req.Parameters, "GrantId")
-	if grantID == "" {
-		// AWS: GrantId is required; missing is a ValidationException,
-		// not NotFoundException.
-		return nil, ErrValidation
-	}
-	if err := validateGrantIdLength(grantID); err != nil {
-		return nil, err
-	}
-
-	grant, err := stores.grants.Get(grantID)
-	if err != nil {
-		if kmsstore.IsNotFound(err) {
-			return nil, ErrGrantNotFound
-		}
-		return nil, err
-	}
-
-	if grant.KeyID != key.KeyID {
-		return nil, ErrGrantNotFound
-	}
-
-	if err := checkKMSDryRun(req.Parameters); err != nil {
-		return nil, err
-	}
-
-	if err := stores.grants.Delete(grantID); err != nil {
+	if err := s.revokeGrantCore(stores, key, GrantRevokeInput{
+		GrantID: request.GetStringParam(req.Parameters, "GrantId"),
+		Params:  req.Parameters,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -317,139 +180,12 @@ func (s *KMSService) RetireGrant(ctx context.Context, reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	grantID := request.GetStringParam(req.Parameters, "GrantId")
-	grantToken := request.GetStringParam(req.Parameters, "GrantToken")
-
-	var grant *kmsstore.Grant
-	if grantID != "" {
-		if err := validateGrantIdLength(grantID); err != nil {
-			return nil, err
-		}
-		var err error
-		grant, err = stores.grants.Get(grantID)
-		if err != nil {
-			if kmsstore.IsNotFound(err) {
-				return nil, ErrGrantNotFound
-			}
-			return nil, err
-		}
-	} else if grantToken != "" {
-		if err := validateGrantTokenLength(grantToken); err != nil {
-			return nil, err
-		}
-		var err error
-		grant, err = stores.grants.GetByToken(grantToken)
-		if err != nil {
-			if kmsstore.IsNotFound(err) {
-				return nil, ErrGrantNotFound
-			}
-			return nil, err
-		}
-		grantID = grant.GrantID
-	} else {
-		// AWS: at least one of GrantId or GrantToken is required;
-		// missing both is a ValidationException, not NotFoundException.
-		return nil, ErrValidation
-	}
-
-	keyID := s.getKeyID(req.Parameters)
-	if keyID != "" {
-		key, err := s.resolveKey(stores, req.Parameters)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "RetireGrant", key.KeyID, nil); err != nil {
-			return nil, err
-		}
-		if grant.KeyID != key.KeyID {
-			return nil, ErrGrantNotFound
-		}
-	}
-
-	if err := checkKMSDryRun(req.Parameters); err != nil {
-		return nil, err
-	}
-
-	if err := stores.grants.Delete(grantID); err != nil {
+	if err := s.retireGrantCore(stores, GrantRetireInput{
+		Principal: s.resolveCallerPrincipal(reqCtx, req),
+		Params:    req.Parameters,
+	}); err != nil {
 		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
-}
-
-func parseGrantConstraints(params map[string]interface{}) (*kmsstore.GrantConstraints, error) {
-	var constraints *kmsstore.GrantConstraints
-
-	if c, ok := params["Constraints"]; ok {
-		if cmap, ok := c.(map[string]interface{}); ok {
-			// Reject unknown constraint members up-front so that future
-			// AWS spec additions surface as ValidationException rather
-			// than being silently dropped (over-authorising the grant).
-			for k := range cmap {
-				switch k {
-				case "EncryptionContextEquals", "EncryptionContextSubset", "SourceArn":
-				default:
-					return nil, ErrValidation
-				}
-			}
-			if ecEquals, ok := cmap["EncryptionContextEquals"]; ok {
-				ecMap, ok := ecEquals.(map[string]interface{})
-				if !ok {
-					// Smithy: EncryptionContextEquals is map<string,string>.
-					// A non-map value is a malformed request.
-					return nil, ErrValidation
-				}
-				if constraints == nil {
-					constraints = &kmsstore.GrantConstraints{}
-				}
-				constraints.EncryptionContextEquals = make(map[string]string)
-				for k, v := range ecMap {
-					vs, ok := v.(string)
-					if !ok {
-						// Smithy: EncryptionContextValue is a string.
-						// Non-string values are ValidationException
-						// rather than being silently dropped (which
-						// would weaken the constraint).
-						return nil, ErrValidation
-					}
-					constraints.EncryptionContextEquals[k] = vs
-				}
-			}
-			if ecSubset, ok := cmap["EncryptionContextSubset"]; ok {
-				ecMap, ok := ecSubset.(map[string]interface{})
-				if !ok {
-					return nil, ErrValidation
-				}
-				if constraints == nil {
-					constraints = &kmsstore.GrantConstraints{}
-				}
-				constraints.EncryptionContextSubset = make(map[string]string)
-				for k, v := range ecMap {
-					vs, ok := v.(string)
-					if !ok {
-						return nil, ErrValidation
-					}
-					constraints.EncryptionContextSubset[k] = vs
-				}
-			}
-			// Smithy com.amazonaws.kms#GrantConstraints has three members;
-			// SourceArn was previously dropped silently, over-authorising
-			// grants whose callers depended on the constraint.
-			if sourceArnVal, ok := cmap["SourceArn"]; ok {
-				sourceArn, ok := sourceArnVal.(string)
-				if !ok || sourceArn == "" {
-					return nil, ErrValidation
-				}
-				if err := validateGrantSourceArn(sourceArn); err != nil {
-					return nil, err
-				}
-				if constraints == nil {
-					constraints = &kmsstore.GrantConstraints{}
-				}
-				constraints.SourceArn = sourceArn
-			}
-		}
-	}
-
-	return constraints, nil
 }

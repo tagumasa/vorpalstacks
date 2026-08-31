@@ -216,10 +216,9 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 			MessageType:      types.MessageTypeRaw,
 			SigningAlgorithm: "INVALID_ALGORITHM",
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid algorithm")
-		}
-		return nil
+		// A SigningAlgorithm outside the Smithy enum is a shape violation:
+		// the aws-json-1.1 protocol rejects it with SerializationException.
+		return AssertErrorContains(err, "SerializationException")
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKey_NonExistent", func() error {

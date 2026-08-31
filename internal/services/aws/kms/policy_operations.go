@@ -2,7 +2,6 @@ package kms
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"vorpalstacks/internal/common/iam/policy"
@@ -24,16 +23,7 @@ func (s *KMSService) GetKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	policyName := request.GetStringParam(req.Parameters, "PolicyName")
-	if policyName == "" {
-		policyName = "default"
-	}
-	// AWS: only "default" is a valid policy name for KMS keys.
-	if policyName != "default" {
-		return nil, ErrValidation
-	}
-
-	policy, err := stores.keyPolicies.Get(key.KeyID, policyName)
+	policy, err := s.getKeyPolicyCore(stores, key, request.GetStringParam(req.Parameters, "PolicyName"))
 	if err != nil {
 		return nil, err
 	}
@@ -60,27 +50,6 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 
-	policyName := request.GetStringParam(req.Parameters, "PolicyName")
-	if policyName == "" {
-		policyName = "default"
-	}
-	if policyName != "default" {
-		return nil, ErrValidation
-	}
-
-	policyDocument := request.GetStringParam(req.Parameters, "Policy")
-	if policyDocument == "" {
-		return nil, ErrMalformedPolicy
-	}
-	if err := validatePolicySize(policyDocument); err != nil {
-		return nil, err
-	}
-
-	var js interface{}
-	if err := json.Unmarshal([]byte(policyDocument), &js); err != nil {
-		return nil, ErrMalformedPolicy
-	}
-
 	bypassPolicyLockoutSafetyCheck := false
 	if v, ok := req.Parameters["BypassPolicyLockoutSafetyCheck"]; ok {
 		if b, ok := v.(bool); ok {
@@ -88,13 +57,11 @@ func (s *KMSService) PutKeyPolicy(ctx context.Context, reqCtx *request.RequestCo
 		}
 	}
 
-	if !bypassPolicyLockoutSafetyCheck {
-		if err := validatePolicyDoesNotLockOutRoot(policyDocument, reqCtx.GetAccountID()); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := stores.keyPolicies.Put(key.KeyID, policyName, policyDocument); err != nil {
+	if err := s.putKeyPolicyCore(stores, key,
+		request.GetStringParam(req.Parameters, "PolicyName"),
+		request.GetStringParam(req.Parameters, "Policy"),
+		bypassPolicyLockoutSafetyCheck,
+		reqCtx.GetAccountID()); err != nil {
 		return nil, err
 	}
 
@@ -171,20 +138,12 @@ func (s *KMSService) ListKeyPolicies(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	policies, err := stores.keyPolicies.List(key.KeyID)
+	result, err := s.listKeyPoliciesCore(stores, key,
+		pagination.GetMarker(req.Parameters),
+		pagination.GetMaxItems(req.Parameters, 100))
 	if err != nil {
 		return nil, err
 	}
-
-	marker := pagination.GetMarker(req.Parameters)
-	if err := validateMarkerLength(marker); err != nil {
-		return nil, err
-	}
-	maxItems := pagination.GetMaxItems(req.Parameters, 100)
-
-	result := pagination.PaginateSlice(policies, marker, maxItems, func(p string) string {
-		return p
-	})
 
 	response := map[string]interface{}{
 		"PolicyNames": result.Items,

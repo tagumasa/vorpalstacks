@@ -4,14 +4,12 @@ package kms
 
 import (
 	"context"
-	"errors"
 	"regexp"
 	"strings"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	kmsstore "vorpalstacks/internal/store/aws/kms"
 )
 
 // aliasNamePattern mirrors the AWS AliasName constraint: after the required
@@ -40,54 +38,17 @@ func validateAliasName(aliasName string) error {
 	return nil
 }
 
-func (s *KMSService) mapAliasStoreError(err error) error {
-	if err == nil {
-		return nil
-	}
-	switch {
-	case errors.Is(err, kmsstore.ErrAliasAlreadyExists):
-		return ErrAliasAlreadyExists
-	case errors.Is(err, kmsstore.ErrAliasNotFound):
-		return ErrAliasNotFound
-	case errors.Is(err, kmsstore.ErrAliasNameReserved):
-		return ErrInvalidAliasName
-	case errors.Is(err, kmsstore.ErrInvalidKeyState):
-		return ErrKeyPendingDeletion
-	default:
-		return err
-	}
-}
-
 // CreateAlias creates a display name for a KMS key.
 func (s *KMSService) CreateAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	aliasName := request.GetStringParam(req.Parameters, "AliasName")
-	targetKeyID := request.GetStringParam(req.Parameters, "TargetKeyId")
 
-	if err := validateAliasName(aliasName); err != nil {
+	if err := s.createAliasCore(stores, s.resolveCallerPrincipal(reqCtx, req),
+		request.GetStringParam(req.Parameters, "AliasName"),
+		request.GetStringParam(req.Parameters, "TargetKeyId")); err != nil {
 		return nil, err
-	}
-
-	if targetKeyID == "" {
-		return nil, ErrKeyNotFound
-	}
-
-	key, err := s.resolveKeyByKeyID(stores, targetKeyID)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "CreateAlias", key.KeyID, nil); err != nil {
-		return nil, err
-	}
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
-		return nil, ErrKeyPendingDeletion
-	}
-	_, err = stores.aliases.Create(aliasName, key.KeyID)
-	if err != nil {
-		return nil, s.mapAliasStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -99,26 +60,10 @@ func (s *KMSService) DeleteAlias(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	aliasName := request.GetStringParam(req.Parameters, "AliasName")
-	if aliasName == "" {
-		return nil, ErrInvalidAliasName
-	}
 
-	if strings.HasPrefix(aliasName, "alias/aws/") {
-		return nil, ErrInvalidAliasName
-	}
-
-	alias, err := stores.aliases.Get(aliasName)
-	if err != nil {
-		return nil, ErrAliasNotFound
-	}
-
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "DeleteAlias", alias.TargetKeyID, nil); err != nil {
+	if err := s.deleteAliasCore(stores, s.resolveCallerPrincipal(reqCtx, req),
+		request.GetStringParam(req.Parameters, "AliasName")); err != nil {
 		return nil, err
-	}
-
-	if err := stores.aliases.Delete(aliasName); err != nil {
-		return nil, s.mapAliasStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil
@@ -130,14 +75,11 @@ func (s *KMSService) ListAliases(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	marker := pagination.GetMarker(req.Parameters)
-	if err := validateMarkerLength(marker); err != nil {
-		return nil, err
-	}
-	maxItems := pagination.GetMaxItems(req.Parameters, 100)
-	keyID := s.getKeyID(req.Parameters)
 
-	result, err := stores.aliases.List(marker, maxItems, keyID)
+	result, err := s.listAliasesCore(stores,
+		pagination.GetMarker(req.Parameters),
+		pagination.GetMaxItems(req.Parameters, 100),
+		s.getKeyID(req.Parameters))
 	if err != nil {
 		return nil, err
 	}
@@ -177,29 +119,11 @@ func (s *KMSService) UpdateAlias(ctx context.Context, reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	aliasName := request.GetStringParam(req.Parameters, "AliasName")
-	targetKeyID := request.GetStringParam(req.Parameters, "TargetKeyId")
 
-	if err := validateAliasName(aliasName); err != nil {
+	if err := s.updateAliasCore(stores, s.resolveCallerPrincipal(reqCtx, req),
+		request.GetStringParam(req.Parameters, "AliasName"),
+		request.GetStringParam(req.Parameters, "TargetKeyId")); err != nil {
 		return nil, err
-	}
-
-	if targetKeyID == "" {
-		return nil, ErrKeyNotFound
-	}
-
-	key, err := s.resolveKeyByKeyID(stores, targetKeyID)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "UpdateAlias", key.KeyID, nil); err != nil {
-		return nil, err
-	}
-	if key.KeyState == kmsstore.KeyStatePendingDeletion {
-		return nil, ErrKeyPendingDeletion
-	}
-	if err := stores.aliases.UpdateTarget(aliasName, key.KeyID); err != nil {
-		return nil, s.mapAliasStoreError(err)
 	}
 
 	return response.EmptyResponse(), nil

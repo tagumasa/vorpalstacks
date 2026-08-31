@@ -34,9 +34,9 @@ func (s *KMSService) Encrypt(ctx context.Context, reqCtx *request.RequestContext
 		return nil, ErrInvalidKeyUsage
 	}
 
-	encryptionAlgorithm := determineEncryptionAlgorithm(key, req.Parameters)
-	if !algorithmSupported(encryptionAlgorithm, key.EncryptionAlgorithms) {
-		return nil, ErrInvalidAlgorithm
+	encryptionAlgorithm, err := resolveEncryptionAlgorithm(key, req.Parameters, "EncryptionAlgorithm")
+	if err != nil {
+		return nil, err
 	}
 
 	plaintextB64 := request.GetStringParam(req.Parameters, "Plaintext")
@@ -130,81 +130,21 @@ func (s *KMSService) Decrypt(ctx context.Context, reqCtx *request.RequestContext
 		return nil, err
 	}
 
-	encryptionContext := parseEncryptionContext(req.Parameters)
-
-	keyID := s.getKeyID(req.Parameters)
-	var result *hsm.DecryptResult
-	var keyArn string
-	var resolvedKey *kmsstore.Key
-
-	if keyID != "" {
-		key, err := s.resolveKey(stores, req.Parameters)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
-			return nil, err
-		}
-		if err := s.validateKeyState(key); err != nil {
-			return nil, err
-		}
-		// AWS: Decrypt on a non-ENCRYPT_DECRYPT key returns
-		// InvalidKeyUsageException. Encrypt has this guard at line 30 but
-		// Decrypt was missing it, allowing HMAC/SignVerify keys to reach
-		// the HSM where they fail with the misleading ErrDecryptFailed.
-		if key.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
-			return nil, ErrInvalidKeyUsage
-		}
-		decryptionAlgorithm := determineEncryptionAlgorithm(key, req.Parameters)
-		// Mirror the Encrypt guard at line 35: when the caller explicitly
-		// supplies an EncryptionAlgorithm that is not in the key's
-		// supported list, reject with InvalidAlgorithmException rather
-		// than dispatching a request the HSM will refuse.
-		if decryptionAlgorithm != "" && !algorithmSupported(decryptionAlgorithm, key.EncryptionAlgorithms) {
-			return nil, ErrInvalidAlgorithm
-		}
-		if err := checkKMSDryRun(req.Parameters); err != nil {
-			return nil, err
-		}
-		result, err = s.hsmBackend.Decrypt(key.KeyID, ciphertext, hsm.EncryptionAlgorithm(decryptionAlgorithm), encryptionContext)
-		if err != nil {
-			return nil, s.mapHSMError(err)
-		}
-		keyArn = key.Arn
-		resolvedKey = key
-	} else {
-		var resolvedKeyID string
-		// Without a KeyId, the algorithm cannot be requested by the caller
-		// (DecryptRequest has no EncryptionAlgorithm member). Fall back to
-		// SYMMETRIC_DEFAULT first; if the HSM cannot decrypt (key is RSA)
-		// the caller must resubmit with an explicit KeyId.
-		if err := checkKMSDryRun(req.Parameters); err != nil {
-			return nil, err
-		}
-		result, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, encryptionContext)
-		if err != nil {
-			return nil, s.mapHSMError(err)
-		}
-		key, err := stores.keys.Get(resolvedKeyID)
-		if err != nil {
-			return nil, NewKeyNotFoundError(resolvedKeyID)
-		}
-		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", key.KeyID, encryptionContext); err != nil {
-			return nil, err
-		}
-		if err := s.validateKeyState(key); err != nil {
-			return nil, err
-		}
-		keyArn = key.Arn
-		resolvedKey = key
+	result, err := s.decryptCore(stores, DecryptInput{
+		KeyID:             s.getKeyID(req.Parameters),
+		Ciphertext:        ciphertext,
+		EncryptionContext: parseEncryptionContext(req.Parameters),
+		Principal:         s.resolveCallerPrincipal(reqCtx, req),
+		Params:            req.Parameters,
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	s.markKeyLastUsed(stores, resolvedKey.KeyID, "Decrypt")
 
 	return map[string]interface{}{
 		"Plaintext":           base64.StdEncoding.EncodeToString(result.Plaintext),
-		"KeyId":               keyArn,
-		"EncryptionAlgorithm": determineEncryptionAlgorithm(resolvedKey, req.Parameters),
+		"KeyId":               result.KeyArn,
+		"EncryptionAlgorithm": result.EncryptionAlgorithm,
 	}, nil
 }
 
@@ -215,9 +155,6 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	sourceKeyID := request.GetStringParam(req.Parameters, "SourceKeyId")
-	var sourceKey *kmsstore.Key
-
 	ciphertextB64 := request.GetStringParam(req.Parameters, "CiphertextBlob")
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
@@ -227,95 +164,25 @@ func (s *KMSService) ReEncrypt(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	sourceEncryptionContext := parseEncryptionContextForPrefix(req.Parameters, "SourceEncryptionContext")
-	destinationEncryptionContext := parseEncryptionContextForPrefix(req.Parameters, "DestinationEncryptionContext")
-
-	var decryptResult *hsm.DecryptResult
-	var sourceKeyArn string
-	var sourceAlgorithm string
-
-	if sourceKeyID != "" {
-		sourceKey, err = s.resolveKeyByKeyID(stores, sourceKeyID)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
-			return nil, err
-		}
-		if err := s.validateKeyState(sourceKey); err != nil {
-			return nil, err
-		}
-		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
-			return nil, ErrInvalidKeyUsage
-		}
-		if err := checkKMSDryRun(req.Parameters); err != nil {
-			return nil, err
-		}
-		sourceAlgorithm = determineEncryptionAlgorithm(sourceKey, req.Parameters)
-		decryptResult, err = s.hsmBackend.Decrypt(sourceKey.KeyID, ciphertext, hsm.EncryptionAlgorithm(sourceAlgorithm), sourceEncryptionContext)
-		if err != nil {
-			return nil, err
-		}
-		sourceKeyArn = sourceKey.Arn
-	} else {
-		var resolvedKeyID string
-		if err := checkKMSDryRun(req.Parameters); err != nil {
-			return nil, err
-		}
-		decryptResult, resolvedKeyID, err = s.hsmBackend.DecryptWithoutKeyID(ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, sourceEncryptionContext)
-		if err != nil {
-			return nil, err
-		}
-		sourceKey, err = stores.keys.Get(resolvedKeyID)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Decrypt", sourceKey.KeyID, sourceEncryptionContext); err != nil {
-			return nil, err
-		}
-		if err := s.validateKeyState(sourceKey); err != nil {
-			return nil, err
-		}
-		if sourceKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
-			return nil, ErrInvalidKeyUsage
-		}
-		sourceKeyArn = sourceKey.Arn
-		// No caller-supplied KeyId ⇒ no caller-supplied algorithm; the
-		// DecryptWithoutKeyID path always uses SYMMETRIC_DEFAULT.
-		sourceAlgorithm = "SYMMETRIC_DEFAULT"
-	}
-
-	destinationKeyID := request.GetStringParam(req.Parameters, "DestinationKeyId")
-	destinationKey, err := s.resolveKeyByKeyID(stores, destinationKeyID)
+	result, err := s.reEncryptCore(stores, ReEncryptInput{
+		SourceKeyID:                  request.GetStringParam(req.Parameters, "SourceKeyId"),
+		DestinationKeyID:             request.GetStringParam(req.Parameters, "DestinationKeyId"),
+		Ciphertext:                   ciphertext,
+		SourceEncryptionContext:      parseEncryptionContextForPrefix(req.Parameters, "SourceEncryptionContext"),
+		DestinationEncryptionContext: parseEncryptionContextForPrefix(req.Parameters, "DestinationEncryptionContext"),
+		Principal:                    s.resolveCallerPrincipal(reqCtx, req),
+		Params:                       req.Parameters,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if err := s.authorizeOperation(stores, s.resolveCallerPrincipal(reqCtx, req), "Encrypt", destinationKey.KeyID, destinationEncryptionContext); err != nil {
-		return nil, err
-	}
-
-	if err := s.validateKeyState(destinationKey); err != nil {
-		return nil, err
-	}
-
-	if destinationKey.KeyUsage != kmsstore.KeyUsageEncryptDecrypt {
-		return nil, ErrInvalidKeyUsage
-	}
-
-	destinationAlgorithm := determineEncryptionAlgorithm(destinationKey, req.Parameters)
-	encryptResult, err := s.hsmBackend.Encrypt(destinationKey.KeyID, decryptResult.Plaintext, hsm.EncryptionAlgorithm(destinationAlgorithm), destinationEncryptionContext)
-	if err != nil {
-		return nil, err
-	}
-	s.markKeyLastUsed(stores, sourceKey.KeyID, "ReEncrypt")
-	s.markKeyLastUsed(stores, destinationKey.KeyID, "ReEncrypt")
 
 	return map[string]interface{}{
-		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(encryptResult.Ciphertext),
-		"SourceKeyId":                    sourceKeyArn,
-		"KeyId":                          destinationKey.Arn,
-		"SourceEncryptionAlgorithm":      sourceAlgorithm,
-		"DestinationEncryptionAlgorithm": destinationAlgorithm,
+		"CiphertextBlob":                 base64.StdEncoding.EncodeToString(result.CiphertextBlob),
+		"SourceKeyId":                    result.SourceKeyArn,
+		"KeyId":                          result.DestinationKeyArn,
+		"SourceEncryptionAlgorithm":      result.SourceEncryptionAlgorithm,
+		"DestinationEncryptionAlgorithm": result.DestinationEncryptionAlgorithm,
 	}, nil
 }
 
@@ -470,10 +337,6 @@ func (s *KMSService) GenerateRandom(ctx context.Context, reqCtx *request.Request
 	return map[string]interface{}{
 		"Plaintext": base64.StdEncoding.EncodeToString(randomBytes),
 	}, nil
-}
-
-func (s *KMSService) resolveKeyByKeyID(stores *kmsStores, keyID string) (*kmsstore.Key, error) {
-	return s.resolveKey(stores, map[string]interface{}{"KeyId": keyID})
 }
 
 func parseEncryptionContextForPrefix(params map[string]interface{}, prefix string) map[string]string {
@@ -646,27 +509,13 @@ func (s *KMSService) mapHSMError(err error) error {
 	if errors.Is(err, hsm.ErrInvalidCiphertext) {
 		return ErrInvalidCiphertext
 	}
+	// The internal invalid-algorithm sentinel can only surface when an
+	// algorithm and a key mismatch by construction; map it to the modelled
+	// key-usage error rather than a generic internal failure.
+	if errors.Is(err, hsm.ErrInvalidAlgorithm) {
+		return ErrInvalidKeyUsage
+	}
 	return ErrKMSInternal
-}
-
-// determineEncryptionAlgorithm returns the encryption algorithm to use for
-// the given key. If the caller specifies one via the EncryptionAlgorithm
-// parameter, it is used. Otherwise, the default for the key spec is returned.
-// For key specs that do not support encryption at all (HMAC, ECC_SIGNATURE,
-// etc.), the function returns an empty string; callers must check for this
-// and surface UnsupportedOperationException rather than silently selecting
-// an RSA default that would then fail inside the HSM.
-func determineEncryptionAlgorithm(key *kmsstore.Key, params map[string]interface{}) string {
-	if alg := request.GetStringParam(params, "EncryptionAlgorithm"); alg != "" {
-		return alg
-	}
-	if key.KeySpec == kmsstore.KeySpecSymmetricDefault {
-		return "SYMMETRIC_DEFAULT"
-	}
-	if isRSAKeySpec(key.KeySpec) {
-		return "RSAES_OAEP_SHA_256"
-	}
-	return ""
 }
 
 // isRSAKeySpec reports whether the key spec is one of the RSA_* specs that
