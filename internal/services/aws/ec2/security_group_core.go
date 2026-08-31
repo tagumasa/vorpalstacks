@@ -220,6 +220,35 @@ func (s *EC2Service) deleteSecurityGroupCore(ctx context.Context, store *ec2stor
 	return translateStoreError(store.DeleteSecurityGroup(groupID))
 }
 
+// resolveSecurityGroupCore is the single security-group resolution path for
+// the Delete and Authorize/Revoke operations: GroupId is preferred when
+// present, otherwise the group is looked up by GroupName region-wide (this
+// platform has no default VPC, so GroupName is never scoped to one).
+func (s *EC2Service) resolveSecurityGroupCore(store *ec2store.EC2Store, groupID, groupName string) (*ec2store.SecurityGroup, error) {
+	if groupID != "" {
+		sg, err := store.GetSecurityGroup(groupID)
+		if err != nil {
+			return nil, translateStoreError(err)
+		}
+		return sg, nil
+	}
+
+	if groupName == "" {
+		return nil, awserrors.NewMissingParameter("GroupId or GroupName is required")
+	}
+
+	sgs, err := store.ListSecurityGroups()
+	if err != nil {
+		return nil, translateStoreError(err)
+	}
+	for _, sg := range sgs {
+		if sg.GroupName == groupName {
+			return sg, nil
+		}
+	}
+	return nil, awserrors.NewAWSError("InvalidGroup.NotFound", "The security group does not exist", http.StatusNotFound)
+}
+
 // authorizeSecurityGroupRulesCore adds rules to a security group and returns
 // the newly created SecurityGroupRules with generated rule IDs. An identical
 // existing source entry (same protocol/port plus identical CIDR, group pair,

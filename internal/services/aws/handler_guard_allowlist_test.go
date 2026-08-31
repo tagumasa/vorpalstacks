@@ -7,7 +7,6 @@ package aws
 // entry, or adding entries for newly written handlers, is prohibited —
 // the list only ever shrinks.
 var guardAllowlist = map[string]struct{}{
-	"ec2/security_group_operations.go:resolveSecurityGroup":  {},
 	"sts/assume_role_operations.go:AssumeRole":               {},
 	"sts/assume_role_operations.go:AssumeRoleWithSAML":       {},
 	"sts/assume_role_operations.go:AssumeRoleWithWebIdentity": {},

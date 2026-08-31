@@ -1,8 +1,11 @@
 package ec2
 
 import (
+	"errors"
 	"testing"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/core/storage"
 	ec2store "vorpalstacks/internal/store/aws/ec2"
 )
 
@@ -157,5 +160,85 @@ func TestRemoveByRuleIDsNoMatch(t *testing.T) {
 	}
 	if len(keep.IpRanges) != 1 {
 		t.Errorf("kept IpRanges = %d entries, want 1", len(keep.IpRanges))
+	}
+}
+
+// newResolveSGTestStore builds an EC2 store over throwaway storage with one
+// security group seeded ("sg-test-1" / "web") for resolution tests.
+func newResolveSGTestStore(t *testing.T) *ec2store.EC2Store {
+	t.Helper()
+	st, err := storage.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open storage: %v", err)
+	}
+	t.Cleanup(func() { st.Close() })
+	store := ec2store.NewEC2Store(st, "000000000000", "us-east-1")
+	if err := store.CreateSecurityGroup(&ec2store.SecurityGroup{
+		GroupId:   "sg-test-1",
+		GroupName: "web",
+		VpcId:     "vpc-1",
+	}); err != nil {
+		t.Fatalf("seed security group: %v", err)
+	}
+	return store
+}
+
+// TestResolveSecurityGroupCore pins the resolution contract shared by
+// DeleteSecurityGroup and the Authorize/Revoke family: GroupId is preferred,
+// a GroupName-only request resolves region-wide, a request with neither
+// member is MissingParameter, and an unknown ID or name fails with
+// InvalidGroup.NotFound.
+func TestResolveSecurityGroupCore(t *testing.T) {
+	svc := NewEC2Service("000000000000", "us-east-1")
+	store := newResolveSGTestStore(t)
+
+	t.Run("GroupId preferred", func(t *testing.T) {
+		sg, err := svc.resolveSecurityGroupCore(store, "sg-test-1", "other-name")
+		if err != nil {
+			t.Fatalf("resolve by GroupId: %v", err)
+		}
+		if sg.GroupId != "sg-test-1" {
+			t.Errorf("GroupId = %q, want sg-test-1", sg.GroupId)
+		}
+	})
+
+	t.Run("unknown GroupId is InvalidGroup.NotFound", func(t *testing.T) {
+		_, err := svc.resolveSecurityGroupCore(store, "sg-absent", "")
+		assertSGError(t, err, "InvalidGroup.NotFound")
+	})
+
+	t.Run("GroupName resolves region-wide", func(t *testing.T) {
+		sg, err := svc.resolveSecurityGroupCore(store, "", "web")
+		if err != nil {
+			t.Fatalf("resolve by GroupName: %v", err)
+		}
+		if sg.GroupId != "sg-test-1" {
+			t.Errorf("GroupId = %q, want sg-test-1", sg.GroupId)
+		}
+	})
+
+	t.Run("unknown GroupName is InvalidGroup.NotFound", func(t *testing.T) {
+		_, err := svc.resolveSecurityGroupCore(store, "", "absent")
+		assertSGError(t, err, "InvalidGroup.NotFound")
+	})
+
+	t.Run("neither member is MissingParameter", func(t *testing.T) {
+		_, err := svc.resolveSecurityGroupCore(store, "", "")
+		assertSGError(t, err, "MissingParameter")
+	})
+}
+
+// assertSGError fails the test unless err carries the expected AWS error code.
+func assertSGError(t *testing.T, err error, code string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("expected %s error, got nil", code)
+	}
+	var awsErr *awserrors.AWSError
+	if !errors.As(err, &awsErr) {
+		t.Fatalf("expected *awserrors.AWSError with code %s, got %T: %v", code, err, err)
+	}
+	if awsErr.Code != code {
+		t.Errorf("error code = %q, want %q", awsErr.Code, code)
 	}
 }

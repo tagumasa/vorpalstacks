@@ -90,7 +90,7 @@ func (s *EC2Service) DescribeSecurityGroups(ctx context.Context, reqCtx *request
 // DeleteSecurityGroup deletes the specified security group. AWS accepts
 // GroupId or (for the default VPC) GroupName; this platform has no default
 // VPC, so GroupName is resolved region-wide, consistent with
-// resolveSecurityGroup.
+// resolveSecurityGroupCore.
 func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	params := req.Parameters
 	if err := checkDryRun(params); err != nil {
@@ -100,15 +100,13 @@ func (s *EC2Service) DeleteSecurityGroup(ctx context.Context, reqCtx *request.Re
 	if err != nil {
 		return nil, err
 	}
-	groupID := request.GetStringParam(params, "GroupId")
-	if groupID == "" {
-		sg, err := resolveSecurityGroup(store, params)
-		if err != nil {
-			return nil, err
-		}
-		groupID = sg.GroupId
+	sg, err := s.resolveSecurityGroupCore(store,
+		request.GetStringParam(params, "GroupId"),
+		request.GetStringParam(params, "GroupName"))
+	if err != nil {
+		return nil, err
 	}
-	if err := s.deleteSecurityGroupCore(ctx, store, reqCtx.GetRegion(), groupID); err != nil {
+	if err := s.deleteSecurityGroupCore(ctx, store, reqCtx.GetRegion(), sg.GroupId); err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{"return": true}, nil
@@ -151,7 +149,9 @@ func (s *EC2Service) authorizeOrRevoke(reqCtx *request.RequestContext, req *requ
 		return nil, err
 	}
 
-	sg, err := resolveSecurityGroup(store, req.Parameters)
+	sg, err := s.resolveSecurityGroupCore(store,
+		request.GetStringParam(req.Parameters, "GroupId"),
+		request.GetStringParam(req.Parameters, "GroupName"))
 	if err != nil {
 		return nil, err
 	}
@@ -230,34 +230,6 @@ func (s *EC2Service) authorizeOrRevoke(reqCtx *request.RequestContext, req *requ
 		resp["UnknownIpPermissionSet"] = protocol.XMLElements{ElementName: "item", Items: unknownItems}
 	}
 	return resp, nil
-}
-
-// resolveSecurityGroup finds the security group by GroupId or GroupName.
-func resolveSecurityGroup(store *ec2store.EC2Store, params map[string]interface{}) (*ec2store.SecurityGroup, error) {
-	groupID := request.GetStringParam(params, "GroupId")
-	if groupID != "" {
-		sg, err := store.GetSecurityGroup(groupID)
-		if err != nil {
-			return nil, translateStoreError(err)
-		}
-		return sg, nil
-	}
-
-	groupName := request.GetStringParam(params, "GroupName")
-	if groupName == "" {
-		return nil, awserrors.NewMissingParameter("GroupId or GroupName is required")
-	}
-
-	sgs, err := store.ListSecurityGroups()
-	if err != nil {
-		return nil, translateStoreError(err)
-	}
-	for _, sg := range sgs {
-		if sg.GroupName == groupName {
-			return sg, nil
-		}
-	}
-	return nil, awserrors.NewAWSError("InvalidGroup.NotFound", "The security group does not exist", http.StatusNotFound)
 }
 
 // matchesSGFilters checks if a security group matches all the given filters.
