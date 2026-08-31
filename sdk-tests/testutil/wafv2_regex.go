@@ -147,5 +147,25 @@ func (r *TestRunner) runWAFv2RegexPatternSetTests(tc *wafv2TestContext) []TestRe
 		return AssertErrorContains(err, "WAFNonexistentItemException")
 	}))
 
+	// RegularExpressionList is required, but the empty array remains a
+	// documented valid value — a set with zero patterns must be creatable.
+	results = append(results, r.RunTest("wafv2", "CreateRegexPatternSet_EmptyListAllowed", func() error {
+		emptyName := tc.uniqueName("test-regex-empty")
+		resp, err := tc.client.CreateRegexPatternSet(tc.ctx, &wafv2.CreateRegexPatternSetInput{
+			Name:                  aws.String(emptyName),
+			Scope:                 tc.scope,
+			RegularExpressionList: []types.Regex{},
+		})
+		if err != nil {
+			return err
+		}
+		_, err = tc.client.DeleteRegexPatternSet(tc.ctx, &wafv2.DeleteRegexPatternSetInput{
+			Name: aws.String(emptyName), Scope: tc.scope,
+			Id:        aws.String(aws.ToString(resp.Summary.Id)),
+			LockToken: aws.String(aws.ToString(resp.Summary.LockToken)),
+		})
+		return err
+	}))
+
 	return results
 }

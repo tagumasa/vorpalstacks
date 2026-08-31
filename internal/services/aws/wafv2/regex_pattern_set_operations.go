@@ -2,35 +2,12 @@ package wafv2
 
 import (
 	"context"
-	"fmt"
-	"regexp"
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
-	wafstore "vorpalstacks/internal/store/aws/waf"
 )
-
-func parseRegularExpressionList(params map[string]interface{}) ([]string, error) {
-	var patterns []string
-	if rpRaw := params["RegularExpressionList"]; rpRaw != nil {
-		if arr, ok := rpRaw.([]interface{}); ok {
-			for _, r := range arr {
-				if m, ok := r.(map[string]interface{}); ok {
-					if rs, ok := m["RegexString"].(string); ok {
-						if _, err := regexp.Compile(rs); err != nil {
-							return nil, invalidParamError(fmt.Sprintf("Invalid regex pattern: %s", rs))
-						}
-						patterns = append(patterns, rs)
-					}
-				}
-			}
-		}
-	}
-	return patterns, nil
-}
 
 // CreateRegexPatternSet creates a new regex pattern set containing the specified regular expressions.
 func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
@@ -38,42 +15,16 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	name := request.GetStringParam(req.Parameters, "Name")
-	if err := validateEntityName(name); err != nil {
-		return nil, err
-	}
 
-	scope := request.GetStringParam(req.Parameters, "Scope")
-	if err := validateScope(scope); err != nil {
-		return nil, err
-	}
-
-	description := request.GetStringParam(req.Parameters, "Description")
-	if err := validateEntityDescription(description); err != nil {
-		return nil, err
-	}
-	regularPatterns, err := parseRegularExpressionList(req.Parameters)
+	rps, err := s.createRegexPatternSetCore(stores, RegexPatternSetCreateInput{
+		Name:                  request.GetStringParam(req.Parameters, "Name"),
+		Scope:                 request.GetStringParam(req.Parameters, "Scope"),
+		Description:           request.GetStringParam(req.Parameters, "Description"),
+		RegularExpressionList: req.Parameters["RegularExpressionList"],
+		Tags:                  tagutil.ParseTags(req.Parameters, "Tags"),
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	id, err := generateID()
-	if err != nil {
-		return nil, err
-	}
-
-	rps, err := stores.regexPatternSets.Create(id, name, description, regularPatterns, scope)
-	if err != nil {
-		if wafstore.IsAlreadyExists(err) {
-			return nil, newAPIError("WAFDuplicateItemException", "AWS WAF couldn't perform the operation because some resource in your request is a duplicate of an existing one", 400)
-		}
-		return nil, err
-	}
-
-	if tags := tagutil.ParseTags(req.Parameters, "Tags"); len(tags) > 0 {
-		if err := stores.tags.TagFromSlice(rps.ARN, tags); err != nil {
-			logs.Warn("failed to persist tags for RegexPatternSet", logs.String("id", rps.ID), logs.Err(err))
-		}
 	}
 
 	return map[string]interface{}{
@@ -87,16 +38,9 @@ func (s *WAFv2Service) GetRegexPatternSet(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
 
-	rps, err := stores.regexPatternSets.Get(id)
+	rps, err := s.getRegexPatternSetCore(stores, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("RegexPatternSet")
-		}
 		return nil, err
 	}
 
@@ -125,14 +69,12 @@ func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, err
 	}
-	scope := request.GetStringParam(req.Parameters, "Scope")
-	if err := validateScope(scope); err != nil {
-		return nil, err
-	}
-	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
-	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
-	result, err := stores.regexPatternSets.List(nextMarker, maxItems, scope)
+	result, err := s.listRegexPatternSetsCore(stores, RegexPatternSetListInput{
+		Scope:      request.GetStringParam(req.Parameters, "Scope"),
+		Limit:      pagination.GetMaxItems(req.Parameters, 100, "Limit"),
+		NextMarker: pagination.GetMarker(req.Parameters, "NextMarker"),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -155,29 +97,14 @@ func (s *WAFv2Service) UpdateRegexPatternSet(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
 
-	lockToken := request.GetStringParam(req.Parameters, "LockToken")
-	if lockToken == "" {
-		return nil, invalidParamError("LockToken is required")
-	}
-
-	regularPatterns, pErr := parseRegularExpressionList(req.Parameters)
-	if pErr != nil {
-		return nil, pErr
-	}
-
-	rps, err := stores.regexPatternSets.Update(id, lockToken, regularPatterns, request.GetStringParam(req.Parameters, "Description"))
+	rps, err := s.updateRegexPatternSetCore(stores, RegexPatternSetUpdateInput{
+		Id:                    request.GetStringParam(req.Parameters, "Id"),
+		LockToken:             request.GetStringParam(req.Parameters, "LockToken"),
+		RegularExpressionList: req.Parameters["RegularExpressionList"],
+		Description:           request.GetStringParam(req.Parameters, "Description"),
+	})
 	if err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("RegexPatternSet")
-		}
 		return nil, err
 	}
 
@@ -192,31 +119,9 @@ func (s *WAFv2Service) DeleteRegexPatternSet(ctx context.Context, reqCtx *reques
 	if err != nil {
 		return nil, err
 	}
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
 
-	lockToken := request.GetStringParam(req.Parameters, "LockToken")
-	if lockToken == "" {
-		return nil, invalidParamError("LockToken is required")
-	}
-
-	deleted, err := stores.regexPatternSets.Delete(id, lockToken)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("RegexPatternSet")
-		}
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
+	if err := s.deleteRegexPatternSetCore(stores, request.GetStringParam(req.Parameters, "Id"), request.GetStringParam(req.Parameters, "LockToken")); err != nil {
 		return nil, err
-	}
-
-	if deleted.ARN != "" {
-		if err := stores.tags.Delete(deleted.ARN); err != nil {
-			logs.Warn("failed to clean up tags for deleted RegexPatternSet", logs.String("id", id), logs.Err(err))
-		}
 	}
 
 	return response.EmptyResponse(), nil

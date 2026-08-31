@@ -106,32 +106,6 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 		return nil, invalidParamError("LoggingConfiguration is required")
 	}
 
-	resourceArn := request.GetStringParam(loggingConfigMap, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	logDestinationConfigs := request.GetStringList(loggingConfigMap, "LogDestinationConfigs")
-	if len(logDestinationConfigs) == 0 {
-		return nil, invalidParamError("LogDestinationConfigs is required")
-	}
-
-	for _, arn := range logDestinationConfigs {
-		if err := validateLogDestinationARN(arn); err != nil {
-			return nil, err
-		}
-	}
-
-	logScope := request.GetStringParam(loggingConfigMap, "LogScope")
-	if err := validateLogScope(logScope); err != nil {
-		return nil, err
-	}
-	logType := request.GetStringParam(loggingConfigMap, "LogType")
-	if err := validateLogType(logType); err != nil {
-		return nil, err
-	}
-	managedByFirewallManager := request.GetBoolParam(loggingConfigMap, "ManagedByFirewallManager")
-
 	var redactedFields []interface{}
 	if rfRaw := loggingConfigMap["RedactedFields"]; rfRaw != nil {
 		if arr, ok := rfRaw.([]interface{}); ok {
@@ -139,36 +113,15 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 		}
 	}
 
-	loggingFilter, err := parseLoggingFilter(loggingConfigMap["LoggingFilter"])
-	if err != nil {
-		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = stores.webACLs.GetByARN(resourceArn)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
-		return nil, err
-	}
-
-	existingConfig, err := stores.loggingConfigs.GetByResourceArn(resourceArn)
-	if err == nil && existingConfig != nil {
-		config, err := stores.loggingConfigs.Update(resourceArn, logDestinationConfigs, logScope, logType, loggingFilter, managedByFirewallManager, redactedFields)
-		if err != nil {
-			return nil, err
-		}
-		return map[string]interface{}{
-			"LoggingConfiguration": convertLoggingConfigToResponse(config),
-		}, nil
-	}
-
-	config, err := stores.loggingConfigs.Create(resourceArn, logDestinationConfigs, logScope, logType, loggingFilter, managedByFirewallManager, redactedFields)
+	config, err := s.putLoggingConfigurationCore(reqCtx, LoggingConfigInput{
+		ResourceArn:              request.GetStringParam(loggingConfigMap, "ResourceArn"),
+		LogDestinationConfigs:    request.GetStringList(loggingConfigMap, "LogDestinationConfigs"),
+		LogScope:                 request.GetStringParam(loggingConfigMap, "LogScope"),
+		LogType:                  request.GetStringParam(loggingConfigMap, "LogType"),
+		ManagedByFirewallManager: request.GetBoolParam(loggingConfigMap, "ManagedByFirewallManager"),
+		RedactedFields:           redactedFields,
+		LoggingFilterRaw:         loggingConfigMap["LoggingFilter"],
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -180,21 +133,8 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 
 // GetLoggingConfiguration retrieves the logging configuration for the specified web ACL.
 func (s *WAFv2Service) GetLoggingConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	stores, err := s.store(reqCtx)
+	config, err := s.getLoggingConfigurationCore(reqCtx, request.GetStringParam(req.Parameters, "ResourceArn"))
 	if err != nil {
-		return nil, err
-	}
-
-	config, err := stores.loggingConfigs.GetByResourceArn(resourceArn)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("LoggingConfiguration")
-		}
 		return nil, err
 	}
 
@@ -205,20 +145,7 @@ func (s *WAFv2Service) GetLoggingConfiguration(ctx context.Context, reqCtx *requ
 
 // DeleteLoggingConfiguration removes the logging configuration for the specified web ACL.
 func (s *WAFv2Service) DeleteLoggingConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := stores.loggingConfigs.Delete(resourceArn); err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("LoggingConfiguration")
-		}
+	if err := s.deleteLoggingConfigurationCore(reqCtx, request.GetStringParam(req.Parameters, "ResourceArn")); err != nil {
 		return nil, err
 	}
 
@@ -227,20 +154,11 @@ func (s *WAFv2Service) DeleteLoggingConfiguration(ctx context.Context, reqCtx *r
 
 // ListLoggingConfigurations returns a paginated list of all logging configurations.
 func (s *WAFv2Service) ListLoggingConfigurations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	scope := request.GetStringParam(req.Parameters, "Scope")
-	if err := validateScope(scope); err != nil {
-		return nil, err
-	}
-
-	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
-	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := stores.loggingConfigs.List(scope, nextMarker, maxItems)
+	result, err := s.listLoggingConfigurationsCore(reqCtx, LoggingListInput{
+		Scope:      request.GetStringParam(req.Parameters, "Scope"),
+		Limit:      pagination.GetMaxItems(req.Parameters, 100, "Limit"),
+		NextMarker: pagination.GetMarker(req.Parameters, "NextMarker"),
+	})
 	if err != nil {
 		return nil, err
 	}

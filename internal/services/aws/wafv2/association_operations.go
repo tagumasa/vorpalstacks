@@ -2,49 +2,17 @@ package wafv2
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
-	wafstore "vorpalstacks/internal/store/aws/waf"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // AssociateWebACL associates a WebACL with the specified resource ARN.
 func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
-	if webACLArn == "" {
-		return nil, invalidParamError("WebACLArn is required")
-	}
-
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = stores.webACLs.GetByARN(webACLArn)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
-		return nil, err
-	}
-
-	if err := s.ensureAssociableResource(ctx, reqCtx.GetRegion(), resourceArn); err != nil {
-		return nil, err
-	}
-
-	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := assocStore.Associate(webACLArn, resourceArn); err != nil {
+	if err := s.associateWebACLCore(ctx, reqCtx,
+		request.GetStringParam(req.Parameters, "WebACLArn"),
+		request.GetStringParam(req.Parameters, "ResourceArn")); err != nil {
 		return nil, err
 	}
 
@@ -53,27 +21,7 @@ func (s *WAFv2Service) AssociateWebACL(ctx context.Context, reqCtx *request.Requ
 
 // DisassociateWebACL removes the WebACL association from the specified resource ARN.
 func (s *WAFv2Service) DisassociateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := assocStore.GetByResourceArn(resourceArn); err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL association")
-		}
-		return nil, err
-	}
-
-	if err := assocStore.Disassociate(resourceArn); err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL association")
-		}
+	if err := s.disassociateWebACLCore(reqCtx, request.GetStringParam(req.Parameters, "ResourceArn")); err != nil {
 		return nil, err
 	}
 
@@ -99,36 +47,11 @@ var validResourceTypes = map[string]bool{
 // If ResourceType is provided, results are filtered to only include resources
 // of that type.
 func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	webACLArn := request.GetStringParam(req.Parameters, "WebACLArn")
-	if webACLArn == "" {
-		return nil, invalidParamError("WebACLArn is required")
-	}
-
-	resourceType := request.GetStringParam(req.Parameters, "ResourceType")
-	if resourceType != "" && !validResourceTypes[resourceType] {
-		return nil, invalidParamError(fmt.Sprintf("Unsupported ResourceType: %s", resourceType))
-	}
-
-	associationStores, err := s.allAssociationStores(reqCtx)
+	resources, err := s.listResourcesForWebACLCore(reqCtx,
+		request.GetStringParam(req.Parameters, "WebACLArn"),
+		request.GetStringParam(req.Parameters, "ResourceType"))
 	if err != nil {
 		return nil, err
-	}
-
-	seen := make(map[string]bool)
-	resources := make([]string, 0)
-	for _, assocStore := range associationStores {
-		associations, err := assocStore.GetByWebACLArn(webACLArn)
-		if err != nil {
-			return nil, err
-		}
-		for _, assoc := range associations {
-			if !seen[assoc.ResourceArn] {
-				if resourceType == "" || matchesResourceType(assoc.ResourceArn, resourceType) {
-					seen[assoc.ResourceArn] = true
-					resources = append(resources, assoc.ResourceArn)
-				}
-			}
-		}
 	}
 
 	return map[string]interface{}{
@@ -139,34 +62,8 @@ func (s *WAFv2Service) ListResourcesForWebACL(ctx context.Context, reqCtx *reque
 // GetWebACLForResource retrieves the WebACL associated with the specified
 // resource ARN.
 func (s *WAFv2Service) GetWebACLForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
-	if resourceArn == "" {
-		return nil, invalidParamError("ResourceArn is required")
-	}
-
-	assocStore, err := s.associationStoreFor(reqCtx, resourceArn)
+	webACL, err := s.getWebACLForResourceCore(reqCtx, request.GetStringParam(req.Parameters, "ResourceArn"))
 	if err != nil {
-		return nil, err
-	}
-
-	assoc, err := assocStore.GetByResourceArn(resourceArn)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL association for the specified resource")
-		}
-		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	webACL, err := stores.webACLs.GetByARN(assoc.WebACLArn)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
 		return nil, err
 	}
 

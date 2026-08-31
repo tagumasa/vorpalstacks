@@ -8,7 +8,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	wafstore "vorpalstacks/internal/store/aws/waf"
 )
 
 // CreateWebACL creates a new web ACL with the specified default action, rules, and visibility configuration.
@@ -56,20 +55,8 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 
 // GetWebACL retrieves the details of the specified web ACL.
 func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
-
-	stores, err := s.store(reqCtx)
+	webACL, err := s.getWebACLCore(reqCtx, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		return nil, err
-	}
-	webACL, err := stores.webACLs.Get(id)
-	if err != nil {
-		if wafstore.IsNotFound(err) {
-			return nil, notFoundError("WebACL")
-		}
 		return nil, err
 	}
 
@@ -157,117 +144,29 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 
 // UpdateWebACL updates the specified web ACL with new rules, default action, and visibility configuration, returning a new lock token.
 func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, invalidParamError("Id is required")
-	}
-
-	lockToken := request.GetStringParam(req.Parameters, "LockToken")
-	if lockToken == "" {
-		return nil, invalidParamError("LockToken is required")
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	// UpdateWebACL is a full-replace operation per the Smithy model
-	// documentation ("This operation completely replaces the mutable
-	// specifications"): DefaultAction and VisibilityConfig are required
-	// on every call, Rules omitted means an empty rule list, and
-	// capacity is never accepted from the request — the model has no
-	// Capacity member on UpdateWebACLRequest — but is always recomputed
-	// from the resulting rule set.
-	vcRaw := req.Parameters["VisibilityConfig"]
-	if vcRaw == nil {
-		return nil, invalidParamError("VisibilityConfig is required")
-	}
-	vcMap, ok := vcRaw.(map[string]interface{})
-	if !ok {
-		return nil, invalidParamError("VisibilityConfig must be an object")
-	}
-	visibilityConfig := convertVisibilityConfig(vcMap)
-	if err := validateVisibilityConfig(visibilityConfig); err != nil {
-		return nil, err
-	}
-
-	daRaw := req.Parameters["DefaultAction"]
-	if daRaw == nil {
-		return nil, invalidParamError("DefaultAction is required")
-	}
-	daMap, ok := daRaw.(map[string]interface{})
-	if !ok {
-		return nil, invalidParamError("DefaultAction must be an object")
-	}
-	daAction := convertAction(daMap)
-	if err := validateDefaultAction(daAction); err != nil {
-		return nil, err
-	}
-
-	var rules []*wafstore.Rule
-	if rulesRaw := req.Parameters["Rules"]; rulesRaw != nil {
-		parsed, pErr := parseRules(rulesRaw)
-		if pErr != nil {
-			return nil, pErr
-		}
-		rules = parsed
-	}
-
-	capacity := calculateRulesCapacity(rules)
-	if capacity > wafstore.MaxWebACLCapacity {
-		return nil, limitsExceededError(capacity)
-	}
-
-	if v := req.Parameters["TokenDomains"]; v != nil {
-		if err := validateTokenDomains(v); err != nil {
-			return nil, err
-		}
-	}
-	if v := req.Parameters["CustomResponseBodies"]; v != nil {
-		if err := validateCustomResponseBodies(v); err != nil {
-			return nil, err
-		}
-	}
-
-	updated, err := stores.webACLs.Update(id, lockToken, capacity, rules, daAction, visibilityConfig, request.GetStringParam(req.Parameters, "Description"), func(webACL *wafstore.WebACL) {
-		if v := req.Parameters["CustomResponseBodies"]; v != nil {
-			webACL.CustomResponseBodies = v
-		}
-		if v := req.Parameters["CaptchaConfig"]; v != nil {
-			webACL.CaptchaConfig = v
-		}
-		if v := req.Parameters["ChallengeConfig"]; v != nil {
-			webACL.ChallengeConfig = v
-		}
-		if v := req.Parameters["TokenDomains"]; v != nil {
-			webACL.TokenDomains = v
-		}
-		if v := req.Parameters["AssociationConfig"]; v != nil {
-			webACL.AssociationConfig = v
-		}
-		if v := req.Parameters["ApplicationConfig"]; v != nil {
-			webACL.ApplicationConfig = v
-		}
-		if v := req.Parameters["MonetizationConfig"]; v != nil {
-			webACL.MonetizationConfig = v
-		}
-		if v := req.Parameters["DataProtectionConfig"]; v != nil {
-			webACL.DataProtectionConfig = v
-		}
-		if v := req.Parameters["OnSourceDDoSProtectionConfig"]; v != nil {
-			webACL.OnSourceDDoSProtection = v
-		}
+	nextLockToken, err := s.updateWebACLCore(reqCtx, WebACLUpdateInput{
+		Id:                        request.GetStringParam(req.Parameters, "Id"),
+		LockToken:                 request.GetStringParam(req.Parameters, "LockToken"),
+		DefaultActionRaw:          req.Parameters["DefaultAction"],
+		VisibilityConfigRaw:       req.Parameters["VisibilityConfig"],
+		RulesRaw:                  req.Parameters["Rules"],
+		Description:               request.GetStringParam(req.Parameters, "Description"),
+		CustomResponseBodies:      req.Parameters["CustomResponseBodies"],
+		CaptchaConfig:             req.Parameters["CaptchaConfig"],
+		ChallengeConfig:           req.Parameters["ChallengeConfig"],
+		TokenDomains:              req.Parameters["TokenDomains"],
+		AssociationConfig:         req.Parameters["AssociationConfig"],
+		ApplicationConfig:         req.Parameters["ApplicationConfig"],
+		MonetizationConfig:        req.Parameters["MonetizationConfig"],
+		DataProtectionConfig:      req.Parameters["DataProtectionConfig"],
+		OnSourceDDoSProtectionCfg: req.Parameters["OnSourceDDoSProtectionConfig"],
 	})
 	if err != nil {
-		if wafstore.IsLockTokenMismatch(err) {
-			return nil, lockTokenError()
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"NextLockToken": updated.LockToken,
+		"NextLockToken": nextLockToken,
 	}, nil
 }
 

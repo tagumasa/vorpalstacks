@@ -221,60 +221,9 @@ func isCloudFrontResource(resourceArn string) bool {
 	return arn.GetServiceFromARN(resourceArn) == "cloudfront"
 }
 
-func (s *WAFv2Service) associationStoreFor(reqCtx *request.RequestContext, resourceArn string) (*wafstore.WebACLAssociationStore, error) {
-	if isCloudFrontResource(resourceArn) {
-		if cached, ok := s.stores.Load(wafv2GlobalAssocKey); ok {
-			if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
-				return typed, nil
-			}
-		}
-		globalStorage, err := reqCtx.GetGlobalStorage()
-		if err != nil {
-			return nil, err
-		}
-		store := wafstore.NewWebACLAssociationStore(globalStorage)
-		if actual, loaded := s.stores.LoadOrStore(wafv2GlobalAssocKey, store); loaded {
-			if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
-				return typed, nil
-			}
-		}
-		return store, nil
-	}
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	return stores.associations, nil
-}
-
-func (s *WAFv2Service) allAssociationStores(reqCtx *request.RequestContext) ([]*wafstore.WebACLAssociationStore, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	result := []*wafstore.WebACLAssociationStore{stores.associations}
-	globalStorage, err := reqCtx.GetGlobalStorage()
-	if err == nil {
-		if cached, ok := s.stores.Load(wafv2GlobalAssocKey); ok {
-			if typed, ok := cached.(*wafstore.WebACLAssociationStore); ok {
-				result = append(result, typed)
-				return result, nil
-			}
-		}
-		store := wafstore.NewWebACLAssociationStore(globalStorage)
-		if actual, loaded := s.stores.LoadOrStore(wafv2GlobalAssocKey, store); loaded {
-			if typed, ok := actual.(*wafstore.WebACLAssociationStore); ok {
-				result = append(result, typed)
-				return result, nil
-			}
-		}
-		result = append(result, store)
-	}
-	return result, nil
-}
-
 // allAssociationStoresForConnect is the admin-console counterpart of
-// allAssociationStores. The connect handler only carries a region
+// allAssociationStores (which lives on the Core layer in
+// association_core.go). The connect handler only carries a region
 // header, so the region association store is resolved through
 // GetStoresForRegion and the global-scope store through the storage
 // manager directly, with the same sync.Map caching as the HTTP path.
@@ -356,34 +305,6 @@ func ensureNotAssociated(assocStores []*wafstore.WebACLAssociationStore, webACLA
 		}
 		if len(assocs) > 0 {
 			return associatedItemError(fmt.Sprintf("WebACL %s is still associated with %d resource(s).", webACLArn, len(assocs)))
-		}
-	}
-	return nil
-}
-
-// ensureRuleGroupNotReferenced scans every WebACL in the same region for
-// a RuleGroupReferenceStatement whose ARN matches the given rule group.
-// AWS rejects deletion of a rule group that any web ACL still uses,
-// returning WAFAssociatedItemException.
-func ensureRuleGroupNotReferenced(stores *wafv2Stores, ruleGroupArn string) error {
-	if ruleGroupArn == "" {
-		return nil
-	}
-	webACLs, err := storecommon.ListAll[wafstore.WebACL](stores.webACLs.BaseStore)
-	if err != nil {
-		return err
-	}
-	for _, acl := range webACLs {
-		if acl == nil {
-			continue
-		}
-		for _, rule := range acl.Rules {
-			if rule == nil || rule.Statement == nil {
-				continue
-			}
-			if ref := rule.Statement.RuleGroupReferenceStatement; ref != nil && ref.ARN == ruleGroupArn {
-				return associatedItemError(fmt.Sprintf("RuleGroup %s is still referenced by WebACL %s.", ruleGroupArn, acl.ARN))
-			}
 		}
 	}
 	return nil

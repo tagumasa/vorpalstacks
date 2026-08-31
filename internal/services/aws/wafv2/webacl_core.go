@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"vorpalstacks/internal/common/request"
 	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	wafstore "vorpalstacks/internal/store/aws/waf"
@@ -188,6 +189,165 @@ func (s *WAFv2Service) listWebACLsCore(stores *wafv2Stores, input ListWebACLsInp
 	}
 
 	return result, nil
+}
+
+// getWebACLCore is the single entry point for retrieving a WebACL by ID.
+// The request context is taken directly because the required-Id check
+// precedes the store acquisition in the original failure precedence.
+func (s *WAFv2Service) getWebACLCore(reqCtx *request.RequestContext, id string) (*wafstore.WebACL, error) {
+	if id == "" {
+		return nil, invalidParamError("Id is required")
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	webACL, err := stores.webACLs.Get(id)
+	if err != nil {
+		if wafstore.IsNotFound(err) {
+			return nil, notFoundError("WebACL")
+		}
+		return nil, err
+	}
+
+	return webACL, nil
+}
+
+// WebACLUpdateInput is the transport-agnostic input for updating a WebACL.
+// DefaultAction, VisibilityConfig and Rules travel raw because their wire
+// conversion must run after the store acquisition, matching the original
+// failure precedence; the nine optional members travel raw with their
+// presence-based apply semantics.
+type WebACLUpdateInput struct {
+	Id                        string
+	LockToken                 string
+	DefaultActionRaw          interface{}
+	VisibilityConfigRaw       interface{}
+	RulesRaw                  interface{}
+	Description               string
+	CustomResponseBodies      interface{}
+	CaptchaConfig             interface{}
+	ChallengeConfig           interface{}
+	TokenDomains              interface{}
+	AssociationConfig         interface{}
+	ApplicationConfig         interface{}
+	MonetizationConfig        interface{}
+	DataProtectionConfig      interface{}
+	OnSourceDDoSProtectionCfg interface{}
+}
+
+// updateWebACLCore is the single entry point for updating a WebACL,
+// returning the next lock token.
+func (s *WAFv2Service) updateWebACLCore(reqCtx *request.RequestContext, in WebACLUpdateInput) (string, error) {
+	if in.Id == "" {
+		return "", invalidParamError("Id is required")
+	}
+
+	if in.LockToken == "" {
+		return "", invalidParamError("LockToken is required")
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return "", err
+	}
+
+	// UpdateWebACL is a full-replace operation per the Smithy model
+	// documentation ("This operation completely replaces the mutable
+	// specifications"): DefaultAction and VisibilityConfig are required
+	// on every call, Rules omitted means an empty rule list, and
+	// capacity is never accepted from the request — the model has no
+	// Capacity member on UpdateWebACLRequest — but is always recomputed
+	// from the resulting rule set.
+	vcRaw := in.VisibilityConfigRaw
+	if vcRaw == nil {
+		return "", invalidParamError("VisibilityConfig is required")
+	}
+	vcMap, ok := vcRaw.(map[string]interface{})
+	if !ok {
+		return "", invalidParamError("VisibilityConfig must be an object")
+	}
+	visibilityConfig := convertVisibilityConfig(vcMap)
+	if err := validateVisibilityConfig(visibilityConfig); err != nil {
+		return "", err
+	}
+
+	daRaw := in.DefaultActionRaw
+	if daRaw == nil {
+		return "", invalidParamError("DefaultAction is required")
+	}
+	daMap, ok := daRaw.(map[string]interface{})
+	if !ok {
+		return "", invalidParamError("DefaultAction must be an object")
+	}
+	daAction := convertAction(daMap)
+	if err := validateDefaultAction(daAction); err != nil {
+		return "", err
+	}
+
+	var rules []*wafstore.Rule
+	if in.RulesRaw != nil {
+		parsed, pErr := parseRules(in.RulesRaw)
+		if pErr != nil {
+			return "", pErr
+		}
+		rules = parsed
+	}
+
+	capacity := calculateRulesCapacity(rules)
+	if capacity > wafstore.MaxWebACLCapacity {
+		return "", limitsExceededError(capacity)
+	}
+
+	if in.TokenDomains != nil {
+		if err := validateTokenDomains(in.TokenDomains); err != nil {
+			return "", err
+		}
+	}
+	if in.CustomResponseBodies != nil {
+		if err := validateCustomResponseBodies(in.CustomResponseBodies); err != nil {
+			return "", err
+		}
+	}
+
+	updated, err := stores.webACLs.Update(in.Id, in.LockToken, capacity, rules, daAction, visibilityConfig, in.Description, func(webACL *wafstore.WebACL) {
+		if in.CustomResponseBodies != nil {
+			webACL.CustomResponseBodies = in.CustomResponseBodies
+		}
+		if in.CaptchaConfig != nil {
+			webACL.CaptchaConfig = in.CaptchaConfig
+		}
+		if in.ChallengeConfig != nil {
+			webACL.ChallengeConfig = in.ChallengeConfig
+		}
+		if in.TokenDomains != nil {
+			webACL.TokenDomains = in.TokenDomains
+		}
+		if in.AssociationConfig != nil {
+			webACL.AssociationConfig = in.AssociationConfig
+		}
+		if in.ApplicationConfig != nil {
+			webACL.ApplicationConfig = in.ApplicationConfig
+		}
+		if in.MonetizationConfig != nil {
+			webACL.MonetizationConfig = in.MonetizationConfig
+		}
+		if in.DataProtectionConfig != nil {
+			webACL.DataProtectionConfig = in.DataProtectionConfig
+		}
+		if in.OnSourceDDoSProtectionCfg != nil {
+			webACL.OnSourceDDoSProtection = in.OnSourceDDoSProtectionCfg
+		}
+	})
+	if err != nil {
+		if wafstore.IsLockTokenMismatch(err) {
+			return "", lockTokenError()
+		}
+		return "", err
+	}
+
+	return updated.LockToken, nil
 }
 
 // WebACLExistsForInvoker reports whether a Web ACL with the given ARN or
