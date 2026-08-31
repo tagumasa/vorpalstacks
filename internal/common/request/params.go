@@ -2,6 +2,8 @@
 package request
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -68,6 +70,30 @@ func GetIntParamCaseInsensitive(params map[string]interface{}, key string) (int,
 		}
 	}
 	return 0, false
+}
+
+// ErrNonIntegerParameter reports a parameter that is present on the wire
+// but whose value cannot be read as an integer — a wire-type violation the
+// caller must reject instead of silently treating the member as omitted.
+var ErrNonIntegerParameter = errors.New("parameter value is not an integer")
+
+// GetIntParamStrictCaseInsensitive extracts an integer parameter with the
+// same case-insensitive key matching as GetIntParamCaseInsensitive, but
+// distinguishes three states: (value, false, nil) when the member is
+// absent, (value, true, nil) when it is present and parseable, and
+// (0, true, ErrNonIntegerParameter) when it is present but unparseable.
+// Typed request members must reject the last state rather than falling
+// back to a default: only an omitted member means "use the default".
+func GetIntParamStrictCaseInsensitive(params map[string]interface{}, key string) (int, bool, error) {
+	for _, k := range []string{key, LowerFirst(key), strings.ToLower(key)} {
+		if v, ok := params[k]; ok {
+			if n, ok := asInt(v); ok {
+				return n, true, nil
+			}
+			return 0, true, fmt.Errorf("%w: %s", ErrNonIntegerParameter, k)
+		}
+	}
+	return 0, false, nil
 }
 
 func asInt(v interface{}) (int, bool) {

@@ -87,12 +87,6 @@ func validatePermissionActionsCount(actions []string) error {
 	return nil
 }
 
-// validatePermissionLabelFormat checks the label against the store's single
-// permission-label rule (length and character set).
-func validatePermissionLabelFormat(label string) error {
-	return convertStoreError(sqsstore.ValidatePermissionLabel(label))
-}
-
 // validateMessageMoveRate enforces the AWS SQS limit: MaxNumberOfMessagesPerSecond
 // must be between 1 and 500. A value of 0 means "unset" and selects the
 // system-optimised variable rate.

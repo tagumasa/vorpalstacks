@@ -479,3 +479,30 @@ func TestGetArrayParamLowerFirst(t *testing.T) {
 		assert.Len(t, result, 2)
 	})
 }
+
+// TestGetIntParamStrictCaseInsensitive pins the three states of the strict
+// integer lookup: absent, present-and-parseable, and present-but-unparseable.
+// Typed request members must reject the last state instead of treating the
+// member as omitted.
+func TestGetIntParamStrictCaseInsensitive(t *testing.T) {
+	params := map[string]interface{}{}
+	if v, present, err := GetIntParamStrictCaseInsensitive(params, "Absent"); present || err != nil || v != 0 {
+		t.Fatalf("absent member: got (%d, %v, %v)", v, present, err)
+	}
+
+	params["MaxNumberOfMessages"] = "10"
+	if v, present, err := GetIntParamStrictCaseInsensitive(params, "MaxNumberOfMessages"); !present || err != nil || v != 10 {
+		t.Fatalf("parseable member: got (%d, %v, %v)", v, present, err)
+	}
+
+	params["WaitTimeSeconds"] = "abc"
+	if _, present, err := GetIntParamStrictCaseInsensitive(params, "WaitTimeSeconds"); !present || err == nil {
+		t.Fatalf("unparseable member: got (%v, %v), want present with error", present, err)
+	}
+
+	// The case-insensitive fallbacks match the lenient helpers.
+	params = map[string]interface{}{"visibilitytimeout": "5"}
+	if v, present, err := GetIntParamStrictCaseInsensitive(params, "VisibilityTimeout"); !present || err != nil || v != 5 {
+		t.Fatalf("lower-case fallback: got (%d, %v, %v)", v, present, err)
+	}
+}

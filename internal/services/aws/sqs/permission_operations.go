@@ -12,14 +12,7 @@ import (
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_AddPermission.html
 func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
-
 	label := request.GetParamCaseInsensitive(req.Parameters, "Label")
-	if label == "" {
-		return nil, ErrMissingParameter
-	}
 
 	var awsAccountIDs []string
 	var actions []string
@@ -73,20 +66,18 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 		}
 	}
 
-	if err := validatePermissionLabelFormat(label); err != nil {
-		return nil, err
-	}
-	if err := validatePermissionActionsCount(actions); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.AddPermission(queueURL, label, awsAccountIDs, actions); err != nil {
-		return nil, convertStoreError(err)
+	if err := s.addPermissionCore(store, AddPermissionInput{
+		QueueURL:      queueURL,
+		Label:         label,
+		AWSAccountIDs: awsAccountIDs,
+		Actions:       actions,
+	}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -96,22 +87,18 @@ func (s *SQSService) AddPermission(ctx context.Context, reqCtx *request.RequestC
 // https://docs.aws.amazon.com/AWSSimpleQueueService/latest/API/API_RemovePermission.html
 func (s *SQSService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	queueURL := request.GetParamCaseInsensitive(req.Parameters, "QueueUrl")
-	if queueURL == "" {
-		return nil, ErrMissingParameter
-	}
-
 	label := request.GetParamCaseInsensitive(req.Parameters, "Label")
-	if label == "" {
-		return nil, ErrMissingParameter
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.RemovePermission(queueURL, label); err != nil {
-		return nil, convertStoreError(err)
+	if err := s.removePermissionCore(store, RemovePermissionInput{
+		QueueURL: queueURL,
+		Label:    label,
+	}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

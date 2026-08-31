@@ -21,6 +21,13 @@ var (
 	ErrInvalidQueueName = awserrors.NewAWSError("InvalidParameterValue", "Invalid queue name.", 400)
 	// ErrInvalidParameterValue is returned when a parameter value is invalid.
 	ErrInvalidParameterValue = awserrors.NewAWSError("InvalidParameterValue", "Invalid parameter value.", 400)
+	// ErrSerializationException is returned when a typed request member
+	// carries a value of the wrong wire type, e.g. a non-integer string for
+	// an Integer member such as MaxNumberOfMessages. The SQS model serves
+	// awsJson1_0 (query-compatible); the protocol rejects such payloads
+	// during deserialisation before validation, and no service model
+	// enumerates this protocol-level error on its operations.
+	ErrSerializationException = awserrors.NewAWSError("SerializationException", "The request payload couldn't be deserialized.", 400)
 	// ErrMissingParameter is returned when a required parameter is missing.
 	ErrMissingParameter = awserrors.NewAWSError("MissingParameter", "The request must contain a required parameter.", 400)
 	// ErrInvalidBatchEntryId is returned when a batch entry ID is invalid.
