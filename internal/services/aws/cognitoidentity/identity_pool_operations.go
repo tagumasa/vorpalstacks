@@ -6,7 +6,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 )
 
 // CreateIdentityPool creates a new Cognito identity pool.
@@ -22,11 +21,11 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 		Region:                         reqCtx.GetRegion(),
 	}
 
-	if providers, perr := parseCognitoIdentityProviders(req); perr != nil {
+	providers, perr := parseCognitoIdentityProviders(req.Parameters["CognitoIdentityProviders"])
+	if perr != nil {
 		return nil, perr
-	} else {
-		input.CognitoIdentityProviders = providers
 	}
+	input.CognitoIdentityProviders = providers
 
 	input.DeveloperProviderName = req.GetParam("DeveloperProviderName")
 	input.SupportedLoginProviders = parseMapParam(req, "SupportedLoginProviders")
@@ -58,17 +57,12 @@ func (s *CognitoIdentityService) CreateIdentityPool(ctx context.Context, reqCtx 
 
 // DescribeIdentityPool returns details about a Cognito identity pool.
 func (s *CognitoIdentityService) DescribeIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getIdentityPoolID(req)
-	if !validateIdentityPoolId(poolID) {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.describeIdentityPoolCore(store, poolID)
+	result, err := s.describeIdentityPoolCore(store, getIdentityPoolID(req))
 	if err != nil {
 		return nil, err
 	}
@@ -77,14 +71,12 @@ func (s *CognitoIdentityService) DescribeIdentityPool(ctx context.Context, reqCt
 
 // DeleteIdentityPool deletes a Cognito identity pool.
 func (s *CognitoIdentityService) DeleteIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getIdentityPoolID(req)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.deleteIdentityPoolCore(store, poolID); err != nil {
+	if err := s.deleteIdentityPoolCore(store, getIdentityPoolID(req)); err != nil {
 		return nil, err
 	}
 	return response.EmptyResponse(), nil
@@ -126,202 +118,75 @@ func (s *CognitoIdentityService) ListIdentityPools(ctx context.Context, reqCtx *
 
 // UpdateIdentityPool updates a Cognito identity pool.
 func (s *CognitoIdentityService) UpdateIdentityPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getIdentityPoolID(req)
-	if !validateIdentityPoolId(poolID) {
-		return nil, ErrInvalidParameter
-	}
+	allowUnauthRaw, allowUnauthProvided := req.Parameters["AllowUnauthenticatedIdentities"]
+	allowClassicRaw, allowClassicProvided := req.Parameters["AllowClassicFlow"]
 
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
+	input := UpdateIdentityPoolInput{
+		IdentityPoolID:            getIdentityPoolID(req),
+		PoolName:                  req.GetParam("IdentityPoolName"),
+		AllowUnauthProvided:       allowUnauthProvided,
+		AllowUnauthRaw:            allowUnauthRaw,
+		AllowClassicProvided:      allowClassicProvided,
+		AllowClassicRaw:           allowClassicRaw,
+		DeveloperProviderName:     req.GetParam("DeveloperProviderName"),
+		ProvidersRaw:              req.Parameters["CognitoIdentityProviders"],
+		SupportedLoginProviders:   parseMapParam(req, "SupportedLoginProviders"),
+		OpenIdConnectProviderARNs: getStringSliceParam(req, "OpenIdConnectProviderARNs"),
+		SamlProviderARNs:          getStringSliceParam(req, "SamlProviderARNs"),
 	}
-
-	pool, err := store.GetIdentityPool(poolID)
-	if err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
-	}
-
-	// IdentityPoolName is @required in the Smithy IdentityPool shape.
-	poolName := req.GetParam("IdentityPoolName")
-	if poolName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateIdentityPoolName(poolName) {
-		return nil, ErrInvalidParameter
-	}
-	pool.Name = poolName
-
-	// AllowUnauthenticatedIdentities is @required in the Smithy shape.
-	allowUnauthVal, hasUnauth := req.Parameters["AllowUnauthenticatedIdentities"]
-	if !hasUnauth {
-		return nil, ErrInvalidParameter
-	}
-	if b, ok := allowUnauthVal.(bool); ok {
-		pool.AllowUnauthenticatedIdentities = b
-	} else {
-		return nil, ErrInvalidParameter
-	}
-
-	if allowClassic, ok := req.Parameters["AllowClassicFlow"]; ok {
-		b, ok := allowClassic.(bool)
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		pool.AllowClassicFlow = b
-	}
-	if providerName := req.GetParam("DeveloperProviderName"); providerName != "" {
-		if !validateDeveloperProviderName(providerName) {
-			return nil, ErrInvalidParameter
-		}
-		pool.DeveloperProviderName = providerName
-	}
-	if providers, err := parseCognitoIdentityProviders(req); err != nil {
-		return nil, err
-	} else if len(providers) > 0 {
-		pool.CognitoIdentityProviders = providerOutsToStore(providers)
-	}
-	if loginProviders := parseMapParam(req, "SupportedLoginProviders"); len(loginProviders) > 0 {
-		if !validateMapSize(len(loginProviders), 10) {
-			return nil, ErrInvalidParameter
-		}
-		pool.SupportedLoginProviders = loginProviders
-	}
-	if oidcArns := getStringSliceParam(req, "OpenIdConnectProviderARNs"); len(oidcArns) > 0 {
-		for _, arn := range oidcArns {
-			if !validateRoleARN(arn) {
-				return nil, ErrInvalidParameter
-			}
-		}
-		pool.OpenIdConnectProviderARNs = oidcArns
-	}
-	if samlArns := getStringSliceParam(req, "SamlProviderARNs"); len(samlArns) > 0 {
-		for _, arn := range samlArns {
-			if !validateRoleARN(arn) {
-				return nil, ErrInvalidParameter
-			}
-		}
-		pool.SamlProviderARNs = samlArns
-	}
-
-	var updatedTags map[string]string
 	if _, ok := req.Parameters["IdentityPoolTags"]; ok {
-		updatedTags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
-		if !validateTagKeys(updatedTags) || !validateTagValues(updatedTags) {
-			return nil, ErrInvalidParameter
-		}
-		// A single replace write swaps the whole tag set under the tag
-		// store's lock, so a failure cannot leave a partially-untagged
-		// resource and no rollback path is needed.
-		if err := store.Replace(pool.Arn, updatedTags); err != nil {
-			return nil, ErrInternalError
-		}
-	} else {
-		updatedTags, _ = store.List(pool.Arn)
+		input.TagsProvided = true
+		input.Tags = tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "IdentityPoolTags"))
 	}
 
-	if err := store.UpdateIdentityPool(pool); err != nil {
-		return nil, ErrInternalError
+	result, err := s.updateIdentityPoolCore(reqCtx, input)
+	if err != nil {
+		return nil, err
 	}
 
-	pool.Tags = updatedTags
-	return poolOutToHTTP(poolToOut(pool)), nil
+	return poolOutToHTTP(result), nil
 }
 
 // GetIdentityPoolRoles returns the roles for a Cognito identity pool.
 func (s *CognitoIdentityService) GetIdentityPoolRoles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolID := getIdentityPoolID(req)
-	if !validateIdentityPoolId(poolID) {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
+	result, err := s.getIdentityPoolRolesCore(reqCtx, getIdentityPoolID(req))
 	if err != nil {
 		return nil, err
 	}
 
-	authRole, unauthRole, mappings, err := store.GetIdentityPoolRoles(poolID)
-	if err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
-	}
-
-	result := map[string]interface{}{
-		"IdentityPoolId": poolID,
+	resp := map[string]interface{}{
+		"IdentityPoolId": result.IdentityPoolID,
 	}
 
 	roles := map[string]interface{}{}
-	if authRole != "" {
-		roles["authenticated"] = authRole
+	if result.AuthRole != "" {
+		roles["authenticated"] = result.AuthRole
 	}
-	if unauthRole != "" {
-		roles["unauthenticated"] = unauthRole
+	if result.UnauthRole != "" {
+		roles["unauthenticated"] = result.UnauthRole
 	}
 	if len(roles) > 0 {
-		result["Roles"] = roles
+		resp["Roles"] = roles
 	}
-	if len(mappings) > 0 {
-		result["RoleMappings"] = formatRoleMappings(mappings)
+	if len(result.RoleMappings) > 0 {
+		resp["RoleMappings"] = formatRoleMappings(result.RoleMappings)
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // SetIdentityPoolRoles sets the roles for a Cognito identity pool.
 func (s *CognitoIdentityService) SetIdentityPoolRoles(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	poolID := getIdentityPoolID(req)
-	if !validateIdentityPoolId(poolID) {
-		return nil, ErrInvalidParameter
-	}
+	rolesRaw, rolesProvided := req.Parameters["Roles"]
 
-	store, err := s.store(reqCtx)
-	if err != nil {
+	if err := s.setIdentityPoolRolesCore(reqCtx, SetIdentityPoolRolesInput{
+		IdentityPoolID:  poolID,
+		RolesProvided:   rolesProvided,
+		RolesRaw:        rolesRaw,
+		RoleMappingsRaw: req.Parameters["RoleMappings"],
+	}); err != nil {
 		return nil, err
-	}
-
-	authRole, unauthRole := "", ""
-	if rolesVal, ok := req.Parameters["Roles"]; ok {
-		rolesMap, ok := rolesVal.(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		for k := range rolesMap {
-			if !validRoleTypes[k] {
-				return nil, ErrInvalidParameter
-			}
-		}
-		if !validateMapSize(len(rolesMap), 2) {
-			return nil, ErrInvalidParameter
-		}
-		if v, ok := rolesMap["authenticated"].(string); ok {
-			authRole = v
-		}
-		if v, ok := rolesMap["unauthenticated"].(string); ok {
-			unauthRole = v
-		}
-		if authRole != "" && !validateRoleARN(authRole) {
-			return nil, ErrInvalidParameter
-		}
-		if unauthRole != "" && !validateRoleARN(unauthRole) {
-			return nil, ErrInvalidParameter
-		}
-	} else {
-		// Roles is semantically required by AWS. Absent Roles would silently
-		// clear all existing roles — a destructive operation that AWS rejects
-		// with InvalidParameterException.
-		return nil, ErrInvalidParameter
-	}
-	if !validateRoleKeys(authRole, unauthRole) {
-		return nil, ErrInvalidParameter
-	}
-	mappingDTOs, err := parseRoleMappings(req)
-	if err != nil {
-		return nil, err
-	}
-	if !validateMapSize(len(mappingDTOs), 10) {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := store.SetIdentityPoolRoles(poolID, authRole, unauthRole, roleMappingMapToStore(mappingDTOs)); err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
 	return map[string]interface{}{

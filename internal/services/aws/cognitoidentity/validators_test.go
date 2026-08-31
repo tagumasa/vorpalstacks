@@ -152,3 +152,20 @@ func TestValidatePaginationKeyAndRoleARNUnicodeLengths(t *testing.T) {
 		t.Error("2049-character CJK role ARN accepted")
 	}
 }
+
+// TestCognitoIdentityPoolIDFromARN pins the tag resource-key parse: the pool
+// ID is the identitypool/<id> resource segment of the pool ARN, and any
+// other resource shape yields no pool (the caller rejects the key as a
+// malformed parameter rather than a missing resource).
+func TestCognitoIdentityPoolIDFromARN(t *testing.T) {
+	id := cognitoIdentityPoolIDFromARN("arn:aws:cognito-identity:us-east-1:123456789012:identitypool/us-east-1:abcdef")
+	if id != "us-east-1:abcdef" {
+		t.Fatalf("pool ID not extracted: got %q", id)
+	}
+	if id := cognitoIdentityPoolIDFromARN("arn:aws:cognito-identity:us-east-1:123456789012:userpool/x"); id != "" {
+		t.Fatalf("non-identitypool ARN yielded a pool ID: %q", id)
+	}
+	if id := cognitoIdentityPoolIDFromARN("not-an-arn"); id != "" {
+		t.Fatalf("malformed key yielded a pool ID: %q", id)
+	}
+}

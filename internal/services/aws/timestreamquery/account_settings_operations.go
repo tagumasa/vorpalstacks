@@ -13,7 +13,8 @@ func (s *TimestreamQueryService) DescribeAccountSettings(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
-	settings, err := store.accountSettingsStore.GetAccountSettings()
+
+	settings, err := s.describeAccountSettingsCore(store)
 	if err != nil {
 		return nil, err
 	}
@@ -32,29 +33,21 @@ func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqC
 		maxQueryTCU = &tcu
 	}
 
-	queryPricingModel := request.GetParamCaseInsensitive(req.Parameters, "QueryPricingModel")
-
-	// Validate QueryPricingModel enum (Smithy: BYTES_SCANNED, COMPUTE_UNITS).
-	if queryPricingModel != "" && !validQueryPricingModels[queryPricingModel] {
-		return nil, ErrValidationException
+	input := UpdateAccountSettingsInput{
+		MaxQueryTCU:       maxQueryTCU,
+		QueryPricingModel: request.GetParamCaseInsensitive(req.Parameters, "QueryPricingModel"),
 	}
-
-	queryComputeType := ""
-	var provisionedCapacity *tsstore.ProvisionedCapacitySettings
 
 	if qcMap := request.GetMapParamCaseInsensitive(req.Parameters, "QueryCompute"); qcMap != nil {
 		if mode, ok := qcMap["ComputeMode"].(string); ok {
-			// Validate ComputeMode enum (Smithy: ON_DEMAND, PROVISIONED).
-			if mode != "" && !validComputeModes[mode] {
-				return nil, ErrValidationException
-			}
-			queryComputeType = mode
+			input.HasComputeMode = true
+			input.ComputeMode = mode
 		}
 
 		// Parse ProvisionedCapacityRequest (Smithy: TargetQueryTCU +
 		// NotificationConfiguration).
 		if pcMap, ok := qcMap["ProvisionedCapacity"].(map[string]interface{}); ok {
-			provisionedCapacity = parseProvisionedCapacityRequest(pcMap)
+			input.ProvisionedCapacity = parseProvisionedCapacityRequest(pcMap)
 		}
 	}
 
@@ -62,7 +55,8 @@ func (s *TimestreamQueryService) UpdateAccountSettings(ctx context.Context, reqC
 	if err != nil {
 		return nil, err
 	}
-	settings, err := store.accountSettingsStore.UpdateAccountSettings(maxQueryTCU, queryPricingModel, queryComputeType, "", provisionedCapacity)
+
+	settings, err := s.updateAccountSettingsCore(store, input)
 	if err != nil {
 		return nil, err
 	}

@@ -42,6 +42,8 @@ func (h *AdminHandler) ListScheduledQueries(ctx context.Context, req *connect.Re
 
 	result, err := h.service.ListScheduledQueriesCore(stores, ListScheduledQueriesInput{
 		Region: region,
+		// The admin console sends no pagination members; the empty raw
+		// strings select the Core defaults.
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

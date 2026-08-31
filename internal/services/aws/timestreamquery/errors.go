@@ -18,4 +18,8 @@ var (
 	ErrQueryExecutionError = awserrors.NewAWSError("QueryExecutionException", "Query execution failed.", http.StatusBadRequest)
 	// ErrResourceNotFound is returned when the specified resource does not exist.
 	ErrResourceNotFound = awserrors.NewAWSError("ResourceNotFoundException", "The resource was not found.", http.StatusNotFound)
+	// ErrSerializationException is returned when a request member's wire
+	// type violates the model — the aws-json protocol rejects such payloads
+	// during deserialisation, before validation, e.g. a non-integer MaxRows.
+	ErrSerializationException = awserrors.NewAWSError("SerializationException", "The request payload couldn't be deserialized.", http.StatusBadRequest)
 )

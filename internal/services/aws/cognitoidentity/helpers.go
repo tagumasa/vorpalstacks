@@ -35,42 +35,6 @@ func formatLoginKeys(logins map[string]string) []string {
 	return keys
 }
 
-func parseCognitoIdentityProviders(req *request.ParsedRequest) ([]ProviderOut, error) {
-	val, ok := req.Parameters["CognitoIdentityProviders"]
-	if !ok {
-		return nil, nil
-	}
-	slice, ok := val.([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-	providers := make([]ProviderOut, 0)
-	for _, v := range slice {
-		m, ok := v.(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		provider := ProviderOut{}
-		if name, ok := m["ProviderName"].(string); ok {
-			if !validateProviderName(name) {
-				return nil, ErrInvalidParameter
-			}
-			provider.ProviderName = name
-		}
-		if clientID, ok := m["ClientId"].(string); ok {
-			if !validateProviderClientId(clientID) {
-				return nil, ErrInvalidParameter
-			}
-			provider.ClientID = clientID
-		}
-		if check, ok := m["ServerSideTokenCheck"].(bool); ok {
-			provider.ServerSideTokenCheck = check
-		}
-		providers = append(providers, provider)
-	}
-	return providers, nil
-}
-
 func parseMapParam(req *request.ParsedRequest, key string) map[string]string {
 	if val, ok := req.Parameters[key]; ok {
 		if m, ok := val.(map[string]interface{}); ok {
@@ -78,74 +42,6 @@ func parseMapParam(req *request.ParsedRequest, key string) map[string]string {
 		}
 	}
 	return nil
-}
-
-func parseRoleMappings(req *request.ParsedRequest) (map[string]RoleMappingInput, error) {
-	val, ok := req.Parameters["RoleMappings"]
-	if !ok {
-		return nil, nil
-	}
-	m, ok := val.(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-	result := make(map[string]RoleMappingInput)
-	for k, v := range m {
-		mapping, ok := v.(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		rm := RoleMappingInput{}
-		if t, ok := mapping["Type"].(string); ok {
-			rm.Type = t
-		}
-		if arr, ok := mapping["AmbiguousRoleResolution"].(string); ok {
-			rm.AmbiguousRoleResolution = arr
-		}
-		if rules, ok := mapping["RulesConfiguration"].(map[string]interface{}); ok {
-			rc, err := parseRulesConfiguration(rules)
-			if err != nil {
-				return nil, err
-			}
-			rm.RulesConfiguration = rc
-		}
-		result[k] = rm
-	}
-	if !validateRoleMappings(result) {
-		return nil, ErrInvalidParameter
-	}
-	return result, nil
-}
-
-func parseRulesConfiguration(m map[string]interface{}) (*RulesConfigInput, error) {
-	rules, ok := m["Rules"].([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-	config := &RulesConfigInput{
-		Rules: make([]MappingRuleInput, 0),
-	}
-	for _, r := range rules {
-		rule, ok := r.(map[string]interface{})
-		if !ok {
-			return nil, ErrInvalidParameter
-		}
-		mr := MappingRuleInput{}
-		if claim, ok := rule["Claim"].(string); ok {
-			mr.Claim = claim
-		}
-		if matchType, ok := rule["MatchType"].(string); ok {
-			mr.MatchType = matchType
-		}
-		if value, ok := rule["Value"].(string); ok {
-			mr.Value = value
-		}
-		if roleArn, ok := rule["RoleARN"].(string); ok {
-			mr.RoleARN = roleArn
-		}
-		config.Rules = append(config.Rules, mr)
-	}
-	return config, nil
 }
 
 func formatRoleMappings(mappings map[string]cognitoidentitystore.RoleMapping) map[string]interface{} {

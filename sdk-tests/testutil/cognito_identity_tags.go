@@ -12,7 +12,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(tc *cognitoIdentityContext) []Test
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito-identity", "TagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, r.accountID, tc.poolID)
 		_, err := tc.client.TagResource(tc.ctx, &cognitoidentity.TagResourceInput{
 			ResourceArn: aws.String(arn),
 			Tags: map[string]string{
@@ -37,7 +37,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(tc *cognitoIdentityContext) []Test
 
 	results = append(results, r.RunTest("cognito-identity", "ListTagsForResource", func() error {
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentity.ListTagsForResourceInput{
-			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)),
+			ResourceArn: aws.String(fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, r.accountID, tc.poolID)),
 		})
 		if err != nil {
 			return err
@@ -55,7 +55,7 @@ func (r *TestRunner) cognitoIdentityTagsTests(tc *cognitoIdentityContext) []Test
 	}))
 
 	results = append(results, r.RunTest("cognito-identity", "UntagResource", func() error {
-		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, tc.poolID, r.accountID)
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s", r.region, r.accountID, tc.poolID)
 		_, err := tc.client.UntagResource(tc.ctx, &cognitoidentity.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"Team"},
@@ -71,6 +71,33 @@ func (r *TestRunner) cognitoIdentityTagsTests(tc *cognitoIdentityContext) []Test
 		}
 		if _, ok := resp.Tags["Team"]; ok {
 			return fmt.Errorf("team tag should have been removed")
+		}
+		return nil
+	}))
+
+	// Tag operations against a pool that does not exist fail with
+	// ResourceNotFoundException (404), as the service model specifies.
+	results = append(results, r.RunTest("cognito-identity", "TagResource_NonExistentPool", func() error {
+		arn := fmt.Sprintf("arn:aws:cognito-identity:%s:%s:identitypool/%s:no-such-pool", r.region, r.accountID, r.region)
+		_, err := tc.client.TagResource(tc.ctx, &cognitoidentity.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags:        map[string]string{"Environment": "test"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &cognitoidentity.UntagResourceInput{
+			ResourceArn: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &cognitoidentity.ListTagsForResourceInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

@@ -2,15 +2,11 @@ package timestreamquery
 
 import (
 	"context"
-	"strconv"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/pkg/sqlparser"
-
-	"github.com/google/uuid"
 )
 
 // QueryStatus represents the status of a query execution.
@@ -75,97 +71,24 @@ func (s *TimestreamQueryService) DescribeEndpoints(ctx context.Context, reqCtx *
 
 // Query executes a query and returns the results.
 func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-	if queryString == "" {
-		return nil, ErrValidationException
-	}
-	if err := validateQueryString(queryString); err != nil {
-		return nil, err
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	queryID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	now := time.Now().UTC()
-
-	queryCtx, queryCancel := context.WithCancel(ctx)
-	s.cancelFuncs.Store(queryID, queryCancel)
-	defer func() {
-		s.cancelFuncs.Delete(queryID)
-		queryCancel()
-	}()
-
-	queryInfo := &QueryInfo{
-		QueryID:     queryID,
-		QueryString: queryString,
-		Status:      QueryStatusRunning,
-		SubmitTime:  now,
-		Cancelled:   false,
+	result, err := s.queryCore(ctx, stores, QueryInput{
+		QueryString:  request.GetParamCaseInsensitive(req.Parameters, "QueryString"),
+		MaxRowsRaw:   request.GetParamCaseInsensitive(req.Parameters, "MaxRows"),
+		NextTokenRaw: request.GetParamCaseInsensitive(req.Parameters, "NextToken"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
-		logs.Warn("Failed to store query info", logs.Err(err))
-	}
-
-	result, execErr := s.executeSQLQuery(queryCtx, stores, queryString)
-
-	var latestInfo QueryInfo
-	if getErr := stores.queryInfoStore.Get(queryID, &latestInfo); getErr == nil {
-		if latestInfo.Cancelled {
-			logs.Info("Timestream query was cancelled", logs.String("queryId", queryID))
-			return nil, ErrQueryExecutionError
-		}
-	}
-
-	if execErr != nil {
-		queryInfo.Status = QueryStatusFailed
-		queryInfo.Error = execErr.Error()
-		queryInfo.CompletionTime = time.Now().UTC()
-		if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
-			logs.Warn("Failed to persist failed query info", logs.String("queryId", queryID), logs.Err(err))
-		}
-		return nil, execErr
-	}
-
-	queryInfo.Status = QueryStatusSucceeded
-	queryInfo.CompletionTime = time.Now().UTC()
-	queryInfo.CachedResult = result
-	if err := stores.queryInfoStore.Put(queryID, queryInfo); err != nil {
-		logs.Warn("Failed to update query info", logs.Err(err))
-	}
-
-	maxRows := maxQueryRows
-	if maxStr := request.GetParamCaseInsensitive(req.Parameters, "MaxRows"); maxStr != "" {
-		if val, err := strconv.Atoi(maxStr); err == nil {
-			if err := validateMaxResultsInRange(val, "MaxRows", rangeMaxQueryResults); err != nil {
-				return nil, err
-			}
-			maxRows = val
-		}
-	}
-
-	offset := 0
-	if nextToken := request.GetParamCaseInsensitive(req.Parameters, "NextToken"); nextToken != "" {
-		val, err := strconv.Atoi(nextToken)
-		if err != nil || val < 0 {
-			return nil, ErrValidationException
-		}
-		offset = val
-	}
-
-	totalRows := len(result.Rows)
-	var pagedRows []map[string]interface{}
-	for i := offset; i < totalRows && len(pagedRows) < maxRows; i++ {
-		pagedRows = append(pagedRows, result.Rows[i])
-	}
-
-	formattedRows := s.formatRowsForResponse(pagedRows, result.ColumnInfo)
+	formattedRows := s.formatRowsForResponse(result.Rows, result.ColumnInfo)
 
 	response := map[string]interface{}{
-		"QueryId":    queryID,
+		"QueryId":    result.QueryID,
 		"Rows":       formattedRows,
 		"ColumnInfo": result.ColumnInfo,
 		"QueryStatus": map[string]interface{}{
@@ -175,8 +98,8 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 		},
 	}
 
-	if offset+maxRows < totalRows {
-		response["NextToken"] = strconv.Itoa(offset + maxRows)
+	if result.NextToken != "" {
+		response["NextToken"] = result.NextToken
 	}
 
 	return response, nil
@@ -184,35 +107,13 @@ func (s *TimestreamQueryService) Query(ctx context.Context, reqCtx *request.Requ
 
 // CancelQuery cancels a running query.
 func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryID := request.GetParamCaseInsensitive(req.Parameters, "QueryId")
-	if queryID == "" {
-		return nil, ErrValidationException
-	}
-	if err := validateQueryID(queryID); err != nil {
-		return nil, err
-	}
-
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var queryInfo QueryInfo
-	if err := stores.queryInfoStore.Get(queryID, &queryInfo); err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if cancelFn, ok := s.cancelFuncs.LoadAndDelete(queryID); ok {
-		if fn, ok := cancelFn.(context.CancelFunc); ok {
-			fn()
-		}
-	}
-
-	queryInfo.Cancelled = true
-	queryInfo.Status = QueryStatusCancelled
-	queryInfo.CompletionTime = time.Now().UTC()
-	if err := stores.queryInfoStore.Put(queryID, &queryInfo); err != nil {
-		logs.Warn("Failed to update cancelled query info", logs.Err(err))
+	if err := s.cancelQueryCore(stores, request.GetParamCaseInsensitive(req.Parameters, "QueryId")); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -222,61 +123,25 @@ func (s *TimestreamQueryService) CancelQuery(ctx context.Context, reqCtx *reques
 
 // PrepareQuery prepares a query for execution and validates its syntax.
 func (s *TimestreamQueryService) PrepareQuery(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	queryString := request.GetParamCaseInsensitive(req.Parameters, "QueryString")
-	if queryString == "" {
-		return nil, ErrValidationException
-	}
-	if err := validateQueryString(queryString); err != nil {
+	result, err := s.prepareQueryCore(PrepareQueryInput{
+		QueryString:     request.GetParamCaseInsensitive(req.Parameters, "QueryString"),
+		ValidateOnlyRaw: req.Parameters["ValidateOnly"],
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	// Parse ValidateOnly. When true, AWS validates syntax only and
-	// does not compute column metadata.
-	validateOnly := false
-	if val, ok := req.Parameters["ValidateOnly"]; ok {
-		if b, ok := val.(bool); ok {
-			validateOnly = b
-		} else if s, ok := val.(string); ok {
-			validateOnly = strings.EqualFold(s, "true")
-		}
-	}
-
-	processedSQL := s.preprocessor.Process(queryString)
-
-	opts := sqlparser.ParserOptions{
-		Dialect: sqlparser.DialectTimestream,
-	}
-	stmt, err := sqlparser.ParseWithOptions(processedSQL, opts)
-	if err != nil {
-		logs.Debug("Timestream prepared statement SQL parse error", logs.String("query", processedSQL), logs.Err(err))
-		return nil, ErrValidationException
-	}
-
 	response := map[string]interface{}{
-		"QueryString": queryString,
+		"QueryString": result.QueryString,
 	}
 
-	if validateOnly {
+	if result.ValidateOnly {
 		// ValidateOnly=true: syntax validated, skip column/parameter extraction.
 		return response, nil
 	}
 
-	params := s.extractParameters(queryString)
-	response["Parameters"] = params
-
-	var columns []map[string]interface{}
-	if selectStmt, ok := stmt.(*sqlparser.Select); ok {
-		columnInfo := s.buildColumnInfoForPrepare(selectStmt)
-		for _, ci := range columnInfo {
-			columns = append(columns, map[string]interface{}{
-				"Name": ci.Name,
-				"Type": map[string]interface{}{
-					"ScalarType": ci.Type.ScalarType,
-				},
-			})
-		}
-	}
-	response["Columns"] = columns
+	response["Parameters"] = result.Parameters
+	response["Columns"] = result.Columns
 
 	return response, nil
 }
