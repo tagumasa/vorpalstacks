@@ -48,28 +48,6 @@ func scanKeyGroups(stores *cloudfrontStores, fn func(*cloudfrontstore.KeyGroup) 
 	}
 }
 
-// collectDistributions traverses every distribution page by page and
-// returns the IDs of all distributions for which fn returns true.
-func collectDistributions(stores *cloudfrontStores, fn func(*cloudfrontstore.Distribution) bool) ([]string, error) {
-	marker := ""
-	var ids []string
-	for {
-		result, err := stores.distributions.List(marker, cloudfrontstore.DefaultListMaxItems)
-		if err != nil {
-			return nil, err
-		}
-		for _, dist := range result.Distributions {
-			if fn(dist) {
-				ids = append(ids, dist.ID)
-			}
-		}
-		if !result.IsTruncated || result.NextMarker == "" {
-			return ids, nil
-		}
-		marker = result.NextMarker
-	}
-}
-
 // resolveListMaxItems applies the AWS list pagination default: a missing
 // or non-positive MaxItems falls back to the default page size. AWS
 // publishes no upper bound for CloudFront list operations, so positive

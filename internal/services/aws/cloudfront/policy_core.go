@@ -1,7 +1,10 @@
 package cloudfront
 
 import (
+	"fmt"
+
 	awserrors "vorpalstacks/internal/common/errors"
+	types "vorpalstacks/internal/common/tags"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
@@ -268,4 +271,105 @@ func (s *CloudFrontService) listOriginRequestPoliciesCore(stores *cloudfrontStor
 		EffectiveMaxItems: maxItems,
 		NextMarker:        result.NextMarker,
 	}, nil
+}
+
+// ---------------------------------------------------------------------------
+// Tag cores — single validation and persistence path for the CloudFront
+// resource tagging operations.
+// ---------------------------------------------------------------------------
+
+// ListTagsForResourceInput carries the resource ARN for
+// ListTagsForResource.
+type ListTagsForResourceInput struct {
+	Resource string
+}
+
+// TagResourceInput carries the resource ARN and the parsed tags for
+// TagResource.
+type TagResourceInput struct {
+	Resource string
+	Tags     []types.Tag
+}
+
+// UntagResourceInput carries the resource ARN and the parsed tag keys for
+// UntagResource.
+type UntagResourceInput struct {
+	Resource string
+	TagKeys  []string
+}
+
+// validateTagResourceArn enforces the shared resource-ARN contract of the
+// three tagging operations: the parameter is required and must match the
+// CloudFront ARN pattern.
+func validateTagResourceArn(arn string) error {
+	if arn == "" {
+		return awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
+	}
+	if !isValidResourceArn(arn) {
+		return awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
+	}
+	return nil
+}
+
+// listTagsForResourceCore is the single entry point for reading the tags
+// of a CloudFront resource.
+func (s *CloudFrontService) listTagsForResourceCore(stores *cloudfrontStores, in ListTagsForResourceInput) ([]types.Tag, error) {
+	if err := validateTagResourceArn(in.Resource); err != nil {
+		return nil, err
+	}
+
+	tags, err := stores.tags.ListTagsForResource(in.Resource)
+	if err != nil {
+		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
+	}
+	return tags, nil
+}
+
+// tagResourceCore is the single entry point for applying tags to a
+// CloudFront resource: it validates the resource ARN, the tag set, and
+// every tag key and value before persisting.
+func (s *CloudFrontService) tagResourceCore(stores *cloudfrontStores, in TagResourceInput) error {
+	if err := validateTagResourceArn(in.Resource); err != nil {
+		return err
+	}
+
+	if len(in.Tags) == 0 {
+		return awserrors.NewAWSError("InvalidArgument", "At least one tag is required", 400)
+	}
+	for _, t := range in.Tags {
+		if !isValidTagKey(t.Key) {
+			return awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", t.Key), 400)
+		}
+		if !isValidTagValue(t.Value) {
+			return awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag value for key %q", t.Key), 400)
+		}
+	}
+
+	if err := stores.tags.Tag(in.Resource, in.Tags); err != nil {
+		return awserrors.NewAWSError("InternalError", err.Error(), 500)
+	}
+	return nil
+}
+
+// untagResourceCore is the single entry point for removing tags from a
+// CloudFront resource: it validates the resource ARN and every tag key
+// before persisting.
+func (s *CloudFrontService) untagResourceCore(stores *cloudfrontStores, in UntagResourceInput) error {
+	if err := validateTagResourceArn(in.Resource); err != nil {
+		return err
+	}
+
+	if len(in.TagKeys) == 0 {
+		return awserrors.NewAWSError("InvalidArgument", "At least one tag key is required", 400)
+	}
+	for _, k := range in.TagKeys {
+		if !isValidTagKey(k) {
+			return awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", k), 400)
+		}
+	}
+
+	if err := stores.tags.Untag(in.Resource, in.TagKeys); err != nil {
+		return awserrors.NewAWSError("InternalError", err.Error(), 500)
+	}
+	return nil
 }

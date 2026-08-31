@@ -2,10 +2,7 @@ package cloudfront
 
 import (
 	"context"
-	"fmt"
 	"time"
-
-	awserrors "vorpalstacks/internal/common/errors"
 
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
@@ -399,21 +396,15 @@ func (s *CloudFrontService) ListTagsForResource(ctx context.Context, reqCtx *req
 	if arn == "" {
 		arn = request.GetStringParam(req.Parameters, "ResourceARN")
 	}
-	if arn == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
-	}
-	if !isValidResourceArn(arn) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	tags, err := store.tags.ListTagsForResource(arn)
+	tags, err := s.listTagsForResourceCore(store, ListTagsForResourceInput{Resource: arn})
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
+		return nil, err
 	}
 
 	tagItems := tagutil.ToResponse(tags)
@@ -440,12 +431,6 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 	if arn == "" {
 		arn = request.GetStringParam(req.Parameters, "ResourceARN")
 	}
-	if arn == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
-	}
-	if !isValidResourceArn(arn) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
-	}
 
 	var tags []tagutil.Tag
 	tagsMap := request.GetMapParam(req.Parameters, "Tags")
@@ -458,25 +443,14 @@ func (s *CloudFrontService) TagResource(ctx context.Context, reqCtx *request.Req
 			tags = append(tags, tagutil.Tag(t))
 		}
 	}
-	if len(tags) == 0 {
-		return nil, awserrors.NewAWSError("InvalidArgument", "At least one tag is required", 400)
-	}
-	for _, t := range tags {
-		if !isValidTagKey(t.Key) {
-			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", t.Key), 400)
-		}
-		if !isValidTagValue(t.Value) {
-			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag value for key %q", t.Key), 400)
-		}
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.tags.Tag(arn, tags); err != nil {
-		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
+	if err := s.tagResourceCore(store, TagResourceInput{Resource: arn, Tags: tags}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -488,12 +462,6 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 	arn := request.GetStringParam(req.Parameters, "Resource")
 	if arn == "" {
 		arn = request.GetStringParam(req.Parameters, "ResourceARN")
-	}
-	if arn == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource is required", 400)
-	}
-	if !isValidResourceArn(arn) {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Resource must be a CloudFront resource ARN: "+arn, 400)
 	}
 
 	tagKeys := tagutil.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys")
@@ -546,22 +514,13 @@ func (s *CloudFrontService) UntagResource(ctx context.Context, reqCtx *request.R
 		}
 	}
 
-	if len(tagKeys) == 0 {
-		return nil, awserrors.NewAWSError("InvalidArgument", "At least one tag key is required", 400)
-	}
-	for _, k := range tagKeys {
-		if !isValidTagKey(k) {
-			return nil, awserrors.NewAWSError("InvalidArgument", fmt.Sprintf("Invalid tag key: %q", k), 400)
-		}
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.tags.Untag(arn, tagKeys); err != nil {
-		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
+	if err := s.untagResourceCore(store, UntagResourceInput{Resource: arn, TagKeys: tagKeys}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil

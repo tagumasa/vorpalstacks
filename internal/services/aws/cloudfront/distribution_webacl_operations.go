@@ -86,11 +86,9 @@ func (s *CloudFrontService) CopyDistribution(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	inProgressCount, _ := stores.invalidations.CountInProgress(distribution.ID)
-	activeSigners := computeActiveTrustedSigners(distribution)
-	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, stores)
+	detail := s.distributionDetailCore(stores, distribution)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution, inProgressCount, activeSigners, activeKeyGroups),
+		"Distribution": formatDistributionResponse(distribution, detail.InProgressInvalidations, detail.ActiveSigners, detail.ActiveKeyGroups),
 		"ETag":         distribution.ETag,
 		"Location":     distribution.DomainName,
 	}, nil

@@ -3,30 +3,20 @@ package cloudfront
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
-	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/resilience"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 )
 
 // CreateInvalidation creates a new cache invalidation for a CloudFront distribution.
 func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	distID := request.GetStringParam(req.Parameters, "Id")
-	if distID == "" {
-		return nil, errors.NewAWSError("InvalidArgument", "Required parameter Id is missing.", 400)
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
-	}
-
-	if _, err := stores.distributions.Get(distID); err != nil {
-		return nil, errors.NewAWSError("NoSuchDistribution", fmt.Sprintf("The specified distribution does not exist: %s", distID), 404)
 	}
 
 	batch := request.GetMapParam(req.Parameters, "InvalidationBatch")
@@ -35,11 +25,9 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 	}
 
 	callerRef, _ := batch["CallerReference"].(string)
-	if callerRef == "" {
-		return nil, errors.NewAWSError("InvalidArgument", "CallerReference is required.", 400)
-	}
 
 	var paths []string
+	var declaredQuantity int
 	if pathsMap, ok := batch["Paths"].(map[string]interface{}); ok {
 		if items, ok := pathsMap["Items"]; ok {
 			switch iv := items.(type) {
@@ -64,50 +52,23 @@ func (s *CloudFrontService) CreateInvalidation(ctx context.Context, reqCtx *requ
 				}
 			}
 		}
-		quantity := int(request.GetIntParam(pathsMap, "Quantity"))
-		if quantity != len(paths) {
-			return nil, errors.NewAWSError("InconsistentQuantities",
-				fmt.Sprintf("The Quantity value (%d) does not match the number of path items (%d)", quantity, len(paths)), 400)
-		}
+		declaredQuantity = int(request.GetIntParam(pathsMap, "Quantity"))
 	}
 
-	if len(paths) == 0 {
-		return nil, errors.NewAWSError("InvalidArgument", "At least one path is required.", 400)
-	}
-	if len(paths) > cloudfrontstore.MaxInvalidationPathsPerRequest {
-		return nil, errors.NewAWSError("BatchTooLarge", "Invalidation batch specified is too large.", 413)
-	}
-
-	inv, err := stores.invalidations.Create(distID, callerRef, paths)
+	inv, err := s.createInvalidationCore(stores, CreateInvalidationInput{
+		Id:               distID,
+		CallerReference:  callerRef,
+		Paths:            paths,
+		DeclaredQuantity: declaredQuantity,
+	})
 	if err != nil {
-		return nil, errors.NewAWSError("InternalError", fmt.Sprintf("Failed to create invalidation: %v", err), 500)
+		return nil, err
 	}
-
-	go s.transitionInvalidation(stores, inv)
 
 	return map[string]interface{}{
 		"Location":     fmt.Sprintf("/2020-05-31/distribution/%s/invalidation/%s", distID, inv.ID),
 		"Invalidation": formatInvalidation(inv),
 	}, nil
-}
-
-// transitionInvalidation asynchronously transitions an invalidation from
-// InProgress to Completed, simulating the real CloudFront edge propagation.
-func (s *CloudFrontService) transitionInvalidation(stores *cloudfrontStores, inv *cloudfrontstore.Invalidation) {
-	defer func() {
-		if r := resilience.RecoverPanic("cloudfront invalidation status transition"); r != nil {
-			slog.Error("panic during invalidation status transition",
-				"invalidationId", inv.ID, "distributionId", inv.DistributionID, "panic", r)
-		}
-	}()
-
-	time.Sleep(2 * time.Second)
-
-	inv.Status = "Completed"
-	if err := stores.invalidations.Update(inv); err != nil {
-		slog.Error("failed to persist invalidation status transition",
-			"invalidationId", inv.ID, "distributionId", inv.DistributionID, "error", err)
-	}
 }
 
 func formatInvalidation(inv *cloudfrontstore.Invalidation) map[string]interface{} {
@@ -133,25 +94,22 @@ func formatInvalidation(inv *cloudfrontstore.Invalidation) map[string]interface{
 // ListInvalidations lists invalidations for a CloudFront distribution.
 func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	distID := request.GetStringParam(req.Parameters, "Id")
-	if distID == "" {
-		return nil, errors.NewAWSError("InvalidArgument", "Required parameter Id is missing.", 400)
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := stores.distributions.Get(distID); err != nil {
-		return nil, errors.NewAWSError("NoSuchDistribution", fmt.Sprintf("The specified distribution does not exist: %s", distID), 404)
-	}
-
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := resolveListMaxItems(request.GetIntParam(req.Parameters, "MaxItems"))
 
-	result, err := stores.invalidations.List(distID, marker, maxItems)
+	result, err := s.listInvalidationsCore(stores, ListInvalidationsInput{
+		Id:       distID,
+		Marker:   marker,
+		MaxItems: maxItems,
+	})
 	if err != nil {
-		return nil, errors.NewAWSError("InternalError", fmt.Sprintf("Failed to list invalidations: %v", err), 500)
+		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(result.Invalidations))
@@ -183,28 +141,19 @@ func (s *CloudFrontService) ListInvalidations(ctx context.Context, reqCtx *reque
 
 // GetInvalidation retrieves the status and details of a CloudFront invalidation.
 func (s *CloudFrontService) GetInvalidation(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	distID := request.GetStringParam(req.Parameters, "Id")
-	if distID == "" {
-		return nil, errors.NewAWSError("InvalidArgument", "Required parameter Id is missing.", 400)
-	}
-
 	invalidationID := request.GetStringParam(req.Parameters, "invalidationId")
-	if invalidationID == "" {
-		return nil, errors.NewAWSError("InvalidArgument", "Required parameter invalidationId is missing.", 400)
-	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := stores.distributions.Get(distID); err != nil {
-		return nil, errors.NewAWSError("NoSuchDistribution", fmt.Sprintf("The specified distribution does not exist: %s", distID), 404)
-	}
-
-	inv, err := stores.invalidations.Get(distID, invalidationID)
+	inv, err := s.getInvalidationCore(stores, GetInvalidationInput{
+		Id:             request.GetStringParam(req.Parameters, "Id"),
+		InvalidationId: invalidationID,
+	})
 	if err != nil {
-		return nil, errors.NewAWSError("NoSuchInvalidation", fmt.Sprintf("The specified invalidation does not exist: %s", invalidationID), 404)
+		return nil, err
 	}
 
 	return map[string]interface{}{

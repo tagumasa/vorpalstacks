@@ -9,6 +9,7 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/protocol"
 	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/resilience"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
@@ -869,4 +870,143 @@ func cloneDistributionConfig(config *cloudfrontstore.DistributionConfig) (*cloud
 		return nil, fmt.Errorf("failed to deserialise distribution config for copy: %w", err)
 	}
 	return &clone, nil
+}
+
+// getDistributionCore is the single entry point for fetching a
+// distribution by ID, mapping a missing record to the modelled
+// NoSuchDistribution error.
+func (s *CloudFrontService) getDistributionCore(stores *cloudfrontStores, id string) (*cloudfrontstore.Distribution, error) {
+	if err := requireID(id); err != nil {
+		return nil, err
+	}
+	distribution, err := stores.distributions.Get(id)
+	if err != nil {
+		if cloudfrontstore.IsNotFound(err) {
+			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
+		}
+		return nil, err
+	}
+	return distribution, nil
+}
+
+// DistributionDetail holds the store-derived response parts that every
+// distribution-returning operation serialises: the count of in-progress
+// invalidation batches and the ActiveTrustedSigners /
+// ActiveTrustedKeyGroups shapes, whose key-pair IDs resolve through the
+// key group store.
+type DistributionDetail struct {
+	InProgressInvalidations int
+	ActiveSigners           map[string]interface{}
+	ActiveKeyGroups         map[string]interface{}
+}
+
+// distributionDetailCore collects the store-derived parts of a
+// distribution response so that every plane computes them through one
+// code path.
+func (s *CloudFrontService) distributionDetailCore(stores *cloudfrontStores, d *cloudfrontstore.Distribution) DistributionDetail {
+	inProgressCount, _ := stores.invalidations.CountInProgress(d.ID)
+	return DistributionDetail{
+		InProgressInvalidations: inProgressCount,
+		ActiveSigners:           computeActiveTrustedSigners(d),
+		ActiveKeyGroups:         computeActiveTrustedKeyGroups(d, stores),
+	}
+}
+
+// computeActiveTrustedKeyGroups inspects all cache behaviours for
+// TrustedKeyGroups with Enabled=true and produces the
+// ActiveTrustedKeyGroups output shape. Each key group's PublicKey IDs are
+// resolved from the KeyGroup store to populate KeyPairIds.
+func computeActiveTrustedKeyGroups(d *cloudfrontstore.Distribution, stores *cloudfrontStores) map[string]interface{} {
+	kgIDs := collectTrustedKeyGroupIDs(d)
+	if len(kgIDs) == 0 {
+		return map[string]interface{}{"Enabled": false, "Quantity": 0}
+	}
+	items := make([]interface{}, 0, len(kgIDs))
+	for kgID := range kgIDs {
+		keyPairIds := map[string]interface{}{"Quantity": 0}
+		if stores != nil {
+			if kg, err := stores.keyGroups.Get(kgID); err == nil && len(kg.KeyGroupConfig.Items) > 0 {
+				kpItems := make([]interface{}, len(kg.KeyGroupConfig.Items))
+				for i, kp := range kg.KeyGroupConfig.Items {
+					kpItems[i] = kp
+				}
+				keyPairIds = map[string]interface{}{
+					"Quantity": len(kg.KeyGroupConfig.Items),
+					"Items":    protocol.XMLElements{ElementName: "KeyPairId", Items: kpItems},
+				}
+			}
+		}
+		items = append(items, map[string]interface{}{
+			"KeyGroupId": kgID,
+			"KeyPairIds": keyPairIds,
+		})
+	}
+	return map[string]interface{}{
+		"Enabled":  true,
+		"Quantity": len(kgIDs),
+		"Items":    protocol.XMLElements{ElementName: "KeyGroup", Items: items},
+	}
+}
+
+// ListDistributionsByWebACLIdInput carries the parameters for
+// ListDistributionsByWebACLId.
+type ListDistributionsByWebACLIdInput struct {
+	WebACLId string
+}
+
+// listDistributionsByWebACLIdCore returns every distribution whose
+// configuration references the given Web ACL.
+func (s *CloudFrontService) listDistributionsByWebACLIdCore(ctx context.Context, stores *cloudfrontStores, in ListDistributionsByWebACLIdInput) ([]*cloudfrontstore.Distribution, error) {
+	// This operation models InvalidWebACLId, returned when the specified
+	// Web ACL does not exist; the listing must not silently succeed with
+	// an empty result for an unknown ACL.
+	if s.wafInvoker != nil && !s.wafInvoker.WebACLExists(ctx, in.WebACLId) {
+		return nil, awserrors.NewAWSError("InvalidWebACLId", "The specified Web ACL does not exist: "+in.WebACLId, 400)
+	}
+
+	// The association match must run over every stored distribution: the
+	// shared iterator replaces a zero MaxItems with the platform default
+	// page size, so a single unbounded-looking List call would silently
+	// stop after the first page and miss associations whose records sit
+	// beyond it. Page with NextMarker until the store is exhausted.
+	var matched []*cloudfrontstore.Distribution
+	scanMarker := ""
+	for {
+		page, err := stores.distributions.List(scanMarker, 0)
+		if err != nil {
+			return nil, err
+		}
+		for _, d := range page.Distributions {
+			if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == in.WebACLId {
+				matched = append(matched, d)
+			}
+		}
+		if !page.IsTruncated || page.NextMarker == "" {
+			break
+		}
+		scanMarker = page.NextMarker
+	}
+	return matched, nil
+}
+
+// collectDistributions traverses every distribution page by page and
+// returns the IDs of all distributions for which fn returns true.
+func collectDistributions(stores *cloudfrontStores, fn func(*cloudfrontstore.Distribution) bool) ([]string, error) {
+	marker := ""
+	var ids []string
+	for {
+		result, err := stores.distributions.List(marker, cloudfrontstore.DefaultListMaxItems)
+		if err != nil {
+			return nil, err
+		}
+		for _, dist := range result.Distributions {
+			if fn(dist) {
+				ids = append(ids, dist.ID)
+			}
+		}
+		if !result.IsTruncated || result.NextMarker == "" {
+			return ids, nil
+		}
+		marker = result.NextMarker
+	}
 }

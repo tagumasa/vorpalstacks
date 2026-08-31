@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -66,42 +65,6 @@ func computeActiveTrustedSigners(d *cloudfrontstore.Distribution) map[string]int
 		"Enabled":  true,
 		"Quantity": len(accounts),
 		"Items":    protocol.XMLElements{ElementName: "Signer", Items: items},
-	}
-}
-
-// computeActiveTrustedKeyGroups inspects all cache behaviours for
-// TrustedKeyGroups with Enabled=true and produces the
-// ActiveTrustedKeyGroups output shape. Each key group's PublicKey IDs are
-// resolved from the KeyGroup store to populate KeyPairIds.
-func computeActiveTrustedKeyGroups(d *cloudfrontstore.Distribution, stores *cloudfrontStores) map[string]interface{} {
-	kgIDs := collectTrustedKeyGroupIDs(d)
-	if len(kgIDs) == 0 {
-		return map[string]interface{}{"Enabled": false, "Quantity": 0}
-	}
-	items := make([]interface{}, 0, len(kgIDs))
-	for kgID := range kgIDs {
-		keyPairIds := map[string]interface{}{"Quantity": 0}
-		if stores != nil {
-			if kg, err := stores.keyGroups.Get(kgID); err == nil && len(kg.KeyGroupConfig.Items) > 0 {
-				kpItems := make([]interface{}, len(kg.KeyGroupConfig.Items))
-				for i, kp := range kg.KeyGroupConfig.Items {
-					kpItems[i] = kp
-				}
-				keyPairIds = map[string]interface{}{
-					"Quantity": len(kg.KeyGroupConfig.Items),
-					"Items":    protocol.XMLElements{ElementName: "KeyPairId", Items: kpItems},
-				}
-			}
-		}
-		items = append(items, map[string]interface{}{
-			"KeyGroupId": kgID,
-			"KeyPairIds": keyPairIds,
-		})
-	}
-	return map[string]interface{}{
-		"Enabled":  true,
-		"Quantity": len(kgIDs),
-		"Items":    protocol.XMLElements{ElementName: "KeyGroup", Items: items},
 	}
 }
 
@@ -1166,11 +1129,9 @@ func (s *CloudFrontService) CreateDistribution(ctx context.Context, reqCtx *requ
 		return nil, err
 	}
 
-	inProgressCount, _ := store.invalidations.CountInProgress(result.Distribution.ID)
-	activeSigners := computeActiveTrustedSigners(result.Distribution)
-	activeKeyGroups := computeActiveTrustedKeyGroups(result.Distribution, store)
+	detail := s.distributionDetailCore(store, result.Distribution)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(result.Distribution, inProgressCount, activeSigners, activeKeyGroups),
+		"Distribution": formatDistributionResponse(result.Distribution, detail.InProgressInvalidations, detail.ActiveSigners, detail.ActiveKeyGroups),
 	}, nil
 }
 
@@ -1203,56 +1164,36 @@ func (s *CloudFrontService) CreateDistributionWithTags(ctx context.Context, reqC
 	if err != nil {
 		return nil, err
 	}
-	inProgressCount, _ := store.invalidations.CountInProgress(result.Distribution.ID)
-	activeSigners := computeActiveTrustedSigners(result.Distribution)
-	activeKeyGroups := computeActiveTrustedKeyGroups(result.Distribution, store)
+	detail := s.distributionDetailCore(store, result.Distribution)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(result.Distribution, inProgressCount, activeSigners, activeKeyGroups),
+		"Distribution": formatDistributionResponse(result.Distribution, detail.InProgressInvalidations, detail.ActiveSigners, detail.ActiveKeyGroups),
 	}, nil
 }
 
 // GetDistribution retrieves a CloudFront distribution by ID.
 func (s *CloudFrontService) GetDistribution(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	distribution, err := store.distributions.Get(id)
+	distribution, err := s.getDistributionCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
 		return nil, err
 	}
-	inProgressCount, _ := store.invalidations.CountInProgress(distribution.ID)
-	activeSigners := computeActiveTrustedSigners(distribution)
-	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, store)
+	detail := s.distributionDetailCore(store, distribution)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution, inProgressCount, activeSigners, activeKeyGroups),
+		"Distribution": formatDistributionResponse(distribution, detail.InProgressInvalidations, detail.ActiveSigners, detail.ActiveKeyGroups),
 	}, nil
 }
 
 // GetDistributionConfig retrieves the configuration of a CloudFront distribution.
 func (s *CloudFrontService) GetDistributionConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", "Id is required", 400)
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	distribution, err := store.distributions.Get(id)
+	distribution, err := s.getDistributionCore(store, request.GetStringParam(req.Parameters, "Id"))
 	if err != nil {
-		if cloudfrontstore.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchDistribution", "Distribution not found", 404)
-		}
 		return nil, err
 	}
 
@@ -1314,11 +1255,9 @@ func (s *CloudFrontService) UpdateDistribution(ctx context.Context, reqCtx *requ
 	}
 
 	distribution := result.Distribution
-	inProgressCount, _ := store.invalidations.CountInProgress(distribution.ID)
-	activeSigners := computeActiveTrustedSigners(distribution)
-	activeKeyGroups := computeActiveTrustedKeyGroups(distribution, store)
+	detail := s.distributionDetailCore(store, distribution)
 	return map[string]interface{}{
-		"Distribution": formatDistributionResponse(distribution, inProgressCount, activeSigners, activeKeyGroups),
+		"Distribution": formatDistributionResponse(distribution, detail.InProgressInvalidations, detail.ActiveSigners, detail.ActiveKeyGroups),
 	}, nil
 }
 
@@ -1356,52 +1295,17 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		return nil, err
 	}
 
-	// This operation models InvalidWebACLId, returned when the specified
-	// Web ACL does not exist; the listing must not silently succeed with
-	// an empty result for an unknown ACL.
-	if s.wafInvoker != nil && !s.wafInvoker.WebACLExists(ctx, webACLId) {
-		return nil, awserrors.NewAWSError("InvalidWebACLId", "The specified Web ACL does not exist: "+webACLId, 400)
-	}
-
-	// The association match must run over every stored distribution: the
-	// shared iterator replaces a zero MaxItems with the platform default
-	// page size, so a single unbounded-looking List call would silently
-	// stop after the first page and miss associations whose records sit
-	// beyond it. Page with NextMarker until the store is exhausted.
-	var matched []interface{}
-	scanMarker := ""
-	for {
-		page, err := store.distributions.List(scanMarker, 0)
-		if err != nil {
-			return nil, err
-		}
-		for _, d := range page.Distributions {
-			if d.DistributionConfig != nil && d.DistributionConfig.WebACLId == webACLId {
-				matched = append(matched, map[string]interface{}{
-					"Id":               d.ID,
-					"ARN":              d.ARN,
-					"Status":           d.Status,
-					"DomainName":       d.DomainName,
-					"Enabled":          d.Enabled,
-					"CallerReference":  d.CallerReference,
-					"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
-				})
-			}
-		}
-		if !page.IsTruncated || page.NextMarker == "" {
-			break
-		}
-		scanMarker = page.NextMarker
+	matched, err := s.listDistributionsByWebACLIdCore(ctx, store, ListDistributionsByWebACLIdInput{WebACLId: webACLId})
+	if err != nil {
+		return nil, err
 	}
 
 	skipCount := 0
 	if marker != "" {
-		for i, item := range matched {
-			if summary, ok := item.(map[string]interface{}); ok {
-				if id, ok := summary["Id"].(string); ok && id == marker {
-					skipCount = i + 1
-					break
-				}
+		for i, d := range matched {
+			if d.ID == marker {
+				skipCount = i + 1
+				break
 			}
 		}
 	}
@@ -1414,11 +1318,12 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 
 	nextMarker := ""
 	if isTruncated && len(paged) > 0 {
-		if summary, ok := paged[len(paged)-1].(map[string]interface{}); ok {
-			if id, ok := summary["Id"].(string); ok {
-				nextMarker = id
-			}
-		}
+		nextMarker = paged[len(paged)-1].ID
+	}
+
+	items := make([]interface{}, len(paged))
+	for i, d := range paged {
+		items[i] = formatWebACLDistributionSummary(d)
 	}
 
 	distList := map[string]interface{}{
@@ -1426,12 +1331,26 @@ func (s *CloudFrontService) ListDistributionsByWebACLId(ctx context.Context, req
 		"MaxItems":    maxItems,
 		"IsTruncated": isTruncated,
 		"Quantity":    len(paged),
-		"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: paged},
+		"Items":       protocol.XMLElements{ElementName: "DistributionSummary", Items: items},
 	}
 	if nextMarker != "" {
 		distList["NextMarker"] = nextMarker
 	}
 	return map[string]interface{}{"DistributionList": distList}, nil
+}
+
+// formatWebACLDistributionSummary renders the reduced DistributionSummary
+// shape the by-Web-ACL listing returns: identity and status fields only.
+func formatWebACLDistributionSummary(d *cloudfrontstore.Distribution) map[string]interface{} {
+	return map[string]interface{}{
+		"Id":               d.ID,
+		"ARN":              d.ARN,
+		"Status":           d.Status,
+		"DomainName":       d.DomainName,
+		"Enabled":          d.Enabled,
+		"CallerReference":  d.CallerReference,
+		"LastModifiedTime": d.LastModifiedAt.Format(time.RFC3339),
+	}
 }
 
 // parseXMLTags extracts tags from an XML-style map, handling both array and
