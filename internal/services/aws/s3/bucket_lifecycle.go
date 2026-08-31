@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	types "vorpalstacks/internal/common/tags"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketLifecycleConfigurationInput is the input for PutBucketLifecycleConfiguration.
@@ -82,88 +80,11 @@ type AbortIncompleteUploadInput struct {
 
 // PutBucketLifecycleConfiguration sets the lifecycle configuration for an S3 bucket.
 func (o *BucketOperations) PutBucketLifecycleConfiguration(ctx *request.RequestContext, input *PutBucketLifecycleConfigurationInput) error {
-	if input.LifecycleConfiguration == nil {
-		return NewInvalidArgumentError("lifecycle configuration is required")
-	}
-
-	if err := validateLifecycleRules(input.LifecycleConfiguration.Rules); err != nil {
-		return err
-	}
-
-	var rules []s3store.LifecycleRule
-	for _, rule := range input.LifecycleConfiguration.Rules {
-		lifecycleRule := s3store.LifecycleRule{
-			ID:     rule.ID,
-			Status: rule.Status,
-		}
-
-		if rule.Filter != nil {
-			lifecycleRule.Filter = &s3store.LifecycleRuleFilter{
-				Prefix:                rule.Filter.Prefix,
-				ObjectSizeGreaterThan: rule.Filter.ObjectSizeGreaterThan,
-				ObjectSizeLessThan:    rule.Filter.ObjectSizeLessThan,
-			}
-			if rule.Filter.Tag != nil {
-				lifecycleRule.Filter.Tag = &types.Tag{Key: rule.Filter.Tag.Key, Value: rule.Filter.Tag.Value}
-			}
-			if rule.Filter.And != nil {
-				lifecycleRule.Filter.And = &s3store.LifecycleRuleAndOperator{
-					Prefix:                rule.Filter.And.Prefix,
-					ObjectSizeGreaterThan: rule.Filter.And.ObjectSizeGreaterThan,
-					ObjectSizeLessThan:    rule.Filter.And.ObjectSizeLessThan,
-				}
-				for _, t := range rule.Filter.And.Tags {
-					lifecycleRule.Filter.And.Tags = append(lifecycleRule.Filter.And.Tags, types.Tag{Key: t.Key, Value: t.Value})
-				}
-			}
-		}
-
-		if rule.Expiration != nil {
-			lifecycleRule.Expiration = &s3store.LifecycleExpiration{
-				Date:                      rule.Expiration.Date,
-				Days:                      rule.Expiration.Days,
-				ExpiredObjectDeleteMarker: rule.Expiration.ExpiredObjectDeleteMarker,
-			}
-		}
-
-		for _, t := range rule.Transitions {
-			lifecycleRule.Transitions = append(lifecycleRule.Transitions, s3store.LifecycleTransition{
-				Date:         t.Date,
-				Days:         t.Days,
-				StorageClass: s3store.ObjectStorageClass(t.StorageClass),
-			})
-		}
-
-		if rule.NoncurrentVersionExpiration != nil {
-			lifecycleRule.NoncurrentVersionExpiration = &s3store.NoncurrentVersionExpiration{
-				NoncurrentDays:          rule.NoncurrentVersionExpiration.NoncurrentDays,
-				NewerNoncurrentVersions: rule.NoncurrentVersionExpiration.NewerNoncurrentVersions,
-			}
-		}
-
-		for _, t := range rule.NoncurrentVersionTransitions {
-			lifecycleRule.NoncurrentVersionTransitions = append(lifecycleRule.NoncurrentVersionTransitions, s3store.NoncurrentVersionTransition{
-				NoncurrentDays:          t.NoncurrentDays,
-				NewerNoncurrentVersions: t.NewerNoncurrentVersions,
-				StorageClass:            s3store.ObjectStorageClass(t.StorageClass),
-			})
-		}
-
-		if rule.AbortIncompleteMultipartUpload != nil {
-			lifecycleRule.AbortIncompleteMultipartUpload = &s3store.AbortIncompleteUpload{
-				DaysAfterInitiation: rule.AbortIncompleteMultipartUpload.DaysAfterInitiation,
-			}
-		}
-
-		rules = append(rules, lifecycleRule)
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-
-	return store.buckets.SetLifecycleConfiguration(input.Bucket, &s3store.LifecycleConfiguration{Rules: rules})
+	return o.svc.putBucketLifecycleConfigurationCore(store.buckets, input)
 }
 
 // GetBucketLifecycleConfigurationInput is the input for GetBucketLifecycleConfiguration.
@@ -243,85 +164,7 @@ func (o *BucketOperations) GetBucketLifecycleConfiguration(ctx *request.RequestC
 	if err != nil {
 		return nil, err
 	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.LifecycleConfiguration == nil {
-		return nil, ErrNoSuchLifecycle
-	}
-
-	var rules []LifecycleRuleOutput
-	for _, rule := range bucket.LifecycleConfiguration.Rules {
-		outputRule := LifecycleRuleOutput{
-			ID:     rule.ID,
-			Status: rule.Status,
-		}
-
-		if rule.Filter != nil {
-			outputRule.Filter = &LifecycleRuleFilterOutput{
-				Prefix:                rule.Filter.Prefix,
-				ObjectSizeGreaterThan: rule.Filter.ObjectSizeGreaterThan,
-				ObjectSizeLessThan:    rule.Filter.ObjectSizeLessThan,
-			}
-			if rule.Filter.Tag != nil {
-				outputRule.Filter.Tag = &Tag{Key: rule.Filter.Tag.Key, Value: rule.Filter.Tag.Value}
-			}
-			if rule.Filter.And != nil {
-				outputRule.Filter.And = &LifecycleRuleAndOperatorOutput{
-					Prefix:                rule.Filter.And.Prefix,
-					ObjectSizeGreaterThan: rule.Filter.And.ObjectSizeGreaterThan,
-					ObjectSizeLessThan:    rule.Filter.And.ObjectSizeLessThan,
-				}
-				for _, t := range rule.Filter.And.Tags {
-					outputRule.Filter.And.Tags = append(outputRule.Filter.And.Tags, Tag{Key: t.Key, Value: t.Value})
-				}
-			}
-		}
-
-		if rule.Expiration != nil {
-			outputRule.Expiration = &LifecycleExpirationOutput{
-				Date:                      rule.Expiration.Date,
-				Days:                      rule.Expiration.Days,
-				ExpiredObjectDeleteMarker: rule.Expiration.ExpiredObjectDeleteMarker,
-			}
-		}
-
-		for _, t := range rule.Transitions {
-			outputRule.Transitions = append(outputRule.Transitions, LifecycleTransitionOutput{
-				Date:         t.Date,
-				Days:         t.Days,
-				StorageClass: string(t.StorageClass),
-			})
-		}
-
-		if rule.NoncurrentVersionExpiration != nil {
-			outputRule.NoncurrentVersionExpiration = &NoncurrentVersionExpirationOutput{
-				NoncurrentDays:          rule.NoncurrentVersionExpiration.NoncurrentDays,
-				NewerNoncurrentVersions: rule.NoncurrentVersionExpiration.NewerNoncurrentVersions,
-			}
-		}
-
-		for _, t := range rule.NoncurrentVersionTransitions {
-			outputRule.NoncurrentVersionTransitions = append(outputRule.NoncurrentVersionTransitions, NoncurrentVersionTransitionOutput{
-				NoncurrentDays:          t.NoncurrentDays,
-				NewerNoncurrentVersions: t.NewerNoncurrentVersions,
-				StorageClass:            string(t.StorageClass),
-			})
-		}
-
-		if rule.AbortIncompleteMultipartUpload != nil {
-			outputRule.AbortIncompleteMultipartUpload = &AbortIncompleteUploadOutput{
-				DaysAfterInitiation: rule.AbortIncompleteMultipartUpload.DaysAfterInitiation,
-			}
-		}
-
-		rules = append(rules, outputRule)
-	}
-
-	return &GetBucketLifecycleConfigurationOutput{Rules: rules}, nil
+	return o.svc.getBucketLifecycleConfigurationCore(store.buckets, input)
 }
 
 // DeleteBucketLifecycleConfigurationInput is the input for DeleteBucketLifecycleConfiguration.
@@ -335,5 +178,5 @@ func (o *BucketOperations) DeleteBucketLifecycleConfiguration(ctx *request.Reque
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetLifecycleConfiguration(input.Bucket, nil)
+	return o.svc.deleteBucketLifecycleConfigurationCore(store.buckets, input)
 }

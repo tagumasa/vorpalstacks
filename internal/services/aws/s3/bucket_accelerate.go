@@ -2,7 +2,6 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // AccelerateConfigurationInput represents the configuration for S3 Accelerate.
@@ -19,20 +18,11 @@ type PutBucketAccelerateConfigurationInput struct {
 // PutBucketAccelerateConfiguration sets the accelerate configuration for an S3 bucket.
 // This enables or disables S3 Transfer Acceleration on the bucket.
 func (o *BucketOperations) PutBucketAccelerateConfiguration(ctx *request.RequestContext, input *PutBucketAccelerateConfigurationInput) error {
-	if err := validateAccelerateStatus(input.AccelerateConfiguration.Status); err != nil {
-		return err
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-
-	config := &s3store.AccelerateConfiguration{
-		Status: input.AccelerateConfiguration.Status,
-	}
-
-	return store.buckets.SetAccelerateConfiguration(input.Bucket, config)
+	return o.svc.putBucketAccelerateConfigurationCore(store.buckets, input)
 }
 
 // GetBucketAccelerateConfigurationInput is the input for GetBucketAccelerateConfiguration.
@@ -51,21 +41,5 @@ func (o *BucketOperations) GetBucketAccelerateConfiguration(ctx *request.Request
 	if err != nil {
 		return nil, err
 	}
-
-	config, err := store.buckets.GetAccelerateConfiguration(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if config == nil {
-		return &GetBucketAccelerateConfigurationOutput{
-			AccelerateConfiguration: &AccelerateConfigurationInput{},
-		}, nil
-	}
-
-	return &GetBucketAccelerateConfigurationOutput{
-		AccelerateConfiguration: &AccelerateConfigurationInput{
-			Status: config.Status,
-		},
-	}, nil
+	return o.svc.getBucketAccelerateConfigurationCore(store.buckets, input)
 }

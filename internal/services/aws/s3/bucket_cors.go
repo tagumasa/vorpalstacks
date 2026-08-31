@@ -1,10 +1,7 @@
 package s3
 
 import (
-	"fmt"
-
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketCORSInput is the input for PutBucketCORS.
@@ -30,36 +27,11 @@ type CORSRuleInput struct {
 
 // PutBucketCORS sets the CORS configuration for an S3 bucket.
 func (o *BucketOperations) PutBucketCORS(ctx *request.RequestContext, input *PutBucketCORSInput) error {
-	var rules []s3store.CORSRule
-	for _, r := range input.CORSConfiguration.CORSRules {
-		if len(r.AllowedMethods) == 0 {
-			return NewInvalidArgumentError("CORS rule must have at least one AllowedMethod")
-		}
-		if len(r.AllowedOrigins) == 0 {
-			return NewInvalidArgumentError("CORS rule must have at least one AllowedOrigin")
-		}
-		for _, method := range r.AllowedMethods {
-			if !validCORSMethods[method] {
-				return NewInvalidArgumentError(fmt.Sprintf("invalid CORS method: %s (must be GET, PUT, HEAD, POST, or DELETE)", method))
-			}
-		}
-		rules = append(rules, s3store.CORSRule{
-			AllowedHeaders: r.AllowedHeaders,
-			AllowedMethods: r.AllowedMethods,
-			AllowedOrigins: r.AllowedOrigins,
-			ExposeHeaders:  r.ExposeHeaders,
-			MaxAgeSeconds:  r.MaxAgeSeconds,
-			ID:             r.ID,
-		})
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetCORS(input.Bucket, &s3store.CORSConfiguration{
-		CORSRules: rules,
-	})
+	return o.svc.putBucketCORSCore(store.buckets, input)
 }
 
 // GetBucketCORSInput is the input for GetBucketCORS.
@@ -78,32 +50,7 @@ func (o *BucketOperations) GetBucketCORS(ctx *request.RequestContext, input *Get
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.CORSConfiguration == nil {
-		return nil, ErrNoSuchCORS
-	}
-
-	var rules []CORSRuleInput
-	for _, r := range bucket.CORSConfiguration.CORSRules {
-		rules = append(rules, CORSRuleInput{
-			AllowedHeaders: r.AllowedHeaders,
-			AllowedMethods: r.AllowedMethods,
-			AllowedOrigins: r.AllowedOrigins,
-			ExposeHeaders:  r.ExposeHeaders,
-			MaxAgeSeconds:  r.MaxAgeSeconds,
-			ID:             r.ID,
-		})
-	}
-
-	return &GetBucketCORSOutput{
-		CORSConfiguration: &CORSConfigurationInput{
-			CORSRules: rules,
-		},
-	}, nil
+	return o.svc.getBucketCORSCore(store.buckets, input)
 }
 
 // DeleteBucketCORSInput is the input for DeleteBucketCORS.
@@ -117,5 +64,5 @@ func (o *BucketOperations) DeleteBucketCORS(ctx *request.RequestContext, input *
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetCORS(input.Bucket, nil)
+	return o.svc.deleteBucketCORSCore(store.buckets, input)
 }

@@ -1,11 +1,7 @@
 package s3
 
 import (
-	"fmt"
-
-	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketEncryptionInput is the input for PutBucketEncryption.
@@ -33,33 +29,11 @@ type ApplyServerSideEncryptionByDefault struct {
 
 // PutBucketEncryption sets the encryption configuration for an S3 bucket.
 func (o *BucketOperations) PutBucketEncryption(ctx *request.RequestContext, input *PutBucketEncryptionInput) error {
-	if input.ServerSideEncryptionConfiguration == nil || len(input.ServerSideEncryptionConfiguration.Rules) != 1 {
-		return NewInvalidArgumentError("exactly one encryption rule is required")
-	}
-
-	rule := input.ServerSideEncryptionConfiguration.Rules[0]
-	sseAlgorithm := rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm
-	if sseAlgorithm != "AES256" && sseAlgorithm != "aws:kms" && sseAlgorithm != "aws:kms:dsse" {
-		return fmt.Errorf("invalid SSE algorithm: %s (must be AES256, aws:kms, or aws:kms:dsse)", sseAlgorithm)
-	}
-
-	if err := validateKMSMasterKeyID(rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID, sseAlgorithm); err != nil {
-		return err
-	}
-
-	config := &s3store.EncryptionConfig{
-		SSEAlgorithm:   rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm,
-		KMSMasterKeyID: rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID,
-	}
-	if rule.BucketKeyEnabled != nil {
-		config.BucketKeyEnabled = rule.BucketKeyEnabled
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetEncryption(input.Bucket, config)
+	return o.svc.putBucketEncryptionCore(store.buckets, input)
 }
 
 // GetBucketEncryptionInput is the input for GetBucketEncryption.
@@ -78,28 +52,7 @@ func (o *BucketOperations) GetBucketEncryption(ctx *request.RequestContext, inpu
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.EncryptionConfig == nil {
-		return nil, ErrNoSuchEncryption
-	}
-
-	return &GetBucketEncryptionOutput{
-		ServerSideEncryptionConfiguration: &ServerSideEncryptionConfiguration{
-			Rules: []ServerSideEncryptionRule{
-				{
-					ApplyServerSideEncryptionByDefault: ApplyServerSideEncryptionByDefault{
-						SSEAlgorithm:   bucket.EncryptionConfig.SSEAlgorithm,
-						KMSMasterKeyID: bucket.EncryptionConfig.KMSMasterKeyID,
-					},
-					BucketKeyEnabled: proto.Bool(bucket.EncryptionConfig.BucketKeyEnabled != nil && *bucket.EncryptionConfig.BucketKeyEnabled),
-				},
-			},
-		},
-	}, nil
+	return o.svc.getBucketEncryptionCore(store.buckets, input)
 }
 
 // DeleteBucketEncryptionInput is the input for DeleteBucketEncryption.
@@ -113,5 +66,5 @@ func (o *BucketOperations) DeleteBucketEncryption(ctx *request.RequestContext, i
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetEncryption(input.Bucket, nil)
+	return o.svc.deleteBucketEncryptionCore(store.buckets, input)
 }

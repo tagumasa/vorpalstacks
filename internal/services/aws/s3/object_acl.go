@@ -43,92 +43,11 @@ func (o *GetObjectAclOutput) ToXML() string {
 // GetObjectAcl retrieves the Access Control List for an object.
 // Returns the owner and list of grants for the specified object version.
 func (o *ObjectOperations) GetObjectAcl(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, bucket, key, versionId string) (*GetObjectAclOutput, error) {
-	if err := o.validateBucketExists(stores, bucket); err != nil {
-		return nil, err
-	}
-
-	if err := validateObjectKey(key); err != nil {
-		return nil, err
-	}
-
-	acp, err := stores.objects.GetACLWithVersion(bucket, key, versionId)
-	if err != nil {
-		return nil, mapVersionLookupError(err, versionId)
-	}
-
-	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
-
-	if acp == nil {
-		return &GetObjectAclOutput{
-			Owner: owner,
-			Grants: []*s3store.Grant{
-				{
-					Grantee:    &s3store.Grantee{Type: s3store.GranteeTypeCanonicalUser, ID: o.svc.accountID, DisplayName: o.svc.accountID},
-					Permission: s3store.PermissionFullControl,
-				},
-			},
-		}, nil
-	}
-
-	return &GetObjectAclOutput{
-		Owner:  acp.Owner,
-		Grants: acp.Grants,
-	}, nil
+	return o.svc.getObjectAclCore(stores, bucket, key, versionId)
 }
 
 // PutObjectAcl sets the Access Control List for an object.
 // Accepts either a canned ACL string, an AccessControlPolicy, or individual grant headers.
 func (o *ObjectOperations) PutObjectAcl(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *PutObjectAclInput) error {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return err
-	}
-
-	if err := validateObjectKey(input.Key); err != nil {
-		return err
-	}
-
-	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
-
-	var acp *s3store.AccessControlPolicy
-	var err error
-
-	if input.ACL != "" {
-		acp, err = CannedACLToPolicy(input.ACL, owner)
-		if err != nil {
-			return err
-		}
-	} else if input.AccessControlPolicy != nil {
-		acp = input.AccessControlPolicy
-	} else {
-		grants, err := ParseGrantHeaders(input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
-		if err != nil {
-			return NewInvalidArgumentError(err.Error())
-		}
-		if len(grants) > 0 {
-			acp = &s3store.AccessControlPolicy{Owner: owner, Grants: grants}
-		} else {
-			return NewInvalidArgumentError("missing required ACL specification")
-		}
-	}
-
-	publicAccessBlock, _ := stores.buckets.GetPublicAccessBlock(input.Bucket)
-	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if isPublicCannedACL(input.ACL) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-		if acpContainsPublicAccess(acp) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-	}
-
-	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
-	// update ACLs fail" with AccessControlListNotSupported.
-	if aclsDisabled, _ := o.svc.bucketACLsDisabled(ctx, stores, input.Bucket); aclsDisabled {
-		return ErrAccessControlListNotSupported
-	}
-
-	if err := stores.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp); err != nil {
-		return mapVersionLookupError(err, input.VersionId)
-	}
-	return nil
+	return o.svc.putObjectAclCore(ctx, stores, input)
 }

@@ -32,65 +32,11 @@ func (o *GetBucketAclOutput) ToXML() string {
 
 // PutBucketAcl sets the access control list (ACL) for an S3 bucket.
 func (o *BucketOperations) PutBucketAcl(ctx *request.RequestContext, input *PutBucketAclInput) error {
-	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
-
-	var acp *s3store.AccessControlPolicy
-	var err error
-
-	if input.ACL != "" {
-		acp, err = CannedACLToPolicy(input.ACL, owner)
-		if err != nil {
-			return err
-		}
-	} else if input.AccessControlPolicy != nil {
-		acp = input.AccessControlPolicy
-	} else {
-		grants, err := ParseGrantHeaders(input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
-		if err != nil {
-			return NewInvalidArgumentError(err.Error())
-		}
-		if len(grants) > 0 {
-			acp = &s3store.AccessControlPolicy{Owner: owner, Grants: grants}
-		} else {
-			return NewInvalidArgumentError("missing required ACL specification")
-		}
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-
-	publicAccessBlock, _ := store.buckets.GetPublicAccessBlock(input.Bucket)
-	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if isPublicCannedACL(input.ACL) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-		if acpContainsPublicAccess(acp) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-	}
-
-	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
-	// update ACLs fail" with AccessControlListNotSupported.
-	if aclsDisabled, _ := o.svc.bucketACLsDisabled(ctx, store, input.Bucket); aclsDisabled {
-		return ErrAccessControlListNotSupported
-	}
-
-	return store.buckets.SetACL(input.Bucket, acp)
-}
-
-// bucketACLsDisabled reports whether the bucket's Object Ownership setting
-// is BucketOwnerEnforced, under which ACLs are disabled and set/update ACL
-// requests fail.
-func (s *S3Service) bucketACLsDisabled(ctx context.Context, store *s3Stores, bucket string) (bool, error) {
-	b, err := store.buckets.Get(bucket)
-	if err != nil {
-		return false, err
-	}
-	return b.OwnershipControls != nil &&
-		len(b.OwnershipControls.Rules) == 1 &&
-		b.OwnershipControls.Rules[0].ObjectOwnership == "BucketOwnerEnforced", nil
+	return o.svc.putBucketAclCore(ctx, store, input)
 }
 
 // resolveUploadACL validates the ACL request headers of an upload (PutObject,
@@ -155,27 +101,5 @@ func (o *BucketOperations) GetBucketAcl(ctx *request.RequestContext, bucket stri
 	if err != nil {
 		return nil, err
 	}
-	b, err := store.buckets.Get(bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	owner := &s3store.ACLOwner{ID: o.svc.accountID, DisplayName: o.svc.accountID}
-
-	if b.ACL == nil {
-		return &GetBucketAclOutput{
-			Owner: owner,
-			Grants: []*s3store.Grant{
-				{
-					Grantee:    &s3store.Grantee{Type: s3store.GranteeTypeCanonicalUser, ID: o.svc.accountID, DisplayName: o.svc.accountID},
-					Permission: s3store.PermissionFullControl,
-				},
-			},
-		}, nil
-	}
-
-	return &GetBucketAclOutput{
-		Owner:  b.ACL.Owner,
-		Grants: b.ACL.Grants,
-	}, nil
+	return o.svc.getBucketAclCore(store.buckets, bucket)
 }

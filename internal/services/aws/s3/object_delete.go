@@ -2,13 +2,8 @@ package s3
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // DeleteObjectInput contains the input parameters for the DeleteObject operation.
@@ -24,93 +19,9 @@ type DeleteObjectOutput struct {
 	RequestCharged string
 }
 
-// checkObjectLock verifies whether an object may be deleted under Object Lock
-// rules. Returns nil when deletion is permitted, or an error describing why
-// the operation is blocked.
-//
-// Legal hold ON always blocks deletion regardless of bypass.
-// COMPLIANCE retention blocks deletion unconditionally.
-// GOVERNANCE retention blocks deletion unless bypassGovernanceRetention is true.
-func (o *ObjectOperations) checkObjectLock(stores *s3Stores, bucket *s3store.Bucket, objectBucket, key, versionId string, bypassGovernanceRetention bool) error {
-	if !bucket.ObjectLockEnabled {
-		return nil
-	}
-
-	obj, err := stores.objects.HeadWithVersion(context.Background(), objectBucket, key, versionId)
-	if err != nil {
-		return fmt.Errorf("failed to check Object Lock status: %w", err)
-	}
-
-	if obj.ObjectLockLegalHold != nil && obj.ObjectLockLegalHold.Status == s3store.ObjectLockLegalHoldOn {
-		return ErrObjectLockedLegalHold
-	}
-
-	if obj.ObjectLockRetention != nil && obj.ObjectLockRetention.RetainUntilDate != nil {
-		if obj.ObjectLockRetention.RetainUntilDate.After(time.Now()) {
-			if obj.ObjectLockRetention.Mode == s3store.ObjectLockRetentionModeCompliance {
-				return ErrObjectLockedRetention
-			}
-			if obj.ObjectLockRetention.Mode == s3store.ObjectLockRetentionModeGovernance && !bypassGovernanceRetention {
-				return ErrObjectLockedRetention
-			}
-		}
-	}
-
-	return nil
-}
-
 // DeleteObject deletes an object from S3.
 func (o *ObjectOperations) DeleteObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *DeleteObjectInput) (*DeleteObjectOutput, error) {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	if err := validateObjectKey(input.Key); err != nil {
-		return nil, err
-	}
-
-	bucket, err := stores.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-	if err := o.checkObjectLock(stores, bucket, input.Bucket, input.Key, input.VersionId, input.BypassGovernanceRetention); err != nil {
-		return nil, err
-	}
-
-	coreResult, err := o.svc.deleteObjectCore(ctx, stores.objects, AdminDeleteObjectInput{
-		Bucket:    input.Bucket,
-		Key:       input.Key,
-		VersionID: input.VersionId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	output := &DeleteObjectOutput{}
-	if coreResult.IsDeleteMarker {
-		output.DeleteMarker = true
-		output.VersionId = coreResult.VersionID
-		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
-		if bucket.ReplicationConfiguration != nil {
-			dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
-			go func() {
-				defer dmCancel()
-				defer func() {
-					if r := recover(); r != nil {
-						logs.Error("s3: delete-marker replication goroutine panic",
-							logs.String("bucket", input.Bucket),
-							logs.String("key", input.Key),
-							logs.Any("panic", r))
-					}
-				}()
-				o.svc.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, input.Key)
-			}()
-		}
-	} else {
-		o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
-	}
-
-	return output, nil
+	return o.svc.deleteObjectOpCore(ctx, reqCtx, stores, input)
 }
 
 // DeleteObjectsInput contains the input parameters for the DeleteObjects operation.
@@ -155,68 +66,5 @@ type DeleteError struct {
 
 // DeleteObjects deletes multiple objects from S3 in a single request.
 func (o *ObjectOperations) DeleteObjects(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *DeleteObjectsInput) (*DeleteObjectsOutput, error) {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	bucket, err := stores.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	var deleted []DeletedObject
-	var errors []DeleteError
-
-	for _, obj := range input.Delete.Objects {
-		if err := o.checkObjectLock(stores, bucket, input.Bucket, obj.Key, obj.VersionId, input.BypassGovernanceRetention); err != nil {
-			errors = append(errors, DeleteError{
-				Key:     obj.Key,
-				Code:    "AccessDenied",
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		coreResult, err := o.svc.deleteObjectCore(ctx, stores.objects, AdminDeleteObjectInput{
-			Bucket:    input.Bucket,
-			Key:       obj.Key,
-			VersionID: obj.VersionId,
-		})
-		if err != nil {
-			errors = append(errors, DeleteError{
-				Key:     obj.Key,
-				Code:    "InternalError",
-				Message: err.Error(),
-			})
-		} else {
-			deletedObj := DeletedObject{
-				Key: obj.Key,
-			}
-			if coreResult.IsDeleteMarker {
-				deletedObj.DeleteMarker = true
-				deletedObj.DeleteMarkerId = coreResult.VersionID
-				deletedObj.VersionId = coreResult.VersionID
-				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
-				if bucket.ReplicationConfiguration != nil {
-					dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
-					keyVal := obj.Key
-					go func() {
-						defer dmCancel()
-						o.svc.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, keyVal)
-					}()
-				}
-			} else if obj.VersionId != "" {
-				deletedObj.VersionId = obj.VersionId
-				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
-			} else {
-				o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
-			}
-			deleted = append(deleted, deletedObj)
-		}
-	}
-
-	return &DeleteObjectsOutput{
-		Deleted: deleted,
-		Error:   errors,
-	}, nil
+	return o.svc.deleteObjectsOpCore(ctx, reqCtx, stores, input)
 }

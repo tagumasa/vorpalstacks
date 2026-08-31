@@ -21,19 +21,7 @@ func (o *BucketOperations) PutBucketPolicy(ctx *request.RequestContext, input *P
 	if err != nil {
 		return err
 	}
-
-	if err := validatePolicyDocument(input.Policy); err != nil {
-		return err
-	}
-
-	publicAccessBlock, _ := store.buckets.GetPublicAccessBlock(input.Bucket)
-	if publicAccessBlock != nil && publicAccessBlock.BlockPublicPolicy {
-		if policyContainsPublicAccess(input.Policy) {
-			return NewInvalidArgumentError("bucket has BlockPublicPolicy enabled")
-		}
-	}
-
-	return store.buckets.SetPolicy(input.Bucket, input.Policy)
+	return o.svc.putBucketPolicyCore(store.buckets, input)
 }
 
 // policyContainsPublicAccess checks whether a bucket policy grants public
@@ -155,18 +143,7 @@ func (o *BucketOperations) GetBucketPolicy(ctx *request.RequestContext, input *G
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.Policy == "" {
-		return nil, ErrNoSuchBucketPolicy
-	}
-
-	return &GetBucketPolicyOutput{
-		Policy: bucket.Policy,
-	}, nil
+	return o.svc.getBucketPolicyCore(store.buckets, input)
 }
 
 // DeleteBucketPolicyInput contains the request parameters for the DeleteBucketPolicy operation.
@@ -180,7 +157,7 @@ func (o *BucketOperations) DeleteBucketPolicy(ctx *request.RequestContext, input
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetPolicy(input.Bucket, "")
+	return o.svc.deleteBucketPolicyCore(store.buckets, input)
 }
 
 // GetBucketPolicyStatusInput contains the request parameters for the GetBucketPolicyStatus operation.
@@ -207,14 +184,5 @@ func (o *BucketOperations) GetBucketPolicyStatus(ctx *request.RequestContext, in
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	return &GetBucketPolicyStatusOutput{
-		PolicyStatus: &PolicyStatus{
-			IsPublic: bucket.Policy != "" && policyContainsPublicAccess(bucket.Policy),
-		},
-	}, nil
+	return o.svc.getBucketPolicyStatusCore(store.buckets, input)
 }

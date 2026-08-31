@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -336,91 +335,5 @@ type GetObjectAttributesChecksum struct {
 
 // GetObjectAttributes retrieves attributes of an object.
 func (o *ObjectOperations) GetObjectAttributes(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *GetObjectAttributesInput) (*GetObjectAttributesOutput, error) {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	if err := validateObjectKey(input.Key); err != nil {
-		return nil, err
-	}
-
-	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
-	if err != nil {
-		return nil, mapVersionLookupError(err, input.VersionId)
-	}
-
-	objectSize := obj.Size
-	if obj.SSEMetadata != nil && obj.SSEMetadata.UnencryptedSize > 0 {
-		objectSize = obj.SSEMetadata.UnencryptedSize
-	}
-
-	output := &GetObjectAttributesOutput{
-		VersionId:    obj.VersionID,
-		ETag:         formatETag(obj.ETag),
-		ObjectSize:   objectSize,
-		StorageClass: string(obj.StorageClass),
-		LastModified: s3Timestamp(obj.LastModified),
-	}
-
-	for _, attr := range input.ObjectAttributes {
-		switch attr {
-		case "ETag":
-			output.ETag = formatETag(obj.ETag)
-		case "ObjectSize":
-			output.ObjectSize = objectSize
-		case "StorageClass":
-			output.StorageClass = string(obj.StorageClass)
-		case "ObjectParts":
-			if obj.SSEMetadata != nil && len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
-				partInfos := obj.SSEMetadata.PartEncryptionInfos
-				totalParts := int32(len(partInfos))
-
-				partNumberStart := int32(0)
-				if input.PartNumberMarker != "" {
-					if parsed, pErr := strconv.ParseInt(input.PartNumberMarker, 10, 32); pErr == nil && parsed > 0 {
-						partNumberStart = int32(parsed)
-					}
-				}
-
-				maxParts := input.MaxParts
-				if maxParts <= 0 {
-					maxParts = 1000
-				}
-
-				var filteredParts []GetObjectAttributesPart
-				for i, pi := range partInfos {
-					pn := int32(i + 1)
-					if pn <= partNumberStart {
-						continue
-					}
-					if int32(len(filteredParts)) >= maxParts {
-						break
-					}
-					filteredParts = append(filteredParts, GetObjectAttributesPart{
-						PartNumber: pn,
-						Size:       pi.PlainSize,
-					})
-				}
-
-				isTruncated := int32(len(partInfos)) > partNumberStart+int32(len(filteredParts))
-				var nextMarker string
-				if isTruncated && len(filteredParts) > 0 {
-					nextMarker = strconv.FormatInt(int64(filteredParts[len(filteredParts)-1].PartNumber), 10)
-				}
-
-				output.ObjectParts = &GetObjectAttributesParts{
-					IsTruncated:          isTruncated,
-					MaxParts:             maxParts,
-					NextPartNumberMarker: nextMarker,
-					PartNumberMarker:     input.PartNumberMarker,
-					Parts:                filteredParts,
-					TotalPartsCount:      totalParts,
-				}
-			}
-		case "Checksum":
-			output.Checksum = &GetObjectAttributesChecksum{}
-		}
-	}
-
-	return output, nil
+	return o.svc.getObjectAttributesCore(ctx, stores, input)
 }

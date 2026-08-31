@@ -2,7 +2,6 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketVersioningInput contains the request parameters for the PutBucketVersioning operation.
@@ -14,21 +13,11 @@ type PutBucketVersioningInput struct {
 
 // PutBucketVersioning sets the versioning state of a bucket.
 func (o *BucketOperations) PutBucketVersioning(ctx *request.RequestContext, input *PutBucketVersioningInput) error {
-	status := s3store.BucketVersioningStatus(input.Status)
-	if status != s3store.BucketVersioningEnabled && status != s3store.BucketVersioningSuspended {
-		return NewInvalidArgumentError("invalid versioning status")
-	}
-	if err := validateMFADelete(input.MFADelete); err != nil {
-		return err
-	}
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-	if !store.buckets.Exists(input.Bucket) {
-		return ErrNoSuchBucket
-	}
-	return store.buckets.SetVersioning(input.Bucket, status, input.MFADelete)
+	return o.svc.putBucketVersioningCore(store.buckets, input)
 }
 
 // GetBucketVersioningInput contains the request parameters for the GetBucketVersioning operation.
@@ -48,20 +37,5 @@ func (o *BucketOperations) GetBucketVersioning(ctx *request.RequestContext, inpu
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.VersioningStatus == "" && bucket.MFADelete == "" {
-		return &GetBucketVersioningOutput{}, nil
-	}
-
-	result := &GetBucketVersioningOutput{
-		Status: string(bucket.VersioningStatus),
-	}
-	if bucket.MFADelete != "" {
-		result.MFADelete = bucket.MFADelete
-	}
-	return result, nil
+	return o.svc.getBucketVersioningCore(store.buckets, input)
 }

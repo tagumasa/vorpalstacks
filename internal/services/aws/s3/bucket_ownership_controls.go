@@ -2,7 +2,6 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // OwnershipControlsInput represents the input for bucket ownership controls configuration.
@@ -23,26 +22,11 @@ type PutBucketOwnershipControlsInput struct {
 
 // PutBucketOwnershipControls sets ownership controls for an S3 bucket.
 func (o *BucketOperations) PutBucketOwnershipControls(ctx *request.RequestContext, input *PutBucketOwnershipControlsInput) error {
-	if input.OwnershipControls == nil {
-		return NewInvalidArgumentError("OwnershipControls is required")
-	}
-	if err := validateOwnershipControls(input.OwnershipControls.Rules); err != nil {
-		return err
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-
-	config := &s3store.OwnershipControls{}
-	for _, rule := range input.OwnershipControls.Rules {
-		config.Rules = append(config.Rules, s3store.OwnershipControlsRule{
-			ObjectOwnership: rule.ObjectOwnership,
-		})
-	}
-
-	return store.buckets.SetOwnershipControls(input.Bucket, config)
+	return o.svc.putBucketOwnershipControlsCore(store.buckets, input)
 }
 
 // GetBucketOwnershipControlsInput represents the input for retrieving bucket ownership controls.
@@ -61,26 +45,7 @@ func (o *BucketOperations) GetBucketOwnershipControls(ctx *request.RequestContex
 	if err != nil {
 		return nil, err
 	}
-
-	config, err := store.buckets.GetOwnershipControls(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if config == nil {
-		return nil, ErrNoSuchOwnershipCtrls
-	}
-
-	result := &GetBucketOwnershipControlsOutput{
-		OwnershipControls: &OwnershipControlsInput{},
-	}
-	for _, rule := range config.Rules {
-		result.OwnershipControls.Rules = append(result.OwnershipControls.Rules, OwnershipControlsRuleInput{
-			ObjectOwnership: rule.ObjectOwnership,
-		})
-	}
-
-	return result, nil
+	return o.svc.getBucketOwnershipControlsCore(store.buckets, input)
 }
 
 // DeleteBucketOwnershipControlsInput represents the input for deleting bucket ownership controls.
@@ -94,5 +59,5 @@ func (o *BucketOperations) DeleteBucketOwnershipControls(ctx *request.RequestCon
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetOwnershipControls(input.Bucket, nil)
+	return o.svc.deleteBucketOwnershipControlsCore(store.buckets, input)
 }

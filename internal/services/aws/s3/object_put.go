@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -11,7 +10,6 @@ import (
 	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 const maxCopyObjectSize int64 = 5 * 1024 * 1024 * 1024
@@ -234,55 +232,7 @@ type RestoreRequest struct {
 // instead of 202 Accepted). The object's storage class never changes; the
 // restored copy's expiry is rounded up to the following midnight UTC.
 func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *RestoreObjectInput) (bool, error) {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return false, err
-	}
-
-	var obj *s3store.Object
-	var err error
-	if input.VersionId != "" {
-		obj, err = stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
-	} else {
-		obj, err = stores.objects.Head(ctx, input.Bucket, input.Key)
-	}
-	if err != nil {
-		return false, versionLookupError(input.Key, input.VersionId)
-	}
-
-	if !isArchiveClass(obj.StorageClass) {
-		return false, ErrInvalidObjectState
-	}
-
-	restoreDays := 1
-	if input.Body != nil {
-		var restoreReq RestoreRequest
-		if err := request.NewSafeXMLDecoder(input.Body).Decode(&restoreReq); err != nil {
-			return false, NewInvalidArgumentError("invalid RestoreObject request body")
-		}
-		if err := validateRestoreDays(restoreReq.Days); err != nil {
-			return false, err
-		}
-		restoreDays = restoreReq.Days
-	}
-
-	now := time.Now()
-	alreadyRestored := objectRestored(obj, now)
-	expiry := nextRestoreExpiry(now, restoreDays)
-	if err := stores.objects.SetRestoreState(input.Bucket, input.Key, input.VersionId, &expiry); err != nil {
-		return false, err
-	}
-
-	// The restore completes synchronously in this implementation, so the
-	// initiation and completion notifications are published together.
-	o.svc.publishRestoreNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectRestorePost, expiry)
-	o.svc.publishRestoreNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectRestoreCompleted, expiry)
-
-	logs.Info("s3: object restored",
-		logs.String("bucket", input.Bucket),
-		logs.String("key", input.Key),
-		logs.String("days", fmt.Sprintf("%d", restoreDays)))
-
-	return alreadyRestored, nil
+	return o.svc.restoreObjectCore(ctx, reqCtx, stores, input)
 }
 
 // parseTaggingHeader parses the x-amz-tagging header value (URL-encoded

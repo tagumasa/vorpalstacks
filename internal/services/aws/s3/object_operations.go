@@ -17,10 +17,7 @@ func NewObjectOperations(svc *S3Service) *ObjectOperations {
 }
 
 func (o *ObjectOperations) validateBucketExists(stores *s3Stores, bucket string) error {
-	if !stores.buckets.Exists(bucket) {
-		return ErrNoSuchBucket
-	}
-	return nil
+	return o.svc.validateBucketExists(stores, bucket)
 }
 
 func formatETag(etag string) string {

@@ -2,7 +2,6 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketWebsiteInput contains the input parameters for the PutBucketWebsite operation.
@@ -58,56 +57,11 @@ type RedirectInput struct {
 
 // PutBucketWebsite configures the website configuration for a bucket.
 func (o *BucketOperations) PutBucketWebsite(ctx *request.RequestContext, input *PutBucketWebsiteInput) error {
-	if err := validateWebsiteConfig(input.WebsiteConfiguration); err != nil {
-		return err
-	}
-
-	config := &s3store.WebsiteConfiguration{}
-
-	if input.WebsiteConfiguration.IndexDocument != nil {
-		config.IndexDocument = input.WebsiteConfiguration.IndexDocument.Suffix
-	}
-
-	if input.WebsiteConfiguration.ErrorDocument != nil {
-		config.ErrorDocument = input.WebsiteConfiguration.ErrorDocument.Key
-	}
-
-	if input.WebsiteConfiguration.RedirectAllRequestsTo != nil {
-		config.RedirectAllRequestsTo = &s3store.RedirectAllRequestsTo{
-			HostName: input.WebsiteConfiguration.RedirectAllRequestsTo.HostName,
-			Protocol: input.WebsiteConfiguration.RedirectAllRequestsTo.Protocol,
-		}
-	}
-
-	for _, rule := range input.WebsiteConfiguration.RoutingRules {
-		routingRule := s3store.RoutingRule{}
-
-		if rule.Condition != nil {
-			routingRule.Condition = &s3store.RoutingRuleCondition{
-				HTTPErrorCodeReturnedEquals: rule.Condition.HTTPErrorCodeReturnedEquals,
-				KeyPrefixEquals:             rule.Condition.KeyPrefixEquals,
-			}
-		}
-
-		if rule.Redirect != nil {
-			routingRule.Redirect = &s3store.RoutingRuleRedirect{
-				HostName:             rule.Redirect.HostName,
-				HTTPRedirectCode:     rule.Redirect.HTTPRedirectCode,
-				Protocol:             rule.Redirect.Protocol,
-				ReplaceKeyPrefixWith: rule.Redirect.ReplaceKeyPrefixWith,
-				ReplaceKeyWith:       rule.Redirect.ReplaceKeyWith,
-			}
-		}
-
-		config.RoutingRules = append(config.RoutingRules, routingRule)
-	}
-
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-
-	return store.buckets.SetWebsiteConfiguration(input.Bucket, config)
+	return o.svc.putBucketWebsiteCore(store.buckets, input)
 }
 
 // GetBucketWebsiteInput contains the input parameters for the GetBucketWebsite operation.
@@ -166,61 +120,7 @@ func (o *BucketOperations) GetBucketWebsite(ctx *request.RequestContext, input *
 	if err != nil {
 		return nil, err
 	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.WebsiteConfiguration == nil {
-		return nil, ErrNoSuchWebsite
-	}
-
-	output := &GetBucketWebsiteOutput{}
-
-	if bucket.WebsiteConfiguration.IndexDocument != "" {
-		output.IndexDocument = &IndexDocumentOutput{
-			Suffix: bucket.WebsiteConfiguration.IndexDocument,
-		}
-	}
-
-	if bucket.WebsiteConfiguration.ErrorDocument != "" {
-		output.ErrorDocument = &ErrorDocumentOutput{
-			Key: bucket.WebsiteConfiguration.ErrorDocument,
-		}
-	}
-
-	if bucket.WebsiteConfiguration.RedirectAllRequestsTo != nil {
-		output.RedirectAllRequestsTo = &RedirectAllRequestsToOutput{
-			HostName: bucket.WebsiteConfiguration.RedirectAllRequestsTo.HostName,
-			Protocol: bucket.WebsiteConfiguration.RedirectAllRequestsTo.Protocol,
-		}
-	}
-
-	for _, rule := range bucket.WebsiteConfiguration.RoutingRules {
-		outputRule := RoutingRuleOutput{}
-
-		if rule.Condition != nil {
-			outputRule.Condition = &RoutingRuleConditionOutput{
-				HTTPErrorCodeReturnedEquals: rule.Condition.HTTPErrorCodeReturnedEquals,
-				KeyPrefixEquals:             rule.Condition.KeyPrefixEquals,
-			}
-		}
-
-		if rule.Redirect != nil {
-			outputRule.Redirect = &RedirectOutput{
-				HostName:             rule.Redirect.HostName,
-				HTTPRedirectCode:     rule.Redirect.HTTPRedirectCode,
-				Protocol:             rule.Redirect.Protocol,
-				ReplaceKeyPrefixWith: rule.Redirect.ReplaceKeyPrefixWith,
-				ReplaceKeyWith:       rule.Redirect.ReplaceKeyWith,
-			}
-		}
-
-		output.RoutingRules = append(output.RoutingRules, outputRule)
-	}
-
-	return output, nil
+	return o.svc.getBucketWebsiteCore(store.buckets, input)
 }
 
 // DeleteBucketWebsiteInput contains the input parameters for the DeleteBucketWebsite operation.
@@ -234,5 +134,5 @@ func (o *BucketOperations) DeleteBucketWebsite(ctx *request.RequestContext, inpu
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetWebsiteConfiguration(input.Bucket, nil)
+	return o.svc.deleteBucketWebsiteCore(store.buckets, input)
 }

@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
 )
 
@@ -21,15 +20,5 @@ func (o *BucketOperations) GetBucketLocation(ctx *request.RequestContext, input 
 	if err != nil {
 		return nil, err
 	}
-
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if bucket.Region == defaults.DefaultRegion {
-		return &GetBucketLocationOutput{LocationConstraint: ""}, nil
-	}
-
-	return &GetBucketLocationOutput{LocationConstraint: bucket.Region}, nil
+	return o.svc.getBucketLocationCore(store.buckets, input)
 }

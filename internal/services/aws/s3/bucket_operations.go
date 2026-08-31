@@ -98,7 +98,7 @@ func (o *BucketOperations) GetBucket(ctx *request.RequestContext, input *GetBuck
 	if err != nil {
 		return nil, err
 	}
-	return store.buckets.Get(input.Bucket)
+	return o.svc.getBucketCore(store.buckets, input)
 }
 
 // HeadBucketInput contains the input parameters for the HeadBucket operation.
@@ -117,13 +117,7 @@ func (o *BucketOperations) HeadBucket(ctx *request.RequestContext, input *HeadBu
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-	return &HeadBucketOutput{
-		BucketRegion: bucket.Region,
-	}, nil
+	return o.svc.headBucketCore(store.buckets, input)
 }
 
 // ListBucketsInput contains the input parameters for the ListBuckets operation.

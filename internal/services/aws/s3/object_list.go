@@ -412,57 +412,5 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 
 // ListObjectVersions lists the versions of objects in a bucket.
 func (o *ObjectOperations) ListObjectVersions(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, input *ListObjectVersionsInput) (*ListObjectVersionsOutput, error) {
-	if err := o.validateBucketExists(stores, input.Bucket); err != nil {
-		return nil, err
-	}
-
-	result, err := stores.objects.ListObjectVersions(input.Bucket, input.Prefix, input.Delimiter, input.KeyMarker, input.VersionIdMarker, input.MaxKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	var versions []*ObjectVersion
-	var deleteMarkers []*DeleteMarkerEntry
-	var commonPrefixes []CommonPrefix
-
-	for _, obj := range result.Objects {
-		if obj.IsDeleteMarker {
-			deleteMarkers = append(deleteMarkers, &DeleteMarkerEntry{
-				Key:          obj.Key,
-				LastModified: obj.LastModified,
-				VersionId:    obj.VersionID,
-				IsLatest:     obj.IsLatest,
-			})
-		} else {
-			versions = append(versions, &ObjectVersion{
-				Key:          obj.Key,
-				LastModified: obj.LastModified,
-				ETag:         formatETag(obj.ETag),
-				Size:         obj.Size,
-				StorageClass: string(obj.StorageClass),
-				VersionId:    obj.VersionID,
-				IsLatest:     obj.IsLatest,
-			})
-		}
-	}
-
-	for _, prefix := range result.CommonPrefixes {
-		commonPrefixes = append(commonPrefixes, CommonPrefix{Prefix: prefix})
-	}
-
-	return &ListObjectVersionsOutput{
-		Versions:            versions,
-		DeleteMarkers:       deleteMarkers,
-		CommonPrefixes:      commonPrefixes,
-		Delimiter:           input.Delimiter,
-		EncodingType:        input.EncodingType,
-		IsTruncated:         result.IsTruncated,
-		KeyMarker:           input.KeyMarker,
-		MaxKeys:             input.MaxKeys,
-		Name:                input.Bucket,
-		NextKeyMarker:       result.NextVersionKeyMarker,
-		NextVersionIdMarker: result.NextVersionIDMarker,
-		Prefix:              input.Prefix,
-		VersionIdMarker:     input.VersionIdMarker,
-	}, nil
+	return o.svc.listObjectVersionsCore(stores, input)
 }

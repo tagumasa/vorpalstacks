@@ -42,14 +42,11 @@ func CommonToTags(tags []types.Tag) []Tag {
 
 // PutBucketTagging applies a set of tags to a bucket.
 func (o *BucketOperations) PutBucketTagging(ctx *request.RequestContext, input *PutBucketTaggingInput) error {
-	if err := validateTags(input.Tags); err != nil {
-		return err
-	}
 	store, err := o.svc.store(ctx)
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetTags(input.Bucket, TagsToCommon(input.Tags))
+	return o.svc.putBucketTaggingCore(store.buckets, input)
 }
 
 // GetBucketTaggingInput contains the request parameters for the GetBucketTagging operation.
@@ -68,14 +65,7 @@ func (o *BucketOperations) GetBucketTagging(ctx *request.RequestContext, input *
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := store.buckets.Get(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	return &GetBucketTaggingOutput{
-		TagSet: CommonToTags(bucket.Tags),
-	}, nil
+	return o.svc.getBucketTaggingCore(store.buckets, input)
 }
 
 // DeleteBucketTaggingInput contains the request parameters for the DeleteBucketTagging operation.
@@ -89,5 +79,5 @@ func (o *BucketOperations) DeleteBucketTagging(ctx *request.RequestContext, inpu
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetTags(input.Bucket, nil)
+	return o.svc.deleteBucketTaggingCore(store.buckets, input)
 }

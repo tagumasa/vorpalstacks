@@ -2,7 +2,6 @@ package s3
 
 import (
 	"vorpalstacks/internal/common/request"
-	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PublicAccessBlockConfiguration defines the public access block settings for a bucket.
@@ -25,15 +24,7 @@ func (o *BucketOperations) PutPublicAccessBlock(ctx *request.RequestContext, inp
 	if err != nil {
 		return err
 	}
-
-	config := &s3store.PublicAccessBlockConfig{
-		BlockPublicAcls:       input.PublicAccessBlockConfiguration.BlockPublicAcls,
-		BlockPublicPolicy:     input.PublicAccessBlockConfiguration.BlockPublicPolicy,
-		IgnorePublicAcls:      input.PublicAccessBlockConfiguration.IgnorePublicAcls,
-		RestrictPublicBuckets: input.PublicAccessBlockConfiguration.RestrictPublicBuckets,
-	}
-
-	return store.buckets.SetPublicAccessBlock(input.Bucket, config)
+	return o.svc.putPublicAccessBlockCore(store.buckets, input)
 }
 
 // GetPublicAccessBlockInput represents the input for retrieving public access block configuration.
@@ -52,24 +43,7 @@ func (o *BucketOperations) GetPublicAccessBlock(ctx *request.RequestContext, inp
 	if err != nil {
 		return nil, err
 	}
-
-	config, err := store.buckets.GetPublicAccessBlock(input.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	if config == nil {
-		return nil, ErrNoSuchPublicAccessBlk
-	}
-
-	return &GetPublicAccessBlockOutput{
-		PublicAccessBlockConfiguration: &PublicAccessBlockConfiguration{
-			BlockPublicAcls:       config.BlockPublicAcls,
-			BlockPublicPolicy:     config.BlockPublicPolicy,
-			IgnorePublicAcls:      config.IgnorePublicAcls,
-			RestrictPublicBuckets: config.RestrictPublicBuckets,
-		},
-	}, nil
+	return o.svc.getPublicAccessBlockCore(store.buckets, input)
 }
 
 // DeletePublicAccessBlockInput represents the input for deleting public access block configuration.
@@ -83,5 +57,5 @@ func (o *BucketOperations) DeletePublicAccessBlock(ctx *request.RequestContext, 
 	if err != nil {
 		return err
 	}
-	return store.buckets.SetPublicAccessBlock(input.Bucket, nil)
+	return o.svc.deletePublicAccessBlockCore(store.buckets, input)
 }
