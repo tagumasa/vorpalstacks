@@ -141,3 +141,36 @@ func repeatN(s string, n int) []string {
 	}
 	return out
 }
+
+// TestMatchesKeyExistenceFilter pins the semantics of a ParameterStringFilter
+// whose Values member was omitted: it matches parameters that carry the
+// filter key's attribute (or tag key) at all. Attribute keys every parameter
+// carries (Name, Type, Tier, Path) match everything; KeyId, DataType, Label
+// and tag: keys match only where the attribute exists.
+func TestMatchesKeyExistenceFilter(t *testing.T) {
+	tagged := &Parameter{
+		Name: "/app/tagged", Type: ParameterTypeString, Tier: ParameterTierStandard,
+		Tags: map[string]string{"Team": "platform"},
+	}
+	untagged := &Parameter{
+		Name: "/app/plain", Type: ParameterTypeString, Tier: ParameterTierStandard,
+	}
+
+	if !tagged.Matches([]ParameterFilter{{Key: "tag:Team"}}, false) {
+		t.Error("tag key-existence filter did not match a parameter carrying the tag")
+	}
+	if untagged.Matches([]ParameterFilter{{Key: "tag:Team"}}, false) {
+		t.Error("tag key-existence filter matched a parameter without the tag")
+	}
+	if !untagged.Matches([]ParameterFilter{{Key: "Type"}}, false) {
+		t.Error("Type key-existence filter did not match (every parameter has a type)")
+	}
+	if untagged.Matches([]ParameterFilter{{Key: "KeyId"}}, false) {
+		t.Error("KeyId key-existence filter matched a parameter without a key")
+	}
+	// Keys unsupported for GetParametersByPath (tag:, DataType, Name, Path,
+	// Tier) are skipped rather than applied, so the parameter still matches.
+	if !tagged.Matches([]ParameterFilter{{Key: "tag:Team"}}, true) {
+		t.Error("unsupported key for GetParametersByPath made the parameter not match")
+	}
+}

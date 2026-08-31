@@ -6,6 +6,27 @@ import (
 	"testing"
 )
 
+// TestValidateParameterNameList_Length pins the Smithy ParameterNameList
+// contract (required, @length 1-10): an empty or oversized list is rejected
+// with ValidationException. A missing Names member is unreachable through
+// the AWS SDK (client-side required validation), so the omission shape is
+// pinned here as the nil case.
+func TestValidateParameterNameList_Length(t *testing.T) {
+	if err := validateParameterNameList(nil); !errors.Is(err, ErrValidationException) {
+		t.Fatalf("nil err = %v, want ErrValidationException", err)
+	}
+	if err := validateParameterNameList([]string{}); !errors.Is(err, ErrValidationException) {
+		t.Fatalf("empty err = %v, want ErrValidationException", err)
+	}
+	names := make([]string, 10)
+	if err := validateParameterNameList(names); err != nil {
+		t.Fatalf("10 names rejected: %v", err)
+	}
+	if err := validateParameterNameList(append(names, "extra")); !errors.Is(err, ErrValidationException) {
+		t.Fatalf("11 names err = %v, want ErrValidationException", err)
+	}
+}
+
 // TestValidateDataType_Integration verifies that the AWS-documented
 // aws:ssm:integration DataType value is accepted.
 func TestValidateDataType_Integration(t *testing.T) {
@@ -78,21 +99,68 @@ func TestNormalisePutParameter_DescriptionUnicodeLength(t *testing.T) {
 }
 
 // TestFiltersFromList_FailClosed verifies that malformed ParameterFilters
-// input is rejected instead of being silently dropped (a dropped filter
-// would return unfiltered results).
+// input is rejected instead of being silently dropped or silently reduced to
+// its valid subset (a dropped filter would return unfiltered results), while
+// the optional Values member may be omitted (key-existence filter).
 func TestFiltersFromList_FailClosed(t *testing.T) {
-	if _, err := filtersFromList("not-a-list"); !errors.Is(err, ErrInvalidFilterValue) {
-		t.Fatalf("string err = %v, want ErrInvalidFilterValue", err)
+	// Wire-type violations never deserialise into the modelled awsJson1_1
+	// shape and map to SerializationException.
+	if _, err := filtersFromList("not-a-list"); !errors.Is(err, ErrSerializationException) {
+		t.Fatalf("string err = %v, want ErrSerializationException", err)
 	}
-	if _, err := filtersFromList([]interface{}{"not-an-object"}); !errors.Is(err, ErrInvalidFilterValue) {
-		t.Fatalf("non-object entry err = %v, want ErrInvalidFilterValue", err)
+	if _, err := filtersFromList([]interface{}{"not-an-object"}); !errors.Is(err, ErrSerializationException) {
+		t.Fatalf("non-object entry err = %v, want ErrSerializationException", err)
 	}
+	nonStringKey := []interface{}{map[string]interface{}{"Key": 5, "Values": []interface{}{"p1"}}}
+	if _, err := filtersFromList(nonStringKey); !errors.Is(err, ErrSerializationException) {
+		t.Fatalf("non-string Key err = %v, want ErrSerializationException", err)
+	}
+	// The Values member is optional ("Required: No"): an entry with a Key
+	// and no Values member is accepted as a key-existence filter.
 	noValues := []interface{}{map[string]interface{}{"Key": "Name"}}
-	if _, err := filtersFromList(noValues); !errors.Is(err, ErrInvalidFilterValue) {
-		t.Fatalf("missing Values err = %v, want ErrInvalidFilterValue", err)
+	filters, err := filtersFromList(noValues)
+	if err != nil || len(filters) != 1 || len(filters[0].Values) != 0 {
+		t.Fatalf("omitted Values err = %v, filters = %+v, want accepted key-existence filter", err, filters)
+	}
+	// A present-but-empty Values member violates the value-list length
+	// minimum of 1 and stays rejected.
+	emptyValues := []interface{}{map[string]interface{}{"Key": "Name", "Values": []interface{}{}}}
+	if _, err := filtersFromList(emptyValues); !errors.Is(err, ErrInvalidFilterValue) {
+		t.Fatalf("empty Values err = %v, want ErrInvalidFilterValue", err)
+	}
+	// Every Values entry must satisfy the ParameterStringFilterValue length
+	// minimum of 1; a mixed list is invalid as a whole, not reduced to its
+	// non-empty entries.
+	mixedValues := []interface{}{map[string]interface{}{"Key": "Name", "Values": []interface{}{"", "p1"}}}
+	if _, err := filtersFromList(mixedValues); !errors.Is(err, ErrInvalidFilterValue) {
+		t.Fatalf("mixed empty/valid Values err = %v, want ErrInvalidFilterValue", err)
+	}
+	allEmpty := []interface{}{map[string]interface{}{"Key": "Name", "Values": []interface{}{""}}}
+	if _, err := filtersFromList(allEmpty); !errors.Is(err, ErrInvalidFilterValue) {
+		t.Fatalf("single empty Values entry err = %v, want ErrInvalidFilterValue", err)
+	}
+	nonStringEntry := []interface{}{map[string]interface{}{"Key": "Name", "Values": []interface{}{1}}}
+	if _, err := filtersFromList(nonStringEntry); !errors.Is(err, ErrSerializationException) {
+		t.Fatalf("non-string Values entry err = %v, want ErrSerializationException", err)
+	}
+	// The Option member is optional; an explicitly empty one violates the
+	// ParameterStringQueryOption length minimum of 1 and a non-string one is
+	// a wire-type violation — neither may be treated as an omitted member.
+	emptyOption := []interface{}{map[string]interface{}{"Key": "Name", "Option": ""}}
+	if _, err := filtersFromList(emptyOption); !errors.Is(err, ErrInvalidFilterOption) {
+		t.Fatalf("empty Option err = %v, want ErrInvalidFilterOption", err)
+	}
+	nonStringOption := []interface{}{map[string]interface{}{"Key": "Name", "Option": 5}}
+	if _, err := filtersFromList(nonStringOption); !errors.Is(err, ErrSerializationException) {
+		t.Fatalf("non-string Option err = %v, want ErrSerializationException", err)
+	}
+	nullOption := []interface{}{map[string]interface{}{"Key": "Name", "Option": nil}}
+	filters, err = filtersFromList(nullOption)
+	if err != nil || len(filters) != 1 || filters[0].Option != "" {
+		t.Fatalf("null Option err = %v, filters = %+v, want accepted as omitted", err, filters)
 	}
 	valid := []interface{}{map[string]interface{}{"Key": "Name", "Values": []interface{}{"p1"}}}
-	filters, err := filtersFromList(valid)
+	filters, err = filtersFromList(valid)
 	if err != nil || len(filters) != 1 {
 		t.Fatalf("valid filters err = %v, len = %d", err, len(filters))
 	}
@@ -102,15 +170,20 @@ func TestFiltersFromList_FailClosed(t *testing.T) {
 }
 
 func TestFiltersFromQueryParams_FailClosed(t *testing.T) {
-	// An entry with a Key but no Values must be rejected identically to
-	// the JSON body path, and must not silently drop subsequent entries.
+	// The Values member is optional: an entry with a Key and no Values is a
+	// key-existence filter and must not be dropped nor stop later entries
+	// from being parsed.
 	params := map[string]interface{}{
 		"ParameterFilters.member.1.Key":             "Name",
 		"ParameterFilters.member.2.Key":             "Type",
 		"ParameterFilters.member.2.Values.member.1": "String",
 	}
-	if _, err := filtersFromQueryParams(params, "ParameterFilters"); !errors.Is(err, ErrInvalidFilterValue) {
-		t.Fatalf("missing Values err = %v, want ErrInvalidFilterValue", err)
+	filters, err := filtersFromQueryParams(params, "ParameterFilters")
+	if err != nil || len(filters) != 2 {
+		t.Fatalf("key-only entry err = %v, len = %d, want both entries accepted", err, len(filters))
+	}
+	if len(filters[0].Values) != 0 {
+		t.Fatalf("key-only entry collected values: %+v", filters[0])
 	}
 
 	valid := map[string]interface{}{
@@ -121,7 +194,7 @@ func TestFiltersFromQueryParams_FailClosed(t *testing.T) {
 		"ParameterFilters.member.2.Option":          "Equals",
 		"ParameterFilters.member.2.Values.member.1": "String",
 	}
-	filters, err := filtersFromQueryParams(valid, "ParameterFilters")
+	filters, err = filtersFromQueryParams(valid, "ParameterFilters")
 	if err != nil || len(filters) != 2 {
 		t.Fatalf("valid filters err = %v, len = %d", err, len(filters))
 	}

@@ -72,9 +72,18 @@ var (
 	// ErrInvalidFilterValue is returned when a ParameterFilters value is
 	// malformed (not a list of objects, or an entry without Values).
 	ErrInvalidFilterValue = awserrors.NewAWSError("InvalidFilterValue", "The filter value is not valid", http.StatusBadRequest)
+	// ErrSerializationException is the awsJson1_1 deserialisation error for
+	// wire requests that never parse into the modelled shape (for example a
+	// non-string entry inside a ParameterFilters Values list); AWS returns it
+	// before any operation-level validation runs.
+	ErrSerializationException = awserrors.NewAWSError("SerializationException", "The request payload couldn't be deserialized.", http.StatusBadRequest)
 	// ErrHierarchyLevelLimitExceeded is returned when a parameter name
 	// hierarchy exceeds the maximum depth of fifteen levels.
 	ErrHierarchyLevelLimitExceeded = awserrors.NewAWSError("HierarchyLevelLimitExceededException", "A parameter name hierarchy can have a maximum depth of fifteen levels", http.StatusBadRequest)
 	// ErrInvalidNextToken is returned when a pagination marker is not valid.
 	ErrInvalidNextToken = awserrors.NewAWSError("InvalidNextToken", "The specified token is not valid", http.StatusBadRequest)
+	// ErrValidationException is returned when a required request member is
+	// missing or a member violates its modelled constraint. AWS rejects null
+	// required members with the Smithy ValidationException shape (HTTP 400).
+	ErrValidationException = awserrors.NewAWSError("ValidationException", "The request isn't valid. Verify that you entered valid contents for the command and try again.", http.StatusBadRequest)
 )

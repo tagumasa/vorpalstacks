@@ -226,6 +226,78 @@ func (r *TestRunner) runSSMParameterList(tc *ssmTestContext) []TestResult {
 		return nil
 	}))
 
+	// The Values member of ParameterStringFilter is optional ("Required:
+	// No"): a filter carrying only a tag key matches every parameter that
+	// has the tag key, regardless of the value.
+	results = append(results, r.RunTest("ssm", "DescribeParameters_TagKeyOnlyFilter", func() error {
+		taggedName := tc.uniqueName("/tk-tagged")
+		plainName := tc.uniqueName("/tk-plain")
+		if _, err := tc.putParam(taggedName, "x", types.ParameterTypeString, func(in *ssm.PutParameterInput) {
+			in.Tags = []types.Tag{{Key: aws.String("Team"), Value: aws.String("platform")}}
+		}); err != nil {
+			return fmt.Errorf("put tagged: %v", err)
+		}
+		defer tc.deleteParam(taggedName)
+		if _, err := tc.putParam(plainName, "x", types.ParameterTypeString); err != nil {
+			return fmt.Errorf("put plain: %v", err)
+		}
+		defer tc.deleteParam(plainName)
+
+		var nextToken *string
+		sawTagged, sawPlain := false, false
+		for {
+			resp, err := tc.client.DescribeParameters(tc.ctx, &ssm.DescribeParametersInput{
+				ParameterFilters: []types.ParameterStringFilter{
+					{Key: aws.String("tag:Team")},
+				},
+				NextToken: nextToken,
+			})
+			if err != nil {
+				return fmt.Errorf("describe with key-only tag filter: %v", err)
+			}
+			for _, p := range resp.Parameters {
+				if aws.ToString(p.Name) == taggedName {
+					sawTagged = true
+				}
+				if aws.ToString(p.Name) == plainName {
+					sawPlain = true
+				}
+			}
+			if resp.NextToken == nil || *resp.NextToken == "" {
+				break
+			}
+			nextToken = resp.NextToken
+		}
+		if !sawTagged {
+			return fmt.Errorf("tagged parameter %s not returned by tag-key-only filter", taggedName)
+		}
+		if sawPlain {
+			return fmt.Errorf("untagged parameter %s returned by tag-key-only filter", plainName)
+		}
+		return nil
+	}))
+
+	// Every Values entry must satisfy the documented minimum length of 1: a
+	// malformed entry invalidates the whole request instead of being dropped
+	// from the filter.
+	results = append(results, r.RunTest("ssm", "DescribeParameters_EmptyFilterValueRejected", func() error {
+		_, err := tc.client.DescribeParameters(tc.ctx, &ssm.DescribeParametersInput{
+			ParameterFilters: []types.ParameterStringFilter{
+				{Key: aws.String("Name"), Values: []string{"", "tk"}},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("mixed empty/valid Values accepted, want InvalidFilterValue")
+		}
+		if err := AssertErrorContains(err, "InvalidFilterValue"); err != nil {
+			return err
+		}
+		if awsHTTPStatus(err) != 400 {
+			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("ssm", "DescribeParameters_Pagination", func() error {
 		pgTs := tc.ts + "-pg"
 		var pgParams []string

@@ -74,8 +74,14 @@ func validKeyForGetByPath(key string) bool {
 }
 
 func matchSingleFilter(p *Parameter, f ParameterFilter) bool {
+	// An omitted Values member is a key-existence filter: the member is
+	// optional on the wire shape, so a filter carrying only a Key matches
+	// every parameter that has the key's attribute (or tag key) at all.
+	// Attribute keys every parameter carries (Name, Type, Tier, Path)
+	// therefore match everything, while KeyId, DataType, Label and tag:
+	// keys match only parameters where the attribute exists.
 	if len(f.Values) == 0 {
-		return false
+		return keyExistsOnParameter(p, f.Key)
 	}
 	option := f.Option
 	if option == "" {
@@ -100,6 +106,26 @@ func matchSingleFilter(p *Parameter, f ParameterFilter) bool {
 	if strings.HasPrefix(f.Key, "tag:") {
 		tagKey := strings.TrimPrefix(f.Key, "tag:")
 		return matchStringOption(p.Tags[tagKey], f.Values, option)
+	}
+	return false
+}
+
+// keyExistsOnParameter reports whether the filter key's attribute exists on
+// the parameter at all, for filters whose Values member was omitted.
+func keyExistsOnParameter(p *Parameter, key string) bool {
+	switch key {
+	case "Name", "Type", "Tier", "Path":
+		return true
+	case "KeyId":
+		return p.KeyID != ""
+	case "DataType":
+		return p.DataType != ""
+	case "Label":
+		return len(p.VersionLabels) > 0
+	}
+	if strings.HasPrefix(key, "tag:") {
+		_, ok := p.Tags[strings.TrimPrefix(key, "tag:")]
+		return ok
 	}
 	return false
 }

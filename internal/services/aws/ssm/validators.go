@@ -39,11 +39,12 @@ var validTiers = map[ssmstore.ParameterTier]struct{}{
 // keyIDRegex is the Smithy ParameterKeyId pattern.
 var keyIDRegex = regexp.MustCompile(`^[a-zA-Z0-9:/_-]+$`)
 
-// validateParameterNameList enforces the Smithy length cap on operations that
-// accept a Name list. AWS returns InvalidParameter for overflow.
+// validateParameterNameList enforces the Smithy ParameterNameList contract
+// (required, @length 1-10) on operations that accept a Name list. AWS
+// returns ValidationException for a missing, empty, or oversized list.
 func validateParameterNameList(names []string) error {
-	if len(names) > maxParameterNameListLen {
-		return ErrInvalidParameterName
+	if len(names) == 0 || len(names) > maxParameterNameListLen {
+		return ErrValidationException
 	}
 	return nil
 }
@@ -203,102 +204,6 @@ func validatePolicies(policies string) error {
 		}
 	}
 	return nil
-}
-
-// ParameterPutFields holds the raw string inputs of a PutParameter call.
-// Both the HTTP query-protocol path and the admin gRPC path populate this
-// from their respective wire formats and then call normalisePutParameter so
-// validation, defaulting and Tier auto-promotion happen once in a single place.
-type ParameterPutFields struct {
-	Name           string
-	Value          string
-	Type           string
-	Description    string
-	KeyID          string
-	AllowedPattern string
-	DataType       string
-	Tier           string
-	Policies       string
-	Tags           map[string]string
-}
-
-// normalisePutParameter validates every PutParameter input field and returns
-// a fully-populated Parameter. Defaults (DataType="text", Tier="Standard") and
-// Tier auto-promotion (Standard -> Advanced on >4KB or Policies) are applied
-// here so callers cannot diverge. The returned Parameter is ready for the
-// store; callers only need to supply the LastModifiedBy before storing.
-func normalisePutParameter(in ParameterPutFields) (*ssmstore.Parameter, error) {
-	if in.Name == "" {
-		return nil, ErrInvalidParameterName
-	}
-	// Smithy marks Value as required; AWS rejects an empty value with
-	// ValidationException.
-	if in.Value == "" {
-		return nil, ErrInvalidParameterValue
-	}
-	if utf8.RuneCountInString(in.Description) > ssmstore.MaxParameterDescriptionLength {
-		return nil, ErrInvalidParameterValue
-	}
-
-	paramType := ssmstore.ParameterType(in.Type)
-	if paramType == "" {
-		paramType = ssmstore.ParameterTypeString
-	}
-	switch paramType {
-	case ssmstore.ParameterTypeString, ssmstore.ParameterTypeStringList, ssmstore.ParameterTypeSecureString:
-	default:
-		return nil, ErrInvalidParameterType
-	}
-
-	if err := validateKeyID(in.KeyID); err != nil {
-		return nil, err
-	}
-	if err := validateAllowedPattern(in.AllowedPattern); err != nil {
-		return nil, err
-	}
-
-	dataType := in.DataType
-	if dataType == "" {
-		dataType = "text"
-	}
-	if err := validateDataType(dataType); err != nil {
-		return nil, err
-	}
-
-	tier := ssmstore.ParameterTier(in.Tier)
-	if in.Tier != "" {
-		if err := validateTier(tier); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := validatePolicies(in.Policies); err != nil {
-		return nil, err
-	}
-
-	param := ssmstore.NewParameter(in.Name, in.Value, paramType)
-	param.Description = in.Description
-	param.KeyID = in.KeyID
-	param.AllowedPattern = in.AllowedPattern
-	param.DataType = dataType
-	param.Tags = in.Tags
-	param.Tier = tier
-	param.Policies = in.Policies
-
-	// AWS auto-promotes Standard-tier parameters to Advanced when the value
-	// exceeds the 4KB Standard-tier limit or when any Policies are attached.
-	// The value limit is documented in bytes ("Standard parameters have a
-	// value limit of 4 KB", PutParameter API reference), so byte length is
-	// the correct metric here — unlike @length traits, which count Unicode
-	// characters. An empty Tier means the caller omitted it — AWS treats
-	// that as Standard-equivalent, so the same promotion rule must apply.
-	if param.Tier == "" || param.Tier == ssmstore.ParameterTierStandard {
-		if len(param.Value) > 4096 || param.Policies != "" {
-			param.Tier = ssmstore.ParameterTierAdvanced
-		}
-	}
-
-	return param, nil
 }
 
 // policiesToResponse converts a stored Policies JSON document into the

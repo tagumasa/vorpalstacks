@@ -57,5 +57,34 @@ func (r *TestRunner) runSSMBatch(tc *ssmTestContext) []TestResult {
 		return nil
 	}))
 
+	// Names is a required member with a modelled length range of 1-10; an
+	// empty (non-nil) list passes the SDK's required check but AWS rejects
+	// it with ValidationException.
+	results = append(results, r.RunTest("ssm", "GetParameters_EmptyNamesRejected", func() error {
+		_, err := tc.client.GetParameters(tc.ctx, &ssm.GetParametersInput{
+			Names: []string{},
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// A list above the modelled cap of 10 names is rejected with
+	// ValidationException (the SDK does not enforce list length client-side).
+	results = append(results, r.RunTest("ssm", "GetParameters_NameListLimit", func() error {
+		names := make([]string, 11)
+		for i := range names {
+			names[i] = tc.uniqueName(fmt.Sprintf("/batch-limit-%d", i))
+		}
+		_, err := tc.client.GetParameters(tc.ctx, &ssm.GetParametersInput{
+			Names: names,
+		})
+		if err := AssertErrorContains(err, "ValidationException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	return results
 }

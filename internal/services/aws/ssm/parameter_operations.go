@@ -2,17 +2,13 @@ package ssm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	pagination "vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	ssmstore "vorpalstacks/internal/store/aws/ssm"
 )
 
@@ -22,13 +18,6 @@ func getIntParam(req *request.ParsedRequest, key string) int32 {
 
 func getBoolParam(req *request.ParsedRequest, key string) bool {
 	return request.GetBoolParam(req.Parameters, key)
-}
-
-func parseParameterSelector(name string) (baseName string, selector string) {
-	if idx := strings.LastIndex(name, ":"); idx != -1 {
-		return name[:idx], name[idx+1:]
-	}
-	return name, ""
 }
 
 func parseStringList(params map[string]interface{}, field, memberPrefix string) []string {
@@ -83,223 +72,113 @@ func lastModifiedUser(by string) string {
 
 // PutParameter adds or updates a parameter in the Parameter Store.
 func (s *SSMService) PutParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
 
-	param, err := normalisePutParameter(ParameterPutFields{
-		Name:           name,
-		Value:          req.GetParam("Value"),
-		Type:           req.GetParam("Type"),
-		Description:    req.GetParam("Description"),
-		KeyID:          req.GetParam("KeyId"),
-		AllowedPattern: req.GetParam("AllowedPattern"),
-		DataType:       req.GetParam("DataType"),
-		Tier:           req.GetParam("Tier"),
-		Policies:       req.GetParam("Policies"),
-		Tags:           tagutil.ToMap(tagutil.GetTags(req.Parameters, tagutil.StandardConfig)),
+	result, err := s.putParameterCore(ctx, store, PutParameterInput{
+		Fields: ParameterPutFields{
+			Name:           req.GetParam("Name"),
+			Value:          req.GetParam("Value"),
+			Type:           req.GetParam("Type"),
+			Description:    req.GetParam("Description"),
+			KeyID:          req.GetParam("KeyId"),
+			AllowedPattern: req.GetParam("AllowedPattern"),
+			DataType:       req.GetParam("DataType"),
+			Tier:           req.GetParam("Tier"),
+			Policies:       req.GetParam("Policies"),
+			Tags:           tagutil.ToMap(tagutil.GetTags(req.Parameters, tagutil.StandardConfig)),
+		},
+		Overwrite:  getBoolParam(req, "Overwrite"),
+		ModifiedBy: reqCtx.Principal,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	overwrite := getBoolParam(req, "Overwrite")
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	// Tags travel inside the parameter: store.PutParameter persists them
-	// alongside the new version and returns an error on failure, so a tag
-	// problem fails the call instead of being silently dropped.
-	version, err := s.putParameterCore(ctx, store, param, overwrite, reqCtx.Principal)
-	if err != nil {
-		if errors.Is(err, ssmstore.ErrParameterAlreadyExists) {
-			return nil, ErrParameterAlreadyExists
-		}
-		if errors.Is(err, ssmstore.ErrReservedParameterName) {
-			return nil, ErrParameterPatternMismatch
-		}
-		if errors.Is(err, ssmstore.ErrInvalidAllowedPattern) {
-			return nil, ErrInvalidAllowedPattern
-		}
-		if errors.Is(err, ssmstore.ErrParameterPatternMismatch) {
-			return nil, ErrParameterPatternMismatch
-		}
-		if errors.Is(err, ssmstore.ErrHierarchyLevelLimitExceeded) {
-			return nil, ErrHierarchyLevelLimitExceeded
-		}
-		return nil, err
-	}
-
 	return map[string]interface{}{
-		"Version": version,
-		"Tier":    string(param.Tier),
+		"Version": result.Version,
+		"Tier":    string(result.Tier),
 	}, nil
 }
 
 // GetParameter retrieves a parameter from the Parameter Store.
 func (s *SSMService) GetParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
-
-	withDecryption := getBoolParam(req, "WithDecryption")
-
-	baseName, selector := parseParameterSelector(name)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	var param *ssmstore.Parameter
-	var usedSelector string
-
-	// When a selector is provided (version or label), the Selector response
-	// field must include the full "name:selector" string, matching AWS behaviour.
-	if selector == "" {
-		param, err = store.GetParameter(baseName, false)
-		usedSelector = ""
-	} else if version, parseErr := strconv.ParseInt(selector, 10, 64); parseErr == nil {
-		param, err = store.GetParameterByVersion(baseName, version)
-		usedSelector = name
-	} else {
-		param, err = store.GetParameterByLabel(baseName, selector)
-		usedSelector = name
-	}
-
+	result, err := s.getParameterCore(ctx, store, GetParameterInput{
+		Name:           req.GetParam("Name"),
+		WithDecryption: getBoolParam(req, "WithDecryption"),
+	})
 	if err != nil {
-		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
-			return nil, ErrParameterVersionNotFound
-		}
-		return nil, ErrParameterNotFound
-	}
-
-	if withDecryption && param.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
-		decryptedValue, err := s.decryptValue(ctx, param.Value, param.KeyID)
-		if err != nil {
-			return nil, err
-		}
-		param.Value = decryptedValue
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"Parameter": parameterToResponse(param, usedSelector),
+		"Parameter": parameterToResponse(result.Parameter, result.UsedSelector),
 	}, nil
 }
 
 // GetParameters retrieves multiple parameters from the Parameter Store.
 func (s *SSMService) GetParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	withDecryption := getBoolParam(req, "WithDecryption")
 	names := parseStringList(req.Parameters, "Names", "Names.")
-	if err := validateParameterNameList(names); err != nil {
-		return nil, err
-	}
-
-	if len(names) == 0 {
-		return map[string]interface{}{
-			"Parameters":        []interface{}{},
-			"InvalidParameters": []string{},
-		}, nil
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	params := make([]map[string]interface{}, 0, len(names))
-	var invalidNames []string
-	for _, rawName := range names {
-		baseName, selector := parseParameterSelector(rawName)
-		var (
-			param *ssmstore.Parameter
-			err   error
-		)
-		switch {
-		case selector == "":
-			param, err = store.GetParameter(baseName, false)
-		case isNumericSelector(selector):
-			version, _ := strconv.ParseInt(selector, 10, 64)
-			param, err = store.GetParameterByVersion(baseName, version)
-		default:
-			param, err = store.GetParameterByLabel(baseName, selector)
-		}
-		if err != nil {
-			invalidNames = append(invalidNames, rawName)
-			continue
-		}
-		if withDecryption && param.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
-			decryptedValue, decErr := s.decryptValue(ctx, param.Value, param.KeyID)
-			if decErr != nil {
-				invalidNames = append(invalidNames, rawName)
-				continue
-			}
-			param.Value = decryptedValue
-		}
-		params = append(params, parameterToResponse(param, rawName))
+	result, err := s.getParametersCore(ctx, store, GetParametersInput{
+		Names:          names,
+		WithDecryption: getBoolParam(req, "WithDecryption"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	params := make([]map[string]interface{}, 0, len(result.Parameters))
+	for _, entry := range result.Parameters {
+		params = append(params, parameterToResponse(entry.Parameter, entry.RawName))
 	}
 
 	return map[string]interface{}{
 		"Parameters":        params,
-		"InvalidParameters": invalidNames,
+		"InvalidParameters": result.InvalidParameters,
 	}, nil
-}
-
-// isNumericSelector reports whether a parameter selector is a version number
-// (e.g. ":5") rather than a label (e.g. ":production").
-func isNumericSelector(selector string) bool {
-	_, err := strconv.ParseInt(selector, 10, 64)
-	return err == nil
 }
 
 // GetParametersByPath retrieves parameters under a specified path.
 func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	path := req.GetParam("Path")
-	if err := validateHierarchyPath(path); err != nil {
-		return nil, err
-	}
-	if !strings.HasSuffix(path, "/") {
-		path = path + "/"
-	}
-
-	recursive := getBoolParam(req, "Recursive")
-	withDecryption := getBoolParam(req, "WithDecryption")
-	maxResults, err := validateMaxResultsForPath(getIntParam(req, "MaxResults"))
-	if err != nil {
-		return nil, err
-	}
-	filters, err := parseParameterFilters(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	parameters, nextMarker, err := store.GetParametersByPath(path, recursive, false, filters, maxResults, nextToken)
+
+	result, err := s.getParametersByPathCore(ctx, store, GetParametersByPathInput{
+		Path:           req.GetParam("Path"),
+		Recursive:      getBoolParam(req, "Recursive"),
+		WithDecryption: getBoolParam(req, "WithDecryption"),
+		MaxResults:     getIntParam(req, "MaxResults"),
+		Parameters:     req.Parameters,
+		NextToken:      pagination.GetMarker(req.Parameters, "NextToken"),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	params := make([]map[string]interface{}, 0, len(parameters))
-	for _, p := range parameters {
-		if withDecryption && p.Type == ssmstore.ParameterTypeSecureString && s.kmsEncryptor != nil {
-			decryptedValue, err := s.decryptValue(ctx, p.Value, p.KeyID)
-			if err != nil {
-				continue
-			}
-			p.Value = decryptedValue
-		}
+	params := make([]map[string]interface{}, 0, len(result.Parameters))
+	for _, p := range result.Parameters {
 		params = append(params, parameterToResponse(p, ""))
 	}
 
 	response := map[string]interface{}{
 		"Parameters": params,
 	}
-	pagination.SetNextToken(response, "NextToken", nextMarker)
+	pagination.SetNextToken(response, "NextToken", result.NextToken)
 
 	return response, nil
 }
@@ -307,21 +186,13 @@ func (s *SSMService) GetParametersByPath(ctx context.Context, reqCtx *request.Re
 // DeleteParameter removes a parameter from the Parameter Store.
 func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 	if err := s.deleteParameterCore(store, name); err != nil {
-		if errors.Is(err, ssmstore.ErrParameterNotFound) {
-			return nil, ErrParameterNotFound
-		}
-		logs.Error("Failed to delete parameter from store",
-			logs.String("name", name), logs.Err(err))
-		return nil, awserrors.NewInternalErrorException("failed to delete parameter")
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -330,44 +201,34 @@ func (s *SSMService) DeleteParameter(ctx context.Context, reqCtx *request.Reques
 // DeleteParameters removes multiple parameters from the Parameter Store.
 func (s *SSMService) DeleteParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	names := parseStringList(req.Parameters, "Names", "Names.")
-	if err := validateParameterNameList(names); err != nil {
-		return nil, err
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	deleted, invalid := store.DeleteParameters(names)
+
+	result, err := s.deleteParametersCore(store, DeleteParametersInput{Names: names})
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
-		"DeletedParameters": deleted,
-		"InvalidParameters": invalid,
+		"DeletedParameters": result.DeletedParameters,
+		"InvalidParameters": result.InvalidParameters,
 	}, nil
 }
 
 // DescribeParameters returns information about all parameters in the Parameter Store.
 func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxResults, err := validateMaxResultsForPage(getIntParam(req, "MaxResults"))
-	if err != nil {
-		return nil, err
-	}
-
-	filters, err := parseParameterFilters(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.describeParametersCore(store, DescribeParametersInput{
-		Filters:    filters,
-		MaxResults: maxResults,
-		NextToken:  nextToken,
+
+	result, err := s.describeParametersWireCore(store, DescribeParametersWireInput{
+		Parameters: req.Parameters,
+		MaxResults: getIntParam(req, "MaxResults"),
+		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
 	})
 	if err != nil {
 		return nil, err
@@ -400,35 +261,24 @@ func (s *SSMService) DescribeParameters(ctx context.Context, reqCtx *request.Req
 
 // GetParameterHistory retrieves the history of a parameter's versions.
 func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
-
-	maxResults, err := validateMaxResultsForPage(getIntParam(req, "MaxResults"))
-	if err != nil {
-		return nil, err
-	}
 	withDecryption := getBoolParam(req, "WithDecryption")
-	nextToken := pagination.GetMarker(req.Parameters, "NextToken")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	history, nextMarker, isTruncated, err := store.GetParameterHistory(name, maxResults, nextToken)
+
+	result, err := s.getParameterHistoryCore(store, GetParameterHistoryInput{
+		Name:       req.GetParam("Name"),
+		MaxResults: getIntParam(req, "MaxResults"),
+		NextToken:  pagination.GetMarker(req.Parameters, "NextToken"),
+	})
 	if err != nil {
-		if errors.Is(err, ssmstore.ErrParameterNotFound) {
-			return nil, ErrParameterNotFound
-		}
-		if errors.Is(err, ssmstore.ErrInvalidNextToken) {
-			return nil, ErrInvalidNextToken
-		}
 		return nil, err
 	}
 
-	versions := make([]map[string]interface{}, 0, len(history))
-	for _, v := range history {
+	versions := make([]map[string]interface{}, 0, len(result.History))
+	for _, v := range result.History {
 		value := v.Value
 		if !withDecryption && v.Type == ssmstore.ParameterTypeSecureString {
 			value = ""
@@ -454,102 +304,53 @@ func (s *SSMService) GetParameterHistory(ctx context.Context, reqCtx *request.Re
 		})
 	}
 
-	respNextToken := ""
-	if isTruncated && nextMarker != "" {
-		respNextToken = nextMarker
-	}
-
 	resp := map[string]interface{}{
 		"Parameters": versions,
 	}
-	pagination.SetNextToken(resp, "NextToken", respNextToken)
+	pagination.SetNextToken(resp, "NextToken", result.NextToken)
 	return resp, nil
 }
 
 // LabelParameterVersion attaches labels to a specific version of a parameter.
 func (s *SSMService) LabelParameterVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
-
-	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
-	if err := validateLabels(labels); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	parameterVersion := int64(getIntParam(req, "ParameterVersion"))
-	if parameterVersion == 0 {
-		// AWS spec: if ParameterVersion is omitted, default to the latest version.
-		param, err := store.GetParameter(name, false)
-		if err != nil {
-			return nil, ErrParameterNotFound
-		}
-		parameterVersion = param.Version
-	}
-
-	invalidLabels, err := store.LabelParameterVersion(name, parameterVersion, labels)
+	result, err := s.labelParameterVersionCore(store, LabelParameterVersionInput{
+		Name:             req.GetParam("Name"),
+		ParameterVersion: int64(getIntParam(req, "ParameterVersion")),
+		Labels:           parseStringList(req.Parameters, "Labels", "Labels.member."),
+	})
 	if err != nil {
-		if errors.Is(err, ssmstore.ErrParameterNotFound) {
-			return nil, ErrParameterNotFound
-		}
-		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
-			return nil, ErrParameterVersionNotFound
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"InvalidLabels":    invalidLabels,
-		"ParameterVersion": parameterVersion,
+		"InvalidLabels":    result.InvalidLabels,
+		"ParameterVersion": result.ParameterVersion,
 	}, nil
 }
 
 // UnlabelParameterVersion removes labels from a specific version of a parameter.
 func (s *SSMService) UnlabelParameterVersion(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameterName
-	}
-
-	labels := parseStringList(req.Parameters, "Labels", "Labels.member.")
-	if err := validateLabels(labels); err != nil {
-		return nil, err
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	parameterVersion := int64(getIntParam(req, "ParameterVersion"))
-	if parameterVersion == 0 {
-		// AWS spec: if ParameterVersion is omitted, default to the latest version.
-		param, err := store.GetParameter(name, false)
-		if err != nil {
-			return nil, ErrParameterNotFound
-		}
-		parameterVersion = param.Version
-	}
-
-	removedLabels, err := store.UnlabelParameterVersion(name, parameterVersion, labels)
+	result, err := s.unlabelParameterVersionCore(store, UnlabelParameterVersionInput{
+		Name:             req.GetParam("Name"),
+		ParameterVersion: int64(getIntParam(req, "ParameterVersion")),
+		Labels:           parseStringList(req.Parameters, "Labels", "Labels.member."),
+	})
 	if err != nil {
-		if errors.Is(err, ssmstore.ErrParameterNotFound) {
-			return nil, ErrParameterNotFound
-		}
-		if errors.Is(err, ssmstore.ErrParameterVersionNotFound) {
-			return nil, ErrParameterVersionNotFound
-		}
 		return nil, err
 	}
 
 	return map[string]interface{}{
 		"InvalidLabels": []string{},
-		"RemovedLabels": removedLabels,
+		"RemovedLabels": result.RemovedLabels,
 	}, nil
 }

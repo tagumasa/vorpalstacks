@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,447 test cases (3,380 SDK + 50 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,474 test cases (3,407 SDK + 50 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -29,33 +29,33 @@ which are separate services in the SDK classification used by
 | CloudWatch | 25 | 100% | ✅ Perfect |
 | CloudWatch Logs | 62 | 100% | ✅ Perfect |
 | Cognito | 94 | 100% | ✅ Perfect |
-| Cognito Identity | 46 | 100% | ✅ Perfect |
+| Cognito Identity | 47 | 100% | ✅ Perfect |
 | DynamoDB | 214 | 100% | ✅ Perfect |
 | EC2 | 37 | 100% | ✅ Perfect |
 | EventBridge | 67 | 100% | ✅ Perfect |
 | IAM | 223 | 100% | ✅ Perfect |
 | IoT | 416 | 100% | ✅ Perfect |
 | Kinesis | 55 | 100% | ✅ Perfect |
-| KMS | 102 | 100% | ✅ Perfect |
+| KMS | 106 | 100% | ✅ Perfect |
 | Lambda | 119 | 100% | ✅ Perfect |
 | Neptune | 103 | 100% | ✅ Perfect |
 | NeptuneData | 170 | 100% | ✅ Perfect |
 | NeptuneGraph | 49 | 100% | ✅ Perfect |
 | RDS Data | 17 | 100% | ✅ Perfect |
-| Route53 | 48 | 100% | ✅ Perfect |
+| Route53 | 65 | 100% | ✅ Perfect |
 | S3 | 143 | 100% | ✅ Perfect |
 | Scheduler | 70 | 100% | ✅ Perfect |
 | SecretsManager | 63 | 100% | ✅ Perfect |
 | SESv2 | 94 | 100% | ✅ Perfect |
 | SNS | 83 | 100% | ✅ Perfect |
 | SQS | 87 | 100% | ✅ Perfect |
-| SSM | 49 | 100% | ✅ Perfect |
+| SSM | 53 | 100% | ✅ Perfect |
 | STS | 57 | 100% | ✅ Perfect |
 | StepFunctions | 116 | 100% | ✅ Perfect |
 | Timestream (Write+Query) | 51 | 100% | ✅ Perfect |
-| WAFv2 | 72 | 100% | ✅ Perfect |
+| WAFv2 | 73 | 100% | ✅ Perfect |
 
-**Overall: 3,447/3,447 tests passing (100%) — 3,380 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-30 on main; per-session deltas live in git history)
+**Overall: 3,474/3,474 tests passing (100%) — 3,407 SDK + 50 integration + 17 WebSocket** (confirmed 2026-08-31 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

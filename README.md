@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md) | [中文](README.zh.md)
 
-> **Warning: This is a beta release.** Vorpalstacks is under active development. While all supported AWS services (list in [docs/services.md](docs/services.md)) are implemented, with 3,380 passing SDK tests, 50 cross-service integration tests, and 17 WebSocket tests (3,447 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
+> **Warning: This is a beta release.** Vorpalstacks is under active development. While all supported AWS services (list in [docs/services.md](docs/services.md)) are implemented, with 3,407 passing SDK tests, 50 cross-service integration tests, and 17 WebSocket tests (3,474 total, plus 631 Python, 2028 TypeScript, 2019 C#), not all edge cases and AWS behaviours are fully covered. Expect breaking changes. Bug reports and contributions are welcome.
 
 A lightweight edge and on-premise cloud platform providing AWS-compatible services.
 
@@ -236,7 +236,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 Vorpalstacks implements all supported services as native Go binaries backed by PebbleDB, avoiding the overhead of interpreted languages or external process dependencies.
 
-This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (3,380 SDK + 50 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
+This architecture enables sub-millisecond latencies for core operations, making it practical to run extensive API tests (3,407 SDK + 50 integration + 17 WebSocket Go tests, 631 Python, 2028 TypeScript, 2019 C# tests) directly within CI/CD pipelines without containerization overhead.
 
 ### Benchmark Results (Reference)
 

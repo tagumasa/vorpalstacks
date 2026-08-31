@@ -2,7 +2,6 @@ package ssm
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -81,7 +80,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 		tier = "Intelligent-Tiering"
 	}
 
-	param, err := normalisePutParameter(ParameterPutFields{
+	fields := ParameterPutFields{
 		Name:           req.Msg.Name,
 		Value:          req.Msg.Value,
 		Type:           paramType,
@@ -91,11 +90,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 		DataType:       req.Msg.Datatype,
 		Tier:           tier,
 		Policies:       req.Msg.Policies,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("%v", err))
 	}
-
 	if len(req.Msg.Tags) > 0 {
 		tags := make(map[string]string, len(req.Msg.Tags))
 		for _, t := range req.Msg.Tags {
@@ -103,7 +98,7 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 				tags[t.Key] = t.Value
 			}
 		}
-		param.Tags = tags
+		fields.Tags = tags
 	}
 
 	store, err := h.getStore(req.Header())
@@ -116,13 +111,17 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 	if modifiedBy == "" {
 		modifiedBy = "vorpalstacks:admin"
 	}
-	version, err := h.service.putParameterCore(ctx, store, param, overwrite, modifiedBy)
+	result, err := h.service.putParameterCore(ctx, store, PutParameterInput{
+		Fields:     fields,
+		Overwrite:  overwrite,
+		ModifiedBy: modifiedBy,
+	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(toSSMError(err))
 	}
 
 	return connect.NewResponse(&pb.PutParameterResult{
-		Version: proto.Int64(version),
+		Version: proto.Int64(result.Version),
 	}), nil
 }
 
