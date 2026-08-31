@@ -382,6 +382,28 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("route53", "CreateHostedZone_EmptyCallerReferenceRejected", func() error {
+		_, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(tc.domain("emptyref")),
+			CallerReference: aws.String(""),
+		})
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("route53", "CreateHostedZone_CallerReferenceTooLongRejected", func() error {
+		_, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(tc.domain("longref")),
+			CallerReference: aws.String(strings.Repeat("a", 129)),
+		})
+		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("route53", "ListHostedZones_PrivateHostedZoneFilter", func() error {
 		pvtVPCID, err := tc.createTestVPC("10.220.0.0/16")
 		if err != nil {

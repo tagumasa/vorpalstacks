@@ -96,6 +96,26 @@ func extractRoute53Operation(r *http.Request) string {
 				return "ListTagsForResource"
 			}
 		}
+	case "cidrcollection":
+		if len(parts) == 1 || parts[1] == "" {
+			switch method {
+			case "POST":
+				return "CreateCidrCollection"
+			case "GET":
+				return "ListCidrCollections"
+			}
+		} else if len(parts) >= 3 && parts[2] == "cidrblocks" && method == "GET" {
+			return "ListCidrBlocks"
+		} else if len(parts) >= 2 {
+			switch method {
+			case "POST":
+				return "ChangeCidrCollection"
+			case "DELETE":
+				return "DeleteCidrCollection"
+			case "GET":
+				return "ListCidrLocations"
+			}
+		}
 	}
 
 	return ""
@@ -142,6 +162,15 @@ func extractRoute53PathParams(path string, params map[string]interface{}) {
 				if _, ok := params["ResourceId"]; !ok {
 					params["ResourceId"] = remaining
 				}
+			}
+		}
+	case "cidrcollection":
+		if len(parts) >= 2 && parts[1] != "" {
+			if _, ok := params["Id"]; !ok {
+				params["Id"] = parts[1]
+			}
+			if _, ok := params["CollectionId"]; !ok {
+				params["CollectionId"] = parts[1]
 			}
 		}
 	}

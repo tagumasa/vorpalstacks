@@ -2,14 +2,11 @@ package route53
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	route53store "vorpalstacks/internal/store/aws/route53"
 )
 
@@ -28,262 +25,25 @@ func (s *Route53Service) ChangeResourceRecordSets(ctx context.Context, reqCtx *r
 		return nil, err
 	}
 
-	zone, err := s.getHostedZoneById(reqCtx, hostedZoneId)
-	if err != nil {
-		return nil, err
-	}
-
-	changeBatch := request.GetMapParam(req.Parameters, "ChangeBatch")
-	if changeBatch == nil {
-		return nil, awserrors.NewAWSError("InvalidInput", "ChangeBatch is required", 400)
-	}
-
-	var changesList []interface{}
-	switch c := changeBatch["Changes"].(type) {
-	case []interface{}:
-		changesList = c
-	case map[string]interface{}:
-		if changeArr, ok := c["Change"].([]interface{}); ok {
-			changesList = changeArr
-		} else if changeMap, ok := c["Change"].(map[string]interface{}); ok {
-			changesList = []interface{}{changeMap}
-		}
-	default:
-		return nil, awserrors.NewAWSError("InvalidInput", "Changes must be an array", 400)
-	}
-
-	if len(changesList) == 0 {
-		return nil, awserrors.NewAWSError("InvalidInput", "Changes are required", 400)
-	}
-
-	// Pre-validate all changes before creating any persistent state so
-	// that an invalid change batch does not leave an orphaned PENDING
-	// ChangeInfo record.
-	type parsedChange struct {
-		action string
-		rrsRaw map[string]interface{}
-	}
-	parsed := make([]parsedChange, 0, len(changesList))
-	for _, c := range changesList {
-		changeMap, ok := c.(map[string]interface{})
-		if !ok {
-			return nil, awserrors.NewAWSError("InvalidChangeBatch", "Each element in Changes must be a map", 400)
-		}
-		action, _ := changeMap["Action"].(string)
-		if !validateChangeAction(action) {
-			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be CREATE, UPSERT, or DELETE", action), 400)
-		}
-		rrsRaw, _ := changeMap["ResourceRecordSet"].(map[string]interface{})
-		if rrsRaw == nil {
-			return nil, awserrors.NewAWSError("InvalidChangeBatch", "ResourceRecordSet is required for each change", 400)
-		}
-		parsed = append(parsed, parsedChange{action: action, rrsRaw: rrsRaw})
-	}
-
-	changeId := generateChangeId()
-	change := &route53store.ChangeInfo{
-		ID:          changeId,
-		Status:      "PENDING",
-		SubmittedAt: time.Now(),
-	}
-	if cmt, ok := changeBatch["Comment"].(string); ok {
-		change.Comment = cmt
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.Changes().Create(change); err != nil {
-		return nil, awserrors.NewAWSError("CreateChange", fmt.Sprintf("Failed to create change: %v", err), 500)
-	}
 
-	var appliedChanges []*route53store.ResourceRecordSet
-
-	for _, pc := range parsed {
-		action := pc.action
-		rrsRaw := pc.rrsRaw
-
-		name := request.GetStringParam(rrsRaw, "Name")
-		if name == "" {
-			name = request.GetStringParam(rrsRaw, "name")
-		}
-		rrs := &route53store.ResourceRecordSet{
-			Name: normalizeRecordName(name),
-			Type: strings.ToUpper(request.GetStringParam(rrsRaw, "Type")),
-			TTL:  int64(request.GetIntParam(rrsRaw, "TTL")),
-		}
-		if rrs.Type == "" {
-			rrs.Type = strings.ToUpper(request.GetStringParam(rrsRaw, "type"))
-		}
-		if rrs.Type == "" {
-			return nil, awserrors.NewAWSError("InvalidInput", "Type is required for resource record set", 400)
-		}
-		if !validateRecordType(rrs.Type) {
-			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid record type: %q. Must be a valid RRType enum value", rrs.Type), 400)
-		}
-		if rrs.TTL == 0 {
-			rrs.TTL = int64(request.GetIntParam(rrsRaw, "ttl"))
-		}
-		rrs.SetIdentifier = request.GetStringParam(rrsRaw, "SetIdentifier")
-		rrs.Weight = int64(request.GetIntParam(rrsRaw, "Weight"))
-		rrs.Region = request.GetStringParam(rrsRaw, "Region")
-		rrs.Failover = request.GetStringParam(rrsRaw, "Failover")
-		rrs.HealthCheckID = request.GetStringParam(rrsRaw, "HealthCheckId")
-		rrs.MultiValueAnswer = request.GetBoolParam(rrsRaw, "MultiValueAnswer")
-		rrs.TrafficPolicyInstanceID = request.GetStringParam(rrsRaw, "TrafficPolicyInstanceId")
-
-		if geoRaw, ok := rrsRaw["GeoLocation"].(map[string]interface{}); ok {
-			rrs.GeoLocation = &route53store.GeoLocation{
-				ContinentCode:   request.GetStringParam(geoRaw, "ContinentCode"),
-				CountryCode:     request.GetStringParam(geoRaw, "CountryCode"),
-				SubdivisionCode: request.GetStringParam(geoRaw, "SubdivisionCode"),
-			}
-		}
-
-		if recordsRaw, ok := rrsRaw["ResourceRecords"].([]interface{}); ok {
-			for _, r := range recordsRaw {
-				if rMap, ok := r.(map[string]interface{}); ok {
-					rrs.ResourceRecords = append(rrs.ResourceRecords, &route53store.ResourceRecord{
-						Value: request.GetStringParam(rMap, "Value"),
-					})
-				}
-			}
-		} else if recordsMap, ok := rrsRaw["ResourceRecords"].(map[string]interface{}); ok {
-			if rrStr, ok := recordsMap["ResourceRecord"].(string); ok {
-				rrs.ResourceRecords = append(rrs.ResourceRecords, &route53store.ResourceRecord{Value: rrStr})
-			} else if rrMap, ok := recordsMap["ResourceRecord"].(map[string]interface{}); ok {
-				rrs.ResourceRecords = append(rrs.ResourceRecords, &route53store.ResourceRecord{
-					Value: request.GetStringParam(rrMap, "Value"),
-				})
-			} else if rrArr, ok := recordsMap["ResourceRecord"].([]interface{}); ok {
-				for _, r := range rrArr {
-					if rMap, ok := r.(map[string]interface{}); ok {
-						rrs.ResourceRecords = append(rrs.ResourceRecords, &route53store.ResourceRecord{
-							Value: request.GetStringParam(rMap, "Value"),
-						})
-					} else if rStr, ok := r.(string); ok {
-						rrs.ResourceRecords = append(rrs.ResourceRecords, &route53store.ResourceRecord{Value: rStr})
-					}
-				}
-			}
-		}
-
-		if aliasRaw, ok := rrsRaw["AliasTarget"].(map[string]interface{}); ok {
-			rrs.AliasTarget = &route53store.AliasTarget{
-				HostedZoneID:         request.GetStringParam(aliasRaw, "HostedZoneId"),
-				DNSName:              request.GetStringParam(aliasRaw, "DNSName"),
-				EvaluateTargetHealth: request.GetBoolParam(aliasRaw, "EvaluateTargetHealth"),
-			}
-		}
-
-		if cidrRaw, ok := rrsRaw["CidrRoutingConfig"].(map[string]interface{}); ok {
-			rrs.CidrRoutingConfig = &route53store.CidrRoutingConfig{
-				CollectionId: request.GetStringParam(cidrRaw, "CollectionId"),
-				LocationName: request.GetStringParam(cidrRaw, "LocationName"),
-			}
-		}
-
-		if gpRaw, ok := rrsRaw["GeoProximityLocation"].(map[string]interface{}); ok {
-			gp := &route53store.GeoProximityLocation{
-				AWSRegion:      request.GetStringParam(gpRaw, "AWSRegion"),
-				LocalZoneGroup: request.GetStringParam(gpRaw, "LocalZoneGroup"),
-				Bias:           int64(request.GetIntParam(gpRaw, "Bias")),
-			}
-			if coordsRaw, ok := gpRaw["Coordinates"].(map[string]interface{}); ok {
-				gp.Coordinates = &route53store.Coordinates{
-					Latitude:  request.GetFloatParam(coordsRaw, "Latitude"),
-					Longitude: request.GetFloatParam(coordsRaw, "Longitude"),
-				}
-			}
-			rrs.GeoProximityLocation = gp
-		}
-
-		// Validate TTL and HealthCheckId only for CREATE/UPSERT.
-		// DELETE only requires Name + Type (+ SetIdentifier); AWS does
-		// not enforce TTL or HealthCheckId existence on deletion.
-		if action != "DELETE" {
-			// Non-alias records must have TTL > 0.
-			if rrs.AliasTarget == nil && rrs.TTL <= 0 {
-				return nil, awserrors.NewAWSError("InvalidInput", "TTL is required and must be greater than 0 for non-alias resource record sets", 400)
-			}
-
-			// Verify that the referenced HealthCheckId exists.
-			if rrs.HealthCheckID != "" {
-				if !st.HealthChecks().Exists(rrs.HealthCheckID) {
-					return nil, awserrors.NewAWSError("InvalidChangeBatch",
-						fmt.Sprintf("No health check found with id: %s", rrs.HealthCheckID), 400)
-				}
-			}
-		}
-
-		switch action {
-		case "CREATE":
-			if err := st.RecordSets().Create(hostedZoneId, rrs); err != nil {
-				for _, ac := range appliedChanges {
-					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
-					}
-				}
-				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to create resource record set %s: %v", rrs.Name, err), 400)
-			}
-			appliedChanges = append(appliedChanges, rrs)
-		case "UPSERT":
-			oldRRS, _ := st.RecordSets().Get(hostedZoneId, rrs.Name, rrs.Type, rrs.SetIdentifier)
-			if err := st.RecordSets().Upsert(hostedZoneId, rrs); err != nil {
-				for _, ac := range appliedChanges {
-					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
-					}
-				}
-				if oldRRS != nil {
-					if restoreErr := st.RecordSets().Upsert(hostedZoneId, oldRRS); restoreErr != nil {
-						logs.Error("Failed to restore record", logs.String("name", oldRRS.Name), logs.Err(restoreErr))
-					}
-				}
-				logs.Error("UPSERT record failed", logs.Err(err))
-				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to upsert resource record set %s: %v", rrs.Name, err), 400)
-			}
-			appliedChanges = append(appliedChanges, rrs)
-		case "DELETE":
-			deletedRRS, _ := st.RecordSets().Get(hostedZoneId, rrs.Name, rrs.Type, rrs.SetIdentifier)
-			if err := st.RecordSets().Delete(hostedZoneId, rrs.Name, rrs.Type, rrs.SetIdentifier); err != nil {
-				for _, ac := range appliedChanges {
-					if delErr := st.RecordSets().Delete(hostedZoneId, ac.Name, ac.Type, ac.SetIdentifier); delErr != nil {
-						logs.Error("Failed to rollback record", logs.String("name", ac.Name), logs.Err(delErr))
-					}
-				}
-				if deletedRRS != nil {
-					if createErr := st.RecordSets().Create(hostedZoneId, deletedRRS); createErr != nil {
-						logs.Error("Failed to restore record", logs.String("name", deletedRRS.Name), logs.Err(createErr))
-					}
-				}
-				logs.Error("DELETE record failed", logs.Err(err))
-				return nil, awserrors.NewAWSError("InvalidChangeBatch", fmt.Sprintf("Failed to delete resource record set %s: %v", rrs.Name, err), 400)
-			}
-		}
-	}
-
-	if err := st.Changes().UpdateStatus(changeId, "INSYNC"); err != nil {
-		return nil, awserrors.NewAWSError("UpdateChange", fmt.Sprintf("Failed to update change status: %v", err), 500)
-	}
-	change.Status = "INSYNC"
-
-	recordSets, err := st.RecordSets().List(hostedZoneId)
+	result, err := changeResourceRecordSetsCore(st, ChangeResourceRecordSetsInput{
+		HostedZoneId: hostedZoneId,
+		ChangeBatch:  request.GetMapParam(req.Parameters, "ChangeBatch"),
+	})
 	if err != nil {
-		return nil, awserrors.NewAWSError("ListRecordSets", fmt.Sprintf("Failed to list record sets: %v", err), 500)
-	}
-	zone.ResourceRecordSetCount = len(recordSets)
-	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, awserrors.NewAWSError("UpdateHostedZone", fmt.Sprintf("Failed to update hosted zone: %v", err), 500)
+		return nil, err
 	}
 
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + changeId,
-			"Status":      change.Status,
-			"SubmittedAt": change.SubmittedAt.Format(time.RFC3339),
-			"Comment":     change.Comment,
+			"Id":          "/change/" + result.ChangeId,
+			"Status":      result.Status,
+			"SubmittedAt": result.SubmittedAt.Format(time.RFC3339),
+			"Comment":     result.Comment,
 		},
 	}, nil
 }
@@ -293,20 +53,6 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	hostedZoneId, err := extractHostedZoneId(req.Parameters, "HostedZoneId")
 	if err != nil {
 		return nil, err
-	}
-
-	_, err = s.getHostedZoneById(reqCtx, hostedZoneId)
-	if err != nil {
-		return nil, err
-	}
-
-	st, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	recordSets, err := st.RecordSets().List(hostedZoneId)
-	if err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	startRecordName := request.GetStringParam(req.Parameters, "StartRecordName")
@@ -331,64 +77,42 @@ func (s *Route53Service) ListResourceRecordSets(ctx context.Context, reqCtx *req
 	}
 	startRecordType = strings.ToUpper(startRecordType)
 
-	var filtered []*route53store.ResourceRecordSet
-	started := startRecordName == ""
-
-	for _, rs := range recordSets {
-		if !started {
-			// Use lexicographic comparison so that if the start
-			// record was deleted, pagination continues from the
-			// next record instead of returning nothing.
-			rsName := strings.ToLower(rs.Name)
-			nameCmp := strings.Compare(rsName, startRecordName)
-			if nameCmp > 0 {
-				started = true
-			} else if nameCmp == 0 {
-				typeCmp := strings.Compare(rs.Type, startRecordType)
-				if typeCmp > 0 {
-					started = true
-				} else if typeCmp == 0 {
-					if startRecordIdentifier == "" || rs.SetIdentifier >= startRecordIdentifier {
-						started = true
-					}
-				}
-			}
-		}
-		if started {
-			filtered = append(filtered, rs)
-		}
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	allRecords := filtered
-
-	totalFiltered := len(filtered)
-	if maxItems > 0 && totalFiltered > maxItems {
-		filtered = filtered[:maxItems]
+	result, err := listResourceRecordSetsCore(st, ListResourceRecordSetsInput{
+		HostedZoneId:          hostedZoneId,
+		StartRecordName:       startRecordName,
+		StartRecordType:       startRecordType,
+		StartRecordIdentifier: startRecordIdentifier,
+		MaxItems:              maxItems,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	records := make([]interface{}, len(filtered))
-	for i, rs := range filtered {
+	records := make([]interface{}, len(result.RecordSets))
+	for i, rs := range result.RecordSets {
 		records[i] = s.recordSetToResponse(rs)
 	}
 
-	isTruncated := maxItems > 0 && totalFiltered > maxItems
-
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"ResourceRecordSets": protocol.XMLElements{ElementName: "ResourceRecordSet", Items: records},
-		"IsTruncated":        isTruncated,
-		"MaxItems":           maxItems,
+		"IsTruncated":        result.IsTruncated,
+		"MaxItems":           result.MaxItems,
 	}
 
-	if isTruncated && len(allRecords) > maxItems {
-		nextRecord := allRecords[maxItems]
-		result["NextRecordName"] = nextRecord.Name
-		result["NextRecordType"] = nextRecord.Type
-		if nextRecord.SetIdentifier != "" {
-			result["NextRecordIdentifier"] = nextRecord.SetIdentifier
+	if result.IsTruncated {
+		resp["NextRecordName"] = result.NextRecordName
+		resp["NextRecordType"] = result.NextRecordType
+		if result.NextRecordIdentifier != "" {
+			resp["NextRecordIdentifier"] = result.NextRecordIdentifier
 		}
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // GetChange returns the status of a change batch request.
@@ -398,7 +122,12 @@ func (s *Route53Service) GetChange(ctx context.Context, reqCtx *request.RequestC
 		return nil, err
 	}
 
-	change, err := s.getChangeById(reqCtx, id)
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	change, err := getChangeCore(st, id)
 	if err != nil {
 		return nil, err
 	}

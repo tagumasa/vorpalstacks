@@ -68,51 +68,6 @@ func extractChangeId(params map[string]interface{}, paramName string) (string, e
 	return strings.TrimPrefix(id, "/change/"), nil
 }
 
-func (s *Route53Service) getHostedZoneById(reqCtx *request.RequestContext, id string) (*route53store.HostedZone, error) {
-	st, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	zone, err := st.HostedZones().Get(id)
-	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, NewNoSuchHostedZoneError(id)
-		}
-		return nil, mapStoreError(err)
-	}
-	return zone, nil
-}
-
-func (s *Route53Service) getHealthCheckById(reqCtx *request.RequestContext, id string) (*route53store.HealthCheck, error) {
-	st, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	hc, err := st.HealthChecks().Get(id)
-	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, NewNoSuchHealthCheckError(id)
-		}
-		return nil, mapStoreError(err)
-	}
-	return hc, nil
-}
-
-func (s *Route53Service) getChangeById(reqCtx *request.RequestContext, id string) (*route53store.ChangeInfo, error) {
-	st, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	change, err := st.Changes().Get(id)
-	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, NewNoSuchChangeError(id)
-		}
-		return nil, mapStoreError(err)
-	}
-	return change, nil
-}
-
 func parseHealthCheckConfig(configMap map[string]interface{}, defaultPort int64) *route53store.HealthCheckConfig {
 	if configMap == nil {
 		return nil

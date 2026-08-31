@@ -45,6 +45,7 @@ func (r *TestRunner) RunRoute53Tests() []TestResult {
 	results = append(results, r.runRoute53HealthCheckTests(tc)...)
 	results = append(results, r.runRoute53VPCTests(tc)...)
 	results = append(results, r.runRoute53TagTests(tc)...)
+	results = append(results, r.runRoute53CidrCollectionTests(tc)...)
 	results = append(results, r.runRoute53EdgeTests(tc)...)
 	return results
 }

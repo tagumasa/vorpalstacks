@@ -1,7 +1,7 @@
 package route53
 
 import (
-	"crypto/md5"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -64,6 +64,54 @@ type DeleteHostedZoneResult struct {
 	SubmittedAt time.Time
 }
 
+// ListHostedZonesByNameInput carries the parameters for ListHostedZonesByName.
+type ListHostedZonesByNameInput struct {
+	DNSName            string
+	HostedZoneIdMarker string
+	MaxItems           int
+}
+
+// ListHostedZonesByNameResult holds the outcome of listHostedZonesByNameCore.
+type ListHostedZonesByNameResult struct {
+	HostedZones []*route53store.HostedZone
+	IsTruncated bool
+}
+
+// UpdateHostedZoneCommentInput carries the parameters for
+// UpdateHostedZoneComment.
+type UpdateHostedZoneCommentInput struct {
+	Id      string
+	Comment string
+}
+
+// AssociateVPCWithHostedZoneInput carries the parameters for
+// AssociateVPCWithHostedZone. A nil VPC means the request carried no VPC
+// member at all.
+type AssociateVPCWithHostedZoneInput struct {
+	HostedZoneId string
+	VPC          *route53store.VPC
+	Comment      string
+	Region       string
+}
+
+// DisassociateVPCFromHostedZoneInput carries the parameters for
+// DisassociateVPCFromHostedZone. A nil VPC means the request carried no VPC
+// member at all.
+type DisassociateVPCFromHostedZoneInput struct {
+	HostedZoneId string
+	VPC          *route53store.VPC
+	Comment      string
+}
+
+// VPCAssociationResult holds the ChangeInfo outcome of a VPC association or
+// disassociation.
+type VPCAssociationResult struct {
+	ChangeId    string
+	Status      string
+	Comment     string
+	SubmittedAt time.Time
+}
+
 // ---------------------------------------------------------------------------
 // Core methods — shared by both HTTP API and admin gRPC handlers
 // ---------------------------------------------------------------------------
@@ -82,10 +130,14 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 		return nil, err
 	}
 
-	callerRef := input.CallerReference
-	if callerRef == "" {
-		callerRef = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%d", name, time.Now().UnixNano()))))
+	// CallerReference is the caller's idempotency token: it must arrive with
+	// the request (Nonce, 1 to 128 characters) and is never synthesised
+	// server-side, because a fresh token per retry would defeat the
+	// execute-once semantics the member provides.
+	if err := validateHostedZoneCallerReference(input.CallerReference); err != nil {
+		return nil, err
 	}
+	callerRef := input.CallerReference
 
 	privateZone := input.PrivateZone
 	if input.VPCID != "" {
@@ -125,7 +177,7 @@ func (s *Route53Service) createHostedZoneCore(stores *route53store.Route53Stores
 
 	if err := stores.HostedZones().Create(zone); err != nil {
 		if route53store.IsAlreadyExists(err) {
-			return nil, awserrors.NewAWSError("HostedZoneAlreadyExists", fmt.Sprintf("Hosted zone already exists: %s", name), 400)
+			return nil, NewHostedZoneAlreadyExistsError(name)
 		}
 		return nil, mapStoreError(err)
 	}
@@ -288,6 +340,208 @@ func (s *Route53Service) deleteHostedZoneCore(stores *route53store.Route53Stores
 	return &DeleteHostedZoneResult{
 		ChangeId:    changeId,
 		Status:      "INSYNC",
+		SubmittedAt: now,
+	}, nil
+}
+
+// getHostedZoneCore looks up a hosted zone by ID, mapping store misses to
+// the NoSuchHostedZone AWS error.
+func getHostedZoneCore(stores *route53store.Route53Stores, id string) (*route53store.HostedZone, error) {
+	zone, err := stores.HostedZones().Get(id)
+	if err != nil {
+		if route53store.IsNotFound(err) {
+			return nil, NewNoSuchHostedZoneError(id)
+		}
+		return nil, mapStoreError(err)
+	}
+	return zone, nil
+}
+
+// listHostedZonesByNameCore is the single entry point for the name-ordered
+// hosted zone listing. When DNSName is set the result starts at that name
+// (or after the HostedZoneIdMarker zone when both are given) and is
+// truncated at MaxItems.
+func listHostedZonesByNameCore(stores *route53store.Route53Stores, input ListHostedZonesByNameInput) (*ListHostedZonesByNameResult, error) {
+	allZones, err := stores.HostedZones().ListByName()
+	if err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	var filtered []*route53store.HostedZone
+	if input.DNSName != "" {
+		started := false
+		if input.HostedZoneIdMarker != "" {
+			for _, z := range allZones {
+				if strings.EqualFold(z.Name, input.DNSName) && z.ID == input.HostedZoneIdMarker {
+					started = true
+					continue
+				}
+				if started {
+					filtered = append(filtered, z)
+				}
+			}
+		} else {
+			for _, z := range allZones {
+				if !started {
+					if strings.Compare(z.Name, input.DNSName) >= 0 {
+						started = true
+					}
+				}
+				if started {
+					filtered = append(filtered, z)
+				}
+			}
+		}
+	} else {
+		filtered = allZones
+	}
+
+	isTruncated := len(filtered) > input.MaxItems
+	if isTruncated {
+		filtered = filtered[:input.MaxItems]
+	}
+
+	return &ListHostedZonesByNameResult{
+		HostedZones: filtered,
+		IsTruncated: isTruncated,
+	}, nil
+}
+
+// updateHostedZoneCommentCore is the single entry point updating a hosted
+// zone's comment. It validates the comment length and persists the zone.
+func updateHostedZoneCommentCore(stores *route53store.Route53Stores, input UpdateHostedZoneCommentInput) (*route53store.HostedZone, error) {
+	zone, err := getHostedZoneCore(stores, input.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validateComment(input.Comment); err != nil {
+		return nil, err
+	}
+	if zone.Config == nil {
+		zone.Config = &route53store.HostedZoneConfig{}
+	}
+	zone.Config.Comment = input.Comment
+
+	if err := stores.HostedZones().Update(zone); err != nil {
+		return nil, mapStoreError(err)
+	}
+	return zone, nil
+}
+
+// associateVPCWithHostedZoneCore is the single entry point associating a
+// VPC with a private hosted zone. It verifies the VPC exists in EC2 (best
+// effort via the event bus), rejects duplicate associations, records the
+// ChangeInfo, and persists the zone.
+func (s *Route53Service) associateVPCWithHostedZoneCore(ctx context.Context, stores *route53store.Route53Stores, input AssociateVPCWithHostedZoneInput) (*VPCAssociationResult, error) {
+	if input.VPC == nil {
+		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
+	}
+
+	zone, err := getHostedZoneCore(stores, input.HostedZoneId)
+	if err != nil {
+		return nil, err
+	}
+
+	if !zone.Private {
+		return nil, awserrors.NewAWSError("InvalidInput", "Cannot associate VPC with a public hosted zone", 400)
+	}
+
+	if err := s.validateVPC(ctx, input.Region, input.VPC.VPCID, input.VPC.VPCRegion); err != nil {
+		return nil, awserrors.NewAWSError("InvalidVPCId",
+			fmt.Sprintf("The VPC %s in region %s does not exist", input.VPC.VPCID, input.VPC.VPCRegion), 400)
+	}
+	for _, existing := range zone.VPCs {
+		if existing.VPCID == input.VPC.VPCID && existing.VPCRegion == input.VPC.VPCRegion {
+			return nil, awserrors.NewAWSError("VPCAlreadyAssociated", "VPC is already associated with the hosted zone", 400)
+		}
+	}
+	zone.VPCs = append(zone.VPCs, input.VPC)
+
+	if err := stores.HostedZones().Update(zone); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	// Validate the ChangeInfo comment after persisting the association,
+	// matching the original operation order.
+	if err := validateComment(input.Comment); err != nil {
+		return nil, err
+	}
+	changeId := generateChangeId()
+	now := time.Now()
+	if err := stores.Changes().Create(&route53store.ChangeInfo{
+		ID:          changeId,
+		Status:      "INSYNC",
+		SubmittedAt: now,
+		Comment:     input.Comment,
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	return &VPCAssociationResult{
+		ChangeId:    changeId,
+		Status:      "INSYNC",
+		Comment:     input.Comment,
+		SubmittedAt: now,
+	}, nil
+}
+
+// disassociateVPCFromHostedZoneCore is the single entry point removing a VPC
+// association from a private hosted zone. It rejects the removal when the
+// VPC is not associated or when it is the last association, records the
+// ChangeInfo, and persists the zone.
+func disassociateVPCFromHostedZoneCore(stores *route53store.Route53Stores, input DisassociateVPCFromHostedZoneInput) (*VPCAssociationResult, error) {
+	if input.VPC == nil {
+		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
+	}
+
+	zone, err := getHostedZoneCore(stores, input.HostedZoneId)
+	if err != nil {
+		return nil, err
+	}
+
+	var newVPCs []*route53store.VPC
+	for _, v := range zone.VPCs {
+		if v.VPCID != input.VPC.VPCID || v.VPCRegion != input.VPC.VPCRegion {
+			newVPCs = append(newVPCs, v)
+		}
+	}
+
+	if len(newVPCs) == len(zone.VPCs) {
+		// Use VPCAssociationNotFound instead of InvalidInput.
+		return nil, NewVPCAssociationNotFoundError(input.VPC.VPCID)
+	}
+
+	// Prevent removing the last VPC association from a private zone.
+	if len(newVPCs) == 0 {
+		return nil, NewLastVPCAssociationError()
+	}
+
+	zone.VPCs = newVPCs
+	if err := stores.HostedZones().Update(zone); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	// Validate the ChangeInfo comment after persisting the
+	// disassociation, matching the original operation order.
+	if err := validateComment(input.Comment); err != nil {
+		return nil, err
+	}
+	changeId := generateChangeId()
+	now := time.Now()
+	if err := stores.Changes().Create(&route53store.ChangeInfo{
+		ID:          changeId,
+		Status:      "INSYNC",
+		SubmittedAt: now,
+		Comment:     input.Comment,
+	}); err != nil {
+		return nil, mapStoreError(err)
+	}
+
+	return &VPCAssociationResult{
+		ChangeId:    changeId,
+		Status:      "INSYNC",
+		Comment:     input.Comment,
 		SubmittedAt: now,
 	}, nil
 }

@@ -104,6 +104,13 @@ type HealthCheck struct {
 	Region                       string                        `json:"region"`
 	AccountID                    string                        `json:"accountId"`
 	CreatedAt                    time.Time                     `json:"createdAt"`
+	// Deleted marks a deletion tombstone. DeleteHealthCheck retains the
+	// record so a CreateHealthCheck retry carrying the same CallerReference
+	// can be answered with HealthCheckAlreadyExists, per the documented
+	// retry semantics. The zero value means live, which keeps records
+	// written before the tombstone mechanism behaving as live.
+	Deleted   bool      `json:"deleted,omitempty"`
+	DeletedAt time.Time `json:"deletedAt,omitempty"`
 }
 
 // HealthCheckConfig holds the configuration for a health check.

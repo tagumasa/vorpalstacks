@@ -8,7 +8,6 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
-	route53store "vorpalstacks/internal/store/aws/route53"
 )
 
 // generateCidrCollectionId generates a UUID-like ID for a CIDR collection.
@@ -18,36 +17,17 @@ func generateCidrCollectionId() string {
 
 // CreateCidrCollection creates a new CIDR collection.
 func (s *Route53Service) CreateCidrCollection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	name := request.GetStringParam(req.Parameters, "Name")
-	if name == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "Name is required", 400)
-	}
-	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
-	if callerRef == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "CallerReference is required", 400)
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	collection := &route53store.CidrCollection{
-		ID:              generateCidrCollectionId(),
-		Name:            name,
-		CallerReference: callerRef,
-		AccountID:       s.accountID,
-	}
-
-	if err := cidrStore.Create(collection); err != nil {
-		if route53store.IsAlreadyExists(err) {
-			return nil, awserrors.NewAWSError("CidrCollectionAlreadyExists", fmt.Sprintf("A CIDR collection with name %q already exists", name), 400)
-		}
-		return nil, mapStoreError(err)
+	collection, err := s.createCidrCollectionCore(st, CreateCidrCollectionInput{
+		Name:            request.GetStringParam(req.Parameters, "Name"),
+		CallerReference: request.GetStringParam(req.Parameters, "CallerReference"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	arn := fmt.Sprintf("arn:aws:route53:::cidrcollection/%s", collection.ID)
@@ -65,25 +45,15 @@ func (s *Route53Service) CreateCidrCollection(ctx context.Context, reqCtx *reque
 
 // DeleteCidrCollection deletes a CIDR collection.
 func (s *Route53Service) DeleteCidrCollection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "Id is required", 400)
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	if err := cidrStore.Delete(id); err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCidrCollection", fmt.Sprintf("No CIDR collection found with id: %s", id), 404)
-		}
-		return nil, mapStoreError(err)
+	if err := deleteCidrCollectionCore(st, DeleteCidrCollectionInput{
+		Id: request.GetStringParam(req.Parameters, "Id"),
+	}); err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{}, nil
@@ -91,21 +61,17 @@ func (s *Route53Service) DeleteCidrCollection(ctx context.Context, reqCtx *reque
 
 // ListCidrCollections lists CIDR collections with pagination.
 func (s *Route53Service) ListCidrCollections(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	nextToken := request.GetStringParam(req.Parameters, "NextToken")
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	result, err := cidrStore.List(nextToken, maxResults)
+	result, err := listCidrCollectionsCore(st, ListCidrCollectionsInput{
+		NextToken:  request.GetStringParam(req.Parameters, "NextToken"),
+		MaxResults: request.GetIntParam(req.Parameters, "MaxResults"),
+	})
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	var summaries []interface{}
@@ -120,7 +86,9 @@ func (s *Route53Service) ListCidrCollections(ctx context.Context, reqCtx *reques
 	}
 
 	resp := map[string]interface{}{
-		"CidrCollections": protocol.XMLElements{ElementName: "CidrCollection", Items: summaries},
+		// The CIDR list shapes carry no xmlName trait, so restXml clients
+		// read every entry from a <member> element.
+		"CidrCollections": protocol.XMLElements{ElementName: "member", Items: summaries},
 	}
 	if result.NextToken != "" {
 		resp["NextToken"] = result.NextToken
@@ -130,96 +98,83 @@ func (s *Route53Service) ListCidrCollections(ctx context.Context, reqCtx *reques
 
 // ListCidrLocations lists locations within a CIDR collection.
 func (s *Route53Service) ListCidrLocations(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	collectionId := request.GetStringParam(req.Parameters, "CollectionId")
-	if collectionId == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "CollectionId is required", 400)
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	collection, err := cidrStore.Get(collectionId)
+	result, err := listCidrLocationsCore(st, ListCidrLocationsInput{
+		CollectionId: request.GetStringParam(req.Parameters, "CollectionId"),
+		NextToken:    request.GetStringParam(req.Parameters, "NextToken"),
+		MaxResults:   request.GetIntParam(req.Parameters, "MaxResults"),
+	})
 	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCidrCollection", fmt.Sprintf("No CIDR collection found with id: %s", collectionId), 404)
-		}
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
-	var locations []interface{}
-	for locName := range collection.Locations {
-		locations = append(locations, map[string]interface{}{
+	var locationItems []interface{}
+	for _, locName := range result.LocationNames {
+		locationItems = append(locationItems, map[string]interface{}{
 			"LocationName": locName,
 		})
 	}
 
-	return map[string]interface{}{
-		"CidrLocations": protocol.XMLElements{ElementName: "CidrLocation", Items: locations},
-	}, nil
+	resp := map[string]interface{}{
+		// The CIDR list shapes carry no xmlName trait, so restXml clients
+		// read every entry from a <member> element.
+		"CidrLocations": protocol.XMLElements{ElementName: "member", Items: locationItems},
+	}
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
+	}
+	return resp, nil
 }
 
 // ListCidrBlocks lists CIDR blocks within a location of a CIDR collection.
 func (s *Route53Service) ListCidrBlocks(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	collectionId := request.GetStringParam(req.Parameters, "CollectionId")
-	if collectionId == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "CollectionId is required", 400)
-	}
 	locationName := request.GetStringParam(req.Parameters, "LocationName")
+	if locationName == "" {
+		// The model binds LocationName to the httpQuery key "location",
+		// which differs from the member name by more than case.
+		locationName = request.GetStringParam(req.Parameters, "location")
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	collection, err := cidrStore.Get(collectionId)
+	result, err := listCidrBlocksCore(st, ListCidrBlocksInput{
+		CollectionId: request.GetStringParam(req.Parameters, "CollectionId"),
+		LocationName: locationName,
+		NextToken:    request.GetStringParam(req.Parameters, "NextToken"),
+		MaxResults:   request.GetIntParam(req.Parameters, "MaxResults"),
+	})
 	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCidrCollection", fmt.Sprintf("No CIDR collection found with id: %s", collectionId), 404)
-		}
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
-	var blocks []interface{}
-	if locationName != "" {
-		for _, cidr := range collection.Locations[locationName] {
-			blocks = append(blocks, map[string]interface{}{
-				"CidrBlock":    cidr,
-				"LocationName": locationName,
-			})
-		}
-	} else {
-		for locName, cidrs := range collection.Locations {
-			for _, cidr := range cidrs {
-				blocks = append(blocks, map[string]interface{}{
-					"CidrBlock":    cidr,
-					"LocationName": locName,
-				})
-			}
-		}
+	var blockItems []interface{}
+	for _, b := range result.Blocks {
+		blockItems = append(blockItems, map[string]interface{}{
+			"CidrBlock":    b.Cidr,
+			"LocationName": b.LocationName,
+		})
 	}
 
-	return map[string]interface{}{
-		"CidrBlocks": protocol.XMLElements{ElementName: "CidrBlock", Items: blocks},
-	}, nil
+	resp := map[string]interface{}{
+		// The CIDR list shapes carry no xmlName trait, so restXml clients
+		// read every entry from a <member> element.
+		"CidrBlocks": protocol.XMLElements{ElementName: "member", Items: blockItems},
+	}
+	if result.NextToken != "" {
+		resp["NextToken"] = result.NextToken
+	}
+	return resp, nil
 }
 
 // ChangeCidrCollection adds or removes CIDR blocks in a collection location.
 func (s *Route53Service) ChangeCidrCollection(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	id := request.GetStringParam(req.Parameters, "Id")
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidInput", "Id is required", 400)
-	}
-
 	var changesList []interface{}
 	switch c := req.Parameters["Changes"].(type) {
 	case []interface{}:
@@ -229,12 +184,15 @@ func (s *Route53Service) ChangeCidrCollection(ctx context.Context, reqCtx *reque
 			changesList = changeArr
 		} else if changeMap, ok := c["CidrCollectionChange"].(map[string]interface{}); ok {
 			changesList = []interface{}{changeMap}
+		} else if memberArr, ok := c["member"].([]interface{}); ok {
+			// The model carries no xmlName on CidrCollectionChange, so
+			// restXml clients serialise the list with the default
+			// <member> element.
+			changesList = memberArr
+		} else if memberMap, ok := c["member"].(map[string]interface{}); ok {
+			changesList = []interface{}{memberMap}
 		}
 	default:
-		return nil, awserrors.NewAWSError("InvalidInput", "Changes are required", 400)
-	}
-
-	if len(changesList) == 0 {
 		return nil, awserrors.NewAWSError("InvalidInput", "Changes are required", 400)
 	}
 
@@ -242,97 +200,17 @@ func (s *Route53Service) ChangeCidrCollection(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	cidrStore := st.CidrCollections()
-	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
-	}
 
-	collection, err := cidrStore.Get(id)
+	result, err := changeCidrCollectionCore(st, ChangeCidrCollectionInput{
+		Id:                request.GetStringParam(req.Parameters, "Id"),
+		CollectionVersion: request.GetIntParam(req.Parameters, "CollectionVersion"),
+		Changes:           changesList,
+	})
 	if err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, awserrors.NewAWSError("NoSuchCidrCollection", fmt.Sprintf("No CIDR collection found with id: %s", id), 404)
-		}
-		return nil, mapStoreError(err)
-	}
-
-	if reqVersion := request.GetIntParam(req.Parameters, "CollectionVersion"); reqVersion > 0 {
-		if int64(reqVersion) != collection.Version {
-			return nil, awserrors.NewAWSError("CidrCollectionVersionMismatch",
-				fmt.Sprintf("Collection version mismatch: expected %d, got %d", collection.Version, reqVersion), 409)
-		}
-	}
-
-	for _, c := range changesList {
-		changeMap, ok := c.(map[string]interface{})
-		if !ok {
-			return nil, awserrors.NewAWSError("InvalidInput", "Each change must be a map", 400)
-		}
-
-		locationName := request.GetStringParam(changeMap, "LocationName")
-		if locationName == "" {
-			return nil, awserrors.NewAWSError("InvalidInput", "LocationName is required for each change", 400)
-		}
-		action := request.GetStringParam(changeMap, "Action")
-		if action != "PUT" && action != "DELETE_IF_EXISTS" {
-			return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Invalid action: %s. Must be PUT or DELETE_IF_EXISTS", action), 400)
-		}
-
-		var cidrs []string
-		if cidrList, ok := changeMap["CidrList"].([]interface{}); ok {
-			for _, c := range cidrList {
-				if cidr, ok := c.(string); ok {
-					cidrs = append(cidrs, cidr)
-				}
-			}
-		} else if cidrMap, ok := changeMap["CidrList"].(map[string]interface{}); ok {
-			if arr, ok := cidrMap["Cidr"].([]interface{}); ok {
-				for _, c := range arr {
-					if cidr, ok := c.(string); ok {
-						cidrs = append(cidrs, cidr)
-					}
-				}
-			} else if single, ok := cidrMap["Cidr"].(string); ok {
-				cidrs = append(cidrs, single)
-			}
-		}
-
-		if len(cidrs) == 0 {
-			return nil, awserrors.NewAWSError("InvalidInput", "CidrList is required for each change", 400)
-		}
-
-		if collection.Locations == nil {
-			collection.Locations = make(map[string][]string)
-		}
-
-		switch action {
-		case "PUT":
-			existing := collection.Locations[locationName]
-			collection.Locations[locationName] = append(existing, cidrs...)
-		case "DELETE_IF_EXISTS":
-			existing := collection.Locations[locationName]
-			toDelete := make(map[string]bool, len(cidrs))
-			for _, cidr := range cidrs {
-				toDelete[cidr] = true
-			}
-			var remaining []string
-			for _, cidr := range existing {
-				if !toDelete[cidr] {
-					remaining = append(remaining, cidr)
-				}
-			}
-			if len(remaining) > 0 {
-				collection.Locations[locationName] = remaining
-			} else {
-				delete(collection.Locations, locationName)
-			}
-		}
-	}
-
-	if err := cidrStore.Update(collection); err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"Id": collection.ID,
+		"Id": result.ChangeId,
 	}, nil
 }

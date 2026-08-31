@@ -171,6 +171,51 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("route53", "DisassociateVPCFromHostedZone_NotAssociated", func() error {
+		if testVPC1 == "" || testVPC2 == "" {
+			return fmt.Errorf("VPC setup failed")
+		}
+		naDomain := tc.domain("notassoc")
+		naRef := fmt.Sprintf("naref-%d", tc.uniq)
+		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
+			Name:            aws.String(naDomain),
+			CallerReference: aws.String(naRef),
+			HostedZoneConfig: &types.HostedZoneConfig{
+				PrivateZone: true,
+			},
+			VPC: &types.VPC{
+				VPCId:     aws.String(testVPC1),
+				VPCRegion: types.VPCRegion(r.region),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		naZoneID := aws.ToString(createResp.HostedZone.Id)
+
+		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(naZoneID)})
+
+		// testVPC2 was never associated with this zone; the removal is
+		// rejected with a 404 VPCAssociationNotFound.
+		_, err = tc.client.DisassociateVPCFromHostedZone(tc.ctx, &route53.DisassociateVPCFromHostedZoneInput{
+			HostedZoneId: aws.String(naZoneID),
+			VPC: &types.VPC{
+				VPCId:     aws.String(testVPC2),
+				VPCRegion: types.VPCRegion(r.region),
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected not-associated rejection, got nil")
+		}
+		if err := AssertErrorContains(err, "VPCAssociationNotFound"); err != nil {
+			return err
+		}
+		if awsHTTPStatus(err) != 404 {
+			return fmt.Errorf("expected HTTP 404, got %d", awsHTTPStatus(err))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("route53", "AssociateVPCWithHostedZone_PublicZone", func() error {
 		pubDomain := tc.domain("pub-vpc-test")
 		pubRef := fmt.Sprintf("pubvpc-%d", tc.uniq)

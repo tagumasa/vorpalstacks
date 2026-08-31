@@ -2,9 +2,6 @@ package route53
 
 import (
 	"context"
-	"crypto/md5"
-	"fmt"
-	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -17,9 +14,6 @@ import (
 // CreateHealthCheck creates a new health check in Route 53.
 func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
-	if callerRef == "" {
-		callerRef = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%d", time.Now().UnixNano()))))
-	}
 
 	healthCheckConfigMap := request.GetMapParam(req.Parameters, "HealthCheckConfig")
 	if healthCheckConfigMap == nil {
@@ -28,29 +22,18 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 
 	config := parseHealthCheckConfig(healthCheckConfigMap, s.defaultHCPort)
 
-	// Validate Type enum and field ranges before persisting.
-	if err := validateHealthCheckConfig(config); err != nil {
-		return nil, err
-	}
-
-	healthCheck := &route53store.HealthCheck{
-		ID:                 generateHealthCheckId(),
-		CallerReference:    callerRef,
-		HealthCheckConfig:  config,
-		HealthCheckVersion: "1",
-		Region:             reqCtx.GetRegion(),
-		AccountID:          s.accountID,
-	}
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.HealthChecks().Create(healthCheck); err != nil {
-		if route53store.IsAlreadyExists(err) {
-			return nil, NewHealthCheckAlreadyExistsError()
-		}
-		return nil, mapStoreError(err)
+
+	healthCheck, err := s.createHealthCheckCore(st, CreateHealthCheckInput{
+		CallerReference: callerRef,
+		Config:          config,
+		Region:          reqCtx.GetRegion(),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -65,7 +48,12 @@ func (s *Route53Service) GetHealthCheck(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	healthCheck, err := s.getHealthCheckById(reqCtx, healthCheckId)
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	healthCheck, err := getHealthCheckCore(st, healthCheckId)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +72,10 @@ func (s *Route53Service) ListHealthChecks(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	result, err := st.HealthChecks().List(marker, maxItems)
+
+	result, err := listHealthChecksCore(st, ListHealthChecksInput{Marker: marker, MaxItems: maxItems})
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
 
 	return s.buildHealthChecksListResponse(result.HealthChecks, result.IsTruncated, marker, result.Marker, maxItems), nil
@@ -104,20 +93,8 @@ func (s *Route53Service) DeleteHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	// Reject deletion if any record set references this health check.
-	if st.RecordSets().IsHealthCheckReferenced(healthCheckId) {
-		return nil, NewHealthCheckInUseError(healthCheckId)
-	}
-
-	if err := st.Tags().Raw().Delete("healthcheck/" + healthCheckId); err != nil {
-		return nil, awserrors.NewAWSError("InvalidInput", fmt.Sprintf("Failed to delete tags: %v", err), 500)
-	}
-
-	if err := st.HealthChecks().Delete(healthCheckId); err != nil {
-		if route53store.IsNotFound(err) {
-			return nil, NewNoSuchHealthCheckError(healthCheckId)
-		}
-		return nil, mapStoreError(err)
+	if err := deleteHealthCheckCore(st, DeleteHealthCheckInput{Id: healthCheckId}); err != nil {
+		return nil, err
 	}
 
 	return response.EmptyResponse(), nil
@@ -130,39 +107,23 @@ func (s *Route53Service) UpdateHealthCheck(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	healthCheck, err := s.getHealthCheckById(reqCtx, healthCheckId)
-	if err != nil {
-		return nil, err
-	}
-
-	// Verify HealthCheckVersion matches when provided.
-	if reqVersion := request.GetIntParam(req.Parameters, "HealthCheckVersion"); reqVersion > 0 {
-		existingVersion, _ := strconv.ParseInt(healthCheck.HealthCheckVersion, 10, 64)
-		if int64(reqVersion) != existingVersion {
-			return nil, NewHealthCheckVersionMismatchError(
-				healthCheck.HealthCheckVersion, fmt.Sprintf("%d", reqVersion))
-		}
-	}
-
-	healthCheckConfig := request.GetMapParam(req.Parameters, "HealthCheckConfig")
-	if healthCheckConfig != nil {
-		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, healthCheckConfig)
-	} else {
-		applyHealthCheckConfigUpdates(healthCheck.HealthCheckConfig, req.Parameters)
-	}
-
-	// Validate the updated configuration — the same constraints as
-	// CreateHealthCheck apply to updated field values.
-	if err := validateHealthCheckConfig(healthCheck.HealthCheckConfig); err != nil {
-		return nil, err
+	updates := request.GetMapParam(req.Parameters, "HealthCheckConfig")
+	if updates == nil {
+		updates = req.Parameters
 	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.HealthChecks().Update(healthCheck); err != nil {
-		return nil, mapStoreError(err)
+
+	healthCheck, err := updateHealthCheckCore(st, UpdateHealthCheckInput{
+		HealthCheckId:      healthCheckId,
+		HealthCheckVersion: request.GetIntParam(req.Parameters, "HealthCheckVersion"),
+		Updates:            updates,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
@@ -252,62 +213,27 @@ func (s *Route53Service) AssociateVPCWithHostedZone(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
-	vpcMap := request.GetMapParam(req.Parameters, "VPC")
-	if vpcMap == nil {
-		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
-	}
-
-	zone, err := s.getHostedZoneById(reqCtx, hostedZoneId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !zone.Private {
-		return nil, awserrors.NewAWSError("InvalidInput", "Cannot associate VPC with a public hosted zone", 400)
-	}
-
-	vpc := parseVPC(vpcMap)
-	if err := s.validateVPC(ctx, reqCtx.GetRegion(), vpc.VPCID, vpc.VPCRegion); err != nil {
-		return nil, awserrors.NewAWSError("InvalidVPCId",
-			fmt.Sprintf("The VPC %s in region %s does not exist", vpc.VPCID, vpc.VPCRegion), 400)
-	}
-	for _, existing := range zone.VPCs {
-		if existing.VPCID == vpc.VPCID && existing.VPCRegion == vpc.VPCRegion {
-			return nil, awserrors.NewAWSError("VPCAlreadyAssociated", "VPC is already associated with the hosted zone", 400)
-		}
-	}
-	zone.VPCs = append(zone.VPCs, vpc)
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, mapStoreError(err)
-	}
 
-	// Parse and include Comment in ChangeInfo response.
-	comment := request.GetStringParam(req.Parameters, "Comment")
-	if err := validateComment(comment); err != nil {
+	result, err := s.associateVPCWithHostedZoneCore(ctx, st, AssociateVPCWithHostedZoneInput{
+		HostedZoneId: hostedZoneId,
+		VPC:          parseVPC(request.GetMapParam(req.Parameters, "VPC")),
+		Comment:      request.GetStringParam(req.Parameters, "Comment"),
+		Region:       reqCtx.GetRegion(),
+	})
+	if err != nil {
 		return nil, err
-	}
-	changeId := generateChangeId()
-	now := time.Now()
-	if err := st.Changes().Create(&route53store.ChangeInfo{
-		ID:          changeId,
-		Status:      "INSYNC",
-		SubmittedAt: now,
-		Comment:     comment,
-	}); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + changeId,
-			"Status":      "INSYNC",
-			"SubmittedAt": now.Format(time.RFC3339),
-			"Comment":     comment,
+			"Id":          "/change/" + result.ChangeId,
+			"Status":      result.Status,
+			"SubmittedAt": result.SubmittedAt.Format(time.RFC3339),
+			"Comment":     result.Comment,
 		},
 	}, nil
 }
@@ -319,67 +245,26 @@ func (s *Route53Service) DisassociateVPCFromHostedZone(ctx context.Context, reqC
 		return nil, err
 	}
 
-	vpcMap := request.GetMapParam(req.Parameters, "VPC")
-	if vpcMap == nil {
-		return nil, awserrors.NewAWSError("InvalidInput", "VPC is required", 400)
-	}
-
-	zone, err := s.getHostedZoneById(reqCtx, hostedZoneId)
-	if err != nil {
-		return nil, err
-	}
-
-	vpcRegion := request.GetStringParam(vpcMap, "VPCRegion")
-	vpcId := request.GetStringParam(vpcMap, "VPCId")
-
-	var newVPCs []*route53store.VPC
-	for _, v := range zone.VPCs {
-		if v.VPCID != vpcId || v.VPCRegion != vpcRegion {
-			newVPCs = append(newVPCs, v)
-		}
-	}
-
-	if len(newVPCs) == len(zone.VPCs) {
-		// Use VPCAssociationNotFound instead of InvalidInput.
-		return nil, NewVPCAssociationNotFoundError(vpcId)
-	}
-
-	// Prevent removing the last VPC association from a private zone.
-	if len(newVPCs) == 0 {
-		return nil, NewLastVPCAssociationError()
-	}
-
-	zone.VPCs = newVPCs
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, mapStoreError(err)
-	}
 
-	// Parse and include Comment in ChangeInfo response.
-	comment := request.GetStringParam(req.Parameters, "Comment")
-	if err := validateComment(comment); err != nil {
+	result, err := disassociateVPCFromHostedZoneCore(st, DisassociateVPCFromHostedZoneInput{
+		HostedZoneId: hostedZoneId,
+		VPC:          parseVPC(request.GetMapParam(req.Parameters, "VPC")),
+		Comment:      request.GetStringParam(req.Parameters, "Comment"),
+	})
+	if err != nil {
 		return nil, err
-	}
-	changeId := generateChangeId()
-	now := time.Now()
-	if err := st.Changes().Create(&route53store.ChangeInfo{
-		ID:          changeId,
-		Status:      "INSYNC",
-		SubmittedAt: now,
-		Comment:     comment,
-	}); err != nil {
-		return nil, mapStoreError(err)
 	}
 
 	return map[string]interface{}{
 		"ChangeInfo": map[string]interface{}{
-			"Id":          "/change/" + changeId,
-			"Status":      "INSYNC",
-			"SubmittedAt": now.Format(time.RFC3339),
-			"Comment":     comment,
+			"Id":          "/change/" + result.ChangeId,
+			"Status":      result.Status,
+			"SubmittedAt": result.SubmittedAt.Format(time.RFC3339),
+			"Comment":     result.Comment,
 		},
 	}, nil
 }

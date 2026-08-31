@@ -21,6 +21,7 @@ type HostedZoneStoreInterface interface {
 // HealthCheckStoreInterface defines operations for managing Route 53 health checks.
 type HealthCheckStoreInterface interface {
 	Get(id string) (*HealthCheck, error)
+	GetByCallerReference(callerRef string) (*HealthCheck, error)
 	List(marker string, maxItems int) (*HealthCheckListResult, error)
 	Create(healthCheck *HealthCheck) error
 	Update(healthCheck *HealthCheck) error

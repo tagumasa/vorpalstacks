@@ -3,6 +3,7 @@ package route53
 import (
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -114,6 +115,88 @@ const maxCommentLength = 256
 func validateComment(comment string) error {
 	if utf8.RuneCountInString(comment) > maxCommentLength {
 		return awserrors.NewAWSError("InvalidInput", "Comment must not exceed 256 characters", 400)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// CallerReference (nonce) validation — every Route 53 Create* request carries
+// a required CallerReference idempotency token. The token must come from the
+// caller: a server-synthesised value changes on every retry, defeating the
+// execute-once semantics the member exists to provide, so an omitted member
+// is rejected instead of being filled in.
+// ---------------------------------------------------------------------------
+
+// maxHostedZoneCallerReferenceLen is the Nonce @length maximum for
+// CreateHostedZoneRequest.CallerReference (1 to 128 characters).
+const maxHostedZoneCallerReferenceLen = 128
+
+// maxCidrCallerReferenceLen is the CidrNonce @length maximum for
+// CreateCidrCollectionRequest.CallerReference (1 to 64 characters).
+const maxCidrCallerReferenceLen = 64
+
+// maxHealthCheckCallerReferenceLen is the HealthCheckNonce @length maximum
+// for CreateHealthCheckRequest.CallerReference (1 to 64 characters).
+const maxHealthCheckCallerReferenceLen = 64
+
+func validateHostedZoneCallerReference(ref string) error {
+	if ref == "" {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference is required", 400)
+	}
+	if utf8.RuneCountInString(ref) > maxHostedZoneCallerReferenceLen {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference must be 1 to 128 characters long", 400)
+	}
+	return nil
+}
+
+// validateCidrCallerReference also enforces the CidrNonce @pattern (ASCII
+// characters only) on top of the shared required-and-length rule.
+func validateCidrCallerReference(ref string) error {
+	if ref == "" {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference is required", 400)
+	}
+	if utf8.RuneCountInString(ref) > maxCidrCallerReferenceLen {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference must be 1 to 64 characters long", 400)
+	}
+	for _, c := range ref {
+		if c > unicode.MaxASCII {
+			return awserrors.NewAWSError("InvalidInput", "CallerReference may contain ASCII characters only", 400)
+		}
+	}
+	return nil
+}
+
+func validateHealthCheckCallerReference(ref string) error {
+	if ref == "" {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference is required", 400)
+	}
+	if utf8.RuneCountInString(ref) > maxHealthCheckCallerReferenceLen {
+		return awserrors.NewAWSError("InvalidInput", "CallerReference must be 1 to 64 characters long", 400)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Resource record values (Smithy: com.amazonaws.route53#RData)
+// ---------------------------------------------------------------------------
+
+// maxRDataLen is the RData @length maximum for ResourceRecord.Value
+// (0 to 4000 characters; the member itself is required on the shape).
+const maxRDataLen = 4000
+
+// validateResourceRecordValue enforces the ResourceRecord element contract:
+// the Value member must be present — an element without it is not a resource
+// record and invalidates the whole change batch — and must stay within the
+// RData length bound. The RData minimum is 0, so an explicitly empty value
+// remains shape-valid and accepted.
+func validateResourceRecordValue(present bool, value string) error {
+	if !present {
+		return awserrors.NewAWSError("InvalidChangeBatch",
+			"Invalid Resource Record: Value is required for every resource record", 400)
+	}
+	if utf8.RuneCountInString(value) > maxRDataLen {
+		return awserrors.NewAWSError("InvalidChangeBatch",
+			"Invalid Resource Record: the record value must not exceed 4000 characters", 400)
 	}
 	return nil
 }

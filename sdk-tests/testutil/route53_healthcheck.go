@@ -71,6 +71,105 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		return nil
 	}))
 
+	// CreateHealthCheck documents retry semantics for the CallerReference: a
+	// resend with the same reference and the same settings returns the
+	// existing health check instead of creating a duplicate.
+	results = append(results, r.RunTest("route53", "CreateHealthCheck_IdempotentRetry", func() error {
+		ref := fmt.Sprintf("hcref-idem-%d", tc.uniq)
+		config := func() *types.HealthCheckConfig {
+			return &types.HealthCheckConfig{
+				Type:                     types.HealthCheckTypeTcp,
+				FullyQualifiedDomainName: aws.String("idem.example.com"),
+				Port:                     aws.Int32(8081),
+			}
+		}
+		first, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref), HealthCheckConfig: config(),
+		})
+		if err != nil {
+			return err
+		}
+		hcID := aws.ToString(first.HealthCheck.Id)
+		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+
+		second, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref), HealthCheckConfig: config(),
+		})
+		if err != nil {
+			return fmt.Errorf("idempotent retry: %v", err)
+		}
+		if aws.ToString(second.HealthCheck.Id) != hcID {
+			return fmt.Errorf("idempotent retry returned different ID: %q vs %q", aws.ToString(second.HealthCheck.Id), hcID)
+		}
+		if aws.ToInt64(second.HealthCheck.HealthCheckVersion) != aws.ToInt64(first.HealthCheck.HealthCheckVersion) {
+			return fmt.Errorf("idempotent retry changed version: %d vs %d",
+				aws.ToInt64(second.HealthCheck.HealthCheckVersion), aws.ToInt64(first.HealthCheck.HealthCheckVersion))
+		}
+		return nil
+	}))
+
+	// The same CallerReference with different settings is rejected with
+	// HealthCheckAlreadyExists.
+	results = append(results, r.RunTest("route53", "CreateHealthCheck_SameCallerRefDifferentSettings", func() error {
+		ref := fmt.Sprintf("hcref-diff-%d", tc.uniq)
+		first, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref),
+			HealthCheckConfig: &types.HealthCheckConfig{
+				Type:                     types.HealthCheckTypeTcp,
+				FullyQualifiedDomainName: aws.String("diff.example.com"),
+				Port:                     aws.Int32(8082),
+			},
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: first.HealthCheck.Id})
+
+		_, err = tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref),
+			HealthCheckConfig: &types.HealthCheckConfig{
+				Type:                     types.HealthCheckTypeTcp,
+				FullyQualifiedDomainName: aws.String("diff.example.com"),
+				Port:                     aws.Int32(8083),
+			},
+		})
+		if err := AssertErrorContains(err, "HealthCheckAlreadyExists"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	// A retry whose CallerReference matches a recently deleted health check
+	// fails with HealthCheckAlreadyExists; the reference is retained for a
+	// limited period after deletion.
+	results = append(results, r.RunTest("route53", "CreateHealthCheck_RetryAfterDelete", func() error {
+		ref := fmt.Sprintf("hcref-del-%d", tc.uniq)
+		config := &types.HealthCheckConfig{
+			Type:                     types.HealthCheckTypeTcp,
+			FullyQualifiedDomainName: aws.String("delref.example.com"),
+			Port:                     aws.Int32(8084),
+		}
+		created, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref), HealthCheckConfig: config,
+		})
+		if err != nil {
+			return err
+		}
+		if _, err := tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{
+			HealthCheckId: created.HealthCheck.Id,
+		}); err != nil {
+			return fmt.Errorf("delete: %v", err)
+		}
+
+		_, err = tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+			CallerReference: aws.String(ref), HealthCheckConfig: config,
+		})
+		if err := AssertErrorContains(err, "HealthCheckAlreadyExists"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	if healthCheckID != "" {
 		results = append(results, r.RunTest("route53", "GetHealthCheck", func() error {
 			resp, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
@@ -138,6 +237,41 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 			}
 			if aws.ToString(cfg.FullyQualifiedDomainName) != "updated.example.com" {
 				return fmt.Errorf("domain name mismatch: got %q", aws.ToString(cfg.FullyQualifiedDomainName))
+			}
+			return nil
+		}))
+
+		results = append(results, r.RunTest("route53", "UpdateHealthCheck_VersionMismatch", func() error {
+			createResp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
+				CallerReference: aws.String(fmt.Sprintf("hcref-ver-%d", tc.uniq)),
+				HealthCheckConfig: &types.HealthCheckConfig{
+					Type:                     types.HealthCheckTypeTcp,
+					Port:                     aws.Int32(8080),
+					FullyQualifiedDomainName: aws.String("ver.example.com"),
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("create: %v", err)
+			}
+			hcID := aws.ToString(createResp.HealthCheck.Id)
+
+			defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+
+			// A freshly created health check is at version 1; a stale
+			// version must be rejected with a 409 conflict.
+			_, err = tc.client.UpdateHealthCheck(tc.ctx, &route53.UpdateHealthCheckInput{
+				HealthCheckId:      aws.String(hcID),
+				HealthCheckVersion: aws.Int64(2),
+				Port:               aws.Int32(9090),
+			})
+			if err == nil {
+				return fmt.Errorf("expected version-mismatch rejection, got nil")
+			}
+			if err := AssertErrorContains(err, "HealthCheckVersionMismatch"); err != nil {
+				return err
+			}
+			if awsHTTPStatus(err) != 409 {
+				return fmt.Errorf("expected HTTP 409, got %d", awsHTTPStatus(err))
 			}
 			return nil
 		}))

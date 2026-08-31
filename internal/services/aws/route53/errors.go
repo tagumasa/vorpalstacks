@@ -27,11 +27,11 @@ var (
 	// ErrHealthCheckInUse is returned when attempting to delete a health check that is referenced by a record set.
 	ErrHealthCheckInUse = errors.NewAWSError("HealthCheckInUse", "The health check is in use by one or more resource record sets.", http.StatusBadRequest)
 	// ErrHealthCheckVersionMismatch is returned when the HealthCheckVersion does not match the current version.
-	ErrHealthCheckVersionMismatch = errors.NewAWSError("HealthCheckVersionMismatch", "The HealthCheckVersion does not match the current version.", http.StatusBadRequest)
+	ErrHealthCheckVersionMismatch = errors.NewAWSError("HealthCheckVersionMismatch", "The HealthCheckVersion does not match the current version.", http.StatusConflict)
 	// ErrLastVPCAssociation is returned when attempting to disassociate the last VPC from a private hosted zone.
 	ErrLastVPCAssociation = errors.NewAWSError("LastVPCAssociation", "The VPC that you're trying to disassociate is the last VPC that is associated with the hosted zone.", http.StatusBadRequest)
 	// ErrVPCAssociationNotFound is returned when attempting to disassociate a VPC that is not associated with the hosted zone.
-	ErrVPCAssociationNotFound = errors.NewAWSError("VPCAssociationNotFound", "The VPC is not associated with the hosted zone.", http.StatusBadRequest)
+	ErrVPCAssociationNotFound = errors.NewAWSError("VPCAssociationNotFound", "The VPC is not associated with the hosted zone.", http.StatusNotFound)
 )
 
 // NewNoSuchHostedZoneError creates a new error for a hosted zone that does not exist.
@@ -74,7 +74,7 @@ func NewHealthCheckInUseError(id string) *errors.AWSError {
 // client sent.
 func NewHealthCheckVersionMismatchError(expected, actual string) *errors.AWSError {
 	return errors.NewAWSError("HealthCheckVersionMismatch",
-		fmt.Sprintf("Health check version mismatch: expected %s, got %s", expected, actual), http.StatusBadRequest)
+		fmt.Sprintf("Health check version mismatch: expected %s, got %s", expected, actual), http.StatusConflict)
 }
 
 // NewLastVPCAssociationError creates a new error for the last VPC association.
@@ -86,7 +86,7 @@ func NewLastVPCAssociationError() *errors.AWSError {
 // NewVPCAssociationNotFoundError creates a new error for a VPC association that does not exist.
 func NewVPCAssociationNotFoundError(vpcId string) *errors.AWSError {
 	return errors.NewAWSError("VPCAssociationNotFound",
-		fmt.Sprintf("The VPC %s is not associated with the hosted zone.", vpcId), http.StatusBadRequest)
+		fmt.Sprintf("The VPC %s is not associated with the hosted zone.", vpcId), http.StatusNotFound)
 }
 
 // storeErrorMappings maps store-level sentinel errors to AWS API errors.

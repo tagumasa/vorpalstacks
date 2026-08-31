@@ -540,5 +540,69 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		return nil
 	}))
 
+	// ResourceRecords carries @length(min 1) in the API model: a non-alias
+	// record set with a present-but-empty value list must be rejected
+	// instead of creating a record set with zero values.
+	results = append(results, r.RunTest("route53", "Record_EmptyResourceRecordsRejected", func() error {
+		_, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(zoneID),
+			ChangeBatch: &types.ChangeBatch{
+				Changes: []types.Change{
+					{
+						Action: types.ChangeActionCreate,
+						ResourceRecordSet: &types.ResourceRecordSet{
+							Name:            aws.String(fmt.Sprintf("empty-rr.%s", domainName)),
+							Type:            types.RRTypeA,
+							TTL:             aws.Int64(300),
+							ResourceRecords: []types.ResourceRecord{},
+						},
+					},
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected empty-ResourceRecords rejection, got nil")
+		}
+		if err := AssertErrorContains(err, "InvalidChangeBatch"); err != nil {
+			return err
+		}
+		if awsHTTPStatus(err) != 400 {
+			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
+		}
+		return nil
+	}))
+
+	// ResourceRecord.Value is bounded by the RData shape (@length 0..4000,
+	// counted in characters): an over-long value invalidates the change
+	// batch instead of being persisted.
+	results = append(results, r.RunTest("route53", "Record_ValueTooLongRejected", func() error {
+		_, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(zoneID),
+			ChangeBatch: &types.ChangeBatch{
+				Changes: []types.Change{
+					{
+						Action: types.ChangeActionCreate,
+						ResourceRecordSet: &types.ResourceRecordSet{
+							Name:            aws.String(fmt.Sprintf("longvalue.%s", domainName)),
+							Type:            types.RRTypeTxt,
+							TTL:             aws.Int64(300),
+							ResourceRecords: []types.ResourceRecord{{Value: aws.String(strings.Repeat("a", 4001))}},
+						},
+					},
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected 4001-character value rejection, got nil")
+		}
+		if err := AssertErrorContains(err, "InvalidChangeBatch"); err != nil {
+			return err
+		}
+		if awsHTTPStatus(err) != 400 {
+			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
+		}
+		return nil
+	}))
+
 	return results
 }

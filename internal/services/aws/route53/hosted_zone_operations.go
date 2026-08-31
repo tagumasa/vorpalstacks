@@ -91,7 +91,12 @@ func (s *Route53Service) GetHostedZone(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	zone, err := s.getHostedZoneById(reqCtx, id)
+	st, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	zone, err := getHostedZoneCore(st, id)
 	if err != nil {
 		return nil, err
 	}
@@ -154,56 +159,30 @@ func (s *Route53Service) ListHostedZonesByName(ctx context.Context, reqCtx *requ
 	if maxItems <= 0 {
 		maxItems = 100
 	}
+	if dnsName != "" {
+		dnsName = strings.ToLower(dnsName)
+		if !strings.HasSuffix(dnsName, ".") {
+			dnsName = dnsName + "."
+		}
+	}
 
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	allZones, err := st.HostedZones().ListByName()
+	result, err := listHostedZonesByNameCore(st, ListHostedZonesByNameInput{
+		DNSName:            dnsName,
+		HostedZoneIdMarker: hostedZoneIdMarker,
+		MaxItems:           maxItems,
+	})
 	if err != nil {
-		return nil, mapStoreError(err)
+		return nil, err
 	}
+	filtered := result.HostedZones
+	isTruncated := result.IsTruncated
 
-	var filtered []*route53store.HostedZone
-	if dnsName != "" {
-		dnsName = strings.ToLower(dnsName)
-		if !strings.HasSuffix(dnsName, ".") {
-			dnsName = dnsName + "."
-		}
-		started := false
-		if hostedZoneIdMarker != "" {
-			for _, z := range allZones {
-				if strings.EqualFold(z.Name, dnsName) && z.ID == hostedZoneIdMarker {
-					started = true
-					continue
-				}
-				if started {
-					filtered = append(filtered, z)
-				}
-			}
-		} else {
-			for _, z := range allZones {
-				if !started {
-					if strings.Compare(z.Name, dnsName) >= 0 {
-						started = true
-					}
-				}
-				if started {
-					filtered = append(filtered, z)
-				}
-			}
-		}
-	} else {
-		filtered = allZones
-	}
-
-	isTruncated := len(filtered) > int(maxItems)
-	if isTruncated {
-		filtered = filtered[:int(maxItems)]
-	}
-
-	result := map[string]interface{}{
+	resp := map[string]interface{}{
 		"HostedZones": protocol.XMLElements{ElementName: "HostedZone", Items: func() []interface{} {
 			items := make([]interface{}, len(filtered))
 			for i, z := range filtered {
@@ -216,19 +195,19 @@ func (s *Route53Service) ListHostedZonesByName(ctx context.Context, reqCtx *requ
 	}
 
 	if dnsName != "" {
-		result["DNSName"] = dnsName
+		resp["DNSName"] = dnsName
 	}
 	if hostedZoneIdMarker != "" {
-		result["HostedZoneId"] = hostedZoneIdMarker
+		resp["HostedZoneId"] = hostedZoneIdMarker
 	}
 
 	if isTruncated && len(filtered) > 0 {
 		lastZone := filtered[len(filtered)-1]
-		result["NextDNSName"] = lastZone.Name
-		result["NextHostedZoneId"] = lastZone.ID
+		resp["NextDNSName"] = lastZone.Name
+		resp["NextHostedZoneId"] = lastZone.ID
 	}
 
-	return result, nil
+	return resp, nil
 }
 
 // DeleteHostedZone deletes a hosted zone by its ID. The zone must be empty.
@@ -264,26 +243,17 @@ func (s *Route53Service) UpdateHostedZoneComment(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
-	zone, err := s.getHostedZoneById(reqCtx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	comment := request.GetStringParam(req.Parameters, "Comment")
-	if err := validateComment(comment); err != nil {
-		return nil, err
-	}
-	if zone.Config == nil {
-		zone.Config = &route53store.HostedZoneConfig{}
-	}
-	zone.Config.Comment = comment
-
 	st, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	if err := st.HostedZones().Update(zone); err != nil {
-		return nil, mapStoreError(err)
+
+	zone, err := updateHostedZoneCommentCore(st, UpdateHostedZoneCommentInput{
+		Id:      id,
+		Comment: request.GetStringParam(req.Parameters, "Comment"),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
