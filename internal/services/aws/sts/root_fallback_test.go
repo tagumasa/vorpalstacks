@@ -31,7 +31,7 @@ func TestSessionOperationsRejectUnresolvableCaller(t *testing.T) {
 	svc, reqCtx := newStsTestEnv(t)
 	noAuth := &request.ParsedRequest{Parameters: map[string]interface{}{}}
 
-	if _, _, err := svc.resolveCallerArnOrReject(reqCtx, noAuth); !errors.Is(err, ErrInvalidClientTokenId) {
+	if _, _, err := svc.resolveCallerArnOrReject(reqCtx, callerAccessKeyID(noAuth)); !errors.Is(err, ErrInvalidClientTokenId) {
 		t.Fatalf("resolveCallerArnOrReject: got %v, want ErrInvalidClientTokenId", err)
 	}
 	if _, err := svc.GetSessionToken(context.Background(), reqCtx, noAuth); !errors.Is(err, ErrInvalidClientTokenId) {
@@ -69,7 +69,7 @@ func TestResolveCallerRecognisesConfiguredRootKey(t *testing.T) {
 		Headers:    http.Header{"X-Amz-Access-Key": []string{"AKIACONFIGUREDROOT"}},
 		Parameters: map[string]interface{}{},
 	}
-	arn, name, err := svc.resolveCallerArnOrReject(reqCtx, req)
+	arn, name, err := svc.resolveCallerArnOrReject(reqCtx, callerAccessKeyID(req))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestResolveCallerRecognisesConfiguredRootKey(t *testing.T) {
 		Headers:    http.Header{"X-Amz-Access-Key": []string{"AKIAUNKNOWN"}},
 		Parameters: map[string]interface{}{},
 	}
-	if _, _, err := svc.resolveCallerArnOrReject(reqCtx, other); !errors.Is(err, ErrInvalidClientTokenId) {
+	if _, _, err := svc.resolveCallerArnOrReject(reqCtx, callerAccessKeyID(other)); !errors.Is(err, ErrInvalidClientTokenId) {
 		t.Fatalf("unknown key: got %v, want ErrInvalidClientTokenId", err)
 	}
 }
@@ -102,7 +102,7 @@ func TestResolveCallerTestModeFallsBackToRoot(t *testing.T) {
 		Headers:    http.Header{"X-Amz-Access-Key": []string{"test"}},
 		Parameters: map[string]interface{}{},
 	}
-	arn, name, err := svc.resolveCallerArnOrReject(reqCtx, req)
+	arn, name, err := svc.resolveCallerArnOrReject(reqCtx, callerAccessKeyID(req))
 	if err != nil {
 		t.Fatal(err)
 	}

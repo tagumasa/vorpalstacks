@@ -6,15 +6,4 @@ package aws
 // deleted as each service's Core-ification wave completes. Re-adding an
 // entry, or adding entries for newly written handlers, is prohibited —
 // the list only ever shrinks.
-var guardAllowlist = map[string]struct{}{
-	"sts/assume_role_operations.go:AssumeRole":               {},
-	"sts/assume_role_operations.go:AssumeRoleWithSAML":       {},
-	"sts/assume_role_operations.go:AssumeRoleWithWebIdentity": {},
-	"sts/assume_role_operations.go:AssumeRoot":               {},
-	"sts/identity_operations.go:GetCallerIdentity":           {},
-	"sts/service.go:iamStore":                                {},
-	"sts/service.go:resolveCallerSession":                    {},
-	"sts/token_operations.go:GetDelegatedAccessToken":        {},
-	"sts/token_operations.go:GetFederationToken":             {},
-	"sts/token_operations.go:GetSessionToken":                {},
-}
+var guardAllowlist = map[string]struct{}{}

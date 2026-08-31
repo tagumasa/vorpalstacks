@@ -7,6 +7,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // externalIdPattern mirrors the Smithy externalIdType trait: [\w+=,.@:\/-]*.
@@ -218,4 +219,16 @@ func withSourceIdentity(resp map[string]interface{}, si string) map[string]inter
 		resp["SourceIdentity"] = si
 	}
 	return resp
+}
+
+// credentialsMap serialises the Credentials member shared by every
+// session-issuing STS operation; the expiration uses the ISO 8601 simple
+// format the AWS Query protocol responses carry.
+func credentialsMap(c CredentialsResult) map[string]interface{} {
+	return map[string]interface{}{
+		"AccessKeyId":     c.AccessKeyId,
+		"SecretAccessKey": c.SecretAccessKey,
+		"SessionToken":    c.SessionToken,
+		"Expiration":      c.Expiration.Format(timeutils.ISO8601SimpleFormat),
+	}
 }
