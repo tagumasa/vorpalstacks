@@ -5,8 +5,6 @@ package kms
 import (
 	"context"
 	"encoding/base64"
-	"errors"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/services/aws/kms/hsm"
@@ -19,64 +17,14 @@ func (s *KMSService) Sign(ctx context.Context, reqCtx *request.RequestContext, r
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "Sign", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.validateKeyState(key); err != nil {
-		return nil, err
-	}
-
-	if key.KeyUsage != kmsstore.KeyUsageSignVerify {
-		return nil, ErrInvalidKeyUsage
-	}
-
-	messageB64 := request.GetStringParam(req.Parameters, "Message")
-	if messageB64 == "" {
-		// AWS rejects empty Message with ValidationException.
-		return nil, NewValidationError("Message is required")
-	}
-	messageType := request.GetStringParam(req.Parameters, "MessageType")
-	if messageType == "" {
-		messageType = string(hsm.MessageTypeRaw)
-	}
-	if messageType != string(hsm.MessageTypeRaw) && messageType != string(hsm.MessageTypeDigest) {
-		return nil, NewValidationError(fmt.Sprintf("MessageType must be RAW or DIGEST, got %q", messageType))
-	}
-	algorithm := request.GetStringParam(req.Parameters, "SigningAlgorithm")
-	if algorithm == "" {
-		return nil, NewValidationError("SigningAlgorithm is required")
-	}
-	if err := resolveSigningAlgorithm(algorithm, key); err != nil {
-		return nil, err
-	}
-
-	message, err := base64.StdEncoding.DecodeString(messageB64)
-	if err != nil {
-		// AWS requires base64-encoded Message; non-base64 input is a
-		// validation error, not a signature failure.
-		return nil, NewValidationError("Message is not valid base64")
-	}
-
-	if err := checkKMSDryRun(req.Parameters); err != nil {
-		return nil, err
-	}
-
-	result, err := s.hsmBackend.Sign(key.KeyID, message, hsm.SigningAlgorithm(algorithm), hsm.MessageType(messageType))
-	if err != nil {
-		if errors.Is(err, hsm.ErrInvalidDigestLength) {
-			return nil, NewValidationError(fmt.Sprintf("Digest length does not match %s", algorithm))
-		}
-		return nil, err
-	}
-	s.markKeyLastUsed(stores, key.KeyID, "Sign")
-
-	return map[string]interface{}{
-		"KeyId":            key.Arn,
-		"Signature":        base64.StdEncoding.EncodeToString(result.Signature),
-		"SigningAlgorithm": algorithm,
-	}, nil
+	return s.signCore(stores, &SignInput{
+		KeyID:            s.getKeyID(req.Parameters),
+		CallerPrincipal:  s.resolveCallerPrincipal(reqCtx, req),
+		MessageB64:       request.GetStringParam(req.Parameters, "Message"),
+		MessageType:      request.GetStringParam(req.Parameters, "MessageType"),
+		SigningAlgorithm: request.GetStringParam(req.Parameters, "SigningAlgorithm"),
+		DryRun:           getDryRunParam(req.Parameters),
+	})
 }
 
 // Verify verifies a digital signature for the specified message.
@@ -85,79 +33,15 @@ func (s *KMSService) Verify(ctx context.Context, reqCtx *request.RequestContext,
 	if err != nil {
 		return nil, err
 	}
-	key, err := s.resolveAndAuthorizeKey(reqCtx, req, stores, "Verify", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := s.validateKeyState(key); err != nil {
-		return nil, err
-	}
-
-	if key.KeyUsage != kmsstore.KeyUsageSignVerify {
-		return nil, ErrInvalidKeyUsage
-	}
-
-	messageB64 := request.GetStringParam(req.Parameters, "Message")
-	if messageB64 == "" {
-		return nil, NewValidationError("Message is required")
-	}
-	messageType := request.GetStringParam(req.Parameters, "MessageType")
-	if messageType == "" {
-		messageType = string(hsm.MessageTypeRaw)
-	}
-	if messageType != string(hsm.MessageTypeRaw) && messageType != string(hsm.MessageTypeDigest) {
-		return nil, NewValidationError(fmt.Sprintf("MessageType must be RAW or DIGEST, got %q", messageType))
-	}
-	algorithm := request.GetStringParam(req.Parameters, "SigningAlgorithm")
-	if algorithm == "" {
-		return nil, NewValidationError("SigningAlgorithm is required")
-	}
-	if err := resolveSigningAlgorithm(algorithm, key); err != nil {
-		return nil, err
-	}
-	signatureB64 := request.GetStringParam(req.Parameters, "Signature")
-	if signatureB64 == "" {
-		return nil, NewValidationError("Signature is required")
-	}
-
-	message, err := base64.StdEncoding.DecodeString(messageB64)
-	if err != nil {
-		// Non-base64 Message is a validation error, not a key-material error.
-		return nil, NewValidationError("Message is not valid base64")
-	}
-
-	signature, err := base64.StdEncoding.DecodeString(signatureB64)
-	if err != nil {
-		// A malformed Signature is an input validation failure, not an
-		// algorithm-contract violation; ValidationException is the AWS error.
-		return nil, NewValidationError("Signature is not valid base64")
-	}
-
-	if err := checkKMSDryRun(req.Parameters); err != nil {
-		return nil, err
-	}
-
-	valid, err := s.hsmBackend.Verify(key.KeyID, message, signature, hsm.SigningAlgorithm(algorithm), hsm.MessageType(messageType))
-	if err != nil {
-		if errors.Is(err, hsm.ErrInvalidDigestLength) {
-			return nil, ErrValidation
-		}
-		return nil, err
-	}
-	// AWS: when the signature does not match the message, Verify fails
-	// with KMSInvalidSignatureException. The operation never returns a
-	// success response with SignatureValid=false.
-	if !valid {
-		return nil, ErrKMSInvalidSignature
-	}
-	s.markKeyLastUsed(stores, key.KeyID, "Verify")
-
-	return map[string]interface{}{
-		"KeyId":            key.Arn,
-		"SignatureValid":   true,
-		"SigningAlgorithm": algorithm,
-	}, nil
+	return s.verifyCore(stores, &VerifyInput{
+		KeyID:            s.getKeyID(req.Parameters),
+		CallerPrincipal:  s.resolveCallerPrincipal(reqCtx, req),
+		MessageB64:       request.GetStringParam(req.Parameters, "Message"),
+		MessageType:      request.GetStringParam(req.Parameters, "MessageType"),
+		SigningAlgorithm: request.GetStringParam(req.Parameters, "SigningAlgorithm"),
+		SignatureB64:     request.GetStringParam(req.Parameters, "Signature"),
+		DryRun:           getDryRunParam(req.Parameters),
+	})
 }
 
 // GetPublicKey returns the public key for the specified KMS key.

@@ -15,9 +15,6 @@ import (
 // CreateFunction creates a new Lambda function.
 func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName = extractFunctionName(functionName)
 
 	runtime := request.GetStringParam(req.Parameters, "Runtime")
@@ -198,9 +195,6 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 // DeleteFunction deletes the specified Lambda function.
 func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionNameRaw == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err

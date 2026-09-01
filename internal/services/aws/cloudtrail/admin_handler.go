@@ -120,11 +120,6 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 
 // DeleteTrail deletes a CloudTrail trail via the admin console.
 func (h *AdminHandler) DeleteTrail(ctx context.Context, req *connect.Request[pb.DeleteTrailRequest]) (*connect.Response[pb.DeleteTrailResponse], error) {
-	if req.Msg.GetName() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument,
-			svcerrors.NewAWSError("InvalidParameterException", "Name is required", 400))
-	}
-
 	store, err := h.getStoreFromHeader(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

@@ -61,3 +61,82 @@ func TestValidateClientIDUnicodeLengths(t *testing.T) {
 		t.Error("empty client ID accepted")
 	}
 }
+
+// TestGetEntityCoresRejectEmptyName pins the shared empty-identifier
+// rejection in the user/role/policy/group get cores: an omitted member is
+// a client error on both planes, reported before any store access.
+func TestGetEntityCoresRejectEmptyName(t *testing.T) {
+	svc := &IAMService{}
+
+	cases := []struct {
+		name string
+		call func() error
+		want string
+	}{
+		{"user", func() error { _, err := svc.getUserCore(nil, ""); return err }, "Required parameter UserName is missing."},
+		{"role", func() error { _, err := svc.getRoleCore(nil, ""); return err }, "Required parameter RoleName is missing."},
+		{"policy", func() error { _, err := svc.getPolicyCore(nil, ""); return err }, "Required parameter PolicyArn is missing."},
+		{"group", func() error { _, err := svc.getGroupCore(nil, ""); return err }, "Required parameter GroupName is missing."},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.call()
+			if err == nil {
+				t.Fatal("expected a validation error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error %q does not contain %q", err.Error(), tc.want)
+			}
+		})
+	}
+}
+
+// TestPutPermissionsBoundaryCoresValidationOrder pins the member precedence
+// of the permissions-boundary operation cores: when a request omits both the
+// entity name and the boundary ARN, the name is reported first, and a
+// present name with an omitted boundary reports the boundary. Both checks
+// fire before any store access.
+func TestPutPermissionsBoundaryCoresValidationOrder(t *testing.T) {
+	svc := &IAMService{}
+
+	t.Run("role both omitted reports RoleName", func(t *testing.T) {
+		err := svc.putRolePermissionsBoundaryCore(nil, "", "")
+		if err == nil || !strings.Contains(err.Error(), "Required parameter RoleName is missing.") {
+			t.Fatalf("expected the RoleName validation error, got %v", err)
+		}
+	})
+	t.Run("role boundary omitted", func(t *testing.T) {
+		err := svc.putRolePermissionsBoundaryCore(nil, "ops", "")
+		if err == nil || !strings.Contains(err.Error(), "Required parameter PermissionsBoundary is missing.") {
+			t.Fatalf("expected the PermissionsBoundary validation error, got %v", err)
+		}
+	})
+	t.Run("user both omitted reports UserName", func(t *testing.T) {
+		err := svc.putUserPermissionsBoundaryCore(nil, "", "")
+		if err == nil || !strings.Contains(err.Error(), "Required parameter UserName is missing.") {
+			t.Fatalf("expected the UserName validation error, got %v", err)
+		}
+	})
+	t.Run("user boundary omitted", func(t *testing.T) {
+		err := svc.putUserPermissionsBoundaryCore(nil, "alice", "")
+		if err == nil || !strings.Contains(err.Error(), "Required parameter PermissionsBoundary is missing.") {
+			t.Fatalf("expected the PermissionsBoundary validation error, got %v", err)
+		}
+	})
+}
+
+// TestDeletePermissionsBoundaryCoresRejectEmptyName pins the empty-name
+// rejection in the permissions-boundary delete cores: it fires as a client
+// error before any store access.
+func TestDeletePermissionsBoundaryCoresRejectEmptyName(t *testing.T) {
+	svc := &IAMService{}
+
+	if err := svc.deleteRolePermissionsBoundaryCore(nil, ""); err == nil ||
+		!strings.Contains(err.Error(), "Required parameter RoleName is missing.") {
+		t.Fatalf("expected the RoleName validation error, got %v", err)
+	}
+	if err := svc.deleteUserPermissionsBoundaryCore(nil, ""); err == nil ||
+		!strings.Contains(err.Error(), "Required parameter UserName is missing.") {
+		t.Fatalf("expected the UserName validation error, got %v", err)
+	}
+}

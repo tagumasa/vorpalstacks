@@ -2,6 +2,7 @@ package s3
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,5 +66,54 @@ func TestS3Errors(t *testing.T) {
 		err := NewInvalidBucketNameError("invalid..bucket")
 		assert.Equal(t, "InvalidBucketName: The specified bucket invalid..bucket is not valid.", err.Error())
 		assert.Equal(t, http.StatusBadRequest, err.GetHTTPStatusCode())
+	})
+}
+
+// TestAdminObjectWriteCoresRejectEmptyMembers pins the empty-member
+// rejections in the admin object-write cores: bucket and key are required
+// on every write, DeleteObjects also requires a non-empty object list,
+// and CopyObject requires the copy source. All fire before any store
+// access.
+func TestAdminObjectWriteCoresRejectEmptyMembers(t *testing.T) {
+	svc := &S3Service{}
+
+	assertMsg := func(t *testing.T, err error, want string) {
+		t.Helper()
+		if err == nil {
+			t.Fatalf("expected %q, got nil", want)
+		}
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q does not contain %q", err.Error(), want)
+		}
+	}
+
+	t.Run("deleteObject", func(t *testing.T) {
+		_, err := svc.deleteObjectCore(nil, nil, AdminDeleteObjectInput{})
+		assertMsg(t, err, "bucket is required")
+		_, err = svc.deleteObjectCore(nil, nil, AdminDeleteObjectInput{Bucket: "b"})
+		assertMsg(t, err, "key is required")
+	})
+
+	t.Run("putObject", func(t *testing.T) {
+		_, err := svc.putObjectCore(nil, nil, nil, AdminPutObjectInput{})
+		assertMsg(t, err, "bucket is required")
+		_, err = svc.putObjectCore(nil, nil, nil, AdminPutObjectInput{Bucket: "b"})
+		assertMsg(t, err, "key is required")
+	})
+
+	t.Run("deleteObjects", func(t *testing.T) {
+		_, err := svc.deleteObjectsCore(nil, nil, AdminDeleteObjectsInput{})
+		assertMsg(t, err, "bucket is required")
+		_, err = svc.deleteObjectsCore(nil, nil, AdminDeleteObjectsInput{Bucket: "b"})
+		assertMsg(t, err, "no objects specified for deletion")
+	})
+
+	t.Run("copyObject", func(t *testing.T) {
+		_, err := svc.copyObjectCore(nil, nil, nil, AdminCopyObjectInput{})
+		assertMsg(t, err, "bucket is required")
+		_, err = svc.copyObjectCore(nil, nil, nil, AdminCopyObjectInput{Bucket: "b"})
+		assertMsg(t, err, "key is required")
+		_, err = svc.copyObjectCore(nil, nil, nil, AdminCopyObjectInput{Bucket: "b", Key: "k"})
+		assertMsg(t, err, "copy source is required")
 	})
 }

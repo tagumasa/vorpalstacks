@@ -2,12 +2,10 @@ package cloudfront
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -49,31 +47,19 @@ func (h *AdminHandler) CreateDistribution(ctx context.Context, req *connect.Requ
 	}
 
 	cfg := req.Msg.GetDistributionconfig()
-	if cfg == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("distributionconfig is required"))
-	}
-
-	originDomain := ""
-	originID := "default-origin"
-	if cfg.GetOrigins() != nil && len(cfg.GetOrigins().GetItems()) > 0 {
+	originDomain, originID := "", ""
+	if cfg != nil && cfg.GetOrigins() != nil && len(cfg.GetOrigins().GetItems()) > 0 {
 		firstOrigin := cfg.GetOrigins().GetItems()[0]
 		originDomain = firstOrigin.GetDomainname()
-		if firstOrigin.GetId() != "" {
-			originID = firstOrigin.GetId()
-		}
+		originID = firstOrigin.GetId()
 	}
 
-	// The caller reference is CloudFront's idempotency token; mint it from
-	// crypto/rand so concurrent creations cannot collide on a clock value.
-	callerRef := uuid.New().String()
-
 	result, err := h.service.createDistributionFromAdmin(ctx, stores, AdminCreateDistributionInput{
-		CallerReference: callerRef,
-		Comment:         cfg.GetComment(),
-		Enabled:         cfg.GetEnabled(),
-		OriginID:        originID,
-		OriginDomain:    originDomain,
-		ACMRegion:       defaults.GetRegionFromHeader(req.Header()),
+		Comment:      cfg.GetComment(),
+		Enabled:      cfg.GetEnabled(),
+		OriginID:     originID,
+		OriginDomain: originDomain,
+		ACMRegion:    defaults.GetRegionFromHeader(req.Header()),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -131,10 +117,6 @@ func (h *AdminHandler) DeleteDistribution(ctx context.Context, req *connect.Requ
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-
-	if req.Msg.Id == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
 	}
 
 	if err := h.service.deleteDistributionCore(ctx, stores, DeleteDistributionInput{

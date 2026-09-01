@@ -124,6 +124,9 @@ func (s *LambdaService) getFunctionForDryRunCore(stores *lambdaStore, functionNa
 // when in.Publish requested a publish; callers use it to answer with the
 // published version's configuration.
 func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFunctionCodeInput) (*lambdastore.Function, *lambdastore.Version, error) {
+	if in.FunctionName == "" {
+		return nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	functionName := in.FunctionName
 
 	for _, arch := range in.Architectures {
@@ -176,6 +179,9 @@ func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFu
 // handler. It performs all field validation, applies the update atomically,
 // and cleans up any running container so the next invoke creates a fresh one.
 func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, stores *lambdaStore, in *UpdateFunctionConfigurationInput) (*lambdastore.Function, error) {
+	if in.FunctionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	functionName := in.FunctionName
 
 	if in.Runtime != "" && !ValidateRuntime(in.Runtime) {

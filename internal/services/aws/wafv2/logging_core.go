@@ -6,17 +6,21 @@ import (
 )
 
 // LoggingConfigInput is the transport-agnostic input for
-// PutLoggingConfiguration. The logging filter travels raw because its wire
-// parse (which carries the filter-behavior validation) must run after the
-// scalar member validations, matching the original failure precedence.
+// PutLoggingConfiguration. LoggingConfigurationPresent records whether the
+// LoggingConfiguration member was present on the wire so the core can tell
+// a missing container member apart from a present one whose ResourceArn is
+// empty. The logging filter travels raw because its wire parse (which
+// carries the filter-behavior validation) must run after the scalar member
+// validations, matching the original failure precedence.
 type LoggingConfigInput struct {
-	ResourceArn              string
-	LogDestinationConfigs    []string
-	LogScope                 string
-	LogType                  string
-	ManagedByFirewallManager bool
-	RedactedFields           []interface{}
-	LoggingFilterRaw         interface{}
+	LoggingConfigurationPresent bool
+	ResourceArn                 string
+	LogDestinationConfigs       []string
+	LogScope                    string
+	LogType                     string
+	ManagedByFirewallManager    bool
+	RedactedFields              []interface{}
+	LoggingFilterRaw            interface{}
 }
 
 // putLoggingConfigurationCore is the single entry point for creating or
@@ -24,6 +28,9 @@ type LoggingConfigInput struct {
 // taken directly because the member validations precede the store
 // acquisition in the original failure precedence.
 func (s *WAFv2Service) putLoggingConfigurationCore(reqCtx *request.RequestContext, in LoggingConfigInput) (*wafstore.LoggingConfiguration, error) {
+	if !in.LoggingConfigurationPresent {
+		return nil, invalidParamError("LoggingConfiguration is required")
+	}
 	if in.ResourceArn == "" {
 		return nil, invalidParamError("ResourceArn is required")
 	}

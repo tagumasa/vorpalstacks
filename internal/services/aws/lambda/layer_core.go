@@ -221,6 +221,9 @@ func (s *LambdaService) listLayerVersionsCore(reqCtx *request.RequestContext, la
 // getLayerVersionByArnCore resolves a layer version by its full ARN and
 // also derives the unversioned layer ARN for the response.
 func (s *LambdaService) getLayerVersionByArnCore(stores *lambdaStore, layerVersionArn string) (*lambdastore.LayerVersion, string, error) {
+	if layerVersionArn == "" {
+		return nil, "", NewInvalidParameter("Arn", "Layer version ARN is required")
+	}
 	layerVersion, err := stores.Layers.GetVersionByArn(layerVersionArn)
 	if err != nil {
 		return nil, "", NewResourceNotFound("LayerVersion", layerVersionArn)

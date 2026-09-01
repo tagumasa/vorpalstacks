@@ -172,24 +172,13 @@ func (s *IAMService) ListUserTags(ctx context.Context, reqCtx *request.RequestCo
 // PermissionsBoundary is the ARN of a managed policy to use as the permissions boundary.
 func (s *IAMService) PutUserPermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
-
 	permissionsBoundary := request.GetStringParam(req.Parameters, "PermissionsBoundary")
-	if permissionsBoundary == "" {
-		return nil, NewValidationError("PermissionsBoundary")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.getUserCore(store, userName)
-	if err != nil {
-		return nil, err
-	}
-	if err := putUserPermissionsBoundaryCore(store, user, permissionsBoundary); err != nil {
+	if err := s.putUserPermissionsBoundaryCore(store, userName, permissionsBoundary); err != nil {
 		return nil, err
 	}
 	return response.EmptyResponse(), nil
@@ -199,9 +188,6 @@ func (s *IAMService) PutUserPermissionsBoundary(ctx context.Context, reqCtx *req
 // UserName is required.
 func (s *IAMService) DeleteUserPermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

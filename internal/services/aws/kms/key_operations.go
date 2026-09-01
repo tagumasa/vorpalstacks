@@ -170,9 +170,10 @@ func (s *KMSService) ScheduleKeyDeletion(ctx context.Context, reqCtx *request.Re
 	}
 
 	// PendingWindowInDays: AWS min 7, max 30, default 30. Use existence
-	// check to distinguish unset from explicit 0. Range validation is
-	// performed by scheduleKeyDeletionCore.
-	pendingWindowInDays := 30
+	// check to distinguish unset from explicit 0 — an explicit 0 stays 0
+	// and is rejected by the core range validation. Range validation and
+	// key resolution are performed by scheduleKeyDeletionCore.
+	pendingWindowInDays := defaultPendingWindowDays
 	if _, ok := req.Parameters["PendingWindowInDays"]; ok {
 		pendingWindowInDays = request.GetIntParam(req.Parameters, "PendingWindowInDays")
 	}
@@ -399,12 +400,6 @@ func (s *KMSService) ReplicateKey(ctx context.Context, reqCtx *request.RequestCo
 	}
 
 	replicaRegion := request.GetStringParam(req.Parameters, "ReplicaRegion")
-	if replicaRegion == "" {
-		return nil, NewValidationError("ReplicaRegion is required")
-	}
-	if err := validateReplicaRegion(replicaRegion); err != nil {
-		return nil, err
-	}
 
 	replicaKey, err := s.replicateKeyCore(stores, ReplicateKeyInput{
 		KeyID:         s.getKeyID(req.Parameters),

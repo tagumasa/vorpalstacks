@@ -59,9 +59,12 @@ func (s *IAMService) createGroupCore(store *iamstore.IAMStore, input *CreateGrou
 	return group, nil
 }
 
-// getGroupCore returns the IAM group with the given name.  Callers must
-// validate that groupName is non-empty before calling.
+// getGroupCore returns the IAM group with the given name; an empty name
+// is rejected as a validation error.
 func (s *IAMService) getGroupCore(store *iamstore.IAMStore, groupName string) (*iamstore.Group, error) {
+	if groupName == "" {
+		return nil, NewValidationError("GroupName")
+	}
 	group, err := store.Groups().Get(groupName)
 	if err != nil {
 		return nil, NewNoSuchGroupError(groupName)

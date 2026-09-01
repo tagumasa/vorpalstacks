@@ -13,9 +13,6 @@ import (
 // applies to the whole function).
 func resolveConcurrencyFunction(params map[string]interface{}) (string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
-	if functionNameRaw == "" {
-		return "", NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName := extractFunctionName(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return "", err

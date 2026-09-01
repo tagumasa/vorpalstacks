@@ -206,10 +206,6 @@ func (s *EC2Service) authorizeOrRevoke(reqCtx *request.RequestContext, req *requ
 			return nil, err
 		}
 	}
-	if len(rules) == 0 && len(ruleIDs) == 0 {
-		return nil, awserrors.NewMissingParameter("IpPermissions, the legacy rule parameters (IpProtocol, CidrIp, ...) or SecurityGroupRuleIds is required")
-	}
-
 	result, err := s.revokeSecurityGroupRulesCore(store, sg, rules, ruleIDs, isEgress)
 	if err != nil {
 		return nil, err

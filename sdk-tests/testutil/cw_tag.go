@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
@@ -117,6 +118,36 @@ func (tc *cloudwatchTestCtx) tagTests() []TestResult {
 		}
 		if tagResp.Tags[0].Value == nil || *tagResp.Tags[0].Value != "yes" {
 			return fmt.Errorf("expected Keep=yes, got %v", tagResp.Tags[0].Value)
+		}
+		return nil
+	}))
+
+	// Tag operations against an alarm that does not exist fail with
+	// ResourceNotFoundException, as the service model specifies.
+	results = append(results, tc.runner.RunTest("cloudwatch", "TagResource_NonExistentAlarm", func() error {
+		arn := fmt.Sprintf("arn:aws:cloudwatch:%s:%s:alarm:no-such-alarm-%d",
+			tc.runner.region, tc.runner.accountID, time.Now().UnixNano())
+		_, err := tc.client.TagResource(tc.ctx, &cloudwatch.TagResourceInput{
+			ResourceARN: aws.String(arn),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &cloudwatch.UntagResourceInput{
+			ResourceARN: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &cloudwatch.ListTagsForResourceInput{
+			ResourceARN: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

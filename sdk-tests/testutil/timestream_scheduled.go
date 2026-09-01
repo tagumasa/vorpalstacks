@@ -190,6 +190,36 @@ func (r *TestRunner) runTimestreamScheduledTests(tc *tsTestContext) []TestResult
 		return nil
 	}))
 
+	// Tag operations against a scheduled query that does not exist fail
+	// with ResourceNotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("timestream", "TagResource_NonExistentScheduledQuery", func() error {
+		arn := fmt.Sprintf("arn:aws:timestream:%s:%s:scheduled-query/no-such-query-%d",
+			tc.region, tc.accountID, time.Now().UnixNano())
+		_, err := tc.queryClient.TagResource(tc.ctx, &timestreamquery.TagResourceInput{
+			ResourceARN: aws.String(arn),
+			Tags: []tqtypes.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.queryClient.UntagResource(tc.ctx, &timestreamquery.UntagResourceInput{
+			ResourceARN: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.queryClient.ListTagsForResource(tc.ctx, &timestreamquery.ListTagsForResourceInput{
+			ResourceARN: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("timestream", "DeleteScheduledQuery", func() error {
 		_, err := tc.queryClient.DeleteScheduledQuery(tc.ctx, &timestreamquery.DeleteScheduledQueryInput{
 			ScheduledQueryArn: aws.String(sqARN),

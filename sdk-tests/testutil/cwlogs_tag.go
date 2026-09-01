@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
@@ -177,6 +178,34 @@ func (tc *cwlogsTestCtx) tagTests() []TestResult {
 		}
 		if tagResp.Tags["CreatedBy"] != "sdk-test" {
 			return fmt.Errorf("CreatedBy mismatch")
+		}
+		return nil
+	}))
+
+	// Tag operations against a log group that does not exist fail with
+	// ResourceNotFoundException, as the service model specifies.
+	results = append(results, tc.runner.RunTest("logs", "TagResource_NonExistentLogGroup", func() error {
+		resourceARN := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:/no-such-group-%d",
+			tc.region, tc.runner.AccountID(), time.Now().UnixNano())
+		_, err := tc.client.TagResource(tc.ctx, &cloudwatchlogs.TagResourceInput{
+			ResourceArn: &resourceARN,
+			Tags:        map[string]string{"Environment": "test"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &cloudwatchlogs.UntagResourceInput{
+			ResourceArn: &resourceARN,
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &cloudwatchlogs.ListTagsForResourceInput{
+			ResourceArn: &resourceARN,
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

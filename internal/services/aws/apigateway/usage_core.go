@@ -12,15 +12,19 @@ import (
 )
 
 // ApiKeyInput is the transport-agnostic input for creating an API key.
+// GenerateDistinctId mirrors the AWS member semantics: nil means true. When
+// false the caller-supplied Value becomes the key id and must be 20-128
+// characters; when true the store mints the id and the value is discarded.
 type ApiKeyInput struct {
-	Name        string
-	Description string
-	Enabled     bool
-	CustomerId  string
-	Value       string
-	Id          string
-	StageKeys   []string
-	Tags        []types.Tag
+	Name               string
+	Description        string
+	Enabled            bool
+	CustomerId         string
+	Value              string
+	Id                 string
+	GenerateDistinctId *bool
+	StageKeys          []string
+	Tags               []types.Tag
 }
 
 // UsagePlanInput is the transport-agnostic input for creating a usage plan.
@@ -61,11 +65,32 @@ type UsagePlanKeyInput struct {
 	KeyType string
 }
 
-// createApiKeyCore persists an API key. The handler is responsible for
-// transport-specific name validation (e.g. the admin handler rejects an
-// empty name up-front, while the data-plane path accepts it as before);
-// the core here preserves the store-level behaviour.
+// createApiKeyCore persists an API key. The name is optional in the API
+// Gateway model, so both planes accept an empty name; the core validates
+// the stageKey entries first and then the generateDistinctId/value
+// pairing, preserving the data-plane failure precedence.
 func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKeyInput) (*apigateway.ApiKey, error) {
+	for _, sk := range in.StageKeys {
+		if !validateStageKey(sk) {
+			return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + sk)
+		}
+	}
+	generateDistinctId := true
+	if in.GenerateDistinctId != nil {
+		generateDistinctId = *in.GenerateDistinctId
+	}
+	if !generateDistinctId {
+		if in.Value == "" {
+			return nil, NewBadRequestException("value is required when generateDistinctId is false")
+		}
+		if len(in.Value) < 20 || len(in.Value) > 128 {
+			return nil, NewBadRequestException("value must be between 20 and 128 characters")
+		}
+		in.Id = in.Value
+	} else {
+		in.Value = ""
+	}
+
 	apiKey := &apigateway.ApiKey{
 		Name:        in.Name,
 		Description: in.Description,
@@ -177,6 +202,9 @@ func (s *APIGatewayService) updateApiKeyCore(
 
 // createUsagePlanCore persists a usage plan.
 func (s *APIGatewayService) createUsagePlanCore(stores *apiGatewayStores, in *UsagePlanInput) (*apigateway.UsagePlan, error) {
+	if in.Quota != nil && in.Quota.Period == "" {
+		return nil, NewBadRequestException("quota period is required when quota is set")
+	}
 	if in.Name == "" {
 		return nil, NewBadRequestException("name is required")
 	}

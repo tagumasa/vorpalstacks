@@ -3,7 +3,6 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/google/uuid"
 
@@ -95,38 +94,9 @@ func (s *EventsService) TestEventPattern(ctx context.Context, reqCtx *request.Re
 	patternStr := request.GetStringParam(req.Parameters, "EventPattern")
 	eventStr := request.GetStringParam(req.Parameters, "Event")
 
-	if patternStr == "" {
-		return nil, awserrors.NewValidationException("Parameter EventPattern is required")
-	}
-	if !validateEventPatternLength(patternStr) {
-		return nil, awserrors.NewValidationException("EventPattern must be at most 4096 characters")
-	}
-	if eventStr == "" {
-		return nil, awserrors.NewValidationException("Parameter Event is required")
-	}
-
-	var patternMap, eventMap map[string]interface{}
-	if err := json.Unmarshal([]byte(patternStr), &patternMap); err != nil {
-		return nil, awserrors.NewInvalidEventPatternException(fmt.Sprintf("EventPattern is not valid JSON: %s", err))
-	}
-	if err := json.Unmarshal([]byte(eventStr), &eventMap); err != nil {
-		return nil, awserrors.NewValidationException(fmt.Sprintf("Event is not valid JSON: %s", err))
-	}
-
-	result := true
-	for key, patternValue := range patternMap {
-		eventValue, exists := eventMap[key]
-		if !exists {
-			if isExistsFalsePattern(patternValue) {
-				continue
-			}
-			result = false
-			break
-		}
-		if !s.matchValue(eventValue, patternValue) {
-			result = false
-			break
-		}
+	result, err := s.testEventPatternCore(patternStr, eventStr)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{

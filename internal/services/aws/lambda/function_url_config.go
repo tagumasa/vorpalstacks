@@ -66,10 +66,6 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 // This removes the dedicated HTTP(S) endpoint associated with the function.
 func (s *LambdaService) DeleteFunctionUrlConfig(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

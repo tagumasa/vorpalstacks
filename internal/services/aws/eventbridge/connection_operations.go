@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -257,49 +256,6 @@ func getStringField(m map[string]interface{}, key string) string {
 		return v
 	}
 	return ""
-}
-
-// validateAuthParameters enforces that the supplied AuthParameters shape
-// matches the declared AuthorizationType. AWS rejects the API call with a
-// ValidationException when the wrong sub-object is populated or required
-// credentials are missing.
-func validateAuthParameters(authType string, p *eventsstore.AuthParameters) error {
-	if p == nil {
-		return awserrors.NewValidationException("AuthParameters are required for AuthorizationType " + authType)
-	}
-	switch authType {
-	case "BASIC":
-		if p.BasicAuthParameters == nil {
-			return awserrors.NewValidationException("BasicAuthParameters are required when AuthorizationType is BASIC")
-		}
-		if p.BasicAuthParameters.Username == "" || p.BasicAuthParameters.Password == "" {
-			return awserrors.NewValidationException("BasicAuthParameters.Username and BasicAuthParameters.Password are required")
-		}
-	case "OAUTH_CLIENT_CREDENTIALS":
-		if p.OAuthParameters == nil {
-			return awserrors.NewValidationException("OAuthParameters are required when AuthorizationType is OAUTH_CLIENT_CREDENTIALS")
-		}
-		if p.OAuthParameters.ClientParameters == nil {
-			return awserrors.NewValidationException("OAuthParameters.ClientParameters are required")
-		}
-		if p.OAuthParameters.ClientParameters.ClientID == "" || p.OAuthParameters.ClientParameters.ClientSecret == "" {
-			return awserrors.NewValidationException("ClientParameters.ClientID and ClientParameters.ClientSecret are required")
-		}
-		if p.OAuthParameters.AuthorizationEndpoint == "" {
-			return awserrors.NewValidationException("OAuthParameters.AuthorizationEndpoint is required")
-		}
-		if p.OAuthParameters.HttpMethod == "" {
-			return awserrors.NewValidationException("OAuthParameters.HttpMethod is required")
-		}
-	case "API_KEY":
-		if p.ApiKeyAuthParameters == nil {
-			return awserrors.NewValidationException("ApiKeyAuthParameters are required when AuthorizationType is API_KEY")
-		}
-		if p.ApiKeyAuthParameters.ApiKeyName == "" || p.ApiKeyAuthParameters.ApiKeyValue == "" {
-			return awserrors.NewValidationException("ApiKeyAuthParameters.ApiKeyName and ApiKeyAuthParameters.ApiKeyValue are required")
-		}
-	}
-	return nil
 }
 
 // parseCreateConnectionInput reads the CreateConnection wire request into

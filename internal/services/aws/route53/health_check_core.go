@@ -74,6 +74,9 @@ func getHealthCheckCore(stores *route53store.Route53Stores, id string) (*route53
 // applies the CallerReference retry semantics, assigns the health check ID
 // and persists it.
 func (s *Route53Service) createHealthCheckCore(stores *route53store.Route53Stores, input CreateHealthCheckInput) (*route53store.HealthCheck, error) {
+	if input.Config == nil {
+		return nil, awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
+	}
 	// CallerReference is a required member of CreateHealthCheckRequest; AWS
 	// rejects an omitted member rather than synthesising an idempotency
 	// token for the caller.

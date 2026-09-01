@@ -224,6 +224,20 @@ func (s *KMSService) getKeyID(params map[string]interface{}) string {
 	return keyID
 }
 
+// getDryRunParam reports whether the caller requested a dry run. The wire
+// accepts both a boolean and the string "true", matching checkKMSDryRun.
+func getDryRunParam(params map[string]interface{}) bool {
+	if v, ok := params["DryRun"]; ok {
+		switch val := v.(type) {
+		case string:
+			return val == "true"
+		case bool:
+			return val
+		}
+	}
+	return false
+}
+
 // unresolvedCallerPrincipal is returned by resolveCallerPrincipal when the
 // caller's access key cannot be mapped to an IAM user. Returning the account
 // root ARN here (the previous behaviour) would silently grant root privileges

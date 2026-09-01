@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
@@ -548,6 +549,35 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 		}
 		if aws.ToString(out.DayOfMonth) != "15" {
 			return fmt.Errorf("expected dayOfMonth=15 echoed, got %v", out.DayOfMonth)
+		}
+		return nil
+	}))
+
+	// Tag operations against a thing that does not exist fail with
+	// ResourceNotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("iot", "TagResource_NonExistentResource", func() error {
+		arn := fmt.Sprintf("arn:aws:iot:%s:%s:thing/no-such-thing-%d", tc.region, tc.accountID, time.Now().UnixNano())
+		_, err := tc.client.TagResource(tc.ctx, &iot.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags: []iottypes.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &iot.UntagResourceInput{
+			ResourceArn: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

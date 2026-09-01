@@ -18,6 +18,9 @@ type ConcurrencyInput struct {
 // putFunctionConcurrencyCore sets the reserved concurrent execution limit
 // for a function.
 func (s *LambdaService) putFunctionConcurrencyCore(reqCtx *request.RequestContext, in *ConcurrencyInput) (int64, error) {
+	if in.FunctionName == "" {
+		return 0, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	if in.Reserved < 0 {
 		return 0, NewInvalidParameter("ReservedConcurrentExecutions", "Must be non-negative. Use DeleteFunctionConcurrency to remove concurrency limits.")
 	}
@@ -39,6 +42,9 @@ func (s *LambdaService) putFunctionConcurrencyCore(reqCtx *request.RequestContex
 // getFunctionConcurrencyCore retrieves the reserved concurrent execution
 // limit for a function.
 func (s *LambdaService) getFunctionConcurrencyCore(stores *lambdaStore, functionName string) (int64, error) {
+	if functionName == "" {
+		return 0, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	concurrency, err := stores.Functions.GetReservedConcurrency(functionName)
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
@@ -59,6 +65,9 @@ func (s *LambdaService) getFunctionConcurrencyCore(stores *lambdaStore, function
 // deleteFunctionConcurrencyCore removes the reserved concurrent execution
 // limit from a function.
 func (s *LambdaService) deleteFunctionConcurrencyCore(stores *lambdaStore, functionName string) error {
+	if functionName == "" {
+		return NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	if err := stores.Functions.SetReservedConcurrency(functionName, nil); err != nil {
 		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return ErrResourceNotFound

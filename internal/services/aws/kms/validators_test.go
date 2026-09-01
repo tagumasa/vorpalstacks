@@ -153,3 +153,41 @@ func TestAlgorithmContractErrors(t *testing.T) {
 		t.Errorf("SourceEncryptionAlgorithm fell back to the EncryptionAlgorithm member: %q %v", alg, err)
 	}
 }
+
+// TestScheduleKeyDeletionCoreValidationOrder pins the validation precedence
+// of scheduleKeyDeletionCore: the empty-identifier rejection fires first,
+// and key resolution precedes the pending-window range check — an
+// identifier that fails resolution reports the resolution error even when
+// the window is also out of range, so an unknown key surfaces NotFound on
+// both planes. The resolution-stage cases use an over-length identifier:
+// the length validator runs inside resolveKeyID before any store access,
+// which keeps the nil-store calls hermetic.
+func TestScheduleKeyDeletionCoreValidationOrder(t *testing.T) {
+	svc := &KMSService{}
+
+	_, _, err := svc.scheduleKeyDeletionCore(nil, "", 30)
+	if err == nil {
+		t.Fatal("expected a validation error for an empty key id, got nil")
+	}
+	if !strings.Contains(err.Error(), "KeyId is required") {
+		t.Fatalf("error %q does not contain the KeyId-required message", err.Error())
+	}
+
+	// An empty identifier outranks an out-of-range window.
+	_, _, err = svc.scheduleKeyDeletionCore(nil, "", 5)
+	if err == nil {
+		t.Fatal("expected the KeyId validation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "KeyId is required") {
+		t.Fatalf("error %q does not contain the KeyId-required message", err.Error())
+	}
+
+	// A resolution-stage failure outranks an out-of-range window.
+	_, _, err = svc.scheduleKeyDeletionCore(nil, strings.Repeat("a", 2049), 5)
+	if err == nil {
+		t.Fatal("expected the key-id length validation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "KeyId length 2049 does not fit range 1-2048") {
+		t.Fatalf("error %q does not contain the key-id length message", err.Error())
+	}
+}

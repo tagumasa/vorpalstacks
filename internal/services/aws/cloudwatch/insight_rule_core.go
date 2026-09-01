@@ -159,7 +159,10 @@ func (s *CloudWatchService) listManagedInsightRulesCore(stores *cloudwatchStores
 }
 
 // putManagedInsightRulesCore creates managed insight rules.
-func (s *CloudWatchService) putManagedInsightRulesCore(stores *cloudwatchStores, input *PutManagedInsightRulesInput) []map[string]interface{} {
+func (s *CloudWatchService) putManagedInsightRulesCore(stores *cloudwatchStores, input *PutManagedInsightRulesInput) ([]map[string]interface{}, error) {
+	if len(input.ManagedRules) == 0 {
+		return nil, awserrors.NewMissingParameter("ManagedRules is required")
+	}
 	var failures []map[string]interface{}
 
 	for _, mr := range input.ManagedRules {
@@ -191,5 +194,5 @@ func (s *CloudWatchService) putManagedInsightRulesCore(stores *cloudwatchStores,
 			})
 		}
 	}
-	return failures
+	return failures, nil
 }

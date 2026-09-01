@@ -2,7 +2,6 @@ package cloudwatch
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -84,10 +83,6 @@ func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[
 // PutMetricAlarm creates or updates a CloudWatch metric alarm via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[pb.PutMetricAlarmInput]) (*connect.Response[pbcommon.Empty], error) {
-	if req.Msg.Alarmname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmName is required"))
-	}
-
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -138,10 +133,6 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 // DeleteAlarms deletes one or more CloudWatch alarms via the admin console
 // gRPC-Web interface.
 func (h *AdminHandler) DeleteAlarms(ctx context.Context, req *connect.Request[pb.DeleteAlarmsInput]) (*connect.Response[pbcommon.Empty], error) {
-	if len(req.Msg.Alarmnames) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("AlarmNames is required"))
-	}
-
 	stores, err := h.getStoreFromHeaders(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

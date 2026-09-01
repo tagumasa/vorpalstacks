@@ -122,10 +122,6 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 	}
 
 	statementId := request.GetStringParam(req.Parameters, "StatementId")
-	if statementId == "" {
-		return nil, NewInvalidParameter("StatementId", "Statement ID is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -140,10 +136,6 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 // GetPolicy returns the resource-based policy for a Lambda function.
 func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
 	functionName = extractFunctionName(functionName)
 
 	store, err := s.store(reqCtx)

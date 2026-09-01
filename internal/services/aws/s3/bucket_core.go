@@ -992,6 +992,12 @@ func (s *S3Service) decryptObjectData(encryptedData []byte, sseMeta *s3store.SSE
 // putObjectCore validates the upload, determines encryption settings, and
 // stores the object.
 func (s *S3Service) putObjectCore(ctx context.Context, bucketStore s3store.BucketStoreInterface, objectStore s3store.ObjectStoreInterface, in AdminPutObjectInput) (*AdminPutObjectResult, error) {
+	if in.Bucket == "" {
+		return nil, NewInvalidArgumentError("bucket is required")
+	}
+	if in.Key == "" {
+		return nil, NewInvalidArgumentError("key is required")
+	}
 	streamResult, err := s.putObjectStreamCore(ctx, bucketStore, objectStore, PutObjectStreamInput{
 		Body:          bytes.NewReader(in.Body),
 		ContentLength: int64(len(in.Body)),
@@ -1147,6 +1153,12 @@ func (s *S3Service) putObjectStreamCore(ctx context.Context, bucketStore s3store
 // deleteObjectCore deletes a single object. In a versioned bucket, deleting
 // without a specific VersionID creates a delete marker.
 func (s *S3Service) deleteObjectCore(ctx context.Context, objectStore s3store.ObjectStoreInterface, in AdminDeleteObjectInput) (*AdminDeleteObjectResult, error) {
+	if in.Bucket == "" {
+		return nil, NewInvalidArgumentError("bucket is required")
+	}
+	if in.Key == "" {
+		return nil, NewInvalidArgumentError("key is required")
+	}
 	result, err := objectStore.DeleteWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
 		return nil, err
@@ -1162,6 +1174,12 @@ func (s *S3Service) deleteObjectCore(ctx context.Context, objectStore s3store.Ob
 
 // deleteObjectsCore deletes multiple objects, collecting per-object results.
 func (s *S3Service) deleteObjectsCore(ctx context.Context, objectStore s3store.ObjectStoreInterface, in AdminDeleteObjectsInput) (*AdminDeleteObjectsResult, error) {
+	if in.Bucket == "" {
+		return nil, NewInvalidArgumentError("bucket is required")
+	}
+	if len(in.Objects) == 0 {
+		return nil, NewInvalidArgumentError("no objects specified for deletion")
+	}
 	result := &AdminDeleteObjectsResult{}
 
 	for _, obj := range in.Objects {
@@ -1213,6 +1231,15 @@ func (s *S3Service) deleteObjectsCore(ctx context.Context, objectStore s3store.O
 
 // copyObjectCore copies an object, handling encryption for the destination.
 func (s *S3Service) copyObjectCore(ctx context.Context, bucketStore s3store.BucketStoreInterface, objectStore s3store.ObjectStoreInterface, in AdminCopyObjectInput) (*AdminCopyObjectResult, error) {
+	if in.Bucket == "" {
+		return nil, NewInvalidArgumentError("bucket is required")
+	}
+	if in.Key == "" {
+		return nil, NewInvalidArgumentError("key is required")
+	}
+	if in.CopySource == "" {
+		return nil, NewInvalidArgumentError("copy source is required")
+	}
 	streamResult, err := s.copyObjectStreamCore(ctx, bucketStore, objectStore, CopyObjectStreamInput{
 		Bucket:       in.Bucket,
 		Key:          in.Key,

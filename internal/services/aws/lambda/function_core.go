@@ -86,6 +86,9 @@ type ListFunctionsInput struct {
 // non-nil only when in.Publish requested an initial publish; callers use
 // it to answer with the published version's configuration.
 func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFunctionInput) (*lambdastore.Function, *lambdastore.Version, error) {
+	if in.FunctionName == "" {
+		return nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	if err := validateFunctionName(in.FunctionName); err != nil {
 		return nil, nil, err
 	}
@@ -224,6 +227,9 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 // handles both full-function and version-specific deletion, including
 // event-source-mapping existence checks and container cleanup.
 func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaStore, in *DeleteFunctionInput) error {
+	if in.FunctionName == "" {
+		return NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	functionName := in.FunctionName
 	qualifier := in.Qualifier
 

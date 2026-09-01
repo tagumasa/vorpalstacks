@@ -2,7 +2,6 @@ package apigateway
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -16,9 +15,6 @@ import (
 
 // CreateApiKey creates a new API key.
 func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb.CreateApiKeyRequest]) (*connect.Response[pb.ApiKey], error) {
-	if req.Msg.Name == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
 	stores, err := h.getStores(req.Header())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -30,43 +26,21 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 	}
 
 	in := &ApiKeyInput{
-		Name:        req.Msg.Name,
-		Description: req.Msg.Description,
-		CustomerId:  req.Msg.Customerid,
-		Value:       req.Msg.Value,
-		Enabled:     enabled,
+		Name:               req.Msg.Name,
+		Description:        req.Msg.Description,
+		CustomerId:         req.Msg.Customerid,
+		Value:              req.Msg.Value,
+		Enabled:            enabled,
+		GenerateDistinctId: req.Msg.Generatedistinctid,
 	}
 
 	if len(req.Msg.Tags) > 0 {
 		in.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
-	generateDistinctId := true
-	if req.Msg.Generatedistinctid != nil {
-		generateDistinctId = *req.Msg.Generatedistinctid
-	}
-	if !generateDistinctId {
-		if in.Value == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value is required when generateDistinctId is false"))
-		}
-		if len(in.Value) < 20 || len(in.Value) > 128 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("value must be between 20 and 128 characters"))
-		}
-	} else {
-		// The data-plane path drops the caller-supplied value when
-		// generateDistinctId is true. Mirror that to keep behaviour
-		// identical to the previous admin implementation.
-		in.Value = ""
-	}
-
 	for _, sk := range req.Msg.Stagekeys {
 		if sk != nil {
-			stageKey := sk.Restapiid + "/" + sk.Stagename
-			if !validateStageKey(stageKey) {
-				return nil, connect.NewError(connect.CodeInvalidArgument,
-					fmt.Errorf("invalid stageKey format, expected restApiId/stageName: %s", stageKey))
-			}
-			in.StageKeys = append(in.StageKeys, stageKey)
+			in.StageKeys = append(in.StageKeys, sk.Restapiid+"/"+sk.Stagename)
 		}
 	}
 

@@ -472,6 +472,14 @@ func (s *TimestreamQueryService) listTagsForResourceCore(ctx context.Context, st
 		resourceKey = cfg.ResourceKey(rawKey)
 	}
 
+	// The Core mirrors the shared HandleList flow, so it carries the same
+	// pre-list resource validation instead of bypassing it.
+	if cfg.ValidateResource != nil {
+		if err := cfg.ValidateResource(ctx, resourceKey); err != nil {
+			return nil, err
+		}
+	}
+
 	if cfg.ListFunc == nil {
 		return nil, ErrInternalServer
 	}
@@ -603,6 +611,41 @@ func (s *TimestreamQueryService) tagHandlerConfig(st *tsQueryStores) tagutil.Tag
 			CaseInsensitiveRes: true,
 		},
 		ResourceKey: func(rawKey string) string { return rawKey },
+		ValidateResource: func(_ context.Context, resourceKey string) error {
+			// Timestream Query tags scheduled queries plus the shared
+			// database/table namespace; every kind resolves its resource
+			// first so a tag against a nonexistent resource fails with the
+			// modelled ResourceNotFoundException.
+			if name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceKey); name != "" {
+				if _, err := st.scheduledQueryStore.GetScheduledQuery(name); err != nil {
+					if err == tsstore.ErrScheduledQueryNotFound {
+						return ErrResourceNotFound
+					}
+					return ErrInternalServer
+				}
+				return nil
+			}
+			database := st.arnBuilder.Timestream().ParseDatabaseName(resourceKey)
+			if database == "" {
+				return ErrResourceNotFound
+			}
+			if table := st.arnBuilder.Timestream().ParseTableName(resourceKey); table != "" {
+				if _, err := st.tableStore.GetTable(database, table); err != nil {
+					if err == tsstore.ErrTableNotFound {
+						return ErrResourceNotFound
+					}
+					return ErrInternalServer
+				}
+				return nil
+			}
+			if _, err := st.dbStore.GetDatabase(database); err != nil {
+				if err == tsstore.ErrDatabaseNotFound {
+					return ErrResourceNotFound
+				}
+				return ErrInternalServer
+			}
+			return nil
+		},
 		TagFunc: func(ctx context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			return dispatch(ctx, resourceKey, func(ctx context.Context, resourceARN string) error {
 				name := st.arnBuilder.Timestream().ParseScheduledQueryName(resourceARN)

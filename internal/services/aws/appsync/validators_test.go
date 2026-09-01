@@ -1,6 +1,7 @@
 package appsync
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -78,5 +79,59 @@ func TestParsePaginationOptionsTokenPattern(t *testing.T) {
 		if _, err := parsePaginationOptions(mkReq(bad)); err == nil {
 			t.Errorf("token %q accepted", bad)
 		}
+	}
+}
+
+// TestEvaluateCodeCoreValidationOrder pins the EvaluateCode failure
+// precedence: each required member's emptiness check is interleaved with
+// that member's content validation (code, then context, then runtime), so
+// a dual-invalid request reports the first member's failure.
+func TestEvaluateCodeCoreValidationOrder(t *testing.T) {
+	overlong := strings.Repeat("a", 32769)
+
+	cases := []struct {
+		name    string
+		in      EvaluateCodeInput
+		wantMsg string
+	}{
+		{
+			name:    "code content error wins over a missing runtime",
+			in:      EvaluateCodeInput{Code: overlong, Context: json.RawMessage(`{"k":"v"}`)},
+			wantMsg: "code must be between 1 and 32768 characters",
+		},
+		{
+			name:    "context content error wins over a missing runtime",
+			in:      EvaluateCodeInput{Code: "export function request(ctx) { return {} }", Context: json.RawMessage(`x`)},
+			wantMsg: "context must be between 2 and 28000 characters",
+		},
+		{
+			name:    "missing code is reported first",
+			in:      EvaluateCodeInput{Context: json.RawMessage(`{"k":"v"}`), RuntimeName: "APPSYNC_JS"},
+			wantMsg: "code is required",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := evaluateCodeCore(&tc.in)
+			if err == nil {
+				t.Fatal("expected a validation error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.wantMsg) {
+				t.Fatalf("error %q does not contain %q", err.Error(), tc.wantMsg)
+			}
+		})
+	}
+}
+
+// TestEvaluateMappingTemplateCoreValidationOrder pins the
+// EvaluateMappingTemplate failure precedence: the context member's
+// emptiness and content checks run before the template member's.
+func TestEvaluateMappingTemplateCoreValidationOrder(t *testing.T) {
+	_, err := evaluateMappingTemplateCore(&EvaluateMappingTemplateInput{Context: "x", Template: ""})
+	if err == nil {
+		t.Fatal("expected a validation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "context must be between 2 and 28000 characters") {
+		t.Fatalf("error %q does not contain the context length message", err.Error())
 	}
 }

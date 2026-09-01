@@ -220,6 +220,34 @@ func (s *NeptuneGraphService) getGraphSummaryCore(store *ngstore.NeptuneGraphSto
 	return &GetGraphSummaryResult{Summary: summary, StatsTime: now}, nil
 }
 
+// executeQueryCore resolves the target graph's engine entry and runs the
+// query body through the shared execution path. It is the single engine
+// entry acquisition path for the HTTP plane, the admin console, and the
+// service-level ExecuteQueryOnGraph entry: acquiring the engine reference,
+// pinning the entry against shutdown (wg) and readers (RLock), then handing
+// the parsed request to executeCypherQuery.
+func (s *NeptuneGraphService) executeQueryCore(ctx context.Context, store *ngstore.NeptuneGraphStore, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	graphID := resolveGraphIdentifier(req.Parameters)
+	if graphID == "" {
+		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
+	}
+
+	s.enginesMu.Lock()
+	entry, ok := s.activeEngines[graphID]
+	if !ok || entry.stopped {
+		s.enginesMu.Unlock()
+		return nil, newValidationException("UNSUPPORTED_OPERATION", "graph is not available")
+	}
+	entry.wg.Add(1)
+	s.enginesMu.Unlock()
+	defer entry.wg.Done()
+
+	entry.mu.RLock()
+	defer entry.mu.RUnlock()
+
+	return executeCypherQuery(ctx, s, reqCtx, req, graphID, entry, store)
+}
+
 // executeCypherQuery handles the full ExecuteQuery flow: parse, dispatch,
 // track query state, and return results.
 func executeCypherQuery(ctx context.Context, s *NeptuneGraphService, reqCtx *request.RequestContext, req *request.ParsedRequest, graphID string, entry *engineEntry, store *ngstore.NeptuneGraphStore) (interface{}, error) {

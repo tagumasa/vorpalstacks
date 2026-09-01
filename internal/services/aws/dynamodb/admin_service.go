@@ -164,6 +164,9 @@ func protoAttrDefsToStore(pbADs []*pb.AttributeDefinition) []*dbstore.AttributeD
 
 // adminGetItem retrieves a single item by primary key for the admin console.
 func (s *DynamoDBService) adminGetItem(ctx context.Context, region, tableName string, pbKey map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -205,6 +208,9 @@ type adminScanResult struct {
 // access are shared with any other Core caller; no admin code path
 // touches the store layer directly.
 func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbStartKey map[string]*pb.AttributeValue) (*adminScanResult, error) {
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -252,6 +258,9 @@ func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbSta
 // It applies all side effects: stream capture, Kinesis destinations, and
 // global table replication — identical to the HTTP API path.
 func (s *DynamoDBService) adminPutItem(ctx context.Context, region, tableName string, pbItem map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, err
@@ -291,6 +300,9 @@ func (s *DynamoDBService) adminPutItem(ctx context.Context, region, tableName st
 // It applies all side effects: stream capture, Kinesis destinations, and
 // global table replication — identical to the HTTP API path.
 func (s *DynamoDBService) adminDeleteItem(ctx context.Context, region, tableName string, pbKey map[string]*pb.AttributeValue) error {
+	if tableName == "" {
+		return ErrInvalidParameter
+	}
 	store, err := s.GetCachedStoreForRegion(region)
 	if err != nil {
 		return err

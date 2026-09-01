@@ -47,9 +47,6 @@ func (s *IAMService) CreatePolicy(ctx context.Context, reqCtx *request.RequestCo
 // Returns an error if the policy does not exist.
 func (s *IAMService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

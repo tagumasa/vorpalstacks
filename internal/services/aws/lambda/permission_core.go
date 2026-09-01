@@ -84,6 +84,9 @@ func (s *LambdaService) addPermissionCore(stores *lambdaStore, function *lambdas
 // removePermissionCore removes a permission statement from a function's
 // resource-based policy.
 func (s *LambdaService) removePermissionCore(stores *lambdaStore, function *lambdastore.Function, statementId string) error {
+	if statementId == "" {
+		return NewInvalidParameter("StatementId", "Statement ID is required")
+	}
 	if err := stores.Functions.RemovePolicy(function.FunctionName, statementId); err != nil {
 		if errors.Is(err, lambdastore.ErrPolicyNotFound) {
 			return NewResourceNotFound("Statement", statementId)
@@ -96,6 +99,9 @@ func (s *LambdaService) removePermissionCore(stores *lambdaStore, function *lamb
 // getPolicyCore retrieves a function's resource-based policy statements
 // together with the function's current RevisionId.
 func (s *LambdaService) getPolicyCore(stores *lambdaStore, functionName string) (policies []lambdastore.FunctionPolicy, revisionId string, err error) {
+	if functionName == "" {
+		return nil, "", NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	policies, err = stores.Functions.GetPolicy(functionName)
 	if err != nil {
 		return nil, "", ErrResourceNotFound

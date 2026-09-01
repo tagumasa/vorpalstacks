@@ -16,10 +16,10 @@ package aws
 // over-approximate: a helper pulled in by a name collision can only add
 // findings, never hide one.
 //
-// Until every service has been swept onto Core functions, known violations
-// are held in the ratchet allowlist (handler_guard_allowlist_test.go). The
-// allowlist only ever shrinks: a service's entries are deleted when its wave
-// completes, and adding or re-adding an entry is prohibited.
+// The sweep is complete: the guard is zero-tolerance. Any store call in a
+// handler closure fails the test outright; there is no allowlist and
+// reintroducing one is prohibited — new or edited handlers must be
+// Core-routed from the start.
 
 import (
 	"fmt"
@@ -96,21 +96,7 @@ func TestHandlerCoreGuard(t *testing.T) {
 		actual[v.key] = v
 	}
 
-	var missing, stale []string
-	for key := range actual {
-		if _, ok := guardAllowlist[key]; !ok {
-			missing = append(missing, key)
-		}
-	}
-	for key := range guardAllowlist {
-		if _, ok := actual[key]; !ok {
-			stale = append(stale, key)
-		}
-	}
-	sort.Strings(missing)
-	sort.Strings(stale)
-
-	if len(missing) == 0 && len(stale) == 0 {
+	if len(actual) == 0 {
 		handlers := 0
 		for _, p := range pkgs {
 			for _, fis := range p.byName {
@@ -121,18 +107,19 @@ func TestHandlerCoreGuard(t *testing.T) {
 				}
 			}
 		}
-		t.Logf("handler Core guard: %d packages, %d handler entries, %d allowlisted violations (ratchet green)", len(pkgs), handlers, len(actual))
+		t.Logf("handler Core guard: %d packages, %d handler entries, 0 violations", len(pkgs), handlers)
 		return
 	}
 
-	for _, key := range missing {
+	keys := make([]string, 0, len(actual))
+	for key := range actual {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
 		fmt.Printf("GUARD-VIOLATION %s :: %s\n", key, actual[key].detail)
 	}
-	for _, key := range stale {
-		fmt.Printf("GUARD-STALE %s\n", key)
-	}
-	t.Fatalf("handler Core guard: %d unallowlisted handler violations, %d stale allowlist entries (of %d actual violations); see GUARD-VIOLATION/GUARD-STALE lines above",
-		len(missing), len(stale), len(actual))
+	t.Fatalf("handler Core guard: %d handler violations; see GUARD-VIOLATION lines above", len(actual))
 }
 
 // loadStoreTypeNames parses the store tree and indexes declared type names

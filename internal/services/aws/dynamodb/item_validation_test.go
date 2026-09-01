@@ -132,3 +132,24 @@ func TestUpdateExpressionStrictness(t *testing.T) {
 	assert.Contains(t, updated, "gsik")
 	assert.NotContains(t, rmAttrs, "gsik")
 }
+
+// TestAdminItemCoresRejectEmptyTableName pins the empty-table rejection
+// in the admin item cores: an omitted TableName is a client error
+// (ValidationException) reported before any store or table lookup, so
+// the console does not surface a table-not-found for it.
+func TestAdminItemCoresRejectEmptyTableName(t *testing.T) {
+	svc := &DynamoDBService{}
+
+	if _, err := svc.adminGetItem(nil, "us-east-1", "", nil); err != ErrInvalidParameter {
+		t.Errorf("adminGetItem: expected ErrInvalidParameter, got %v", err)
+	}
+	if _, err := svc.adminScan("us-east-1", "", 10, nil); err != ErrInvalidParameter {
+		t.Errorf("adminScan: expected ErrInvalidParameter, got %v", err)
+	}
+	if _, err := svc.adminPutItem(nil, "us-east-1", "", nil); err != ErrInvalidParameter {
+		t.Errorf("adminPutItem: expected ErrInvalidParameter, got %v", err)
+	}
+	if err := svc.adminDeleteItem(nil, "us-east-1", "", nil); err != ErrInvalidParameter {
+		t.Errorf("adminDeleteItem: expected ErrInvalidParameter, got %v", err)
+	}
+}

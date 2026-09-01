@@ -452,16 +452,9 @@ func (s *LambdaService) CreateAlias(ctx context.Context, reqCtx *request.Request
 // DeleteAlias deletes an alias from a Lambda function.
 func (s *LambdaService) DeleteAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName = extractFunctionName(functionName)
 
 	aliasName := request.GetStringParam(req.Parameters, "Name")
-	if aliasName == "" {
-		return nil, NewInvalidParameter("Name", "Alias name is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -477,16 +470,9 @@ func (s *LambdaService) DeleteAlias(ctx context.Context, reqCtx *request.Request
 // GetAlias retrieves the configuration of an alias for a Lambda function.
 func (s *LambdaService) GetAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName = extractFunctionName(functionName)
 
 	aliasName := request.GetStringParam(req.Parameters, "Name")
-	if aliasName == "" {
-		return nil, NewInvalidParameter("Name", "Alias name is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -504,15 +490,9 @@ func (s *LambdaService) GetAlias(ctx context.Context, reqCtx *request.RequestCon
 // Allows modifying the function version, description, and routing configuration.
 func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName = extractFunctionName(functionName)
 
 	aliasName := request.GetStringParam(req.Parameters, "Name")
-	if aliasName == "" {
-		return nil, NewInvalidParameter("Name", "Alias name is required")
-	}
 	if err := validateAliasName(aliasName); err != nil {
 		return nil, err
 	}
@@ -542,9 +522,6 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 // ListAliases returns all aliases for a Lambda function.
 func (s *LambdaService) ListAliases(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName = extractFunctionName(functionName)
 
 	store, err := s.store(reqCtx)

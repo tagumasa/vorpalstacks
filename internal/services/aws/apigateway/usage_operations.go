@@ -28,9 +28,6 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 	if stageKeys, ok := req.Parameters["stageKeys"].([]interface{}); ok {
 		for _, sk := range stageKeys {
 			if sks, ok := sk.(string); ok {
-				if !validateStageKey(sks) {
-					return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + sks)
-				}
 				in.StageKeys = append(in.StageKeys, sks)
 			}
 		}
@@ -38,19 +35,10 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
 		in.Tags = tagutil.MapInterfaceToTags(tags)
 	}
-
 	// generateDistinctId=false forces the caller-supplied value to become
-	// the key id; otherwise the store generates one.
-	if v, ok := req.Parameters["generateDistinctId"].(bool); ok && !v {
-		if in.Value == "" {
-			return nil, NewBadRequestException("value is required when generateDistinctId is false")
-		}
-		if len(in.Value) < 20 || len(in.Value) > 128 {
-			return nil, NewBadRequestException("value must be between 20 and 128 characters")
-		}
-		in.Id = in.Value
-	} else {
-		in.Value = ""
+	// the key id; the Core enforces that contract for both planes.
+	if v, ok := req.Parameters["generateDistinctId"].(bool); ok {
+		in.GenerateDistinctId = &v
 	}
 
 	stores, err := s.store(reqCtx)
@@ -244,8 +232,6 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 		}
 		if period, ok := quotaMap["period"].(string); ok {
 			in.Quota.Period = period
-		} else {
-			return nil, NewBadRequestException("quota period is required when quota is set")
 		}
 		if offset, ok := quotaMap["offset"]; ok {
 			switch v := offset.(type) {

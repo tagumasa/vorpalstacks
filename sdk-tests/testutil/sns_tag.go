@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -174,6 +175,33 @@ func (r *TestRunner) runSNSTagTests(tc *snsTestContext) []TestResult {
 		}
 		if len(listResp.Tags) < 3 {
 			return fmt.Errorf("expected at least 3 tags, got %d", len(listResp.Tags))
+		}
+		return nil
+	}))
+
+	// Tag operations against a topic that does not exist fail with
+	// ResourceNotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("sns", "TagResource_NonExistentTopic", func() error {
+		arn := fmt.Sprintf("arn:aws:sns:%s:%s:no-such-topic-%d", tc.region, tc.accountID, time.Now().UnixNano())
+		_, err := tc.client.TagResource(tc.ctx, &sns.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags:        []types.Tag{{Key: aws.String("Environment"), Value: aws.String("test")}},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &sns.UntagResourceInput{
+			ResourceArn: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &sns.ListTagsForResourceInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

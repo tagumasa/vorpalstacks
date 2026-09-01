@@ -223,6 +223,12 @@ type ReplicateKeyInput struct {
 // with the primary's key material; any failure after the replica write
 // cascades the partial state away.
 func (s *KMSService) replicateKeyCore(stores *kmsStores, in ReplicateKeyInput) (*kmsstore.Key, error) {
+	if in.ReplicaRegion == "" {
+		return nil, NewValidationError("ReplicaRegion is required")
+	}
+	if err := validateReplicaRegion(in.ReplicaRegion); err != nil {
+		return nil, err
+	}
 	if err := s.authorizeOperation(stores, in.Principal, "ReplicateKey", in.KeyID, nil); err != nil {
 		return nil, err
 	}

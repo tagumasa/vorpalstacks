@@ -9,6 +9,7 @@ import (
 
 	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/config"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	stsstore "vorpalstacks/internal/store/aws/sts"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -270,4 +271,32 @@ func (s *STSService) getAccessKeyInfoCore(reqCtx *request.RequestContext, in Wir
 		return nil
 	}
 	return ErrInvalidClientTokenId
+}
+
+// consoleCallerIdentityCore derives the caller identity for the admin
+// console plane from the authenticated JWT claims. Root callers report
+// UserId = accountID with the root ARN (the AWS contract for root); named
+// users report the token's arn claim or their IAM user ARN. An empty
+// username means no JWT claims were present and the root principal is
+// returned, mirroring the HTTP plane's bootstrap-friendly fallback.
+func consoleCallerIdentityCore(accountID, username, arnClaim string) (account, arn, userid string) {
+	if accountID == "" {
+		accountID = config.AWSAccountID()
+	}
+	if username == "" {
+		return accountID, arnutil.NewARNBuilder(accountID, "").IAM().Root(), accountID
+	}
+	arn = arnClaim
+	userid = username
+	if username == iam.RootUserName {
+		userid = accountID
+		if arn == "" {
+			arn = arnutil.NewARNBuilder(accountID, "").IAM().Root()
+		}
+		return accountID, arn, userid
+	}
+	if arn == "" {
+		arn = arnutil.NewARNBuilder(accountID, "").IAM().User(username)
+	}
+	return accountID, arn, userid
 }

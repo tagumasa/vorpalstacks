@@ -1,14 +1,16 @@
 package rdsdata
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
 )
 
-// commitTransactionCore claims the transaction entry from the map, waits
-// for any in-flight or background statements, then executes COMMIT.
+// commitTransactionCore validates the request, claims the transaction entry
+// from the map, waits for any in-flight or background statements, then
+// executes COMMIT.
 //
 // On COMMIT failure the AWS spec requires the transaction to be rolled
 // back ("If the COMMIT fails, the transaction is rolled back"). The core
@@ -20,7 +22,18 @@ import (
 // concurrent caller cannot double-commit. This is safe because COMMIT
 // failure triggers an immediate ROLLBACK — the transaction is terminal
 // regardless of the outcome.
-func (s *RDSDataService) commitTransactionCore(txID string) error {
+func (s *RDSDataService) commitTransactionCore(ctx context.Context, input *CommitTransactionInput) error {
+	if err := validateCommon(input.ResourceArn, input.SecretArn, "", ""); err != nil {
+		return err
+	}
+	if err := validateTransactionID(input.TransactionID, false); err != nil {
+		return err
+	}
+	if err := s.validateCredentials(ctx, input.SecretArn); err != nil {
+		return err
+	}
+
+	txID := input.TransactionID
 	entry, err := s.claimTransaction(txID)
 	if err != nil {
 		return err
@@ -44,14 +57,26 @@ func (s *RDSDataService) commitTransactionCore(txID string) error {
 	return nil
 }
 
-// rollbackTransactionCore claims the transaction entry from the map, waits
-// for any in-flight or background statements, then executes ROLLBACK.
+// rollbackTransactionCore validates the request, claims the transaction
+// entry from the map, waits for any in-flight or background statements,
+// then executes ROLLBACK.
 //
 // The entry is removed from the map BEFORE executing ROLLBACK so that a
 // concurrent caller cannot double-rollback. If ROLLBACK fails at the engine
 // level the entry stays removed — the engine transaction may leak, but
 // re-inserting a potentially corrupt sqlCtx would be worse.
-func (s *RDSDataService) rollbackTransactionCore(txID string) error {
+func (s *RDSDataService) rollbackTransactionCore(ctx context.Context, input *RollbackTransactionInput) error {
+	if err := validateCommon(input.ResourceArn, input.SecretArn, "", ""); err != nil {
+		return err
+	}
+	if err := validateTransactionID(input.TransactionID, false); err != nil {
+		return err
+	}
+	if err := s.validateCredentials(ctx, input.SecretArn); err != nil {
+		return err
+	}
+
+	txID := input.TransactionID
 	entry, err := s.claimTransaction(txID)
 	if err != nil {
 		return err

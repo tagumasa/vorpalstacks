@@ -19,6 +19,12 @@ type ProvisionedConcurrencyInput struct {
 // putProvisionedConcurrencyCore configures provisioned concurrency for a
 // function's published version or alias and pre-warms its container.
 func (s *LambdaService) putProvisionedConcurrencyCore(reqCtx *request.RequestContext, in *ProvisionedConcurrencyInput) (*lambdastore.ProvisionedConcurrencyConfig, error) {
+	if in.FunctionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if in.Qualifier == "" {
+		return nil, NewInvalidParameter("Qualifier", "Qualifier is required")
+	}
 	if in.ProvisionedConcurrentExecutions < 1 {
 		return nil, NewInvalidParameter("ProvisionedConcurrentExecutions", "Provisioned concurrent executions must be at least 1")
 	}
@@ -86,6 +92,12 @@ func (s *LambdaService) putProvisionedConcurrencyCore(reqCtx *request.RequestCon
 // getProvisionedConcurrencyCore retrieves the provisioned concurrency
 // configuration for a function qualifier.
 func (s *LambdaService) getProvisionedConcurrencyCore(stores *lambdaStore, functionName, qualifier string) (*lambdastore.ProvisionedConcurrencyConfig, error) {
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if qualifier == "" {
+		return nil, NewInvalidParameter("Qualifier", "Qualifier is required")
+	}
 	config, err := stores.Functions.GetProvisionedConcurrency(functionName, qualifier)
 	if err != nil {
 		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
@@ -100,6 +112,12 @@ func (s *LambdaService) getProvisionedConcurrencyCore(stores *lambdaStore, funct
 // deleteProvisionedConcurrencyCore removes the provisioned concurrency
 // configuration for a function qualifier.
 func (s *LambdaService) deleteProvisionedConcurrencyCore(stores *lambdaStore, functionName, qualifier string) error {
+	if functionName == "" {
+		return NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if qualifier == "" {
+		return NewInvalidParameter("Qualifier", "Qualifier is required")
+	}
 	if err := stores.Functions.DeleteProvisionedConcurrency(functionName, qualifier); err != nil {
 		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
 			return ErrResourceNotFound
@@ -112,6 +130,9 @@ func (s *LambdaService) deleteProvisionedConcurrencyCore(stores *lambdaStore, fu
 // listProvisionedConcurrencyConfigsCore lists the provisioned concurrency
 // configurations of a function.
 func (s *LambdaService) listProvisionedConcurrencyConfigsCore(stores *lambdaStore, functionName string) ([]lambdastore.ProvisionedConcurrencyConfig, error) {
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	configs, err := stores.Functions.ListProvisionedConcurrency(functionName)
 	if err != nil {
 		return nil, err

@@ -81,9 +81,6 @@ func (s *CloudTrailService) CreateTrail(ctx context.Context, reqCtx *request.Req
 // DeleteTrail deletes the specified CloudTrail trail by name or ARN.
 func (s *CloudTrailService) DeleteTrail(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	name := req.GetParam("Name")
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

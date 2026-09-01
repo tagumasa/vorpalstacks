@@ -20,8 +20,8 @@ func (s *CloudFrontService) listDistributionsByReference(ctx context.Context, re
 	requireTarget func(*cloudfrontStores, string) error,
 	matches func(*cloudfrontstore.DistributionConfig) bool) (interface{}, error) {
 	id := request.GetStringParam(req.Parameters, param)
-	if id == "" {
-		return nil, awserrors.NewAWSError("InvalidArgument", param+" is required", 400)
+	if err := requireReferenceIdCore(id, param); err != nil {
+		return nil, err
 	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")

@@ -195,26 +195,7 @@ func (s *NeptuneGraphService) ExecuteQuery(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-
-	graphID := resolveGraphIdentifier(req.Parameters)
-	if graphID == "" {
-		return nil, newValidationException("ILLEGAL_ARGUMENT", "graphIdentifier header required")
-	}
-
-	s.enginesMu.Lock()
-	entry, ok := s.activeEngines[graphID]
-	if !ok || entry.stopped {
-		s.enginesMu.Unlock()
-		return nil, newValidationException("UNSUPPORTED_OPERATION", "graph is not available")
-	}
-	entry.wg.Add(1)
-	s.enginesMu.Unlock()
-	defer entry.wg.Done()
-
-	entry.mu.RLock()
-	defer entry.mu.RUnlock()
-
-	return executeCypherQuery(ctx, s, reqCtx, req, graphID, entry, store)
+	return s.executeQueryCore(ctx, store, reqCtx, req)
 }
 
 // GetQuery retrieves the details and results of a previously executed query.

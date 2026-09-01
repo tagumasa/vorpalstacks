@@ -67,7 +67,7 @@ func (s *IAMService) createUserCore(store *iamstore.IAMStore, input *CreateUserI
 	// Apply permissions boundary if specified at creation time (Smithy
 	// CreateUserInput.PermissionsBoundary).
 	if input.PermissionsBoundaryArn != "" {
-		if err := putUserPermissionsBoundaryCore(store, user, input.PermissionsBoundaryArn); err != nil {
+		if err := attachUserPermissionsBoundaryCore(store, user, input.PermissionsBoundaryArn); err != nil {
 			return nil, err
 		}
 	}
@@ -75,16 +75,16 @@ func (s *IAMService) createUserCore(store *iamstore.IAMStore, input *CreateUserI
 	return user, nil
 }
 
-// putUserPermissionsBoundaryCore atomically sets a permissions boundary
-// on an IAM user.  It validates the ARN, checks the policy exists,
-// handles old-boundary decrement and same-ARN idempotency, persists the
-// user, and increments the new policy's usage count.
+// attachUserPermissionsBoundaryCore atomically sets a permissions boundary
+// on an already-resolved IAM user.  It validates the ARN, checks the policy
+// exists, handles old-boundary decrement and same-ARN idempotency, persists
+// the user, and increments the new policy's usage count.
 //
 // Used by both createUserCore (when PermissionsBoundaryArn is specified
-// at creation time) and the PutUserPermissionsBoundary HTTP operation.
+// at creation time) and the putUserPermissionsBoundaryCore operation Core.
 // Consolidating the logic here prevents the create-time vs update-time
 // drift that previously existed.
-func putUserPermissionsBoundaryCore(store *iamstore.IAMStore, user *iamstore.User, pbArn string) error {
+func attachUserPermissionsBoundaryCore(store *iamstore.IAMStore, user *iamstore.User, pbArn string) error {
 	if err := validateIAMPolicyArn(pbArn); err != nil {
 		return err
 	}
@@ -111,9 +111,32 @@ func putUserPermissionsBoundaryCore(store *iamstore.IAMStore, user *iamstore.Use
 	return nil
 }
 
-// getUserCore returns the IAM user with the given name.  Callers must
-// validate that userName is non-empty before calling.
+// putUserPermissionsBoundaryCore is the operation Core for the
+// PutUserPermissionsBoundary API: it validates the two required members in
+// the wire-contract order (UserName first, then PermissionsBoundary), so a
+// request omitting both reports the user name, resolves the user, and
+// attaches the boundary via attachUserPermissionsBoundaryCore.
+func (s *IAMService) putUserPermissionsBoundaryCore(store *iamstore.IAMStore, userName, pbArn string) error {
+	if userName == "" {
+		return NewValidationError("UserName")
+	}
+	if pbArn == "" {
+		return NewValidationError("PermissionsBoundary")
+	}
+	user, err := s.getUserCore(store, userName)
+	if err != nil {
+		return err
+	}
+	return attachUserPermissionsBoundaryCore(store, user, pbArn)
+}
+
+// getUserCore returns the IAM user with the given name; an empty name is
+// rejected as a validation error (the data-plane GetUser path resolves the
+// caller's own name before reaching this core).
 func (s *IAMService) getUserCore(store *iamstore.IAMStore, userName string) (*iamstore.User, error) {
+	if userName == "" {
+		return nil, NewValidationError("UserName")
+	}
 	user, err := store.Users().Get(userName)
 	if err != nil {
 		return nil, NewNoSuchUserError(userName)
@@ -271,6 +294,9 @@ func (s *IAMService) deleteUserCore(store *iamstore.IAMStore, input *DeleteUserI
 // HTTP API handler so that future admin-handler paths can delegate
 // here as well.
 func (s *IAMService) deleteUserPermissionsBoundaryCore(store *iamstore.IAMStore, userName string) error {
+	if userName == "" {
+		return NewValidationError("UserName")
+	}
 	user, err := store.Users().Get(userName)
 	if err != nil {
 		return NewNoSuchUserError(userName)

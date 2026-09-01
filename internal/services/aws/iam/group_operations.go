@@ -33,9 +33,6 @@ func (s *IAMService) CreateGroup(ctx context.Context, reqCtx *request.RequestCon
 // GetGroup retrieves information about an IAM group.
 func (s *IAMService) GetGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	groupName := request.GetStringParam(req.Parameters, "GroupName")
-	if groupName == "" {
-		return nil, NewValidationError("GroupName")
-	}
 
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)

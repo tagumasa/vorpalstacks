@@ -5,7 +5,6 @@ package appsync
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -76,10 +75,6 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 
 // CreateGraphqlApi creates a new AppSync GraphQL API via the admin console.
 func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Request[pb.CreateGraphqlApiRequest]) (*connect.Response[pb.CreateGraphqlApiResponse], error) {
-	if req.Msg.GetName() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("name is required"))
-	}
-
 	authType, err := pbAuthTypeToString(req.Msg.GetAuthenticationtype())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -107,10 +102,6 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 
 // DeleteGraphqlApi deletes an AppSync GraphQL API via the admin console.
 func (h *AdminHandler) DeleteGraphqlApi(ctx context.Context, req *connect.Request[pb.DeleteGraphqlApiRequest]) (*connect.Response[pb.DeleteGraphqlApiResponse], error) {
-	if req.Msg.GetApiid() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("ApiId is required"))
-	}
-
 	store, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)

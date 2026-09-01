@@ -3,50 +3,9 @@ package iot
 import (
 	"context"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
-	iotstore "vorpalstacks/internal/store/aws/iot"
 )
-
-// iotTagConfig builds a TagHandlerConfig backed by the IoT store Cores.
-func (s *IoTService) iotTagConfig(store iotstore.TagOps) tagutil.TagHandlerConfig {
-	return tagutil.TagHandlerConfig{
-		Param: tagutil.StandardConfig,
-		TagFunc: func(_ context.Context, resourceKey string, tags []tagutil.Tag) error {
-			return s.tagResourceCore(store, resourceKey, tagutil.ToMap(tags))
-		},
-		UntagFunc: func(_ context.Context, resourceKey string, tagKeys []string) error {
-			return s.untagResourceCore(store, resourceKey, tagKeys)
-		},
-		ListFunc: func(_ context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			tagsMap, err := s.listTagsCore(store, resourceKey)
-			if err != nil {
-				return nil, err
-			}
-			return tagutil.MapToTags(tagsMap), nil
-		},
-		FormatResponse: func(tags []tagutil.Tag, _ string) (interface{}, error) {
-			tagList := make([]map[string]interface{}, 0, len(tags))
-			for _, t := range tags {
-				tagList = append(tagList, map[string]interface{}{
-					"Key":   t.Key,
-					"Value": t.Value,
-				})
-			}
-			return map[string]interface{}{"tags": tagList}, nil
-		},
-		EmptyResponse: func() (interface{}, error) {
-			return map[string]interface{}{}, nil
-		},
-		MapError: func(err error) error {
-			if _, ok := err.(*tagutil.MissingResourceError); ok {
-				return awserrors.NewAWSError("ResourceNotFoundException", "The specified resource does not exist.", 404)
-			}
-			return err
-		},
-	}
-}
 
 // TagResource adds or overwrites tags on an IoT resource.
 func (s *IoTService) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {

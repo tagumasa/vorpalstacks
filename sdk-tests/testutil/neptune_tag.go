@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
@@ -83,6 +84,37 @@ func (r *TestRunner) runNeptuneTagTests(tc *neptuneContext) []TestResult {
 		}
 		if !foundOwner {
 			return fmt.Errorf("expected tag Owner to still be present after removing Environment")
+		}
+		return nil
+	}))
+
+	// Tag operations against a cluster that does not exist fail with the
+	// resource-specific DBClusterNotFoundFault, as the service model
+	// specifies for these operations.
+	results = append(results, r.RunTest("neptune", "AddTagsToResource_NonExistentCluster", func() error {
+		arn := fmt.Sprintf("arn:aws:rds:%s:%s:cluster:no-such-cluster-%d",
+			tc.region, tc.accountID, time.Now().UnixNano())
+		_, err := tc.client.AddTagsToResource(tc.ctx, &neptune.AddTagsToResourceInput{
+			ResourceName: aws.String(arn),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+			return fmt.Errorf("AddTagsToResource: %v", err)
+		}
+		_, err = tc.client.RemoveTagsFromResource(tc.ctx, &neptune.RemoveTagsFromResourceInput{
+			ResourceName: aws.String(arn),
+			TagKeys:      []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+			return fmt.Errorf("RemoveTagsFromResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &neptune.ListTagsForResourceInput{
+			ResourceName: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil
 	}))

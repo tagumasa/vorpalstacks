@@ -1,6 +1,7 @@
 package rdsdata
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -23,5 +24,24 @@ func TestValidateSQLByteCeiling(t *testing.T) {
 	// byte ceiling stays rejected.
 	if err := validateSQL(strings.Repeat("\u65e5", 30000)); err == nil {
 		t.Error("30000-character CJK SQL (90000 bytes) accepted")
+	}
+}
+
+// TestExecuteStatementInTxCoreRejectsEmptyTransactionID pins the
+// in-transaction contract: an empty transactionId is rejected before any
+// validation or execution step, so an EventBus caller can never degrade a
+// transactional statement into an autocommit execution.
+func TestExecuteStatementInTxCoreRejectsEmptyTransactionID(t *testing.T) {
+	svc := &RDSDataService{}
+	_, err := svc.executeStatementInTxCore(context.Background(), &ExecuteStatementInput{
+		ResourceArn:   "arn:aws:rds:us-east-1:123456789012:cluster:example",
+		Sql:           "SELECT 1",
+		TransactionID: "",
+	})
+	if err == nil {
+		t.Fatal("expected a transactionId validation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "TransactionNotFoundException") {
+		t.Fatalf("error %q is not a TransactionNotFoundException", err.Error())
 	}
 }

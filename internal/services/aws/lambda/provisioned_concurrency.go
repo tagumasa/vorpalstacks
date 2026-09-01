@@ -16,17 +16,11 @@ import (
 // qualifier is mandatory.
 func resolveProvisionedConcurrencyTarget(params map[string]interface{}) (string, string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
-	if functionNameRaw == "" {
-		return "", "", NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return "", "", err
 	}
 	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
-	if qualifier == "" {
-		return "", "", NewInvalidParameter("Qualifier", "Qualifier is required")
-	}
 	return functionName, qualifier, nil
 }
 
@@ -92,9 +86,6 @@ func (s *LambdaService) DeleteProvisionedConcurrencyConfig(ctx context.Context, 
 // ListProvisionedConcurrencyConfigs lists the provisioned concurrency configurations for a Lambda function.
 func (s *LambdaService) ListProvisionedConcurrencyConfigs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionNameRaw == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName := extractFunctionName(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err

@@ -2,7 +2,6 @@ package iam
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -56,9 +55,6 @@ func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetU
 	stores, err := h.getStore()
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-	if req.Msg.Username == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("UserName is required"))
 	}
 	user, err := h.service.getUserCore(stores, req.Msg.Username)
 	if err != nil {
@@ -155,9 +151,6 @@ func (h *AdminHandler) GetRole(ctx context.Context, req *connect.Request[pb.GetR
 	stores, err := h.getStore()
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-	if req.Msg.Rolename == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("RoleName is required"))
 	}
 	role, err := h.service.getRoleCore(stores, req.Msg.Rolename)
 	if err != nil {
@@ -258,9 +251,6 @@ func (h *AdminHandler) GetPolicy(ctx context.Context, req *connect.Request[pb.Ge
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	if req.Msg.Policyarn == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("PolicyArn is required"))
-	}
 	policy, err := h.service.getPolicyCore(stores, req.Msg.Policyarn)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -344,9 +334,6 @@ func (h *AdminHandler) GetGroup(ctx context.Context, req *connect.Request[pb.Get
 	stores, err := h.getStore()
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-	if req.Msg.Groupname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("GroupName is required"))
 	}
 	group, err := h.service.getGroupCore(stores, req.Msg.Groupname)
 	if err != nil {

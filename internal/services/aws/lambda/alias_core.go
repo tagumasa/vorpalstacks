@@ -106,6 +106,12 @@ func (s *LambdaService) createAliasCore(stores *lambdaStore, function *lambdasto
 
 // deleteAliasCore deletes an alias from a function.
 func (s *LambdaService) deleteAliasCore(stores *lambdaStore, functionName, aliasName string) error {
+	if functionName == "" {
+		return NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if aliasName == "" {
+		return NewInvalidParameter("Name", "Alias name is required")
+	}
 	if err := stores.Functions.DeleteAlias(functionName, aliasName); err != nil {
 		return NewResourceNotFound("Alias", aliasName)
 	}
@@ -114,6 +120,12 @@ func (s *LambdaService) deleteAliasCore(stores *lambdaStore, functionName, alias
 
 // getAliasCore retrieves an alias of a function.
 func (s *LambdaService) getAliasCore(stores *lambdaStore, functionName, aliasName string) (*lambdastore.Alias, error) {
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if aliasName == "" {
+		return nil, NewInvalidParameter("Name", "Alias name is required")
+	}
 	alias, err := stores.Functions.GetAlias(functionName, aliasName)
 	if err != nil {
 		return nil, NewResourceNotFound("Alias", aliasName)
@@ -126,6 +138,12 @@ func (s *LambdaService) getAliasCore(stores *lambdaStore, functionName, aliasNam
 // routing configuration. The update is applied atomically so the version
 // existence and routing checks observe a consistent function snapshot.
 func (s *LambdaService) updateAliasCore(stores *lambdaStore, functionName, aliasName string, in *AliasUpdateInput) (*lambdastore.Alias, error) {
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+	if aliasName == "" {
+		return nil, NewInvalidParameter("Name", "Alias name is required")
+	}
 	alias, err := stores.Functions.UpdateAliasAtomically(functionName, aliasName, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
 		if in.FunctionVersion != "" && in.FunctionVersion != "$LATEST" {
 			versionExists := false
@@ -167,6 +185,9 @@ func (s *LambdaService) updateAliasCore(stores *lambdaStore, functionName, alias
 // listAliasesCore returns the aliases of a function sorted by name, so
 // that marker-based pagination is deterministic and matches AWS ordering.
 func (s *LambdaService) listAliasesCore(stores *lambdaStore, functionName string) ([]lambdastore.Alias, error) {
+	if functionName == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	function, err := stores.Functions.Get(functionName)
 	if err != nil {
 		return nil, ErrResourceNotFound

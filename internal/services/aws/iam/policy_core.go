@@ -68,9 +68,12 @@ func (s *IAMService) createPolicyCore(store *iamstore.IAMStore, input *CreatePol
 	return policy, nil
 }
 
-// getPolicyCore returns the IAM managed policy with the given ARN.
-// Callers must validate that policyArn is non-empty before calling.
+// getPolicyCore returns the IAM managed policy with the given ARN; an
+// empty ARN is rejected as a validation error.
 func (s *IAMService) getPolicyCore(store *iamstore.IAMStore, policyArn string) (*iamstore.Policy, error) {
+	if policyArn == "" {
+		return nil, NewValidationError("PolicyArn")
+	}
 	policy, err := store.Policies().Get(policyArn)
 	if err != nil {
 		return nil, NewNoSuchPolicyError(policyArn)

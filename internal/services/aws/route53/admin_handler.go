@@ -115,10 +115,6 @@ func (h *AdminHandler) DeleteHostedZone(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if req.Msg.Id == "" {
-		return nil, svcerrors.AWSErrorToGRPC(fmt.Errorf("id is required"))
-	}
-
 	_, err = h.service.deleteHostedZoneCore(stores, DeleteHostedZoneInput{
 		Id: req.Msg.Id,
 	})

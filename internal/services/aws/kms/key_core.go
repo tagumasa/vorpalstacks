@@ -283,21 +283,40 @@ func (s *KMSService) createKeyCore(stores *kmsStores, in CreateKeyInput) (*KeyMe
 	return keyToMetadataResult(key), nil
 }
 
+// AWS PendingWindowInDays constraints for ScheduleKeyDeletion: the value
+// must lie in 7-30 and defaults to 30 when the caller omits it.
+const (
+	minPendingWindowDays     = 7
+	maxPendingWindowDays     = 30
+	defaultPendingWindowDays = 30
+)
+
 // scheduleKeyDeletionCore is the single entry point for scheduling key
-// deletion shared by the HTTP API and the admin gRPC handler. It
-// validates the pending window (AWS range 7-30), schedules deletion in
-// the store, and returns the updated key metadata.
-func (s *KMSService) scheduleKeyDeletionCore(stores *kmsStores, keyID string, pendingWindowInDays int) (*KeyMetadataResult, int, error) {
-	// Validate pending window (AWS: 7-30).
-	if pendingWindowInDays < 7 || pendingWindowInDays > 30 {
-		return nil, 0, NewValidationError(fmt.Sprintf("PendingWindowInDays %d does not fit range 7-30", pendingWindowInDays))
+// deletion shared by the HTTP API and the admin gRPC handler. It rejects
+// an empty key identifier, resolves the identifier (key ID, key ARN, or
+// alias), validates the pending window (AWS range 7-30), schedules deletion
+// in the store, and returns the updated key metadata. Resolution precedes
+// the window check so that an unknown key reports NotFound on both planes,
+// matching the HTTP plane's resolve-and-authorise-first flow.
+func (s *KMSService) scheduleKeyDeletionCore(stores *kmsStores, rawKeyID string, pendingWindowInDays int) (*KeyMetadataResult, int, error) {
+	if rawKeyID == "" {
+		return nil, 0, NewValidationError("KeyId is required")
+	}
+
+	resolvedKeyID, err := s.resolveKeyID(stores, rawKeyID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if pendingWindowInDays < minPendingWindowDays || pendingWindowInDays > maxPendingWindowDays {
+		return nil, 0, NewValidationError(fmt.Sprintf("PendingWindowInDays %d does not fit range %d-%d",
+			pendingWindowInDays, minPendingWindowDays, maxPendingWindowDays))
 	}
 
 	// Schedule deletion. Translate the store-layer ErrInvalidKeyState
 	// (key is already PendingDeletion) into the service-layer
 	// KMSInvalidStateException so that both the HTTP path and the admin
 	// gRPC path surface the correct HTTP 400 / CodeInvalidArgument.
-	if err := stores.keys.ScheduleDeletion(keyID, pendingWindowInDays); err != nil {
+	if err := stores.keys.ScheduleDeletion(resolvedKeyID, pendingWindowInDays); err != nil {
 		if stderrors.Is(err, kmsstore.ErrInvalidKeyState) {
 			return nil, 0, ErrKeyPendingDeletion
 		}
@@ -305,7 +324,7 @@ func (s *KMSService) scheduleKeyDeletionCore(stores *kmsStores, keyID string, pe
 	}
 
 	// Retrieve updated key.
-	updatedKey, err := stores.keys.Get(keyID)
+	updatedKey, err := stores.keys.Get(resolvedKeyID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to retrieve key after scheduling deletion: %w", err)
 	}

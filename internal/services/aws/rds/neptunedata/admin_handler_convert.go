@@ -1,9 +1,8 @@
 package neptunedata
 
-// This file is the sole admin handler file that imports the store package.
-// It contains store-accessing wrapper methods used by admin_handler.go,
-// plus pure proto conversion helpers that translate store types to proto
-// types for response marshalling.
+// This file holds the admin console's Core-backed wrapper methods and pure
+// proto conversion helpers. It performs no direct store access: every data
+// path routes through the service's Core functions.
 
 import (
 	"fmt"
@@ -12,38 +11,10 @@ import (
 	"time"
 	"vorpalstacks/internal/common/defaults"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"vorpalstacks/internal/utils/timeutils"
 
 	pb "vorpalstacks/internal/pb/aws/neptunedata"
-	neptunestore "vorpalstacks/internal/store/aws/rds/neptune"
 )
-
-// getStore returns the per-region Neptune store for the given header.
-func (h *AdminHandler) getStore(header http.Header) (*neptunestore.NeptuneStore, error) {
-	region := defaults.GetRegionFromHeader(header)
-	return h.service.GetStoreForRegion(region)
-}
-
-// computeElapsedMillis returns the elapsed time in milliseconds for a query.
-// For completed queries this is EndTime - StartTime. For running queries
-// (EndTime nil but StartTime set) it is time.Since(StartTime). Returns 0
-// when StartTime is nil.
-//
-// The parameters must be concrete *timestamppb.Timestamp pointers (not
-// interface-typed) so that a nil EndTime is correctly detected. A nil
-// pointer wrapped in an interface would pass an != nil check, causing
-// AsTime to return the epoch (1970) and producing a huge negative value.
-func computeElapsedMillis(startTime, endTime *timestamppb.Timestamp) int64 {
-	if startTime == nil {
-		return 0
-	}
-	if endTime != nil {
-		return endTime.AsTime().Sub(startTime.AsTime()).Milliseconds()
-	}
-	return time.Since(startTime.AsTime()).Milliseconds()
-}
 
 // ---------------------------------------------------------------------------
 // Store-accessing wrapper methods — each returns proto-ready types so that
@@ -53,115 +24,83 @@ func computeElapsedMillis(startTime, endTime *timestamppb.Timestamp) int64 {
 // queryStatusPb retrieves a single query by ID and returns a proto response
 // suitable for both Gremlin and OpenCypher query status endpoints.
 func (h *AdminHandler) queryStatusPb(header http.Header, queryId string) (*pb.GetOpenCypherQueryStatusOutput, error) {
-	store, err := h.getStore(header)
+	result, err := h.service.getQueryStatusCore(&GetQueryStatusInput{
+		QueryId: queryId,
+		Region:  defaults.GetRegionFromHeader(header),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	qr, err := store.GetQuery(queryId)
-	if err != nil {
-		return nil, err
-	}
-	if qr == nil {
-		return nil, queryNotFound(queryId)
-	}
-
-	var elapsedStr string
-	if qr.StartTime != nil {
-		elapsed := computeElapsedMillis(qr.StartTime, qr.EndTime)
-		elapsedStr = strconv.FormatInt(elapsed, 10)
-	}
+	stats, _ := result["queryEvalStats"].(map[string]interface{})
+	elapsedStr := strconv.FormatInt(stats["elapsed"].(int64), 10)
 
 	return &pb.GetOpenCypherQueryStatusOutput{
-		Queryid:     qr.GetQueryId(),
-		Querystring: qr.GetQueryString(),
+		Queryid:     result["queryId"].(string),
+		Querystring: result["queryString"].(string),
 		Queryevalstats: &pb.QueryEvalStats{
 			Elapsed: elapsedStr,
 		},
 	}, nil
 }
 
-// queryListPb lists queries of the given type and returns proto-ready results.
+// queryListPb lists queries of the given type and returns proto-ready
+// results. The list entries carry the identifiers only; per-query elapsed
+// time is available on the per-query status endpoint.
 func (h *AdminHandler) queryListPb(header http.Header, queryType string) ([]*pb.GremlinQueryStatus, int, int, error) {
-	store, err := h.getStore(header)
+	result, err := h.service.listQueriesCore(&ListQueriesInput{
+		QueryType:      queryType,
+		IncludeWaiting: true,
+		Region:         defaults.GetRegionFromHeader(header),
+	})
 	if err != nil {
 		return nil, 0, 0, err
 	}
 
-	queries, err := store.ListQueries()
-	if err != nil {
-		return nil, 0, 0, err
+	entries, _ := result["queries"].([]interface{})
+	pbQueries := make([]*pb.GremlinQueryStatus, 0, len(entries))
+	for _, e := range entries {
+		entry, _ := e.(map[string]interface{})
+		pbQueries = append(pbQueries, &pb.GremlinQueryStatus{
+			Queryid:     entry["queryId"].(string),
+			Querystring: entry["queryString"].(string),
+		})
 	}
-
-	pbQueries := make([]*pb.GremlinQueryStatus, 0)
-	accepted := 0
-	running := 0
-	for _, qr := range queries {
-		if qr.GetQueryType() != queryType {
-			continue
-		}
-		st := qr.GetStatus()
-		if st == "complete" || st == "failed" || st == "cancelled" {
-			continue
-		}
-		accepted++
-		if st == "running" {
-			running++
-		}
-		status := &pb.GremlinQueryStatus{
-			Queryid:     qr.GetQueryId(),
-			Querystring: qr.GetQueryString(),
-		}
-		if qr.StartTime != nil {
-			elapsed := computeElapsedMillis(qr.StartTime, qr.EndTime)
-			status.Queryevalstats = &pb.QueryEvalStats{
-				Elapsed: strconv.FormatInt(elapsed, 10),
-			}
-		}
-		pbQueries = append(pbQueries, status)
-	}
-
+	accepted := int(result["acceptedQueryCount"].(int32)) + int(result["runningQueryCount"].(int32))
+	running := int(result["runningQueryCount"].(int32))
 	return pbQueries, accepted, running, nil
 }
 
-// loaderJobStatusPb retrieves a single loader job by ID and returns a proto
-// response for the admin console.
+// loaderJobStatusPb retrieves a single loader job status via the shared
+// Core and renders the console payload.
 func (h *AdminHandler) loaderJobStatusPb(header http.Header, loadId string) (*pb.GetLoaderJobStatusOutput, error) {
-	store, err := h.getStore(header)
+	result, err := h.service.getLoaderJobStatusCore(&GetLoaderJobStatusInput{
+		LoadId: loadId,
+		Region: defaults.GetRegionFromHeader(header),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	job, err := store.GetLoaderJob(loadId)
-	if err != nil {
-		return nil, err
-	}
-	if job == nil {
-		return nil, bulkLoadNotFound(loadId)
-	}
-
+	status, _ := result["status"].(string)
 	return &pb.GetLoaderJobStatusOutput{
-		Status:  job.GetStatus(),
-		Payload: fmt.Sprintf(`{"loadId":"%s","status":"%s"}`, job.GetLoadId(), job.GetStatus()),
+		Status:  status,
+		Payload: fmt.Sprintf(`{"loadId":"%s","status":"%s"}`, loadId, status),
 	}, nil
 }
 
-// loaderJobListPb lists all loader job IDs and returns a proto response.
+// loaderJobListPb lists loader job IDs via the shared Core.
 func (h *AdminHandler) loaderJobListPb(header http.Header) (*pb.ListLoaderJobsOutput, error) {
-	store, err := h.getStore(header)
+	result, err := h.service.listLoaderJobsCore(&ListLoaderJobsInput{
+		IncludeQueuedLoads: true,
+		Region:             defaults.GetRegionFromHeader(header),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	jobs, err := store.ListLoaderJobs()
-	if err != nil {
-		return nil, err
-	}
-
-	loadIds := make([]string, 0, len(jobs))
-	for _, job := range jobs {
-		loadIds = append(loadIds, job.GetLoadId())
-	}
+	payload, _ := result["payload"].(map[string]interface{})
+	rawIds, _ := payload["loadIds"].([]string)
+	loadIds := make([]string, 0, len(rawIds))
+	loadIds = append(loadIds, rawIds...)
 
 	return &pb.ListLoaderJobsOutput{
 		Status: "200 OK",

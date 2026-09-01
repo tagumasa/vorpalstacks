@@ -391,6 +391,35 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		return nil
 	}))
 
+	// Tag operations against a configuration set that does not exist fail
+	// with NotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("sesv2", "TagResource_NonExistentResource", func() error {
+		arn := tc.configSetARN(fmt.Sprintf("no-such-config-set-%d", tc.uid))
+		_, err := tc.client.TagResource(tc.ctx, &sesv2.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &sesv2.UntagResourceInput{
+			ResourceArn: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("sesv2", "DeleteConfigurationSet", func() error {
 		_, err := tc.client.DeleteConfigurationSet(tc.ctx, &sesv2.DeleteConfigurationSetInput{
 			ConfigurationSetName: aws.String(configSetName),

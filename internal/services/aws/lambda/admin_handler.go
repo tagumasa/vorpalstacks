@@ -2,7 +2,6 @@ package lambda
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -107,10 +106,6 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 // It delegates to deleteFunctionCore so that event-source-mapping existence
 // checks and container cleanup run identically to the HTTP API path.
 func (h *AdminHandler) DeleteFunction(ctx context.Context, req *connect.Request[pb.DeleteFunctionRequest]) (*connect.Response[pb.DeleteFunctionResponse], error) {
-	if req.Msg.Functionname == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("functionName is required"))
-	}
-
 	stores, err := h.getStore(req.Header())
 	if err != nil {
 		return nil, svcerrors.StoreErrorToGRPC(err)

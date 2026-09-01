@@ -109,7 +109,7 @@ func (r *TestRunner) runIoTReadonlyExtTests(tc *iotTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iot", "ListTagsForResource", func() error {
 		_, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: aws.String(tc.arn("iot", "thing", "nonexistent"))})
-		return err
+		return AssertErrorContains(err, "ResourceNotFoundException")
 	}))
 	results = append(results, r.RunTest("iot", "ListTargetsForPolicy", func() error {
 		_, err := tc.client.ListTargetsForPolicy(tc.ctx, &iot.ListTargetsForPolicyInput{PolicyName: aws.String("nonexistent")})

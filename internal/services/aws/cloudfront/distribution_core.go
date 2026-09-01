@@ -1,6 +1,8 @@
 package cloudfront
 
 import (
+	"github.com/google/uuid"
+
 	"context"
 	"encoding/json"
 	"fmt"
@@ -367,6 +369,18 @@ type AdminCreateDistributionInput struct {
 // and delegates to createDistributionCore, ensuring that all validation,
 // certificate checking, and persistence follow the single code path.
 func (s *CloudFrontService) createDistributionFromAdmin(ctx context.Context, stores *cloudfrontStores, in AdminCreateDistributionInput) (*CreateDistributionResult, error) {
+	// A configuration without any origin cannot form a valid distribution.
+	if in.OriginDomain == "" {
+		return nil, invalidArgument("distributionconfig is required")
+	}
+	if in.OriginID == "" {
+		in.OriginID = "default-origin"
+	}
+	// The caller reference is CloudFront's idempotency token; mint it from
+	// crypto/rand so concurrent creations cannot collide on a clock value.
+	if in.CallerReference == "" {
+		in.CallerReference = uuid.New().String()
+	}
 	config := buildDefaultDistributionConfig(in.CallerReference, in.Comment, in.Enabled, in.OriginID, in.OriginDomain)
 	return s.createDistributionCore(ctx, stores, CreateDistributionInput{
 		CallerReference: in.CallerReference,
@@ -1009,4 +1023,13 @@ func collectDistributions(stores *cloudfrontStores, fn func(*cloudfrontstore.Dis
 		}
 		marker = result.NextMarker
 	}
+}
+
+// requireReferenceIdCore enforces the required reference member shared by
+// the list-distributions-by-reference operations.
+func requireReferenceIdCore(id, param string) error {
+	if id == "" {
+		return awserrors.NewAWSError("InvalidArgument", param+" is required", 400)
+	}
+	return nil
 }

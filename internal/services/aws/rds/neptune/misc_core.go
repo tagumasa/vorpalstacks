@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -117,6 +118,49 @@ func removeTagsForResource(store neptunestore.NeptuneStoreInterface, resourceArn
 	}
 }
 
+// validateNeptuneTagTarget resolves the resource behind the RDS-style ARN
+// the tag operations take as ResourceName, so a tag against a nonexistent
+// resource fails with the resource-specific NotFoundFault the model
+// attaches to these operations instead of silently persisting tags under
+// an unowned key. ARN kinds the platform does not host cannot address an
+// existing resource and are rejected as invalid input.
+func validateNeptuneTagTarget(store neptunestore.NeptuneStoreInterface, resourceArn string) error {
+	_, _, _, _, resource := arnutil.SplitARN(resourceArn)
+	kind, name, ok := strings.Cut(resource, ":")
+	if !ok || name == "" {
+		return awserrors.NewInvalidParameterValueException("ResourceName must be a valid Neptune resource ARN")
+	}
+	var err error
+	switch kind {
+	case "cluster":
+		_, err = store.GetCluster(name)
+	case "db":
+		_, err = store.GetInstance(name)
+	case "cluster-snapshot":
+		_, err = store.GetSnapshot(name)
+	case "snapshot":
+		_, err = store.GetInstanceSnapshot(name)
+	case "cluster-endpoint":
+		_, err = store.GetClusterEndpoint(name)
+	case "global-cluster":
+		_, err = store.GetGlobalCluster(name)
+	case "cluster-pg":
+		_, err = store.GetClusterParameterGroup(name)
+	case "pg":
+		_, err = store.GetParameterGroup(name)
+	case "subgrp":
+		_, err = store.GetSubnetGroup(name)
+	case "es":
+		_, err = store.GetEventSubscription(name)
+	default:
+		return awserrors.NewInvalidParameterValueException("ResourceName must be a valid Neptune resource ARN")
+	}
+	if err != nil {
+		return translateStoreError(err)
+	}
+	return nil
+}
+
 // neptuneTagConfig builds the shared tag handler configuration binding the
 // store's tag operations for the Neptune resource-tagging operations.
 func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterface) tags.TagHandlerConfig {
@@ -142,6 +186,9 @@ func (s *NeptuneService) neptuneTagConfig(store neptunestore.NeptuneStoreInterfa
 				}
 			}
 			return result
+		},
+		ValidateResource: func(ctx context.Context, resourceKey string) error {
+			return validateNeptuneTagTarget(store, resourceKey)
 		},
 		ParseTagKeys: func(params map[string]interface{}) []string {
 			return request.GetStringList(params, "TagKeys")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -155,6 +156,13 @@ func apiGatewayMapTagError(err error) error {
 		return NewBadRequestException("tags is required")
 	case *tagutil.MissingTagKeysError:
 		return NewBadRequestException("tagKeys is required")
+	}
+	// The per-kind tag stores resolve the resource before any tag read or
+	// write; surface their not-found sentinels as the modelled
+	// NotFoundException (404) the tag operations carry, instead of an
+	// opaque internal error.
+	if mapped := awserrors.MapStoreError(err, storeErrorMappings); mapped != err {
+		return mapped
 	}
 	return err
 }

@@ -66,6 +66,9 @@ func (s *LambdaService) createFunctionUrlConfigCore(stores *lambdaStore, functio
 
 // deleteFunctionUrlConfigCore deletes a function's URL configuration.
 func (s *LambdaService) deleteFunctionUrlConfigCore(stores *lambdaStore, functionNameRaw string) error {
+	if functionNameRaw == "" {
+		return NewInvalidParameter("FunctionName", "Function name is required")
+	}
 	functionName := extractFunctionName(functionNameRaw)
 
 	if err := stores.Functions.DeleteFunctionUrlConfig(functionName); err != nil {

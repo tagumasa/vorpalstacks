@@ -189,6 +189,12 @@ func (s *CloudTrailService) createTrailCore(store cloudtrailstore.CloudTrailStor
 // call StopLogging"), cleans up the associated resource policy, and deletes
 // the trail.
 func (s *CloudTrailService) deleteTrailCore(store cloudtrailstore.CloudTrailStoreInterface, in DeleteTrailInput) error {
+	// The model marks Name as required: an omitted name is a client error
+	// on both planes and must be rejected before the store lookup so the
+	// admin console does not surface a not-found for it.
+	if in.NameOrARN == "" {
+		return ErrInvalidParameter
+	}
 	trail, err := store.ResolveTrail(in.NameOrARN)
 	if err != nil {
 		return s.mapStoreError(err)

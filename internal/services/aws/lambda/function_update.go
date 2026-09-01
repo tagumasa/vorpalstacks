@@ -13,10 +13,6 @@ import (
 // UpdateFunctionCode updates the code of the specified Lambda function.
 func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
 	functionName = extractFunctionName(functionName)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err
@@ -131,10 +127,6 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 // UpdateFunctionConfiguration updates the configuration of the specified Lambda function.
 func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionName == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
-
 	functionName = extractFunctionName(functionName)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err

@@ -181,10 +181,6 @@ func (s *LambdaService) ListLayerVersions(ctx context.Context, reqCtx *request.R
 // GetLayerVersionByArn retrieves a layer version by its full ARN.
 func (s *LambdaService) GetLayerVersionByArn(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	layerVersionArn := request.GetStringParam(req.Parameters, "Arn")
-	if layerVersionArn == "" {
-		return nil, NewInvalidParameter("Arn", "Layer version ARN is required")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

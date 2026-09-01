@@ -102,9 +102,6 @@ func parseLoggingFilter(raw interface{}) (*wafstore.LoggingFilter, error) {
 // PutLoggingConfiguration creates or updates the logging configuration for the specified web ACL.
 func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	loggingConfigMap := request.GetMapParam(req.Parameters, "LoggingConfiguration")
-	if loggingConfigMap == nil {
-		return nil, invalidParamError("LoggingConfiguration is required")
-	}
 
 	var redactedFields []interface{}
 	if rfRaw := loggingConfigMap["RedactedFields"]; rfRaw != nil {
@@ -114,13 +111,14 @@ func (s *WAFv2Service) PutLoggingConfiguration(ctx context.Context, reqCtx *requ
 	}
 
 	config, err := s.putLoggingConfigurationCore(reqCtx, LoggingConfigInput{
-		ResourceArn:              request.GetStringParam(loggingConfigMap, "ResourceArn"),
-		LogDestinationConfigs:    request.GetStringList(loggingConfigMap, "LogDestinationConfigs"),
-		LogScope:                 request.GetStringParam(loggingConfigMap, "LogScope"),
-		LogType:                  request.GetStringParam(loggingConfigMap, "LogType"),
-		ManagedByFirewallManager: request.GetBoolParam(loggingConfigMap, "ManagedByFirewallManager"),
-		RedactedFields:           redactedFields,
-		LoggingFilterRaw:         loggingConfigMap["LoggingFilter"],
+		LoggingConfigurationPresent: loggingConfigMap != nil,
+		ResourceArn:                 request.GetStringParam(loggingConfigMap, "ResourceArn"),
+		LogDestinationConfigs:       request.GetStringList(loggingConfigMap, "LogDestinationConfigs"),
+		LogScope:                    request.GetStringParam(loggingConfigMap, "LogScope"),
+		LogType:                     request.GetStringParam(loggingConfigMap, "LogType"),
+		ManagedByFirewallManager:    request.GetBoolParam(loggingConfigMap, "ManagedByFirewallManager"),
+		RedactedFields:              redactedFields,
+		LoggingFilterRaw:            loggingConfigMap["LoggingFilter"],
 	})
 	if err != nil {
 		return nil, err

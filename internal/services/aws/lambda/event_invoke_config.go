@@ -14,9 +14,6 @@ import (
 // operations.
 func resolveEventInvokeTarget(params map[string]interface{}) (string, string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
-	if functionNameRaw == "" {
-		return "", "", NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return "", "", err
@@ -105,9 +102,6 @@ func (s *LambdaService) DeleteFunctionEventInvokeConfig(ctx context.Context, req
 // ListFunctionEventInvokeConfigs lists all configurations for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
-	if functionNameRaw == "" {
-		return nil, NewInvalidParameter("FunctionName", "Function name is required")
-	}
 	functionName := extractFunctionName(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err

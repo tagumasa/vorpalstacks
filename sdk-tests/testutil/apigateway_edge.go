@@ -322,5 +322,33 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 		return nil
 	}))
 
+	// Tag operations against a stage that does not exist fail with the
+	// modelled NotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("apigateway", "TagResource_NonExistentStage", func() error {
+		arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/no-such-api-%d/stages/prod",
+			tc.r.region, time.Now().UnixNano())
+		_, err := tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
+			ResourceArn: aws.String(arn),
+			Tags:        map[string]string{"Environment": "test"},
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
+			ResourceArn: aws.String(arn),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+			ResourceArn: aws.String(arn),
+		})
+		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
+			return fmt.Errorf("GetTags: %v", err)
+		}
+		return nil
+	}))
+
 	return results
 }

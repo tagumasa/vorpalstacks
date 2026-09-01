@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/protocol"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -16,10 +15,6 @@ func (s *Route53Service) CreateHealthCheck(ctx context.Context, reqCtx *request.
 	callerRef := request.GetStringParam(req.Parameters, "CallerReference")
 
 	healthCheckConfigMap := request.GetMapParam(req.Parameters, "HealthCheckConfig")
-	if healthCheckConfigMap == nil {
-		return nil, awserrors.NewAWSError("InvalidInput", "HealthCheckConfig is required", 400)
-	}
-
 	config := parseHealthCheckConfig(healthCheckConfigMap, s.defaultHCPort)
 
 	st, err := s.store(reqCtx)

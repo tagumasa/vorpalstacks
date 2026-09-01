@@ -2,7 +2,6 @@ package wafv2
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -89,15 +88,7 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 // DeleteWebACL deletes an existing WebACL via the admin console gRPC-Web
 // interface.
 func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb.DeleteWebACLRequest]) (*connect.Response[pb.DeleteWebACLResponse], error) {
-	if req.Msg.GetId() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("id is required"))
-	}
-
 	lockToken := req.Msg.GetLocktoken()
-	if lockToken == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("lock token is required"))
-	}
-
 	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

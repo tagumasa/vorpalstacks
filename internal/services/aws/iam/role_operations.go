@@ -45,9 +45,6 @@ func (s *IAMService) CreateRole(ctx context.Context, reqCtx *request.RequestCont
 // Returns an error if the role does not exist.
 func (s *IAMService) GetRole(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -165,9 +162,6 @@ func (s *IAMService) ListRoles(ctx context.Context, reqCtx *request.RequestConte
 // PolicyDocument must be a valid JSON policy document.
 func (s *IAMService) UpdateAssumeRolePolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
 	policyDocument := request.GetStringParam(req.Parameters, "PolicyDocument")
 
 	store, err := s.store(reqCtx)
@@ -290,24 +284,13 @@ func (s *IAMService) ListInstanceProfilesForRole(ctx context.Context, reqCtx *re
 // PermissionsBoundary is the ARN of a managed policy to use as the permissions boundary.
 func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
-
 	permissionsBoundary := request.GetStringParam(req.Parameters, "PermissionsBoundary")
-	if permissionsBoundary == "" {
-		return nil, NewValidationError("PermissionsBoundary")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	role, err := s.getRoleCore(store, roleName)
-	if err != nil {
-		return nil, err
-	}
-	if err := putRolePermissionsBoundaryCore(store, role, permissionsBoundary); err != nil {
+	if err := s.putRolePermissionsBoundaryCore(store, roleName, permissionsBoundary); err != nil {
 		return nil, err
 	}
 	return response.EmptyResponse(), nil
@@ -317,9 +300,6 @@ func (s *IAMService) PutRolePermissionsBoundary(ctx context.Context, reqCtx *req
 // RoleName is required.
 func (s *IAMService) DeleteRolePermissionsBoundary(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	roleName := request.GetStringParam(req.Parameters, "RoleName")
-	if roleName == "" {
-		return nil, NewValidationError("RoleName")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

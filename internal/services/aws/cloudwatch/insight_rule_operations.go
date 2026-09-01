@@ -383,10 +383,6 @@ func (s *CloudWatchService) PutManagedInsightRules(ctx context.Context, reqCtx *
 		rawRules, _ = v.([]interface{})
 	}
 
-	if len(rawRules) == 0 {
-		return nil, awserrors.NewMissingParameter("ManagedRules is required")
-	}
-
 	managedRules := make([]PutManagedInsightRuleItem, 0, len(rawRules))
 	for _, raw := range rawRules {
 		m, ok := raw.(map[string]interface{})
@@ -400,7 +396,10 @@ func (s *CloudWatchService) PutManagedInsightRules(ctx context.Context, reqCtx *
 		})
 	}
 
-	failures := s.putManagedInsightRulesCore(store, &PutManagedInsightRulesInput{ManagedRules: managedRules})
+	failures, err := s.putManagedInsightRulesCore(store, &PutManagedInsightRulesInput{ManagedRules: managedRules})
+	if err != nil {
+		return nil, err
+	}
 	return map[string]interface{}{"Failures": failures}, nil
 }
 

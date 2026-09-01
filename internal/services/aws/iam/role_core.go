@@ -95,7 +95,7 @@ func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleI
 	// Apply permissions boundary if specified at creation time (Smithy
 	// CreateRoleInput.PermissionsBoundary).
 	if input.PermissionsBoundaryArn != "" {
-		if err := putRolePermissionsBoundaryCore(store, role, input.PermissionsBoundaryArn); err != nil {
+		if err := attachRolePermissionsBoundaryCore(store, role, input.PermissionsBoundaryArn); err != nil {
 			return nil, err
 		}
 	}
@@ -103,9 +103,13 @@ func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleI
 	return role, nil
 }
 
-// putRolePermissionsBoundaryCore is the role equivalent of
-// putUserPermissionsBoundaryCore.
-func putRolePermissionsBoundaryCore(store *iamstore.IAMStore, role *iamstore.Role, pbArn string) error {
+// attachRolePermissionsBoundaryCore attaches a permissions boundary to an
+// already-resolved role.  It validates the policy ARN, checks the policy
+// exists, handles old-boundary decrement and same-ARN idempotency, persists
+// the role, and increments the policy's usage count.  The operation-level
+// member validation (RoleName and PermissionsBoundary required, name first)
+// lives in putRolePermissionsBoundaryCore.
+func attachRolePermissionsBoundaryCore(store *iamstore.IAMStore, role *iamstore.Role, pbArn string) error {
 	if err := validateIAMPolicyArn(pbArn); err != nil {
 		return err
 	}
@@ -129,9 +133,31 @@ func putRolePermissionsBoundaryCore(store *iamstore.IAMStore, role *iamstore.Rol
 	return nil
 }
 
-// getRoleCore returns the IAM role with the given name.  Callers must
-// validate that roleName is non-empty before calling.
+// putRolePermissionsBoundaryCore is the operation Core for the
+// PutRolePermissionsBoundary API: it validates the two required members in
+// the wire-contract order (RoleName first, then PermissionsBoundary), so a
+// request omitting both reports the role name, resolves the role, and
+// attaches the boundary via attachRolePermissionsBoundaryCore.
+func (s *IAMService) putRolePermissionsBoundaryCore(store *iamstore.IAMStore, roleName, pbArn string) error {
+	if roleName == "" {
+		return NewValidationError("RoleName")
+	}
+	if pbArn == "" {
+		return NewValidationError("PermissionsBoundary")
+	}
+	role, err := s.getRoleCore(store, roleName)
+	if err != nil {
+		return err
+	}
+	return attachRolePermissionsBoundaryCore(store, role, pbArn)
+}
+
+// getRoleCore returns the IAM role with the given name; an empty name is
+// rejected as a validation error.
 func (s *IAMService) getRoleCore(store *iamstore.IAMStore, roleName string) (*iamstore.Role, error) {
+	if roleName == "" {
+		return nil, NewValidationError("RoleName")
+	}
 	role, err := store.Roles().Get(roleName)
 	if err != nil {
 		return nil, NewNoSuchRoleError(roleName)
@@ -251,6 +277,9 @@ func (s *IAMService) deleteRoleCore(store *iamstore.IAMStore, input *DeleteRoleI
 // from a role and decrements the usage count on the previously-bound
 // policy.  Mirrors deleteUserPermissionsBoundaryCore for roles.
 func (s *IAMService) deleteRolePermissionsBoundaryCore(store *iamstore.IAMStore, roleName string) error {
+	if roleName == "" {
+		return NewValidationError("RoleName")
+	}
 	role, err := store.Roles().Get(roleName)
 	if err != nil {
 		return NewNoSuchRoleError(roleName)

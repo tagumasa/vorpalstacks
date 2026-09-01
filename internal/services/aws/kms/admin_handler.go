@@ -2,7 +2,6 @@ package kms
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -127,25 +126,16 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	if req.Msg.GetKeyid() == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("KeyId is required"))
-	}
-
-	// Resolve the key through the service layer to support alias and ARN.
-	resolvedKeyID, err := h.service.resolveKeyID(stores, req.Msg.GetKeyid())
-	if err != nil {
-		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-
 	// AWS: PendingWindowInDays defaults to 30 when omitted. Proto3 zero
 	// value (0) cannot distinguish unset from explicit 0, so we treat 0
-	// as "default to 30". Range validation (7-30) is in the Core method.
+	// as "default to 30". Range validation (7-30) and the alias/ARN key
+	// resolution live in the core method.
 	pendingDays := int(req.Msg.GetPendingwindowindays())
 	if pendingDays == 0 {
-		pendingDays = 30
+		pendingDays = defaultPendingWindowDays
 	}
 
-	meta, days, err := h.service.scheduleKeyDeletionCore(stores, resolvedKeyID, pendingDays)
+	meta, days, err := h.service.scheduleKeyDeletionCore(stores, req.Msg.GetKeyid(), pendingDays)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

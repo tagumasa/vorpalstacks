@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/timestreamwrite"
@@ -197,6 +198,35 @@ func (r *TestRunner) runTimestreamDatabaseTests(tc *tsTestContext) []TestResult 
 			DatabaseName: aws.String("nonexistent-db-xyz"),
 		})
 		return AssertErrorContains(err, "ResourceNotFoundException")
+	}))
+
+	// Tag operations against a database that does not exist fail with
+	// ResourceNotFoundException, as the service model specifies.
+	results = append(results, r.RunTest("timestream", "TagResource_NonExistentDatabase", func() error {
+		dbARN := fmt.Sprintf("arn:aws:timestream:%s:%s:database/no-such-db-%d", tc.region, tc.accountID, time.Now().UnixNano())
+		_, err := tc.writeClient.TagResource(tc.ctx, &timestreamwrite.TagResourceInput{
+			ResourceARN: aws.String(dbARN),
+			Tags: []types.Tag{
+				{Key: aws.String("Environment"), Value: aws.String("test")},
+			},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("TagResource: %v", err)
+		}
+		_, err = tc.writeClient.UntagResource(tc.ctx, &timestreamwrite.UntagResourceInput{
+			ResourceARN: aws.String(dbARN),
+			TagKeys:     []string{"Environment"},
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("UntagResource: %v", err)
+		}
+		_, err = tc.writeClient.ListTagsForResource(tc.ctx, &timestreamwrite.ListTagsForResourceInput{
+			ResourceARN: aws.String(dbARN),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return fmt.Errorf("ListTagsForResource: %v", err)
+		}
+		return nil
 	}))
 
 	results = append(results, r.RunTest("timestream", "CreateDatabase_Duplicate", func() error {

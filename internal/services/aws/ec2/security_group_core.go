@@ -387,6 +387,9 @@ func findDuplicateEntry(existing, requested []ec2store.IPRule) string {
 // InvalidPermission.NotFound when nothing was removed (AWS behaviour for
 // non-default VPCs).
 func (s *EC2Service) revokeSecurityGroupRulesCore(store *ec2store.EC2Store, sg *ec2store.SecurityGroup, rules []ec2store.IPRule, ruleIDs []string, isEgress bool) (*RevokeResult, error) {
+	if len(rules) == 0 && len(ruleIDs) == 0 {
+		return nil, awserrors.NewMissingParameter("IpPermissions, the legacy rule parameters (IpProtocol, CidrIp, ...) or SecurityGroupRuleIds is required")
+	}
 	var existingRules []ec2store.IPRule
 	if isEgress {
 		existingRules = sg.IpPermissionsEgress

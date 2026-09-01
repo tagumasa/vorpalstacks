@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // ---------------------------------------------------------------------------
@@ -331,9 +332,16 @@ func (s *TimestreamWriteService) parseMeasureValues(data interface{}) []tsstore.
 	return measureValues
 }
 
+// tsArnParser parses Timestream resource ARNs. The parse helpers read only
+// the ARN resource field, so an account/region-less builder is sufficient.
+var tsArnParser = svcarn.NewARNBuilder("", "").Timestream()
+
 // tagHandlerConfig builds the shared tag handler configuration bound to the
 // given store bundle; the tag store closures are the single tag persistence
-// path for both protocol planes.
+// path for both protocol planes. Every tag operation first resolves the
+// database (or table) behind the ARN, so a tag against a nonexistent
+// resource fails with the modelled ResourceNotFoundException instead of
+// silently persisting tags under an unowned key.
 func (s *TimestreamWriteService) tagHandlerConfig(st *tsWriteStores) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.TagOperationConfig{
@@ -346,6 +354,24 @@ func (s *TimestreamWriteService) tagHandlerConfig(st *tsWriteStores) tagutil.Tag
 			RequireTagKeys:     true,
 			RequireResource:    true,
 			CaseInsensitiveRes: true,
+		},
+		ValidateResource: func(_ context.Context, resourceKey string) error {
+			// Timestream Write tags databases and tables; the resource
+			// field is "database/<name>" or "database/<name>/table/<name>".
+			database := tsArnParser.ParseDatabaseName(resourceKey)
+			if database == "" {
+				return ErrResourceNotFound
+			}
+			if table := tsArnParser.ParseTableName(resourceKey); table != "" {
+				if _, err := st.tableStore.GetTable(database, table); err != nil {
+					return s.mapStoreError(err)
+				}
+				return nil
+			}
+			if _, err := st.store.GetDatabase(database); err != nil {
+				return s.mapStoreError(err)
+			}
+			return nil
 		},
 		TagFunc: func(_ context.Context, resourceKey string, tagSlice []tagutil.Tag) error {
 			return st.store.TagFromSlice(resourceKey, tagSlice)
