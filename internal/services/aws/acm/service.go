@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"sync"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
+	"vorpalstacks/internal/eventbus"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -131,4 +133,32 @@ func (s *ACMService) CertificateExists(ctx context.Context, region, certArn stri
 		return false
 	}
 	return stores.certificates.Exists(certArn)
+}
+
+// CertificateMaterial implements eventbus.ACMCertificateProvider. It returns
+// the PEM material of an issued certificate so a cross-service listener
+// (e.g. the CloudFront distribution plane) can terminate TLS with it. Only
+// issued certificates with a retained key pair resolve; anything else is an
+// error so the caller fails the handshake instead of serving a mismatched
+// certificate.
+func (s *ACMService) CertificateMaterial(ctx context.Context, region, certArn string) (eventbus.TLSCertificateMaterial, error) {
+	stores, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("acm: failed to get store for region %s: %w", region, err)
+	}
+	cert, err := stores.certificates.Get(certArn)
+	if err != nil {
+		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("acm: certificate %s not found: %w", certArn, err)
+	}
+	if cert.Status != "ISSUED" {
+		return eventbus.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate is not in the ISSUED state: " + certArn)
+	}
+	if cert.Certificate == "" || cert.PrivateKey == "" {
+		return eventbus.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate does not have serving material available: " + certArn)
+	}
+	return eventbus.TLSCertificateMaterial{
+		Certificate:      cert.Certificate,
+		PrivateKey:       cert.PrivateKey,
+		CertificateChain: cert.CertificateChain,
+	}, nil
 }

@@ -198,6 +198,80 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		return nil
 	}))
 
+	// A paged walk must lose no policy: the response Marker names the
+	// first item of the next page, so resuming at — not after — the
+	// marker keeps every entity. Eight fresh policies force several
+	// MaxItems=3 pages even on a freshly initialised account, and the
+	// union of the small pages must equal the single large page.
+	results = append(results, r.RunTest("iam", "GetAccountAuthorizationDetails_PaginationComplete", func() error {
+		var cleanups []func()
+		defer func() {
+			for i := len(cleanups) - 1; i >= 0; i-- {
+				cleanups[i]()
+			}
+		}()
+		doc := iamAllowPolicy("s3:GetObject")
+		for i := 0; i < 8; i++ {
+			name := fmt.Sprintf("AuthzPage-Policy-%s-%d", tc.ts, i)
+			_, cleanup, err := tc.createPolicy(name, doc)
+			if err != nil {
+				return err
+			}
+			cleanups = append(cleanups, cleanup)
+		}
+
+		walk := func(maxItems int32) (map[string]bool, int, error) {
+			seen := map[string]bool{}
+			pages := 0
+			var marker *string
+			for {
+				input := &iam.GetAccountAuthorizationDetailsInput{
+					Filter:   []types.EntityType{types.EntityTypeLocalManagedPolicy},
+					MaxItems: aws.Int32(maxItems),
+				}
+				if marker != nil {
+					input.Marker = marker
+				}
+				resp, err := tc.client.GetAccountAuthorizationDetails(tc.ctx, input)
+				if err != nil {
+					return nil, 0, err
+				}
+				for _, p := range resp.Policies {
+					seen[aws.ToString(p.Arn)] = true
+				}
+				pages++
+				if !resp.IsTruncated || resp.Marker == nil {
+					break
+				}
+				marker = resp.Marker
+			}
+			return seen, pages, nil
+		}
+
+		paged, pages, err := walk(3)
+		if err != nil {
+			return err
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected at least 2 pages, got %d", pages)
+		}
+		direct, _, err := walk(1000)
+		if err != nil {
+			return err
+		}
+		if len(paged) != len(direct) {
+			missing := []string{}
+			for arn := range direct {
+				if !paged[arn] {
+					missing = append(missing, arn)
+				}
+			}
+			return fmt.Errorf("paged walk saw %d policies over %d pages, single page saw %d; missing: %v",
+				len(paged), pages, len(direct), missing)
+		}
+		return nil
+	}))
+
 	// Account aliases
 	results = append(results, r.RunTest("iam", "CreateAccountAlias", func() error {
 		_, err := tc.client.CreateAccountAlias(tc.ctx, &iam.CreateAccountAliasInput{

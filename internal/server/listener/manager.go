@@ -2,7 +2,9 @@ package listener
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 
+	"vorpalstacks/internal/common/headerorder"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/server/fqdnrouter"
 )
@@ -32,6 +35,19 @@ type ListenerConfig struct {
 	Handler     http.Handler
 	Timeouts    *ListenerTimeouts
 	HostSuffix  string
+	// TLS, when set, binds the listener as a TLS server whose certificate
+	// is resolved per handshake through GetCertificate (SNI). A TLS
+	// listener keeps the TLS configuration of its first registrant: the
+	// handshake terminates before Host-based routing, so merged handlers
+	// share one certificate resolver.
+	TLS *ListenerTLSConfig
+}
+
+// ListenerTLSConfig carries the SNI certificate resolver for a TLS listener.
+// GetCertificate mirrors tls.Config.GetCertificate; returning an error (or
+// nil with no certificate) fails the handshake.
+type ListenerTLSConfig struct {
+	GetCertificate func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 }
 
 // registeredHandler records a single handler bound to a listener port.
@@ -154,12 +170,22 @@ func (m *Manager) Register(cfg ListenerConfig) {
 		dispatch: sh,
 		server: &http.Server{
 			Addr:              fmt.Sprintf(":%d", port),
-			Handler:           sh,
+			Handler:           headerorder.TLSStateMiddleware(sh),
+			ConnContext:       headerorder.ConnContext(nil),
 			ReadHeaderTimeout: timeouts.ReadHeaderTimeout,
 			ReadTimeout:       timeouts.ReadTimeout,
 			WriteTimeout:      timeouts.WriteTimeout,
 			IdleTimeout:       timeouts.IdleTimeout,
 		},
+	}
+	if cfg.TLS != nil && cfg.TLS.GetCertificate != nil {
+		// The TLS floor matches the platform default; per-distribution
+		// protocol policies cannot lower the crypto/tls handshake floor
+		// on a shared listener.
+		ml.server.TLSConfig = &tls.Config{
+			GetCertificate: cfg.TLS.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+		}
 	}
 	m.listeners[cfg.Name] = ml
 	m.portIndex[port] = ml
@@ -167,11 +193,34 @@ func (m *Manager) Register(cfg ListenerConfig) {
 	if m.started {
 		logs.Info("Starting dynamic listener", logs.String("name", cfg.Name), logs.String("port", ml.server.Addr))
 		go func() {
-			if err := ml.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := serveListener(ml); err != nil && err != http.ErrServerClosed {
 				logs.Error("Dynamic listener error", logs.String("name", cfg.Name), logs.Err(err))
 			}
 		}()
 	}
+}
+
+// serveListener runs the listener's HTTP server, terminating TLS when the
+// listener carries a TLS configuration. Certificate files stay empty: the
+// TLS configuration resolves every certificate through GetCertificate.
+// The header-order capture wraps the listener (above the TLS layer) so
+// order-sensitive consumers such as the WAF HeaderOrder component see the
+// wire order on the per-service planes as well; the eager handshake and
+// Request.TLS restoration in the headerorder ConnContext/TLSStateMiddleware
+// pair compensate for the wrapper hiding the *tls.Conn from the HTTP
+// server. Managed TLS listeners negotiate no ALPN protocol today; adding
+// HTTP/2 negotiation would require revisiting this wrapper, because the
+// server's HTTP/2 dispatch also relies on the concrete *tls.Conn type.
+func serveListener(ml *managedListener) error {
+	raw, err := net.Listen("tcp", ml.server.Addr)
+	if err != nil {
+		return err
+	}
+	capture := headerorder.NewListener(raw)
+	if ml.server.TLSConfig != nil {
+		capture = headerorder.NewListener(tls.NewListener(raw, ml.server.TLSConfig))
+	}
+	return ml.server.Serve(capture)
 }
 
 // mergeIntoExisting adds a handler to an existing listener that already
@@ -220,7 +269,7 @@ func (m *Manager) Start() {
 		names := m.handlerNames(ll)
 		logs.Info("Starting secondary listener", logs.String("name", names), logs.String("port", ll.server.Addr))
 		go func() {
-			if err := ll.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := serveListener(ll); err != nil && err != http.ErrServerClosed {
 				logs.Error("Secondary listener error", logs.String("name", names), logs.Err(err))
 			}
 		}()

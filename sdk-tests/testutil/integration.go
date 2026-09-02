@@ -7,8 +7,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
+	"github.com/aws/aws-sdk-go-v2/service/apigateway"
+	"github.com/aws/aws-sdk-go-v2/service/appsync"
+	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -24,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	"vorpalstacks-sdk-tests/config"
 )
 
@@ -58,22 +64,28 @@ func intRoleARN(roleName, accountID string) string {
 }
 
 type integClients struct {
-	lambda    *lambda.Client
-	eb        *eventbridge.Client
-	cw        *cloudwatch.Client
-	cwl       *cloudwatchlogs.Client
-	sfn       *sfn.Client
-	scheduler *scheduler.Client
-	sns       *sns.Client
-	sqs       *sqs.Client
-	kinesis   *kinesis.Client
-	s3        *s3.Client
-	iam       *iam.Client
-	dynamodb  *dynamodb.Client
-	kms       *kms.Client
-	ctx       context.Context
-	region    string
-	accountID string
+	lambda     *lambda.Client
+	eb         *eventbridge.Client
+	cw         *cloudwatch.Client
+	cwl        *cloudwatchlogs.Client
+	sfn        *sfn.Client
+	scheduler  *scheduler.Client
+	sns        *sns.Client
+	sqs        *sqs.Client
+	kinesis    *kinesis.Client
+	s3         *s3.Client
+	iam        *iam.Client
+	dynamodb   *dynamodb.Client
+	kms        *kms.Client
+	wafv2      *wafv2.Client
+	cloudfront *cloudfront.Client
+	apigateway *apigateway.Client
+	appsync    *appsync.Client
+	cognitoidp *cognitoidentityprovider.Client
+	acm        *acm.Client
+	ctx        context.Context
+	region     string
+	accountID  string
 }
 
 func (r *TestRunner) newIntegClients() (*integClients, error) {
@@ -85,22 +97,28 @@ func (r *TestRunner) newIntegClients() (*integClients, error) {
 		return nil, err
 	}
 	ic := &integClients{
-		lambda:    lambda.NewFromConfig(cfg),
-		eb:        eventbridge.NewFromConfig(cfg),
-		cw:        cloudwatch.NewFromConfig(cfg),
-		cwl:       cloudwatchlogs.NewFromConfig(cfg),
-		sfn:       sfn.NewFromConfig(cfg),
-		scheduler: scheduler.NewFromConfig(cfg),
-		sns:       sns.NewFromConfig(cfg),
-		sqs:       sqs.NewFromConfig(cfg),
-		kinesis:   kinesis.NewFromConfig(cfg),
-		s3:        s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
-		iam:       iam.NewFromConfig(cfg),
-		dynamodb:  dynamodb.NewFromConfig(cfg),
-		kms:       kms.NewFromConfig(cfg),
-		ctx:       context.Background(),
-		region:    r.region,
-		accountID: r.accountID,
+		lambda:     lambda.NewFromConfig(cfg),
+		eb:         eventbridge.NewFromConfig(cfg),
+		cw:         cloudwatch.NewFromConfig(cfg),
+		cwl:        cloudwatchlogs.NewFromConfig(cfg),
+		sfn:        sfn.NewFromConfig(cfg),
+		scheduler:  scheduler.NewFromConfig(cfg),
+		sns:        sns.NewFromConfig(cfg),
+		sqs:        sqs.NewFromConfig(cfg),
+		kinesis:    kinesis.NewFromConfig(cfg),
+		s3:         s3.NewFromConfig(cfg, func(o *s3.Options) { o.UsePathStyle = true }),
+		iam:        iam.NewFromConfig(cfg),
+		dynamodb:   dynamodb.NewFromConfig(cfg),
+		kms:        kms.NewFromConfig(cfg),
+		wafv2:      wafv2.NewFromConfig(cfg),
+		cloudfront: cloudfront.NewFromConfig(cfg),
+		apigateway: apigateway.NewFromConfig(cfg),
+		appsync:    appsync.NewFromConfig(cfg),
+		cognitoidp: cognitoidentityprovider.NewFromConfig(cfg),
+		acm:        acm.NewFromConfig(cfg),
+		ctx:        context.Background(),
+		region:     r.region,
+		accountID:  r.accountID,
 	}
 	return ic, nil
 }
@@ -497,6 +515,53 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	}))
 	results = append(results, r.runIntegWithTimeout("SNS_Lambda", func() TestResult {
 		return r.runSNSToLambda(ic, ts)
+	}))
+
+	// WAFv2 enforcement across the four protected-resource planes.
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_CloudFront", func() TestResult {
+		return r.runWAFEnforcementCloudFront(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_APIGateway", func() TestResult {
+		return r.runWAFEnforcementAPIGateway(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_AppSync", func() TestResult {
+		return r.runWAFEnforcementAppSync(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_Cognito", func() TestResult {
+		return r.runWAFEnforcementCognito(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_CountHeaders", func() TestResult {
+		return r.runWAFEnforcementCountHeaders(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_HeaderOrder", func() TestResult {
+		return r.runWAFEnforcementHeaderOrder(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_GeoAsn", func() TestResult {
+		return r.runWAFEnforcementGeoAsn(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_RateLimit", func() TestResult {
+		return r.runWAFEnforcementRateLimit(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_Captcha", func() TestResult {
+		return r.runWAFEnforcementCaptcha(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_Challenge", func() TestResult {
+		return r.runWAFEnforcementChallenge(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_Monetize", func() TestResult {
+		return r.runWAFEnforcementMonetize(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_ManagedRuleGroup", func() TestResult {
+		return r.runWAFEnforcementManagedRuleGroup(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("WAF_SampledRequests", func() TestResult {
+		return r.runWAFSampledRequests(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CloudFront_ContinuousDeployment", func() TestResult {
+		return r.runCloudFrontContinuousDeployment(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("CloudFront_ViewerTLS", func() TestResult {
+		return r.runCloudFrontViewerTLS(ic, ts)
 	}))
 
 	// Neptune direct protocol tests already wrap each sub-test in RunTest

@@ -52,7 +52,7 @@ func (s *IPSetStore) Create(id, name, description, ipAddressVersion string, addr
 	if ipSet.Scope == "" {
 		ipSet.Scope = "REGIONAL"
 	}
-	ipSet.ARN = s.arnBuilder.BuildIPSetARN(id, ipSet.Scope)
+	ipSet.ARN = s.arnBuilder.BuildIPSetARN(ipSet.Name, id, ipSet.Scope)
 	SetTimestamps(&ipSetAccessor, ipSet)
 	if err := s.Put(id, ipSet, "create_ip_set"); err != nil {
 		return nil, err

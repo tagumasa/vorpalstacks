@@ -50,6 +50,7 @@ func (r *TestRunner) RunCloudFrontTests() []TestResult {
 	results = append(results, cfResponseHeadersPolicyTests(tc)...)
 	results = append(results, cfWebACLCopyTests(tc)...)
 	results = append(results, cfKeyGroupTests(tc)...)
+	results = append(results, cfContinuousDeploymentTests(tc)...)
 	results = append(results, cfEdgeTests(tc)...)
 
 	return results

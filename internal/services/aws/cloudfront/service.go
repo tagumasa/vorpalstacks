@@ -2,6 +2,7 @@
 package cloudfront
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"sync"
@@ -25,6 +26,7 @@ type cloudfrontStores struct {
 	keyGroups               *cloudfrontstore.KeyGroupStore
 	tags                    *cloudfrontstore.TagStore
 	invalidations           *cloudfrontstore.InvalidationStore
+	deploymentPolicies      *cloudfrontstore.ContinuousDeploymentPolicyStore
 	arnBuilder              *cloudfrontstore.ARNBuilder
 }
 
@@ -72,6 +74,26 @@ func (s *CloudFrontService) DistributionHandler() http.Handler {
 	return http.HandlerFunc(s.distributionServer.HandleRequest)
 }
 
+// DistributionTLSGetCertificate returns the SNI certificate resolver for the
+// distribution TLS listener, or nil when the distribution server has not
+// been initialised.
+func (s *CloudFrontService) DistributionTLSGetCertificate() func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	if s.distributionServer == nil {
+		return nil
+	}
+	return s.distributionServer.TLSCertificate
+}
+
+// SetTLSCertificateProviders injects the ACM and IAM certificate material
+// providers the distribution TLS plane resolves viewer certificates
+// through. Either argument may be nil.
+func (s *CloudFrontService) SetTLSCertificateProviders(acm eventbus.ACMCertificateProvider, iam eventbus.IAMServerCertificateProvider) {
+	if s.distributionServer == nil {
+		return
+	}
+	s.distributionServer.SetTLSCertificateProviders(acm, iam)
+}
+
 // createStores builds a complete cloudfrontStores from the given global
 // storage. Called by both store() and GetStoreForRegion() to ensure a
 // single code path for store construction.
@@ -92,6 +114,7 @@ func (s *CloudFrontService) createStores(st storage.BasicStorage) *cloudfrontSto
 		keyGroups:               cloudfrontstore.NewKeyGroupStore(st, s.accountID),
 		tags:                    cloudfrontstore.NewTagStore(st),
 		invalidations:           cloudfrontstore.NewInvalidationStore(st),
+		deploymentPolicies:      cloudfrontstore.NewContinuousDeploymentPolicyStore(st),
 		arnBuilder:              arnBuilder,
 	}
 	if s.distributionServer != nil {
@@ -132,6 +155,15 @@ func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, erro
 // SetWAFInvoker injects the WAF invoker for cross-service WebACL association.
 func (s *CloudFrontService) SetWAFInvoker(invoker eventbus.WAFInvoker) {
 	s.wafInvoker = invoker
+}
+
+// SetWebACLInspector injects the WAF request-inspection entry point and
+// forwards it to the distribution server so associated WebACLs are
+// enforced on distribution traffic.
+func (s *CloudFrontService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+	if s.distributionServer != nil {
+		s.distributionServer.SetWebACLInspector(inspector)
+	}
 }
 
 // SetACMInvoker injects the ACM invoker for cross-service certificate usage
@@ -213,4 +245,11 @@ func (s *CloudFrontService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cloudfront", "UpdateKeyGroup", s.UpdateKeyGroup)
 	d.RegisterHandlerForService("cloudfront", "DeleteKeyGroup", s.DeleteKeyGroup)
 	d.RegisterHandlerForService("cloudfront", "ListKeyGroups", s.ListKeyGroups)
+
+	d.RegisterHandlerForService("cloudfront", "CreateContinuousDeploymentPolicy", s.CreateContinuousDeploymentPolicy)
+	d.RegisterHandlerForService("cloudfront", "GetContinuousDeploymentPolicy", s.GetContinuousDeploymentPolicy)
+	d.RegisterHandlerForService("cloudfront", "GetContinuousDeploymentPolicyConfig", s.GetContinuousDeploymentPolicyConfig)
+	d.RegisterHandlerForService("cloudfront", "UpdateContinuousDeploymentPolicy", s.UpdateContinuousDeploymentPolicy)
+	d.RegisterHandlerForService("cloudfront", "DeleteContinuousDeploymentPolicy", s.DeleteContinuousDeploymentPolicy)
+	d.RegisterHandlerForService("cloudfront", "ListContinuousDeploymentPolicies", s.ListContinuousDeploymentPolicies)
 }

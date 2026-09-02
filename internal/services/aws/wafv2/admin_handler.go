@@ -25,17 +25,24 @@ func NewAdminHandler(svc *WAFv2Service) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
+// adminStoreRegion resolves the store region for a console request: the
+// header region, switched to the us-east-1 partition when the request
+// targets the CloudFront scope.
+func adminStoreRegion(header http.Header, scope string) string {
+	return storeRegionForScope(defaults.GetRegionFromHeader(header), scope)
+}
+
 // ListWebACLs returns a paginated list of WebACL summaries via the admin
 // console gRPC-Web interface.
 func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.ListWebACLsRequest]) (*connect.Response[pb.ListWebACLsResponse], error) {
-	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
-	if err != nil {
-		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-
 	scope := "REGIONAL"
 	if req.Msg.Scope == pb.Scope_SCOPE_CLOUDFRONT {
 		scope = "CLOUDFRONT"
+	}
+
+	stores, err := h.service.GetStoresForRegion(adminStoreRegion(req.Header(), scope))
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	result, err := h.service.listWebACLsCore(stores, ListWebACLsInput{
@@ -61,14 +68,14 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 // CreateWebACL creates a new WebACL via the admin console gRPC-Web
 // interface.
 func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb.CreateWebACLRequest]) (*connect.Response[pb.CreateWebACLResponse], error) {
-	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
-	if err != nil {
-		return nil, svcerrors.AWSErrorToGRPC(err)
-	}
-
 	scope := "REGIONAL"
 	if req.Msg.Scope == pb.Scope_SCOPE_CLOUDFRONT {
 		scope = "CLOUDFRONT"
+	}
+
+	stores, err := h.service.GetStoresForRegion(adminStoreRegion(req.Header(), scope))
+	if err != nil {
+		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	// The console-side defaults for the required DefaultAction and
@@ -89,7 +96,11 @@ func (h *AdminHandler) CreateWebACL(ctx context.Context, req *connect.Request[pb
 // interface.
 func (h *AdminHandler) DeleteWebACL(ctx context.Context, req *connect.Request[pb.DeleteWebACLRequest]) (*connect.Response[pb.DeleteWebACLResponse], error) {
 	lockToken := req.Msg.GetLocktoken()
-	stores, err := h.service.GetStoresForRegion(defaults.GetRegionFromHeader(req.Header()))
+	scope := "REGIONAL"
+	if req.Msg.GetScope() == pb.Scope_SCOPE_CLOUDFRONT {
+		scope = "CLOUDFRONT"
+	}
+	stores, err := h.service.GetStoresForRegion(adminStoreRegion(req.Header(), scope))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

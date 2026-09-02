@@ -11,7 +11,7 @@ import (
 
 // CreateIPSet creates a new IP set containing the specified IP addresses.
 func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (s *WAFv2Service) CreateIPSet(ctx context.Context, reqCtx *request.RequestC
 
 // GetIPSet retrieves the details of the specified IP set.
 func (s *WAFv2Service) GetIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *WAFv2Service) GetIPSet(ctx context.Context, reqCtx *request.RequestCont
 
 // ListIPSets returns a paginated list of all IP sets.
 func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *WAFv2Service) ListIPSets(ctx context.Context, reqCtx *request.RequestCo
 
 // UpdateIPSet updates the specified IP set with new addresses, returning a new lock token.
 func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *WAFv2Service) UpdateIPSet(ctx context.Context, reqCtx *request.RequestC
 
 // DeleteIPSet permanently deletes the specified IP set.
 func (s *WAFv2Service) DeleteIPSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}

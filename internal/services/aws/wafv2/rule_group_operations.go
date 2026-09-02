@@ -11,7 +11,7 @@ import (
 
 // CreateRuleGroup creates a new rule group with the specified rules and visibility configuration.
 func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (s *WAFv2Service) CreateRuleGroup(ctx context.Context, reqCtx *request.Requ
 
 // GetRuleGroup retrieves the details of the specified rule group.
 func (s *WAFv2Service) GetRuleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (s *WAFv2Service) GetRuleGroup(ctx context.Context, reqCtx *request.Request
 
 // ListRuleGroups returns a paginated list of all rule groups.
 func (s *WAFv2Service) ListRuleGroups(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (s *WAFv2Service) ListRuleGroups(ctx context.Context, reqCtx *request.Reque
 
 // UpdateRuleGroup updates the specified rule group with new rules and configuration, returning a new lock token.
 func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (s *WAFv2Service) UpdateRuleGroup(ctx context.Context, reqCtx *request.Requ
 
 // DeleteRuleGroup permanently deletes the specified rule group.
 func (s *WAFv2Service) DeleteRuleGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}

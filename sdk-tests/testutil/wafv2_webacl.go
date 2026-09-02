@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -89,6 +90,21 @@ func (r *TestRunner) runWAFv2WebACLTests(tc *wafv2TestContext) []TestResult {
 		}
 		if aws.ToString(resp.Summary.Name) != webACLName {
 			return fmt.Errorf("Summary.Name mismatch: expected %s, got %s", webACLName, aws.ToString(resp.Summary.Name))
+		}
+		// WAFv2 ARNs embed the scope, resource type, name and id in the
+		// resource path: regional/webacl/<name>/<id> (global for the
+		// CLOUDFRONT scope). CLOUDFRONT-scoped ARNs always carry
+		// us-east-1 as their region, whatever region the request was
+		// signed for.
+		scopeSegment := "regional"
+		arnRegion := tc.region
+		if tc.scope == types.ScopeCloudfront {
+			scopeSegment = "global"
+			arnRegion = "us-east-1"
+		}
+		wantPrefix := fmt.Sprintf("arn:aws:wafv2:%s:%s:%s/webacl/%s/", arnRegion, tc.accountID, scopeSegment, webACLName)
+		if got := aws.ToString(resp.Summary.ARN); !strings.HasPrefix(got, wantPrefix) {
+			return fmt.Errorf("Summary.ARN = %s, want prefix %s", got, wantPrefix)
 		}
 		webACLID = aws.ToString(resp.Summary.Id)
 		webACLARN = aws.ToString(resp.Summary.ARN)

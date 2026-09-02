@@ -45,7 +45,7 @@ func (s *RuleGroupStore) Create(ruleGroup *RuleGroup) (*RuleGroup, error) {
 	if ruleGroup.Tags == nil {
 		ruleGroup.Tags = []types.Tag{}
 	}
-	ruleGroup.ARN = s.arnBuilder.BuildRuleGroupARN(ruleGroup.ID, ruleGroup.Scope)
+	ruleGroup.ARN = s.arnBuilder.BuildRuleGroupARN(ruleGroup.Name, ruleGroup.ID, ruleGroup.Scope)
 	SetTimestamps(&ruleGroupAccessor, ruleGroup)
 	if err := s.Put(ruleGroup.ID, ruleGroup, "create_rule_group"); err != nil {
 		return nil, err

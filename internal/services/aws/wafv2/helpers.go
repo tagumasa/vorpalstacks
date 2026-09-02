@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/services/aws/wafv2/inspection"
 	"vorpalstacks/internal/store/aws/waf"
 )
 
@@ -24,40 +25,68 @@ func marshalUnmarshal[In any, Out any](in In) (Out, bool) {
 	return out, true
 }
 
+// WCU cost constants. The per-statement characteristics sections of the
+// AWS WAF Developer Guide define them: a string match costs 2 WCUs for
+// the anchored positional constraints (EXACTLY, STARTS_WITH, ENDS_WITH)
+// and 10 for the substring ones (CONTAINS, CONTAINS_WORD); each text
+// transformation adds 10 WCUs; the AllQueryArguments component adds 10
+// WCUs; the JSON body component doubles the statement's base cost; a
+// rate-based statement costs 2 WCUs plus 30 per custom aggregation key.
+// The NONE transformation costs nothing: the console attaches it by
+// default to every rule, and the guide's base-cost examples for plain
+// rules show the base cost alone, so a no-op transformation cannot be
+// charged. These are the single definitions of the values; every other
+// site references them.
+const (
+	wcuByteMatchAnchored  int64 = 2
+	wcuByteMatchSubstring int64 = 10
+	wcuTextTransformation int64 = 10
+	wcuAllQueryArguments  int64 = 10
+	wcuRateCustomKey      int64 = 30
+	wcuRateBase           int64 = 2
+)
+
 // calculateStatementCapacity returns the WCU capacity consumed by a single
-// statement. Base WCU values per AWS WAF documentation:
+// statement. Base WCU values per the per-statement characteristics
+// sections of the AWS WAF Developer Guide:
 //
-//	ByteMatchStatement: 1, SqliMatchStatement: 20, XssMatchStatement: 20,
+//	ByteMatchStatement: 2 (anchored) or 10 (substring) plus modifiers,
+//	SqliMatchStatement: 20, XssMatchStatement: 20,
 //	SizeConstraintStatement: 1, GeoMatchStatement: 1,
 //	RegexMatchStatement: 25, RegexPatternSetRefStatement: 25,
 //	IPSetReferenceStatement: 1, LabelMatchStatement: 1,
-//	AndStatement/OrStatement: 1 + sum of nested,
-//	NotStatement: 1 + nested, RateBasedStatement: 2 + nested,
-//	ManagedRuleGroupStatement: 0 (capacity is provided by DescribeManagedRuleGroup)
+//	AndStatement/OrStatement: 1 + nested, NotStatement: 1 + nested,
+//	RateBasedStatement: 2 + 30 per custom key + scope-down,
+//	ManagedRuleGroupStatement: the managed group's catalog WCU
 func calculateStatementCapacity(stmt *waf.Statement) int64 {
 	if stmt == nil {
 		return 0
 	}
 	if stmt.ByteMatchStatement != nil {
-		return 1
+		base := wcuByteMatchAnchored
+		switch stmt.ByteMatchStatement.PositionalConstraint {
+		case "CONTAINS", "CONTAINS_WORD":
+			base = wcuByteMatchSubstring
+		}
+		return matchStatementCost(base, stmt.ByteMatchStatement.FieldToMatch, stmt.ByteMatchStatement.TextTransformations)
 	}
 	if stmt.SqliMatchStatement != nil {
-		return 20
+		return matchStatementCost(20, stmt.SqliMatchStatement.FieldToMatch, stmt.SqliMatchStatement.TextTransformations)
 	}
 	if stmt.XssMatchStatement != nil {
-		return 20
+		return matchStatementCost(20, stmt.XssMatchStatement.FieldToMatch, stmt.XssMatchStatement.TextTransformations)
 	}
 	if stmt.SizeConstraintStatement != nil {
-		return 1
+		return matchStatementCost(1, stmt.SizeConstraintStatement.FieldToMatch, stmt.SizeConstraintStatement.TextTransformations)
 	}
 	if stmt.GeoMatchStatement != nil {
 		return 1
 	}
 	if stmt.RegexMatchStatement != nil {
-		return 25
+		return matchStatementCost(25, stmt.RegexMatchStatement.FieldToMatch, stmt.RegexMatchStatement.TextTransformations)
 	}
 	if stmt.RegexPatternSetRefStatement != nil {
-		return 25
+		return matchStatementCost(25, stmt.RegexPatternSetRefStatement.FieldToMatch, stmt.RegexPatternSetRefStatement.TextTransformations)
 	}
 	if stmt.IPSetReferenceStatement != nil {
 		return 1
@@ -88,19 +117,50 @@ func calculateStatementCapacity(stmt *waf.Statement) int64 {
 		return 1 + calculateStatementCapacity(stmt.NotStatement.Statement)
 	}
 	if stmt.RateBasedStatement != nil {
-		var nested int64
+		capacity := wcuRateBase + wcuRateCustomKey*int64(len(stmt.RateBasedStatement.CustomKeys))
 		if stmt.RateBasedStatement.ScopeDownStatement != nil {
-			nested = calculateStatementCapacity(stmt.RateBasedStatement.ScopeDownStatement)
+			capacity += calculateStatementCapacity(stmt.RateBasedStatement.ScopeDownStatement)
 		}
-		return 2 + nested
+		return capacity
 	}
 	if stmt.ManagedRuleGroupStatement != nil {
+		// A managed rule group's capacity is its catalog WCU, the same
+		// number DescribeManagedRuleGroup reports; it counts against the
+		// web ACL's capacity like any other statement.
+		if group, ok := inspection.LookupManagedRuleGroup(
+			stmt.ManagedRuleGroupStatement.VendorName,
+			stmt.ManagedRuleGroupStatement.Name,
+		); ok {
+			return group.WCU
+		}
 		return 0
 	}
 	if stmt.RuleGroupReferenceStatement != nil {
 		return 0
 	}
 	return 1
+}
+
+// matchStatementCost applies the request-component and text-
+// transformation modifiers the Developer Guide defines for match
+// statements: the JSON body component doubles the base cost, the
+// AllQueryArguments component adds 10 WCUs, and every text
+// transformation other than NONE adds 10 WCUs.
+func matchStatementCost(base int64, ftm *waf.FieldToMatch, tts []*waf.TextTransformation) int64 {
+	if ftm != nil {
+		if ftm.JsonBody != nil {
+			base *= 2
+		}
+		if ftm.AllQueryArguments != nil {
+			base += wcuAllQueryArguments
+		}
+	}
+	for _, tt := range tts {
+		if tt != nil && tt.Type != "NONE" {
+			base += wcuTextTransformation
+		}
+	}
+	return base
 }
 
 // convertVisibilityConfig converts a raw map to a typed VisibilityConfig.
@@ -228,11 +288,20 @@ func convertRules(rulesRaw interface{}) []*waf.Rule {
 }
 
 // parseRules converts raw rule data and validates all enum values and
-// required fields. Returns an error if any statement contains an invalid
-// enum value or is missing a required field.
+// required fields for web ACL rules — managed rule group references are
+// allowed as a rule's top-level statement. Returns an error if any
+// statement contains an invalid enum value or is missing a required
+// field.
 func parseRules(rulesRaw interface{}) ([]*waf.Rule, error) {
+	return parseRulesForEntity(rulesRaw, true)
+}
+
+// parseRulesForEntity is parseRules with the entity's placement rules:
+// rule groups cannot reference managed rule groups at any depth, per
+// the API's statement placement rules.
+func parseRulesForEntity(rulesRaw interface{}, allowManagedRuleGroups bool) ([]*waf.Rule, error) {
 	rules := convertRules(rulesRaw)
-	if err := validateRules(rules); err != nil {
+	if err := validateRules(rules, allowManagedRuleGroups); err != nil {
 		return nil, err
 	}
 	return rules, nil

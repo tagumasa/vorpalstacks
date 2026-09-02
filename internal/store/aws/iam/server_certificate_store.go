@@ -105,3 +105,12 @@ func (s *ServerCertificateStore) List(pathPrefix, marker string, maxItems int) (
 		Marker:                        nextMarker,
 	}, nil
 }
+
+// GetByID resolves a server certificate by its unique certificate ID (the
+// ASCA… identifier cross-service consumers such as CloudFront reference);
+// the primary storage key is the certificate name, so the lookup scans the
+// bucket.
+func (s *ServerCertificateStore) GetByID(certID string) (*ServerCertificate, error) {
+	return getEntityByID(s.BaseStore, certID, func(c *ServerCertificate) string { return c.ID },
+		"get_server_certificate_by_id", ErrServerCertificateNotFound)
+}

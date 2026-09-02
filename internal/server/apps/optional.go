@@ -137,8 +137,34 @@ func (a *App) initOptionalServices() error {
 	}
 
 	a.wireWAFv2ResourceCheckers(st)
+	a.wireWAFEnforcement(st)
 
 	return nil
+}
+
+// wireWAFEnforcement distributes the WAF request-inspection entry point
+// to every protected-resource plane. Like the resource-checker wiring,
+// it must run after every service initialiser because the inspector is
+// published by initWAFv2 and the protected services are created by
+// different initialisers.
+func (a *App) wireWAFEnforcement(st *serviceState) {
+	eb := a.server.EventBus()
+	if eb == nil || eb.WebACLInspector() == nil {
+		return
+	}
+	inspector := eb.WebACLInspector()
+	if st.cloudFrontService != nil {
+		st.cloudFrontService.SetWebACLInspector(inspector)
+	}
+	if st.apiGatewayService != nil {
+		st.apiGatewayService.SetWebACLInspector(inspector)
+	}
+	if st.appSyncService != nil {
+		st.appSyncService.SetWebACLInspector(inspector)
+	}
+	if st.cognitoService != nil {
+		st.cognitoService.SetWebACLInspector(inspector)
+	}
 }
 
 // --- Athena (optional) ---
@@ -198,6 +224,19 @@ func (a *App) initCloudFront(st *serviceState) error {
 	}
 	st.cloudFrontService.RegisterHandlers(a.server.Dispatcher())
 	st.cloudFrontService.InitDistributionServer()
+	// The distribution TLS plane resolves viewer certificates through the
+	// ACM and IAM material providers; both are always-on services but may
+	// be disabled by configuration, in which case only the synthesised
+	// default certificate serves.
+	var acmCerts eventbus.ACMCertificateProvider
+	if st.acmService != nil {
+		acmCerts = st.acmService
+	}
+	var iamCerts eventbus.IAMServerCertificateProvider
+	if st.iamService != nil {
+		iamCerts = st.iamService
+	}
+	st.cloudFrontService.SetTLSCertificateProviders(acmCerts, iamCerts)
 	return nil
 }
 
@@ -311,11 +350,14 @@ func (a *App) initWAFv2(st *serviceState) error {
 	st.wafv2Service.SetStorageManager(a.server.StorageManager())
 	st.wafv2Service.RegisterHandlers(a.server.Dispatcher())
 	// Cross-service wiring ran before this service existed, so attach the
-	// Web ACL existence provider to the already-registered WAF invoker.
+	// Web ACL existence provider to the already-registered WAF invoker and
+	// publish the request-inspection entry point that every
+	// protected-resource plane consults before serving traffic.
 	if eb := a.server.EventBus(); eb != nil {
 		if inv, ok := eb.WAFInvoker().(*wafInvokerAdapter); ok {
 			inv.SetWebACLProvider(st.wafv2Service)
 		}
+		eb.SetWebACLInspector(st.wafv2Service)
 	}
 	return nil
 }
@@ -922,6 +964,21 @@ func (a *App) registerListeners() {
 				HostSuffix:  ".cloudfront.net",
 				Handler:     handler,
 			})
+			// The TLS twin of the distribution plane: same handler, with
+			// the SNI certificate resolver serving the distributions'
+			// viewer certificates.
+			if resolver := st.cloudFrontService.DistributionTLSGetCertificate(); resolver != nil {
+				a.registerListener(listener.ListenerConfig{
+					Name:        "cloudfront_tls",
+					PortKey:     "ports.cloudfront_tls",
+					DefaultPort: serviceports.CloudFrontTLS,
+					HostSuffix:  ".cloudfront.net",
+					Handler:     handler,
+					TLS: &listener.ListenerTLSConfig{
+						GetCertificate: resolver,
+					},
+				})
+			}
 		}
 	}
 

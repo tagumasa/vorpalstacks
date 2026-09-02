@@ -230,6 +230,7 @@ type EventBus struct {
 	kmsInvoker              KMSInvoker
 	s3Invoker               S3Invoker
 	wafInvoker              WAFInvoker
+	webACLInspector         WebACLInspector
 	cloudWatchMetricInvoker CloudWatchMetricInvoker
 	cloudWatchAlarmInvoker  CloudWatchAlarmInvoker
 	timestreamInvoker       TimestreamInvoker

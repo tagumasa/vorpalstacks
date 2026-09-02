@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/fqdnrouter"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
@@ -23,6 +24,10 @@ import (
 
 // HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.
 func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request) {
+	if eventbus.ServeWAFTokenExchange(r.Context(), s.waf.currentInspector(), w, r) {
+		return
+	}
+
 	if s.storageManager == nil {
 		http.Error(w, "Cognito hosted UI not available", http.StatusServiceUnavailable)
 		return
@@ -41,6 +46,15 @@ func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil || poolID == "" {
 		http.Error(w, "Domain not found", http.StatusNotFound)
 		return
+	}
+
+	// WAF inspection covers every hosted UI endpoint; the hosted UI
+	// forwards no request body to AWS WAF, so only headers and the path
+	// are inspected.
+	if poolARN := s.poolARNByID(poolID); poolARN != "" {
+		if s.enforceWAFOnHostedUI(w, r, poolARN) {
+			return
+		}
 	}
 
 	path := r.URL.Path

@@ -26,3 +26,33 @@ const MaxPublicKeysPerKeyGroup = 5
 // MaxAliasItemLength is the maximum length of a single CNAME alias per the
 // Smithy aliasString shape (@length(min:0, max:253)).
 const MaxAliasItemLength = 253
+
+// LegacyDefaultTTLSeconds is the default TTL a cache behaviour applies when
+// it carries no cache policy and the request omits DefaultTTL: the
+// Developer Guide (Manage how long content stays in the cache) states the
+// default TTL is 24 hours when a cache policy is not used.
+const LegacyDefaultTTLSeconds = 86400
+
+// DefaultErrorCachingTTLSeconds is the duration CloudFront caches a 4xx or
+// 5xx origin response for when it carries no Cache-Control max-age or
+// s-maxage directive and no ErrorCachingMinTTL is configured (How
+// CloudFront processes HTTP 4xx and 5xx status codes from your origin).
+const DefaultErrorCachingTTLSeconds = 10
+
+// MaxContinuousDeploymentPolicies is the AWS quota for continuous
+// deployment policies per account (Quotas and other considerations for
+// continuous deployment).
+const MaxContinuousDeploymentPolicies = 20
+
+// MaxContinuousDeploymentWeight is the maximum fraction of traffic a
+// weight-based continuous deployment policy may route to the staging
+// distribution.
+const MaxContinuousDeploymentWeight = 0.15
+
+// MinSessionStickinessTTLSeconds and MaxSessionStickinessTTLSeconds bound
+// both the idle duration and the maximum session duration of a sticky
+// weight-based continuous deployment policy.
+const (
+	MinSessionStickinessTTLSeconds = 300
+	MaxSessionStickinessTTLSeconds = 3600
+)

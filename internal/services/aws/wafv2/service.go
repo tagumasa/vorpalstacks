@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"vorpalstacks/internal/common/defaults"
 
@@ -31,6 +32,7 @@ type wafv2Stores struct {
 	regexPatternSets *wafstore.RegexPatternSetStore
 	associations     *wafstore.WebACLAssociationStore
 	loggingConfigs   *wafstore.LoggingStore
+	samples          *wafstore.SamplingStore
 	tags             *storecommon.TagStore
 	arnBuilder       *wafstore.ARNBuilder
 }
@@ -42,11 +44,13 @@ type WAFv2Service struct {
 	stores           sync.Map // region → *wafv2Stores
 	storageManager   *storage.RegionStorageManager
 	resourceCheckers []eventbus.WebACLResourceChecker
+	sampleSweepOnce  sync.Once
+	challenges       *challengeRegistry
 }
 
 // NewWAFv2Service creates a new WAFv2Service instance.
 func NewWAFv2Service(accountID, region string) *WAFv2Service {
-	return &WAFv2Service{accountID: accountID, region: region}
+	return &WAFv2Service{accountID: accountID, region: region, challenges: newChallengeRegistry()}
 }
 
 // SetStorageManager injects the region storage manager for lazy store creation.
@@ -103,6 +107,7 @@ func (s *WAFv2Service) GetStoresForRegion(region string) (*wafv2Stores, error) {
 			regexPatternSets: wafstore.NewRegexPatternSetStore(st, s.accountID, region),
 			associations:     wafstore.NewWebACLAssociationStore(st),
 			loggingConfigs:   wafstore.NewLoggingStore(st),
+			samples:          wafstore.NewSamplingStore(st),
 			tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region),
 			arnBuilder:       wafstore.NewARNBuilder(s.accountID, region),
 		}, nil
@@ -129,6 +134,7 @@ func (s *WAFv2Service) GetWebACLStoreForRegion(region string) (*wafstore.WebACLS
 		regexPatternSets: wafstore.NewRegexPatternSetStore(st, s.accountID, region),
 		associations:     wafstore.NewWebACLAssociationStore(st),
 		loggingConfigs:   wafstore.NewLoggingStore(st),
+		samples:          wafstore.NewSamplingStore(st),
 		tags:             storecommon.NewTagStoreWithRegion(st, "wafv2", region),
 		arnBuilder:       wafstore.NewARNBuilder(s.accountID, region),
 	}
@@ -149,10 +155,40 @@ func (s *WAFv2Service) store(reqCtx *request.RequestContext) (*wafv2Stores, erro
 			regexPatternSets: wafstore.NewRegexPatternSetStore(storage, reqCtx.GetAccountID(), reqCtx.GetRegion()),
 			associations:     wafstore.NewWebACLAssociationStore(storage),
 			loggingConfigs:   wafstore.NewLoggingStore(storage),
+			samples:          wafstore.NewSamplingStore(storage),
 			tags:             storecommon.NewTagStoreWithRegion(storage, "wafv2", reqCtx.GetRegion()),
 			arnBuilder:       wafstore.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()),
 		}, nil
 	})
+}
+
+// isGlobalScope reports whether the Scope parameter names the CloudFront
+// (global) partition of the wafv2 resource space.
+func isGlobalScope(scope string) bool {
+	return strings.EqualFold(scope, "CLOUDFRONT")
+}
+
+// storeRegionForScope maps a caller region and a wafv2 Scope to the
+// region whose store bundle owns the scope's resources: the CloudFront
+// scope is served by us-east-1, every other scope by the caller's
+// region.
+func storeRegionForScope(callerRegion, scope string) string {
+	if isGlobalScope(scope) {
+		return arn.WAFCloudFrontRegion
+	}
+	return callerRegion
+}
+
+// storeForScope returns the store bundle that owns resources created
+// under the given Scope. The AWS WAFv2 API serves the CloudFront scope
+// from the us-east-1 endpoint and its ARNs carry us-east-1 whatever
+// region the call arrives from, so CLOUDFRONT-scope resources live in
+// the us-east-1 store; regional resources live in the request region.
+// Every ARN-based reader (inspection, sampling, the CloudFront WebACL
+// validation) resolves the store from the ARN's own region, so routing
+// writes through this rule keeps both sides on the same partition.
+func (s *WAFv2Service) storeForScope(reqCtx *request.RequestContext, scope string) (*wafv2Stores, error) {
+	return s.GetStoresForRegion(storeRegionForScope(reqCtx.GetRegion(), scope))
 }
 
 // RegisterHandlers registers all WAFv2 API operation handlers with the dispatcher.
@@ -199,6 +235,9 @@ func (s *WAFv2Service) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroups", s.ListAvailableManagedRuleGroups)
 	d.RegisterHandlerForService("wafv2", "DescribeManagedRuleGroup", s.DescribeManagedRuleGroup)
 	d.RegisterHandlerForService("wafv2", "ListAvailableManagedRuleGroupVersions", s.ListAvailableManagedRuleGroupVersions)
+
+	d.RegisterHandlerForService("wafv2", "GetSampledRequests", s.GetSampledRequests)
+	d.RegisterHandlerForService("wafv2", "GetRateBasedStatementManagedKeys", s.GetRateBasedStatementManagedKeys)
 }
 
 // CheckCapacity calculates the capacity consumed by the specified rules.

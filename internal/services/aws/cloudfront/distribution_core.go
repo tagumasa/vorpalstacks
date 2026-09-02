@@ -287,6 +287,10 @@ func (s *CloudFrontService) createDistributionCore(ctx context.Context, stores *
 		return nil, err
 	}
 
+	if err := s.validateDistributionPolicyReference(stores, in.Config); err != nil {
+		return nil, err
+	}
+
 	if err := s.validateTrustedKeyGroups(stores, in.Config); err != nil {
 		return nil, err
 	}
@@ -439,6 +443,10 @@ func (s *CloudFrontService) updateDistributionCore(ctx context.Context, stores *
 		return nil, err
 	}
 
+	if err := s.validateDistributionPolicyReference(stores, in.Config); err != nil {
+		return nil, err
+	}
+
 	if err := s.validateTrustedKeyGroups(stores, in.Config); err != nil {
 		return nil, err
 	}
@@ -521,6 +529,12 @@ func (s *CloudFrontService) updateDistributionCore(ctx context.Context, stores *
 				return nil, fmt.Errorf("failed to register new certificate usage: %w", err)
 			}
 		}
+	}
+
+	// A configuration change invalidates the distribution's edge cache.
+	if s.distributionServer != nil {
+		s.distributionServer.PurgeDistribution(in.Id)
+		s.distributionServer.PurgeCertificates()
 	}
 
 	return &UpdateDistributionResult{Distribution: distribution}, nil
@@ -662,6 +676,12 @@ func (s *CloudFrontService) deleteDistributionCore(ctx context.Context, stores *
 		return err
 	}
 
+	// Deleting the distribution drops its cached entries.
+	if s.distributionServer != nil {
+		s.distributionServer.PurgeDistribution(in.Id)
+		s.distributionServer.PurgeCertificates()
+	}
+
 	if certArnForCleanup != "" && s.acmInvoker != nil {
 		if err := s.acmInvoker.UnregisterCertificateUsage(ctx, in.ACMRegion, certArnForCleanup, distribution.ARN); err != nil {
 			slog.Error("failed to unregister certificate usage for deleted distribution", "distributionId", in.Id, "error", err)
@@ -726,6 +746,18 @@ func (s *CloudFrontService) associateDistributionWebACLCore(ctx context.Context,
 			return nil, err
 		}
 	}
+	// A distribution with an attached continuous deployment policy
+	// cannot change its Web ACL association; the policy must be deleted
+	// first. Re-associating the web ACL that is already in place stays
+	// allowed — the continuous deployment quotas page forbids only an
+	// association that is the first one for that ACL on the
+	// distribution.
+	if distribution.DistributionConfig != nil &&
+		distribution.DistributionConfig.ContinuousDeploymentPolicyId != "" &&
+		distribution.DistributionConfig.WebACLId != in.WebACLArn {
+		return nil, awserrors.NewAWSError("InvalidArgument",
+			"You cannot associate a web ACL with a distribution that has a continuous deployment policy. Delete the continuous deployment policy first.", 400)
+	}
 	// This operation models EntityNotFound rather than InvalidWebACLId
 	// (which belongs to the distribution create/update family) for a Web
 	// ACL that does not exist.
@@ -782,6 +814,13 @@ func (s *CloudFrontService) disassociateDistributionWebACLCore(ctx context.Conte
 		if err := verifyIfMatch(ifMatch, distribution.ETag); err != nil {
 			return nil, err
 		}
+	}
+	// A distribution with an attached continuous deployment policy
+	// cannot drop its Web ACL association either; the policy must be
+	// deleted first.
+	if distribution.DistributionConfig != nil && distribution.DistributionConfig.ContinuousDeploymentPolicyId != "" {
+		return nil, awserrors.NewAWSError("InvalidArgument",
+			"You cannot disassociate a web ACL from a distribution that has a continuous deployment policy. Delete the continuous deployment policy first.", 400)
 	}
 	if distribution.DistributionConfig != nil && distribution.DistributionConfig.WebACLId != "" {
 		old := distribution.DistributionConfig.WebACLId

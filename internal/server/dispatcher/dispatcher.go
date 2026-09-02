@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -88,12 +89,23 @@ func NewDispatcher(
 	return d
 }
 
+// requestSourceIP derives the calling client's address from the
+// connection. Every dispatched operation carries it: WAF IP-aggregated
+// statements and CloudTrail audit events both consume the value.
+func requestSourceIP(r *http.Request) string {
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
+}
+
 // executeHandler runs the shared handler execution pipeline:
 // build request context, check authorisation, execute with resilience wrapper,
 // record audit, and write the response or error.
 func (d *Dispatcher) executeHandler(w http.ResponseWriter, r *http.Request, serviceName, opName string, parsedReq *request.ParsedRequest, handler Handler) {
 	httpCtx := r.Context()
 	reqCtx := request.NewRequestContext(httpCtx, d.storageManager, d.accountID, parsedReq.GetRegion())
+	reqCtx.SourceIP = requestSourceIP(r)
 	reqCtx.SetIAMStore(d.iamStore, d.iamStore.Roles())
 	if graphDB := request.GraphDBOverride(httpCtx); graphDB != nil {
 		reqCtx.SetGraphDBManager(graphDB, graphDB)

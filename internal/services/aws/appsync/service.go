@@ -25,6 +25,7 @@ type AppSyncService struct {
 	schemaWg       sync.WaitGroup
 	eventServer    *EventServer
 	storageManager *storage.RegionStorageManager
+	waf            wafEnforcement
 }
 
 // NewAppSyncService creates a new AppSync service instance scoped to the given account.

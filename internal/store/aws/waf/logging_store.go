@@ -113,11 +113,16 @@ func (s *LoggingStore) List(scope string, marker string, maxItems int) (*Logging
 }
 
 // matchesScope determines whether a resource ARN belongs to the given
-// WAF scope. WAF ARNs embed the scope in the resource path (e.g.,
-// webacl/REGIONAL/<id> or webacl/CLOUDFRONT/<id>).
+// WAF scope. WAF ARNs embed the scope as the resource path's first
+// segment: regional for REGIONAL, global for CLOUDFRONT
+// (e.g. regional/webacl/<name>/<id>).
 func matchesScope(resourceArn, scope string) bool {
+	segment := "regional"
+	if strings.EqualFold(scope, "CLOUDFRONT") {
+		segment = "global"
+	}
 	_, _, _, _, resource := svcarn.SplitARN(resourceArn)
-	return strings.Contains(resource, "/"+scope+"/")
+	return strings.HasPrefix(resource, segment+"/")
 }
 
 // GetByResourceArn retrieves a logging configuration by resource ARN.

@@ -263,8 +263,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	results = append(results, r.RunTest("kms", "ReEncrypt_SourceAlgorithmHonoured", func() error {
 		keyResp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
 			Description: aws.String("ReEncrypt RSA source key"),
-			KeySpec:      types.KeySpecRsa2048,
-			KeyUsage:     types.KeyUsageTypeEncryptDecrypt,
+			KeySpec:     types.KeySpecRsa2048,
+			KeyUsage:    types.KeyUsageTypeEncryptDecrypt,
 		})
 		if err != nil {
 			return fmt.Errorf("create RSA key: %v", err)

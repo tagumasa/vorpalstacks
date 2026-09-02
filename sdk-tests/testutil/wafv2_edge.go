@@ -279,6 +279,166 @@ func (r *TestRunner) runWAFv2EdgeTests(tc *wafv2TestContext) []TestResult {
 		return AssertErrorContains(delErr, "WAFAssociatedItemException")
 	}))
 
+	// createRuleGroupWithInnerRule provisions one rule group carrying a
+	// single blocking inner rule, returning the name, id and the latest
+	// lock token for cleanup.
+	createRuleGroupWithInnerRule := func(prefix string) (name, id, lock string, err error) {
+		name = tc.uniqueName(prefix)
+		id, lock, err = tc.createRuleGroup(name, 10, &types.VisibilityConfig{
+			SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+			MetricName: aws.String(tc.uniqueName("ovr-rg-metric")),
+		})
+		if err != nil {
+			return "", "", "", fmt.Errorf("create rule group: %v", err)
+		}
+		resp, err := tc.client.UpdateRuleGroup(tc.ctx, &wafv2.UpdateRuleGroupInput{
+			Name:      aws.String(name),
+			Scope:     tc.scope,
+			Id:        aws.String(id),
+			LockToken: aws.String(lock),
+			Rules: []types.Rule{{
+				Name:     aws.String("inner-block"),
+				Priority: 1,
+				Action:   &types.RuleAction{Block: &types.BlockAction{}},
+				Statement: &types.Statement{
+					ByteMatchStatement: &types.ByteMatchStatement{
+						PositionalConstraint: types.PositionalConstraintContains,
+						SearchString:         []byte("bad"),
+						FieldToMatch:         &types.FieldToMatch{UriPath: &types.UriPath{}},
+						TextTransformations: []types.TextTransformation{{
+							Priority: 0, Type: types.TextTransformationTypeNone,
+						}},
+					},
+				},
+				VisibilityConfig: &types.VisibilityConfig{
+					SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+					MetricName: aws.String(tc.uniqueName("ovr-inner-metric")),
+				},
+			}},
+			VisibilityConfig: &types.VisibilityConfig{
+				SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+				MetricName: aws.String(tc.uniqueName("ovr-rg-metric")),
+			},
+		})
+		if err != nil {
+			return "", "", "", fmt.Errorf("populate rule group: %v", err)
+		}
+		return name, id, aws.ToString(resp.NextLockToken), nil
+	}
+
+	// An override naming no rule of a customer-owned rule group must fail
+	// the web ACL creation — the documented opposite of managed rule
+	// groups, where such names are silently ignored.
+	results = append(results, r.RunTest("wafv2", "CreateWebACL_RuleGroupOverride_InvalidName_Rejected", func() error {
+		rgName, rgID, rgLock, err := createRuleGroupWithInnerRule("ovr-bad-rg")
+		if err != nil {
+			return err
+		}
+		defer tc.deleteRuleGroup(rgName, rgID, rgLock)
+		rgResp, err := tc.client.GetRuleGroup(tc.ctx, &wafv2.GetRuleGroupInput{
+			Name: aws.String(rgName), Scope: tc.scope, Id: aws.String(rgID),
+		})
+		if err != nil {
+			return fmt.Errorf("get rule group: %v", err)
+		}
+		rgArn := aws.ToString(rgResp.RuleGroup.ARN)
+
+		_, err = tc.client.CreateWebACL(tc.ctx, &wafv2.CreateWebACLInput{
+			Name:  aws.String(tc.uniqueName("ovr-bad-acl")),
+			Scope: tc.scope,
+			DefaultAction: &types.DefaultAction{
+				Allow: &types.AllowAction{},
+			},
+			VisibilityConfig: &types.VisibilityConfig{
+				SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+				MetricName: aws.String(tc.uniqueName("ovr-bad-acl-metric")),
+			},
+			Rules: []types.Rule{{
+				Name:     aws.String("use-rg"),
+				Priority: 1,
+				Action:   &types.RuleAction{Count: &types.CountAction{}},
+				Statement: &types.Statement{
+					RuleGroupReferenceStatement: &types.RuleGroupReferenceStatement{
+						ARN: aws.String(rgArn),
+						RuleActionOverrides: []types.RuleActionOverride{{
+							Name:        aws.String("no-such-rule"),
+							ActionToUse: &types.RuleAction{Count: &types.CountAction{}},
+						}},
+					},
+				},
+				VisibilityConfig: &types.VisibilityConfig{
+					SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+					MetricName: aws.String(tc.uniqueName("ovr-bad-rule-metric")),
+				},
+			}},
+		})
+		return AssertErrorContains(err, "WAFInvalidParameterException")
+	}))
+
+	// A valid override on a customer-owned rule group reference
+	// round-trips through GetWebACL.
+	results = append(results, r.RunTest("wafv2", "CreateWebACL_RuleGroupOverride_RoundTrip", func() error {
+		rgName, rgID, rgLock, err := createRuleGroupWithInnerRule("ovr-rg")
+		if err != nil {
+			return err
+		}
+		defer tc.deleteRuleGroup(rgName, rgID, rgLock)
+		rgResp, err := tc.client.GetRuleGroup(tc.ctx, &wafv2.GetRuleGroupInput{
+			Name: aws.String(rgName), Scope: tc.scope, Id: aws.String(rgID),
+		})
+		if err != nil {
+			return fmt.Errorf("get rule group: %v", err)
+		}
+		rgArn := aws.ToString(rgResp.RuleGroup.ARN)
+
+		aclName := tc.uniqueName("ovr-acl")
+		aclID, _, aclLock, err := tc.createWebACL(aclName,
+			&types.DefaultAction{Allow: &types.AllowAction{}},
+			&types.VisibilityConfig{
+				SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+				MetricName: aws.String(tc.uniqueName("ovr-acl-metric")),
+			},
+			[]types.Rule{{
+				Name:     aws.String("use-rg"),
+				Priority: 1,
+				Action:   &types.RuleAction{Count: &types.CountAction{}},
+				Statement: &types.Statement{
+					RuleGroupReferenceStatement: &types.RuleGroupReferenceStatement{
+						ARN: aws.String(rgArn),
+						RuleActionOverrides: []types.RuleActionOverride{{
+							Name:        aws.String("inner-block"),
+							ActionToUse: &types.RuleAction{Count: &types.CountAction{}},
+						}},
+					},
+				},
+				VisibilityConfig: &types.VisibilityConfig{
+					SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true,
+					MetricName: aws.String(tc.uniqueName("ovr-rule-metric")),
+				},
+			}}, nil)
+		if err != nil {
+			return fmt.Errorf("create web acl: %v", err)
+		}
+		defer tc.deleteWebACL(aclName, aclID, aclLock)
+
+		resp, err := tc.client.GetWebACL(tc.ctx, &wafv2.GetWebACLInput{
+			Name: aws.String(aclName), Scope: tc.scope, Id: aws.String(aclID),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.WebACL.Rules) != 1 {
+			return fmt.Errorf("expected 1 rule, got %d", len(resp.WebACL.Rules))
+		}
+		ref := resp.WebACL.Rules[0].Statement.RuleGroupReferenceStatement
+		if ref == nil || len(ref.RuleActionOverrides) != 1 ||
+			aws.ToString(ref.RuleActionOverrides[0].Name) != "inner-block" ||
+			ref.RuleActionOverrides[0].ActionToUse == nil || ref.RuleActionOverrides[0].ActionToUse.Count == nil {
+			return fmt.Errorf("rule action override did not round-trip: %+v", ref)
+		}
+		return nil
+	}))
+
 	// UpdateWebACL is a full-replace operation: omitting Rules clears
 	// the rule list and the consumed capacity drops accordingly.
 	results = append(results, r.RunTest("wafv2", "UpdateWebACL_RulesOmitted_ClearsRulesAndCapacity", func() error {

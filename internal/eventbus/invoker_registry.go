@@ -192,6 +192,22 @@ func (b *EventBus) WAFInvoker() WAFInvoker {
 	return b.wafInvoker
 }
 
+// SetWebACLInspector sets the WAF request-inspection entry point used by
+// protected-resource planes to enforce associated WebACLs.
+func (b *EventBus) SetWebACLInspector(inspector WebACLInspector) {
+	b.invokersMu.Lock()
+	defer b.invokersMu.Unlock()
+	b.webACLInspector = inspector
+}
+
+// WebACLInspector returns the configured WAF request-inspection entry
+// point, or nil if none was set (WAFv2 not initialised).
+func (b *EventBus) WebACLInspector() WebACLInspector {
+	b.invokersMu.RLock()
+	defer b.invokersMu.RUnlock()
+	return b.webACLInspector
+}
+
 // SetCloudWatchMetricInvoker sets the CloudWatch metric invoker used for
 // cross-service metric data submission (e.g. CloudWatch Logs metric filters).
 func (b *EventBus) SetCloudWatchMetricInvoker(invoker CloudWatchMetricInvoker) {

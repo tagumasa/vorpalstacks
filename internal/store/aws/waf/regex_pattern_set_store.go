@@ -51,7 +51,7 @@ func (s *RegexPatternSetStore) Create(id, name, description string, regularPatte
 		CreatedAt:       time.Now(),
 		ModifiedAt:      time.Now(),
 	}
-	regexPatternSet.ARN = s.arnBuilder.BuildRegexPatternSetARN(id, scope)
+	regexPatternSet.ARN = s.arnBuilder.BuildRegexPatternSetARN(name, id, scope)
 	SetTimestamps(&regexPatternSetAccessor, regexPatternSet)
 	if err := s.Put(id, regexPatternSet, "create_regex_pattern_set"); err != nil {
 		return nil, err

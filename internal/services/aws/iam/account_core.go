@@ -201,6 +201,9 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestC
 
 	// Apply pagination across all sections combined.
 	// Marker format: "<sectionType>:<itemName>" (e.g. "user:admin", "role:MyRole").
+	// A response's Marker names the first item of the next page, so the
+	// page walk resumes at — not after — the marker item and no entity is
+	// skipped at a page boundary.
 	resp := map[string]interface{}{}
 	skipUntilMarker := marker != ""
 	count := 0
@@ -217,9 +220,14 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestC
 
 			if skipUntilMarker {
 				if itemMarker == marker {
+					// The marker names the first item of this page —
+					// the previous page stopped right before it — so
+					// emit it; skipping it here would silently drop one
+					// entity at every page boundary.
 					skipUntilMarker = false
+				} else {
+					continue
 				}
-				continue
 			}
 
 			if count >= maxItems {

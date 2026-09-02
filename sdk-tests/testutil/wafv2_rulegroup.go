@@ -223,6 +223,42 @@ func (r *TestRunner) runWAFv2RuleGroupTests(tc *wafv2TestContext) []TestResult {
 		if resp.Capacity == 0 {
 			return fmt.Errorf("expected non-zero capacity")
 		}
+		// The substring positional constraints cost 10 WCUs and each
+		// text transformation other than NONE adds 10: a CONTAINS rule with
+		// one LOWERCASE transformation reports exactly 20.
+		exact, err := tc.client.CheckCapacity(tc.ctx, &wafv2.CheckCapacityInput{
+			Scope: tc.scope,
+			Rules: []types.Rule{{
+				Name:     aws.String("CapExactRule"),
+				Priority: 0,
+				Action: &types.RuleAction{
+					Allow: &types.AllowAction{},
+				},
+				VisibilityConfig: &types.VisibilityConfig{
+					SampledRequestsEnabled:   false,
+					CloudWatchMetricsEnabled: false,
+					MetricName:               aws.String("cap-exact-metric"),
+				},
+				Statement: &types.Statement{
+					ByteMatchStatement: &types.ByteMatchStatement{
+						FieldToMatch: &types.FieldToMatch{
+							UriPath: &types.UriPath{},
+						},
+						PositionalConstraint: types.PositionalConstraintContains,
+						SearchString:         []byte("/exact"),
+						TextTransformations: []types.TextTransformation{
+							{Priority: 0, Type: types.TextTransformationTypeLowercase},
+						},
+					},
+				},
+			}},
+		})
+		if err != nil {
+			return err
+		}
+		if exact.Capacity != 20 {
+			return fmt.Errorf("expected capacity 20 for CONTAINS with one transformation, got %d", exact.Capacity)
+		}
 		return nil
 	}))
 

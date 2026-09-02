@@ -37,6 +37,13 @@ func (b *ARNBuilder) Build(service, resource string) string {
 	return "arn:" + b.partition + ":" + service + ":" + b.region + ":" + b.accountID + ":" + resource
 }
 
+// BuildInRegion constructs an ARN whose region field is the given one
+// instead of the builder's, for resources whose owning service fixes
+// their region regardless of where the caller is configured.
+func (b *ARNBuilder) BuildInRegion(service, region, resource string) string {
+	return "arn:" + b.partition + ":" + service + ":" + region + ":" + b.accountID + ":" + resource
+}
+
 // BuildNoRegion constructs an ARN without a region field for the given service and resource.
 func (b *ARNBuilder) BuildNoRegion(service, resource string) string {
 	return "arn:" + b.partition + ":" + service + "::" + b.accountID + ":" + resource

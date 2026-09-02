@@ -143,9 +143,12 @@ func (r *TestRunner) RunWAFv2Tests() []TestResult {
 	results = append(results, r.runWAFv2RegexPatternSetTests(tc)...)
 	results = append(results, r.runWAFv2RuleGroupTests(tc)...)
 	results = append(results, r.runWAFv2WebACLTests(tc)...)
+	results = append(results, r.runWAFv2ActionTests(tc)...)
 	results = append(results, r.runWAFv2LoggingTests(tc)...)
 	results = append(results, r.runWAFv2ManagedRulesTests(tc)...)
+	results = append(results, r.runWAFv2SamplingTests(tc)...)
 	results = append(results, r.runWAFv2EdgeTests(tc)...)
+	results = append(results, r.runWAFv2CrossRegionTests(tc)...)
 
 	return results
 }

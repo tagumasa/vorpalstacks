@@ -11,7 +11,7 @@ import (
 
 // CreateRegexPatternSet creates a new regex pattern set containing the specified regular expressions.
 func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (s *WAFv2Service) CreateRegexPatternSet(ctx context.Context, reqCtx *reques
 
 // GetRegexPatternSet retrieves the details of the specified regex pattern set.
 func (s *WAFv2Service) GetRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *WAFv2Service) GetRegexPatternSet(ctx context.Context, reqCtx *request.R
 
 // ListRegexPatternSets returns a paginated list of all regex pattern sets.
 func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (s *WAFv2Service) ListRegexPatternSets(ctx context.Context, reqCtx *request
 
 // UpdateRegexPatternSet updates the specified regex pattern set with new regular expressions, returning a new lock token.
 func (s *WAFv2Service) UpdateRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *WAFv2Service) UpdateRegexPatternSet(ctx context.Context, reqCtx *reques
 
 // DeleteRegexPatternSet permanently deletes the specified regex pattern set.
 func (s *WAFv2Service) DeleteRegexPatternSet(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}

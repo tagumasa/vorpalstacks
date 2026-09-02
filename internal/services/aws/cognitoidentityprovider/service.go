@@ -33,6 +33,8 @@ type CognitoService struct {
 	// importCredentials supplies the SigV4 keys used to presign the CSV
 	// upload URL handed out by CreateUserImportJob.
 	importCredentials auth.CredentialsProvider
+	// waf holds the injected WAF request-inspection entry point.
+	waf wafEnforcement
 }
 
 // NewCognitoService creates a new Cognito User Pools service instance.
@@ -167,11 +169,7 @@ func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "AdminSetUserPassword", s.AdminSetUserPassword)
 	d.RegisterHandlerForService("cognito-idp", "AdminUpdateUserAttributes", s.AdminUpdateUserAttributes)
 	d.RegisterHandlerForService("cognito-idp", "AdminUserGlobalSignOut", s.AdminUserGlobalSignOut)
-	d.RegisterHandlerForService("cognito-idp", "DeleteUser", s.DeleteUser)
-	d.RegisterHandlerForService("cognito-idp", "DeleteUserAttributes", s.DeleteUserAttributes)
-	d.RegisterHandlerForService("cognito-idp", "GetUser", s.GetUser)
 	d.RegisterHandlerForService("cognito-idp", "ListUsers", s.ListUsers)
-	d.RegisterHandlerForService("cognito-idp", "UpdateUserAttributes", s.UpdateUserAttributes)
 
 	d.RegisterHandlerForService("cognito-idp", "CreateGroup", s.CreateGroup)
 	d.RegisterHandlerForService("cognito-idp", "DeleteGroup", s.DeleteGroup)
@@ -183,18 +181,27 @@ func (s *CognitoService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("cognito-idp", "ListUsersInGroup", s.ListUsersInGroup)
 	d.RegisterHandlerForService("cognito-idp", "AdminListGroupsForUser", s.AdminListGroupsForUser)
 
-	d.RegisterHandlerForService("cognito-idp", "SignUp", s.SignUp)
-	d.RegisterHandlerForService("cognito-idp", "ConfirmSignUp", s.ConfirmSignUp)
+	// The public (credential-free) operations run through the WAF
+	// enforcement wrapper: when a WebACL is associated with the
+	// addressed user pool, AWS WAF inspects these requests.
+	d.RegisterHandlerForService("cognito-idp", "SignUp", s.withWAFEnforcement("SignUp", s.SignUp))
+	d.RegisterHandlerForService("cognito-idp", "ConfirmSignUp", s.withWAFEnforcement("ConfirmSignUp", s.ConfirmSignUp))
+	d.RegisterHandlerForService("cognito-idp", "InitiateAuth", s.withWAFEnforcement("InitiateAuth", s.InitiateAuth))
+	d.RegisterHandlerForService("cognito-idp", "RespondToAuthChallenge", s.withWAFEnforcement("RespondToAuthChallenge", s.RespondToAuthChallenge))
+	d.RegisterHandlerForService("cognito-idp", "SignOut", s.withWAFEnforcement("SignOut", s.SignOut))
+	d.RegisterHandlerForService("cognito-idp", "GlobalSignOut", s.withWAFEnforcement("GlobalSignOut", s.GlobalSignOut))
+	d.RegisterHandlerForService("cognito-idp", "ChangePassword", s.withWAFEnforcement("ChangePassword", s.ChangePassword))
+	d.RegisterHandlerForService("cognito-idp", "ForgotPassword", s.withWAFEnforcement("ForgotPassword", s.ForgotPassword))
+	d.RegisterHandlerForService("cognito-idp", "ConfirmForgotPassword", s.withWAFEnforcement("ConfirmForgotPassword", s.ConfirmForgotPassword))
+	d.RegisterHandlerForService("cognito-idp", "GetUser", s.withWAFEnforcement("GetUser", s.GetUser))
+	d.RegisterHandlerForService("cognito-idp", "DeleteUser", s.withWAFEnforcement("DeleteUser", s.DeleteUser))
+	d.RegisterHandlerForService("cognito-idp", "DeleteUserAttributes", s.withWAFEnforcement("DeleteUserAttributes", s.DeleteUserAttributes))
+	d.RegisterHandlerForService("cognito-idp", "UpdateUserAttributes", s.withWAFEnforcement("UpdateUserAttributes", s.UpdateUserAttributes))
+	d.RegisterHandlerForService("cognito-idp", "AssociateSoftwareToken", s.withWAFEnforcement("AssociateSoftwareToken", s.AssociateSoftwareToken))
+	d.RegisterHandlerForService("cognito-idp", "VerifySoftwareToken", s.withWAFEnforcement("VerifySoftwareToken", s.VerifySoftwareToken))
 	d.RegisterHandlerForService("cognito-idp", "AdminConfirmSignUp", s.AdminConfirmSignUp)
-	d.RegisterHandlerForService("cognito-idp", "InitiateAuth", s.InitiateAuth)
 	d.RegisterHandlerForService("cognito-idp", "AdminInitiateAuth", s.AdminInitiateAuth)
-	d.RegisterHandlerForService("cognito-idp", "RespondToAuthChallenge", s.RespondToAuthChallenge)
 	d.RegisterHandlerForService("cognito-idp", "AdminRespondToAuthChallenge", s.AdminRespondToAuthChallenge)
-	d.RegisterHandlerForService("cognito-idp", "SignOut", s.SignOut)
-	d.RegisterHandlerForService("cognito-idp", "GlobalSignOut", s.GlobalSignOut)
-	d.RegisterHandlerForService("cognito-idp", "ChangePassword", s.ChangePassword)
-	d.RegisterHandlerForService("cognito-idp", "ForgotPassword", s.ForgotPassword)
-	d.RegisterHandlerForService("cognito-idp", "ConfirmForgotPassword", s.ConfirmForgotPassword)
 
 	d.RegisterHandlerForService("cognito-idp", "TagResource", s.TagResource)
 	d.RegisterHandlerForService("cognito-idp", "UntagResource", s.UntagResource)

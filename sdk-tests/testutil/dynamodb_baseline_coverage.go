@@ -415,7 +415,7 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 	// The replica settings update list requires at least one entry.
 	results = append(results, r.RunTest("dynamodb", "UpdateGlobalTableSettings_EmptyUpdateListRejected", func() error {
 		_, err := client.UpdateGlobalTableSettings(ctx, &dynamodb.UpdateGlobalTableSettingsInput{
-			GlobalTableName:        aws.String(gtName),
+			GlobalTableName:       aws.String(gtName),
 			ReplicaSettingsUpdate: []dynamodbtypes.ReplicaSettingsUpdate{},
 		})
 		if err == nil {

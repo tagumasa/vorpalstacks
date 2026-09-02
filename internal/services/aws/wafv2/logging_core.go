@@ -57,7 +57,9 @@ func (s *WAFv2Service) putLoggingConfigurationCore(reqCtx *request.RequestContex
 		return nil, err
 	}
 
-	stores, err := s.store(reqCtx)
+	// The logging configuration is keyed by the WebACL ARN and lives in
+	// the partition that ARN names.
+	stores, err := s.GetStoresForRegion(s.arnRegion(in.ResourceArn))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +86,7 @@ func (s *WAFv2Service) getLoggingConfigurationCore(reqCtx *request.RequestContex
 		return nil, invalidParamError("ResourceArn is required")
 	}
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.GetStoresForRegion(s.arnRegion(resourceArn))
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +109,7 @@ func (s *WAFv2Service) deleteLoggingConfigurationCore(reqCtx *request.RequestCon
 		return invalidParamError("ResourceArn is required")
 	}
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.GetStoresForRegion(s.arnRegion(resourceArn))
 	if err != nil {
 		return err
 	}
@@ -137,7 +139,7 @@ func (s *WAFv2Service) listLoggingConfigurationsCore(reqCtx *request.RequestCont
 		return nil, err
 	}
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, in.Scope)
 	if err != nil {
 		return nil, err
 	}

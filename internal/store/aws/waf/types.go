@@ -7,6 +7,7 @@ import (
 	"time"
 
 	types "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/common/waflimits"
 )
 
 // MaxWebACLCapacity is the maximum capacity, in web ACL capacity units
@@ -19,6 +20,88 @@ const MaxWebACLCapacity int64 = 5000
 // MinRuleGroupCapacity is the lower bound of the Smithy CapacityUnit
 // range (@range(min: 1)) on CreateRuleGroupRequest.Capacity.
 const MinRuleGroupCapacity int64 = 1
+
+// Component inspection limits (AWS WAF Developer Guide, "Oversize web
+// request components"): headers and cookies are each capped at the
+// first 8 KB and the first 200 entries, and the body inspection limit
+// defaults to 16 KB on the protected-resource types this platform hosts
+// (CloudFront, API Gateway, Cognito) with an upper bound of 64 KB;
+// AppSync's limit is fixed at 8 KB and lives in common/waflimits next
+// to the shared body default. These are the single definitions of the
+// limits; every other site must reference these constants. The body
+// default is defined in common/waflimits because the enforcement planes
+// share it as part of the inspection contract; the alias below keeps
+// the WAF-internal reference sites working.
+const (
+	MaxInspectionHeaderBytes = 8192
+	MaxInspectionHeaderCount = 200
+	MaxInspectionCookieBytes = 8192
+	MaxInspectionCookieCount = 200
+
+	DefaultBodyInspectionLimit = waflimits.DefaultBodyInspectionLimit
+	MaxBodyInspectionLimit     = 65536
+)
+
+// RateBasedEvalWindowDefault is the default evaluation window for a
+// rate-based statement when EvaluationWindowSec is omitted (AWS WAF
+// Developer Guide, "Rate-based rule high-level settings"; allowed
+// values are 60, 120, 300 and 600 seconds).
+const RateBasedEvalWindowDefault int64 = 300
+
+// SampleRetention is how long sampled web requests remain retrievable
+// through GetSampledRequests (AWS WAF API Reference: "you can specify
+// any time range in the previous three hours").
+const SampleRetention = 3 * time.Hour
+
+// MaxSampledRequests is the maximum number of sampled requests one
+// GetSampledRequests call returns (AWS WAF API Reference, MaxItems
+// upper bound).
+const MaxSampledRequests = 500
+
+// SamplingPopulationDepth is the population GetSampledRequests draws
+// from: the MaxItems documentation samples from among the first 5,000
+// requests the resource received during the time range, so the
+// per-rule retention keeps up to this many records and the reported
+// population caps at the same figure.
+const SamplingPopulationDepth = 5000
+
+// ImmunityTimeDefault is the default immunity time, in seconds, that a
+// CAPTCHA or challenge solve timestamp stays valid after the client
+// successfully responds — the ImmunityTimeProperty documentation's "The
+// default setting is 300".
+const ImmunityTimeDefault = 300
+
+// ChallengeImmunityTimeMin is the minimum Challenge immunity time, in
+// seconds — the ImmunityTimeProperty documentation's "For the Challenge
+// action, the minimum setting is 300".
+const ChallengeImmunityTimeMin = 300
+
+// Price bounds of a Monetize payment network's per-request price, in
+// milli-units of the pricing currency — the Price Amount
+// documentation's minimum 0.001 and maximum 999999999.999 with at most
+// three decimal places.
+const (
+	PriceAmountMinMillis int64 = 1
+	PriceAmountMaxMillis int64 = 999999999999
+)
+
+// ImmunityTimeProperty is the immunity-time setting carried by a
+// CaptchaConfig or ChallengeConfig at the web ACL or rule level.
+type ImmunityTimeProperty struct {
+	ImmunityTime int64 `json:"ImmunityTime"`
+}
+
+// CaptchaConfig configures how CAPTCHA evaluations handle token
+// immunity, available at the web ACL level and in each rule.
+type CaptchaConfig struct {
+	ImmunityTimeProperty *ImmunityTimeProperty `json:"ImmunityTimeProperty,omitempty"`
+}
+
+// ChallengeConfig configures how Challenge evaluations handle token
+// immunity, available at the web ACL level and in each rule.
+type ChallengeConfig struct {
+	ImmunityTimeProperty *ImmunityTimeProperty `json:"ImmunityTimeProperty,omitempty"`
+}
 
 // WebACL represents a WAF Web Access Control List.
 type WebACL struct {
@@ -125,12 +208,79 @@ type GeoMatchStatement struct {
 
 // RateBasedStatement represents a rate-based rule statement.
 type RateBasedStatement struct {
-	Limit               int64                    `json:"Limit"`
-	EvaluationWindowSec int64                    `json:"EvaluationWindowSec,omitempty"`
-	AggregateKeyType    string                   `json:"AggregateKeyType"`
-	ScopeDownStatement  *Statement               `json:"ScopeDownStatement,omitempty"`
-	ForwardedIPConfig   *ForwardedIPConfig       `json:"ForwardedIPConfig,omitempty"`
-	CustomKeys          []map[string]interface{} `json:"CustomKeys,omitempty"`
+	Limit               int64                          `json:"Limit"`
+	EvaluationWindowSec int64                          `json:"EvaluationWindowSec,omitempty"`
+	AggregateKeyType    string                         `json:"AggregateKeyType"`
+	ScopeDownStatement  *Statement                     `json:"ScopeDownStatement,omitempty"`
+	ForwardedIPConfig   *ForwardedIPConfig             `json:"ForwardedIPConfig,omitempty"`
+	CustomKeys          []*RateBasedStatementCustomKey `json:"CustomKeys,omitempty"`
+}
+
+// RateBasedStatementCustomKey is one custom aggregation key of a
+// rate-based statement, mirroring the API's
+// RateBasedStatementCustomKey union: exactly one member is set. The
+// member set matches the Smithy model — Header, Cookie, QueryArgument,
+// QueryString, HTTPMethod, ForwardedIP, IP, LabelNamespace, UriPath,
+// JA3Fingerprint, JA4Fingerprint and ASN.
+type RateBasedStatementCustomKey struct {
+	Header         *RateLimitHeaderKey         `json:"Header,omitempty"`
+	Cookie         *RateLimitCookieKey         `json:"Cookie,omitempty"`
+	QueryArgument  *RateLimitQueryArgumentKey  `json:"QueryArgument,omitempty"`
+	QueryString    *RateLimitQueryStringKey    `json:"QueryString,omitempty"`
+	HTTPMethod     *RateLimitEmptyKey          `json:"HTTPMethod,omitempty"`
+	ForwardedIP    *RateLimitEmptyKey          `json:"ForwardedIP,omitempty"`
+	IP             *RateLimitEmptyKey          `json:"IP,omitempty"`
+	LabelNamespace *RateLimitLabelNamespaceKey `json:"LabelNamespace,omitempty"`
+	UriPath        *RateLimitUriPathKey        `json:"UriPath,omitempty"`
+	JA3Fingerprint *RateLimitFingerprintKey    `json:"JA3Fingerprint,omitempty"`
+	JA4Fingerprint *RateLimitFingerprintKey    `json:"JA4Fingerprint,omitempty"`
+	ASN            *RateLimitEmptyKey          `json:"ASN,omitempty"`
+}
+
+// RateLimitHeaderKey aggregates on the values of the named request
+// header.
+type RateLimitHeaderKey struct {
+	Name                string                `json:"Name"`
+	TextTransformations []*TextTransformation `json:"TextTransformations,omitempty"`
+}
+
+// RateLimitCookieKey aggregates on the value of the named cookie.
+type RateLimitCookieKey struct {
+	Name                string                `json:"Name"`
+	TextTransformations []*TextTransformation `json:"TextTransformations,omitempty"`
+}
+
+// RateLimitQueryArgumentKey aggregates on the values of the named
+// query argument.
+type RateLimitQueryArgumentKey struct {
+	Name                string                `json:"Name"`
+	TextTransformations []*TextTransformation `json:"TextTransformations,omitempty"`
+}
+
+// RateLimitQueryStringKey aggregates on the raw query string.
+type RateLimitQueryStringKey struct {
+	TextTransformations []*TextTransformation `json:"TextTransformations,omitempty"`
+}
+
+// RateLimitUriPathKey aggregates on the request URI path.
+type RateLimitUriPathKey struct {
+	TextTransformations []*TextTransformation `json:"TextTransformations,omitempty"`
+}
+
+// RateLimitEmptyKey marks the key kinds whose API structures carry no
+// configuration members: HTTPMethod, ForwardedIP, IP and ASN.
+type RateLimitEmptyKey struct{}
+
+// RateLimitLabelNamespaceKey aggregates on the fully qualified label
+// names under the specified label namespace.
+type RateLimitLabelNamespaceKey struct {
+	Namespace string `json:"Namespace"`
+}
+
+// RateLimitFingerprintKey aggregates on a TLS fingerprint, with the
+// configured fallback for requests whose fingerprint is unavailable.
+type RateLimitFingerprintKey struct {
+	FallbackBehavior string `json:"FallbackBehavior"`
 }
 
 // ManagedRuleGroupStatement represents a managed rule group statement.
@@ -141,7 +291,17 @@ type ManagedRuleGroupStatement struct {
 	ExcludedRules           []ExcludedRule           `json:"ExcludedRules,omitempty"`
 	ScopeDownStatement      *Statement               `json:"ScopeDownStatement,omitempty"`
 	ManagedRuleGroupConfigs []map[string]interface{} `json:"ManagedRuleGroupConfigs,omitempty"`
-	RuleActionOverrides     map[string]interface{}   `json:"RuleActionOverrides,omitempty"`
+	RuleActionOverrides     []RuleActionOverride     `json:"RuleActionOverrides,omitempty"`
+}
+
+// RuleActionOverride replaces the action of one named rule inside a
+// managed rule group or a referenced customer-owned rule group. The
+// name is case-sensitive; overrides naming no rule of a managed group
+// are silently ignored, while a web ACL update carrying one for a
+// customer-owned group is rejected.
+type RuleActionOverride struct {
+	Name        string  `json:"Name"`
+	ActionToUse *Action `json:"ActionToUse,omitempty"`
 }
 
 // AndStatement represents a logical AND statement.
@@ -196,8 +356,9 @@ type AsnMatchStatement struct {
 
 // RuleGroupReferenceStatement references a rule group by ARN.
 type RuleGroupReferenceStatement struct {
-	ARN           string         `json:"ARN"`
-	ExcludedRules []ExcludedRule `json:"ExcludedRules,omitempty"`
+	ARN                 string               `json:"ARN"`
+	ExcludedRules       []ExcludedRule       `json:"ExcludedRules,omitempty"`
+	RuleActionOverrides []RuleActionOverride `json:"RuleActionOverrides,omitempty"`
 }
 
 // ExcludedRule identifies a rule to exclude from a managed rule group

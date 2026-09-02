@@ -4,6 +4,7 @@
 package iam
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
@@ -119,6 +121,32 @@ func (s *IAMService) getServerCertificateCore(store *iamstore.IAMStore, name str
 		return nil, NewNoSuchEntityError("server certificate", name)
 	}
 	return cert, nil
+}
+
+// ServerCertificateMaterial implements eventbus.IAMServerCertificateProvider.
+// It resolves a server certificate by its unique certificate ID (the ASCA…
+// identifier cross-service consumers such as CloudFront reference) and
+// returns the PEM material so the consumer's listener can terminate TLS.
+func (s *IAMService) ServerCertificateMaterial(ctx context.Context, serverCertificateId string) (eventbus.TLSCertificateMaterial, error) {
+	if serverCertificateId == "" {
+		return eventbus.TLSCertificateMaterial{}, NewValidationError("ServerCertificateId")
+	}
+	store, err := s.GetStoreForRegion("")
+	if err != nil {
+		return eventbus.TLSCertificateMaterial{}, err
+	}
+	cert, err := store.ServerCertificates().GetByID(serverCertificateId)
+	if err != nil {
+		return eventbus.TLSCertificateMaterial{}, NewNoSuchEntityError("server certificate", serverCertificateId)
+	}
+	if cert.CertificateBody == "" || cert.PrivateKey == "" {
+		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("server certificate %s does not have serving material available", serverCertificateId)
+	}
+	return eventbus.TLSCertificateMaterial{
+		Certificate:      cert.CertificateBody,
+		PrivateKey:       cert.PrivateKey,
+		CertificateChain: cert.CertificateChain,
+	}, nil
 }
 
 // updateServerCertificateCore validates input and updates the name or path

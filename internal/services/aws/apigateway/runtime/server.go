@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
 	cryptorand "crypto/rand"
 	"encoding/base64"
@@ -13,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/headerorder"
+	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -35,7 +38,10 @@ type RuntimeServer struct {
 	lambdaAuthorizer *auth.LambdaAuthorizer
 	bus              eventbus.Bus
 	accountID        string
+	region           string
 	stageThrottlers  sync.Map
+	inspectorMu      sync.RWMutex
+	webACLInspector  eventbus.WebACLInspector
 }
 
 // NewRuntimeServer creates a new API Gateway runtime server.
@@ -60,6 +66,97 @@ func (s *RuntimeServer) SetEventBus(bus eventbus.Bus) {
 // SetAccountID stores the AWS account ID used for access log ARN parsing.
 func (s *RuntimeServer) SetAccountID(accountID string) {
 	s.accountID = accountID
+}
+
+// SetRegion stores the region the runtime serves, used to address the
+// stage ARNs that WAFv2 WebACL associations resolve.
+func (s *RuntimeServer) SetRegion(region string) {
+	s.region = region
+}
+
+// SetWebACLInspector injects the WAF request-inspection entry point so
+// WebACLs associated with the served stages are enforced on requests.
+func (s *RuntimeServer) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+	s.inspectorMu.Lock()
+	s.webACLInspector = inspector
+	s.inspectorMu.Unlock()
+}
+
+// enforceWebACL inspects the request against the WebACL associated with
+// the stage and answers blocked requests itself, returning false.
+// Inspection failures fail closed: the AWS WAF Developer Guide
+// documents that when WAF encounters an internal error, Regional
+// services typically deny the request and don't serve the content, so
+// the failure is answered with 500 Internal Server Error (the response
+// the Application Load Balancer integration documents for an
+// unreachable WAF). The body is buffered up to the inspection limit and
+// recombined with the unread tail so integration execution still reads
+// the full request body.
+func (s *RuntimeServer) enforceWebACL(w http.ResponseWriter, r *http.Request, stageARN string) bool {
+	s.inspectorMu.RLock()
+	inspector := s.webACLInspector
+	s.inspectorMu.RUnlock()
+	if inspector == nil {
+		return true
+	}
+
+	var body []byte
+	bodyTruncated := false
+	if r.Body != nil {
+		buffered, err := io.ReadAll(io.LimitReader(r.Body, waflimits.DefaultBodyInspectionLimit+1))
+		if err != nil {
+			logs.Warn("apigateway waf inspection body read failed, denying request", logs.String("stage", stageARN), logs.Err(err))
+			http.Error(w, "The request could not be inspected", http.StatusInternalServerError)
+			return false
+		}
+		body = buffered
+		if int64(len(body)) > waflimits.DefaultBodyInspectionLimit {
+			body = body[:waflimits.DefaultBodyInspectionLimit]
+			bodyTruncated = true
+			r.Body = io.NopCloser(io.MultiReader(bytes.NewReader(buffered), r.Body))
+		} else {
+			r.Body = io.NopCloser(bytes.NewReader(buffered))
+		}
+	}
+
+	inspHeaders := eventbus.RequestHeadersWithHost(r.Header, r.Host)
+	headerOrder, _ := headerorder.FromContext(r.Context(), inspHeaders)
+	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, stageARN, eventbus.BuildWebACLInspectionRequest(
+		r.Method, r.URL.Path, r.URL.RawQuery, remoteAddrHost(r.RemoteAddr), r.Proto,
+		inspHeaders, headerOrder, body, bodyTruncated,
+	))
+	if err != nil {
+		logs.Warn("apigateway waf inspection failed, denying request", logs.String("stage", stageARN), logs.Err(err))
+		http.Error(w, "The request could not be inspected", http.StatusInternalServerError)
+		return false
+	}
+	if result.Interrupts() {
+		status := result.ResponseCode
+		if status == 0 {
+			status = http.StatusForbidden
+		}
+		for _, h := range result.ResponseHeaders {
+			w.Header().Set(h.Name, h.Value)
+		}
+		w.WriteHeader(status)
+		if result.ResponseBody != "" {
+			_, _ = io.WriteString(w, result.ResponseBody)
+		}
+		return false
+	}
+	for _, h := range result.InsertHeaders {
+		// Inserted header names arrive prefixed with x-amzn-waf-, so
+		// adding cannot overwrite a header the client sent.
+		r.Header.Add(h.Name, h.Value)
+	}
+	return true
+}
+
+func remoteAddrHost(remoteAddr string) string {
+	if host, _, err := net.SplitHostPort(remoteAddr); err == nil {
+		return host
+	}
+	return remoteAddr
 }
 
 // RemoveApiKey cleans up rate limiter state for a deleted API key.
@@ -91,6 +188,13 @@ func (s *RuntimeServer) Close() {
 
 // HandleRequest handles incoming API Gateway requests.
 func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
+	s.inspectorMu.RLock()
+	inspector := s.webACLInspector
+	s.inspectorMu.RUnlock()
+	if eventbus.ServeWAFTokenExchange(r.Context(), inspector, w, r) {
+		return
+	}
+
 	var restApiID, stageName, requestPath string
 
 	fqdnApiID := fqdnrouter.ResourceIDFromContext(r.Context())
@@ -127,6 +231,10 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	stage, ok := restAPI.Stages[stageName]
 	if !ok || stage == nil {
 		s.sendError(w, http.StatusNotFound, fmt.Sprintf("Stage %s not found for API %s", stageName, restApiID))
+		return
+	}
+
+	if !s.enforceWebACL(w, r, arn.NewARNBuilder(s.accountID, s.region).APIGateway().Stage(restApiID, stageName)) {
 		return
 	}
 
@@ -366,6 +474,12 @@ func (s *RuntimeServer) sendResponse(w http.ResponseWriter, resp *integration.In
 
 	if w.Header().Get("Content-Type") == "" {
 		w.Header().Set("Content-Type", "application/json")
+	}
+
+	// An integration result can never be handed to WriteHeader with an
+	// invalid code; answer configuration-shaped failures with 502.
+	if resp.StatusCode < 100 || resp.StatusCode > 599 {
+		resp.StatusCode = http.StatusBadGateway
 	}
 
 	w.WriteHeader(resp.StatusCode)

@@ -46,8 +46,16 @@ func (s *WAFv2Service) createRuleGroupCore(stores *wafv2Stores, in RuleGroupCrea
 	if err := validateVisibilityConfig(in.VisibilityConfig); err != nil {
 		return nil, err
 	}
-	rules, err := parseRules(in.RulesRaw)
+	if err := validateMonetizationConfig(in.MonetizationConfig); err != nil {
+		return nil, err
+	}
+	// A rule group cannot reference a managed rule group, per the
+	// ManagedRuleGroupStatement placement rules.
+	rules, err := parseRulesForEntity(in.RulesRaw, false)
 	if err != nil {
+		return nil, err
+	}
+	if err := validateMonetizeRules(rules, in.Scope, in.MonetizationConfig); err != nil {
 		return nil, err
 	}
 	// Per the Smithy documentation for Capacity, WAF enforces the
@@ -177,7 +185,7 @@ func (s *WAFv2Service) updateRuleGroupCore(stores *wafv2Stores, in RuleGroupUpda
 
 	var rules []*wafstore.Rule
 	if in.RulesRaw != nil {
-		parsed, pErr := parseRules(in.RulesRaw)
+		parsed, pErr := parseRulesForEntity(in.RulesRaw, false)
 		if pErr != nil {
 			return nil, pErr
 		}
@@ -186,6 +194,13 @@ func (s *WAFv2Service) updateRuleGroupCore(stores *wafv2Stores, in RuleGroupUpda
 
 	if consumed := calculateRulesCapacity(rules); consumed > existing.Capacity {
 		return nil, limitsExceededError(consumed)
+	}
+
+	// Monetize rules keep requiring the owning entity's monetization
+	// configuration; a rule group update cannot change that
+	// configuration, so the existing one applies.
+	if err := validateMonetizeRules(rules, existing.Scope, existing.MonetizationConfig); err != nil {
+		return nil, err
 	}
 
 	ruleGroup, err := stores.ruleGroups.Update(in.Id, in.LockToken, rules, visibilityConfig)
@@ -245,6 +260,41 @@ func (s *WAFv2Service) deleteRuleGroupCore(stores *wafv2Stores, id, lockToken st
 		}
 	}
 
+	return nil
+}
+
+// validateRuleGroupReferenceOverrides checks the rule action overrides
+// of every customer-owned rule group reference in a web ACL's rule
+// list. The RuleActionOverrides documentation has an override naming no
+// rule of a customer-owned group fail the web ACL create or update,
+// unlike managed rule groups where such names are silently ignored. A
+// reference whose group cannot be resolved skips the check — the write
+// path does not resolve references at persistence time.
+func validateRuleGroupReferenceOverrides(stores *wafv2Stores, rules []*wafstore.Rule) error {
+	for _, rule := range rules {
+		if rule == nil || rule.Statement == nil {
+			continue
+		}
+		ref := rule.Statement.RuleGroupReferenceStatement
+		if ref == nil || len(ref.RuleActionOverrides) == 0 {
+			continue
+		}
+		group, err := stores.ruleGroups.GetByARN(ref.ARN)
+		if err != nil || group == nil {
+			continue
+		}
+		innerNames := make(map[string]bool, len(group.Rules))
+		for _, inner := range group.Rules {
+			if inner != nil {
+				innerNames[inner.Name] = true
+			}
+		}
+		for _, override := range ref.RuleActionOverrides {
+			if !innerNames[override.Name] {
+				return invalidParamError(fmt.Sprintf("Rule %s: the rule action override names no rule of rule group %s: %s", rule.Name, group.Name, override.Name))
+			}
+		}
+	}
 	return nil
 }
 

@@ -835,6 +835,13 @@ func (s *ACMService) exportCertificateCore(reqCtx *request.RequestContext, in Ex
 		return nil, err
 	}
 
+	// Amazon-issued certificates are never exportable even though the
+	// platform retains their key pairs for TLS termination; only imported
+	// (and private-CA-issued) material can leave the store.
+	if cert.Type == "AMAZON_ISSUED" {
+		return nil, awserrors.NewValidationException("Certificate does not have an exportable private key. Only imported certificates with private keys can be exported.")
+	}
+
 	if cert.PrivateKey == "" {
 		return nil, awserrors.NewValidationException("Certificate does not have an exportable private key. Only imported certificates with private keys can be exported.")
 	}

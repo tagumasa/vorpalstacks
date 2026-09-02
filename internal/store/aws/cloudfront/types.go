@@ -20,24 +20,79 @@ type Distribution struct {
 
 // DistributionConfig represents the configuration for a CloudFront distribution.
 type DistributionConfig struct {
-	CallerReference      string                `json:"callerReference"`
-	Comment              string                `json:"comment"`
-	DefaultRootObject    string                `json:"defaultRootObject"`
-	Origins              Origins               `json:"origins"`
-	DefaultCacheBehavior *CacheBehavior        `json:"defaultCacheBehavior"`
-	CacheBehaviors       *CacheBehaviors       `json:"cacheBehaviors"`
-	CustomErrorResponses *CustomErrorResponses `json:"customErrorResponses"`
-	Logging              *LoggingConfig        `json:"logging"`
-	PriceClass           string                `json:"priceClass"`
-	Enabled              bool                  `json:"enabled"`
-	ViewerCertificate    *ViewerCertificate    `json:"viewerCertificate"`
-	HttpVersion          string                `json:"httpVersion"`
-	IsIPV6Enabled        bool                  `json:"isIPV6Enabled"`
-	AliasICPRecordal     string                `json:"aliasICPRecordal"`
-	Aliases              *Aliases              `json:"aliases"`
-	Staging              bool                  `json:"staging"`
-	WebACLId             string                `json:"webACLId"`
-	Restrictions         *Restrictions         `json:"restrictions"`
+	CallerReference              string                `json:"callerReference"`
+	Comment                      string                `json:"comment"`
+	DefaultRootObject            string                `json:"defaultRootObject"`
+	Origins                      Origins               `json:"origins"`
+	DefaultCacheBehavior         *CacheBehavior        `json:"defaultCacheBehavior"`
+	CacheBehaviors               *CacheBehaviors       `json:"cacheBehaviors"`
+	CustomErrorResponses         *CustomErrorResponses `json:"customErrorResponses"`
+	Logging                      *LoggingConfig        `json:"logging"`
+	PriceClass                   string                `json:"priceClass"`
+	Enabled                      bool                  `json:"enabled"`
+	ViewerCertificate            *ViewerCertificate    `json:"viewerCertificate"`
+	HttpVersion                  string                `json:"httpVersion"`
+	IsIPV6Enabled                bool                  `json:"isIPV6Enabled"`
+	AliasICPRecordal             string                `json:"aliasICPRecordal"`
+	Aliases                      *Aliases              `json:"aliases"`
+	Staging                      bool                  `json:"staging"`
+	WebACLId                     string                `json:"webACLId"`
+	Restrictions                 *Restrictions         `json:"restrictions"`
+	ContinuousDeploymentPolicyId string                `json:"continuousDeploymentPolicyId,omitempty"`
+}
+
+// ContinuousDeploymentPolicy represents a continuous deployment policy
+// that routes a portion of a primary distribution's traffic to a staging
+// distribution for safe configuration testing.
+type ContinuousDeploymentPolicy struct {
+	ID                               string                            `json:"id"`
+	ETag                             string                            `json:"etag"`
+	LastModifiedTime                 time.Time                         `json:"lastModifiedTime"`
+	ContinuousDeploymentPolicyConfig *ContinuousDeploymentPolicyConfig `json:"continuousDeploymentPolicyConfig"`
+}
+
+// ContinuousDeploymentPolicyConfig is the configuration of a continuous
+// deployment policy.
+type ContinuousDeploymentPolicyConfig struct {
+	StagingDistributionDnsNames *StagingDistributionDnsNames `json:"stagingDistributionDnsNames"`
+	Enabled                     bool                         `json:"enabled"`
+	TrafficConfig               *TrafficConfig               `json:"trafficConfig,omitempty"`
+}
+
+// StagingDistributionDnsNames lists the CloudFront domain names of the
+// staging distribution the policy routes traffic to.
+type StagingDistributionDnsNames struct {
+	Quantity int      `json:"quantity"`
+	Items    []string `json:"items,omitempty"`
+}
+
+// TrafficConfig selects how requests are routed to the staging
+// distribution: a weight of the total traffic or a specific header.
+type TrafficConfig struct {
+	SingleWeightConfig *ContinuousDeploymentSingleWeightConfig `json:"singleWeightConfig,omitempty"`
+	SingleHeaderConfig *ContinuousDeploymentSingleHeaderConfig `json:"singleHeaderConfig,omitempty"`
+	Type               string                                  `json:"type"`
+}
+
+// ContinuousDeploymentSingleWeightConfig routes the given fraction of
+// traffic to the staging distribution.
+type ContinuousDeploymentSingleWeightConfig struct {
+	Weight                  float64                  `json:"weight"`
+	SessionStickinessConfig *SessionStickinessConfig `json:"sessionStickinessConfig,omitempty"`
+}
+
+// SessionStickinessConfig keeps a weight-routed viewer on one
+// distribution for the duration of a session.
+type SessionStickinessConfig struct {
+	IdleTTL    int64 `json:"idleTTL"`
+	MaximumTTL int64 `json:"maximumTTL"`
+}
+
+// ContinuousDeploymentSingleHeaderConfig routes requests carrying the
+// given header and value to the staging distribution.
+type ContinuousDeploymentSingleHeaderConfig struct {
+	Header string `json:"header"`
+	Value  string `json:"value"`
 }
 
 // Aliases represents the alternate domain names (CNAMEs) for a distribution.

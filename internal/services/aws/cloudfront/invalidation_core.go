@@ -74,6 +74,11 @@ func (s *CloudFrontService) createInvalidationCore(stores *cloudfrontStores, in 
 		return nil, awserrors.NewAWSError("InternalError", fmt.Sprintf("Failed to create invalidation: %v", err), 500)
 	}
 
+	// The invalidation takes effect on the live edge cache immediately.
+	if s.distributionServer != nil {
+		s.distributionServer.InvalidatePaths(in.Id, in.Paths)
+	}
+
 	go s.transitionInvalidation(stores, inv)
 
 	return inv, nil

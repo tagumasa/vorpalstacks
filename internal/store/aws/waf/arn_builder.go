@@ -17,32 +17,32 @@ func NewARNBuilder(accountId, region string) *ARNBuilder {
 }
 
 // BuildWebACLARN builds an ARN for a WAF Web ACL.
-func (b *ARNBuilder) BuildWebACLARN(id, scope string) string {
-	return b.builder.WebACL(id, scope)
+func (b *ARNBuilder) BuildWebACLARN(name, id, scope string) string {
+	return b.builder.WebACL(name, id, scope)
 }
 
 // BuildRuleGroupARN builds an ARN for a WAF Rule Group.
-func (b *ARNBuilder) BuildRuleGroupARN(id, scope string) string {
+func (b *ARNBuilder) BuildRuleGroupARN(name, id, scope string) string {
 	if scope == "" {
 		scope = "REGIONAL"
 	}
-	return b.builder.RuleGroup(id, scope)
+	return b.builder.RuleGroup(name, id, scope)
 }
 
 // BuildIPSetARN builds an ARN for a WAF IP Set.
-func (b *ARNBuilder) BuildIPSetARN(id, scope string) string {
+func (b *ARNBuilder) BuildIPSetARN(name, id, scope string) string {
 	if scope == "" {
 		scope = "REGIONAL"
 	}
-	return b.builder.IPSet(id, scope)
+	return b.builder.IPSet(name, id, scope)
 }
 
 // BuildRegexPatternSetARN builds an ARN for a WAF Regex Pattern Set.
-func (b *ARNBuilder) BuildRegexPatternSetARN(id, scope string) string {
+func (b *ARNBuilder) BuildRegexPatternSetARN(name, id, scope string) string {
 	if scope == "" {
 		scope = "REGIONAL"
 	}
-	return b.builder.RegexPatternSet(id, scope)
+	return b.builder.RegexPatternSet(name, id, scope)
 }
 
 // BuildRuleARN builds an ARN for a WAF Classic Rule.

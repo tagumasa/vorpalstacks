@@ -64,6 +64,21 @@ func (s *WAFv2Service) createWebACLCore(stores *wafv2Stores, input CreateWebACLI
 	if err := validateCustomResponseBodies(input.CustomResponseBodies); err != nil {
 		return nil, err
 	}
+	if err := validateImmunityConfig(input.CaptchaConfig, "Captcha"); err != nil {
+		return nil, err
+	}
+	if err := validateImmunityConfig(input.ChallengeConfig, "Challenge"); err != nil {
+		return nil, err
+	}
+	if err := validateMonetizationConfig(input.MonetizationConfig); err != nil {
+		return nil, err
+	}
+	if err := validateMonetizeRules(input.Rules, input.Scope, input.MonetizationConfig); err != nil {
+		return nil, err
+	}
+	if err := validateRuleGroupReferenceOverrides(stores, input.Rules); err != nil {
+		return nil, err
+	}
 	// DefaultAction and VisibilityConfig are @required on
 	// CreateWebACLRequest in the Smithy model; the admin console
 	// transport synthesises defaults before calling this core so the
@@ -193,13 +208,15 @@ func (s *WAFv2Service) listWebACLsCore(stores *wafv2Stores, input ListWebACLsInp
 
 // getWebACLCore is the single entry point for retrieving a WebACL by ID.
 // The request context is taken directly because the required-Id check
-// precedes the store acquisition in the original failure precedence.
-func (s *WAFv2Service) getWebACLCore(reqCtx *request.RequestContext, id string) (*wafstore.WebACL, error) {
+// precedes the store acquisition in the original failure precedence. The
+// scope routes the store bundle: the CloudFront scope lives in the
+// us-east-1 store whatever region the call arrives from.
+func (s *WAFv2Service) getWebACLCore(reqCtx *request.RequestContext, id, scope string) (*wafstore.WebACL, error) {
 	if id == "" {
 		return nil, invalidParamError("Id is required")
 	}
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +239,7 @@ func (s *WAFv2Service) getWebACLCore(reqCtx *request.RequestContext, id string) 
 type WebACLUpdateInput struct {
 	Id                        string
 	LockToken                 string
+	Scope                     string
 	DefaultActionRaw          interface{}
 	VisibilityConfigRaw       interface{}
 	RulesRaw                  interface{}
@@ -248,7 +266,7 @@ func (s *WAFv2Service) updateWebACLCore(reqCtx *request.RequestContext, in WebAC
 		return "", invalidParamError("LockToken is required")
 	}
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, in.Scope)
 	if err != nil {
 		return "", err
 	}
@@ -309,6 +327,30 @@ func (s *WAFv2Service) updateWebACLCore(reqCtx *request.RequestContext, in WebAC
 		if err := validateCustomResponseBodies(in.CustomResponseBodies); err != nil {
 			return "", err
 		}
+	}
+	if err := validateImmunityConfig(in.CaptchaConfig, "Captcha"); err != nil {
+		return "", err
+	}
+	if err := validateImmunityConfig(in.ChallengeConfig, "Challenge"); err != nil {
+		return "", err
+	}
+	if err := validateMonetizationConfig(in.MonetizationConfig); err != nil {
+		return "", err
+	}
+	// Monetize rules may ride on a configuration that an earlier update
+	// left on the web ACL, so the effective configuration falls back to
+	// the stored one when this call omits it.
+	effectiveMonetization := in.MonetizationConfig
+	if effectiveMonetization == nil && rulesContainMonetize(rules) {
+		if existing, getErr := stores.webACLs.Get(in.Id); getErr == nil {
+			effectiveMonetization = existing.MonetizationConfig
+		}
+	}
+	if err := validateMonetizeRules(rules, in.Scope, effectiveMonetization); err != nil {
+		return "", err
+	}
+	if err := validateRuleGroupReferenceOverrides(stores, rules); err != nil {
+		return "", err
 	}
 
 	updated, err := stores.webACLs.Update(in.Id, in.LockToken, capacity, rules, daAction, visibilityConfig, in.Description, func(webACL *wafstore.WebACL) {

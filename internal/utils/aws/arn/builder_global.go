@@ -66,24 +66,54 @@ type WAFBuilder struct{ *ARNBuilder }
 // WAF returns a WAFBuilder for constructing WAF ARNs.
 func (b *ARNBuilder) WAF() *WAFBuilder { return &WAFBuilder{b} }
 
+// wafScopeSegment maps a WAF scope to the ARN resource-path segment:
+// CLOUDFRONT-scoped resources live under "global", everything else
+// under "regional" (the IAM documentation formats wafv2 ARNs as
+// arn:<partition>:wafv2:<region>:<account>:<scope>/<type>/<name>/<id>).
+func wafScopeSegment(scope string) string {
+	if strings.EqualFold(scope, "CLOUDFRONT") || strings.EqualFold(scope, "global") {
+		return "global"
+	}
+	return "regional"
+}
+
+// WAFCloudFrontRegion is the region every CLOUDFRONT-scoped wafv2
+// resource belongs to: the IAM documentation's guidance for resources
+// that protect Amazon CloudFront distributions is to set the region to
+// us-east-1, independent of the caller's configured region, and the
+// WAFv2 API reference requires the us-east-1 endpoint for the CloudFront
+// scope. Every layer that must locate a global-scope resource — ARN
+// construction, storage routing, lookups — references this constant.
+const WAFCloudFrontRegion = "us-east-1"
+
+// wafARN builds a wafv2 resource ARN under the given scope; global
+// (CloudFront) scope fixes the region field to us-east-1.
+func (b *WAFBuilder) wafARN(scope, resource string) string {
+	segment := wafScopeSegment(scope)
+	if segment == "global" {
+		return b.BuildInRegion("wafv2", WAFCloudFrontRegion, segment+"/"+resource)
+	}
+	return b.Build("wafv2", segment+"/"+resource)
+}
+
 // WebACL constructs an ARN for a WAF Web ACL.
-func (b *WAFBuilder) WebACL(id, scope string) string {
-	return b.Build("waf", "webacl/"+scope+"/"+id)
+func (b *WAFBuilder) WebACL(name, id, scope string) string {
+	return b.wafARN(scope, "webacl/"+name+"/"+id)
 }
 
 // RuleGroup constructs an ARN for a WAF rule group.
-func (b *WAFBuilder) RuleGroup(id, scope string) string {
-	return b.Build("waf", "rulegroup/"+scope+"/"+id)
+func (b *WAFBuilder) RuleGroup(name, id, scope string) string {
+	return b.wafARN(scope, "rulegroup/"+name+"/"+id)
 }
 
 // IPSet constructs an ARN for a WAF IP set.
-func (b *WAFBuilder) IPSet(id, scope string) string {
-	return b.Build("waf", "ipset/"+scope+"/"+id)
+func (b *WAFBuilder) IPSet(name, id, scope string) string {
+	return b.wafARN(scope, "ipset/"+name+"/"+id)
 }
 
 // RegexPatternSet constructs a WAF regex pattern set ARN.
-func (b *WAFBuilder) RegexPatternSet(id, scope string) string {
-	return b.Build("waf", "regexpatternset/"+scope+"/"+id)
+func (b *WAFBuilder) RegexPatternSet(name, id, scope string) string {
+	return b.wafARN(scope, "regexpatternset/"+name+"/"+id)
 }
 
 // TimestreamBuilder provides methods for constructing Timestream ARNs.

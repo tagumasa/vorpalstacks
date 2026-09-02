@@ -30,6 +30,10 @@ type APIGatewayService struct {
 	storageManager *storage.RegionStorageManager
 	runtimeServer  *svcapigatewayruntime.RuntimeServer
 	acmInvoker     eventbus.ACMInvoker
+	// webACLInspector is held on the service because the WAF wiring
+	// runs before InitRuntimeServer creates the runtime server; the
+	// runtime instance receives the inspector at creation.
+	webACLInspector eventbus.WebACLInspector
 }
 
 // NewAPIGatewayService creates a new API Gateway service instance.
@@ -74,6 +78,22 @@ func (s *APIGatewayService) InitRuntimeServer(bus eventbus.Bus) {
 
 	s.runtimeServer = svcapigatewayruntime.NewRuntimeServer(stores.restApis, stores.usage, bus)
 	s.runtimeServer.SetAccountID(s.accountID)
+	s.runtimeServer.SetRegion(s.region)
+	if s.webACLInspector != nil {
+		s.runtimeServer.SetWebACLInspector(s.webACLInspector)
+	}
+}
+
+// SetWebACLInspector injects the WAF request-inspection entry point and
+// forwards it to the runtime server so WebACLs associated with stages
+// are enforced on execute-api traffic. The inspector is also held on
+// the service for the case where the runtime server is created after
+// this wiring runs.
+func (s *APIGatewayService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+	s.webACLInspector = inspector
+	if s.runtimeServer != nil {
+		s.runtimeServer.SetWebACLInspector(inspector)
+	}
 }
 
 // RuntimeHandler returns an http.Handler for the API Gateway runtime, or nil

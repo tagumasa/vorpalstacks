@@ -81,7 +81,9 @@ func (s *WAFv2Service) associateWebACLCore(ctx context.Context, reqCtx *request.
 		return invalidParamError("ResourceArn is required")
 	}
 
-	stores, err := s.store(reqCtx)
+	// The WebACL lives in the partition its ARN names — us-east-1 for the
+	// CloudFront scope — whatever region the call arrives from.
+	stores, err := s.GetStoresForRegion(s.arnRegion(webACLArn))
 	if err != nil {
 		return err
 	}
@@ -154,7 +156,9 @@ func (s *WAFv2Service) getWebACLForResourceCore(reqCtx *request.RequestContext, 
 		return nil, err
 	}
 
-	stores, err := s.store(reqCtx)
+	// The associated WebACL is loaded from the partition its own ARN
+	// names, which is where AssociateWebACL verified it exists.
+	stores, err := s.GetStoresForRegion(s.arnRegion(assoc.WebACLArn))
 	if err != nil {
 		return nil, err
 	}

@@ -300,7 +300,7 @@ func formatDistributionConfig(config *cloudfrontstore.DistributionConfig) map[st
 	}
 
 	m["AnycastIpListId"] = ""
-	m["ContinuousDeploymentPolicyId"] = ""
+	m["ContinuousDeploymentPolicyId"] = config.ContinuousDeploymentPolicyId
 
 	if config.Aliases != nil {
 		aliasMap := map[string]interface{}{
@@ -633,22 +633,23 @@ func parseDistributionConfig(configMap map[string]interface{}) *cloudfrontstore.
 		return nil
 	}
 	config := &cloudfrontstore.DistributionConfig{
-		CallerReference:      request.GetStringParam(configMap, "CallerReference"),
-		Comment:              request.GetStringParam(configMap, "Comment"),
-		Enabled:              request.GetBoolParam(configMap, "Enabled"),
-		PriceClass:           request.GetStringParam(configMap, "PriceClass"),
-		DefaultRootObject:    request.GetStringParam(configMap, "DefaultRootObject"),
-		HttpVersion:          request.GetStringParam(configMap, "HttpVersion"),
-		IsIPV6Enabled:        request.GetBoolParam(configMap, "IsIPV6Enabled"),
-		Staging:              request.GetBoolParam(configMap, "Staging"),
-		WebACLId:             request.GetStringParam(configMap, "WebACLId"),
-		Origins:              parseOrigins(request.GetMapParam(configMap, "Origins")),
-		DefaultCacheBehavior: parseCacheBehavior(request.GetMapParam(configMap, "DefaultCacheBehavior")),
-		CacheBehaviors:       parseCacheBehaviors(request.GetMapParam(configMap, "CacheBehaviors")),
-		Aliases:              parseAliases(request.GetMapParam(configMap, "Aliases")),
-		Logging:              parseLoggingConfig(request.GetMapParam(configMap, "Logging")),
-		ViewerCertificate:    parseViewerCertificate(request.GetMapParam(configMap, "ViewerCertificate")),
-		Restrictions:         parseRestrictions(request.GetMapParam(configMap, "Restrictions")),
+		CallerReference:              request.GetStringParam(configMap, "CallerReference"),
+		Comment:                      request.GetStringParam(configMap, "Comment"),
+		Enabled:                      request.GetBoolParam(configMap, "Enabled"),
+		PriceClass:                   request.GetStringParam(configMap, "PriceClass"),
+		DefaultRootObject:            request.GetStringParam(configMap, "DefaultRootObject"),
+		HttpVersion:                  request.GetStringParam(configMap, "HttpVersion"),
+		IsIPV6Enabled:                request.GetBoolParam(configMap, "IsIPV6Enabled"),
+		Staging:                      request.GetBoolParam(configMap, "Staging"),
+		WebACLId:                     request.GetStringParam(configMap, "WebACLId"),
+		ContinuousDeploymentPolicyId: request.GetStringParam(configMap, "ContinuousDeploymentPolicyId"),
+		Origins:                      parseOrigins(request.GetMapParam(configMap, "Origins")),
+		DefaultCacheBehavior:         parseCacheBehavior(request.GetMapParam(configMap, "DefaultCacheBehavior")),
+		CacheBehaviors:               parseCacheBehaviors(request.GetMapParam(configMap, "CacheBehaviors")),
+		Aliases:                      parseAliases(request.GetMapParam(configMap, "Aliases")),
+		Logging:                      parseLoggingConfig(request.GetMapParam(configMap, "Logging")),
+		ViewerCertificate:            parseViewerCertificate(request.GetMapParam(configMap, "ViewerCertificate")),
+		Restrictions:                 parseRestrictions(request.GetMapParam(configMap, "Restrictions")),
 	}
 
 	if cer := request.GetMapParam(configMap, "CustomErrorResponses"); cer != nil {
@@ -945,10 +946,18 @@ func parseCacheBehavior(cbMap map[string]interface{}) *cloudfrontstore.CacheBeha
 		CachePolicyId:           request.GetStringParam(cbMap, "CachePolicyId"),
 		OriginRequestPolicyId:   request.GetStringParam(cbMap, "OriginRequestPolicyId"),
 		ResponseHeadersPolicyId: request.GetStringParam(cbMap, "ResponseHeadersPolicyId"),
-		MinTTL:                  request.GetIntParam(cbMap, "MinTTL"),
-		DefaultTTL:              request.GetIntParam(cbMap, "DefaultTTL"),
-		MaxTTL:                  request.GetIntParam(cbMap, "MaxTTL"),
 		SmoothStreaming:         request.GetBoolParam(cbMap, "SmoothStreaming"),
+	}
+	// The TTL fields distinguish "omitted" (the 24-hour default applies
+	// for behaviours without a cache policy) from an explicit zero (the
+	// user disables caching), so they parse presence-aware.
+	cb.MinTTL = request.GetIntParam(cbMap, "MinTTL")
+	cb.MaxTTL = request.GetIntParam(cbMap, "MaxTTL")
+	cb.DefaultTTL = request.GetIntParam(cbMap, "DefaultTTL")
+	if _, present := cbMap["DefaultTTL"]; !present {
+		if _, hasPolicy := cbMap["CachePolicyId"]; !hasPolicy || request.GetStringParam(cbMap, "CachePolicyId") == "" {
+			cb.DefaultTTL = cloudfrontstore.LegacyDefaultTTLSeconds
+		}
 	}
 	if am := request.GetMapParam(cbMap, "AllowedMethods"); am != nil {
 		cb.AllowedMethods = &cloudfrontstore.AllowedMethods{

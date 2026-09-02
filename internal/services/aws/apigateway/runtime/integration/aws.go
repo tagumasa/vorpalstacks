@@ -161,10 +161,12 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 	if isProxy {
 		lambdaResp, err := parseLambdaResponse(payload)
 		if err != nil {
+			// API Gateway answers a malformed proxy response with
+			// 502 Internal server error.
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Failed to parse Lambda response: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusBadGateway,
 			}
 		}
 		return lambdaResp, nil
@@ -389,6 +391,13 @@ func parseLambdaResponse(body []byte) (*IntegrationResponse, error) {
 	var lambdaResp LambdaProxyResponse
 	if err := json.Unmarshal(body, &lambdaResp); err != nil {
 		return nil, fmt.Errorf("failed to parse Lambda response: %w", err)
+	}
+	// A proxy response must carry a valid status code. A payload that
+	// parses as JSON without one (for example a function returning its
+	// input unchanged) is a malformed proxy response; API Gateway
+	// answers such functions with 502 Internal server error.
+	if lambdaResp.StatusCode < 100 || lambdaResp.StatusCode > 599 {
+		return nil, fmt.Errorf("malformed Lambda proxy response: missing or invalid statusCode %d", lambdaResp.StatusCode)
 	}
 
 	// Merge cookies into multi-value headers as Set-Cookie entries.

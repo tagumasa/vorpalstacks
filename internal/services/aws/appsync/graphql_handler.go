@@ -59,6 +59,10 @@ func (s *AppSyncService) HandleGraphQLExecution(ctx context.Context, reqCtx *req
 		in.APIKeyHeader = req.Headers.Get("x-api-key")
 	}
 
+	if blocked := s.enforceWebACL(ctx, reqCtx, in.ApiId, req.Headers, req.Host, req.Body); blocked != nil {
+		return blocked, nil
+	}
+
 	result, wireErr := s.executeGraphQLCore(ctx, reqCtx, store, in)
 	if wireErr != nil {
 		return s.graphqlErrorResponse(wireErr.HTTPStatus, wireErr.ErrorType, wireErr.Message), nil

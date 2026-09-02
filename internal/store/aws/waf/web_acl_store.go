@@ -42,7 +42,7 @@ func (s *WebACLStore) Create(webACL *WebACL) (*WebACL, error) {
 	if webACL.Tags == nil {
 		webACL.Tags = []types.Tag{}
 	}
-	webACL.ARN = s.arnBuilder.BuildWebACLARN(webACL.ID, webACL.Scope)
+	webACL.ARN = s.arnBuilder.BuildWebACLARN(webACL.Name, webACL.ID, webACL.Scope)
 	SetTimestamps(&webACLAccessor, webACL)
 	if err := s.Put(webACL.ID, webACL, "create_web_acl"); err != nil {
 		return nil, err

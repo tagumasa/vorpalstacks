@@ -101,6 +101,14 @@ var cloudFrontRoutes = []cloudFrontRoute{
 	{op: "UpdatePublicKey", method: "PUT", segments: []string{"public-key", "{Id}", "config"}, payloadRoot: "PublicKey"},
 	{op: "GetPublicKey", method: "GET", segments: []string{"public-key", "{Id}"}, payloadRoot: "PublicKey"},
 	{op: "DeletePublicKey", method: "DELETE", segments: []string{"public-key", "{Id}"}, payloadRoot: ""},
+
+	// Continuous deployment policy
+	{op: "CreateContinuousDeploymentPolicy", method: "POST", segments: []string{"continuous-deployment-policy"}, payloadRoot: "ContinuousDeploymentPolicy"},
+	{op: "ListContinuousDeploymentPolicies", method: "GET", segments: []string{"continuous-deployment-policy"}, payloadRoot: "ContinuousDeploymentPolicyList"},
+	{op: "GetContinuousDeploymentPolicyConfig", method: "GET", segments: []string{"continuous-deployment-policy", "{Id}", "config"}, payloadRoot: "ContinuousDeploymentPolicyConfig"},
+	{op: "GetContinuousDeploymentPolicy", method: "GET", segments: []string{"continuous-deployment-policy", "{Id}"}, payloadRoot: "ContinuousDeploymentPolicy"},
+	{op: "UpdateContinuousDeploymentPolicy", method: "PUT", segments: []string{"continuous-deployment-policy", "{Id}"}, payloadRoot: "ContinuousDeploymentPolicy"},
+	{op: "DeleteContinuousDeploymentPolicy", method: "DELETE", segments: []string{"continuous-deployment-policy", "{Id}"}, payloadRoot: ""},
 }
 
 // matchCloudFrontRoute resolves a CloudFront request against the routing

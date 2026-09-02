@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/headerorder"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
@@ -255,6 +257,7 @@ func (s *Server) Start() error {
 		s.httpServer = &http.Server{
 			Addr:              fmt.Sprintf("%s:%d", bindAddr, s.config.Port),
 			Handler:           h2c.NewHandler(r, h2s),
+			ConnContext:       headerorder.ConnContext(nil),
 			ReadHeaderTimeout: 5 * time.Second,
 			ReadTimeout:       15 * time.Second,
 			WriteTimeout:      30 * time.Second,
@@ -269,7 +272,18 @@ func (s *Server) Start() error {
 		s.httpServerMu.Unlock()
 
 		go func() {
-			err := srv.ListenAndServe()
+			// Serving over a capture-wrapped listener preserves the wire
+			// order of HTTP/1.1 header names (the WAF HeaderOrder request
+			// component); the ConnContext hook carries it to handlers.
+			ln, listenErr := net.Listen("tcp", srv.Addr)
+			if listenErr != nil {
+				startErr = listenErr
+				if s.shutdownCancel != nil {
+					s.shutdownCancel()
+				}
+				return
+			}
+			err := srv.Serve(headerorder.NewListener(ln))
 			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				// Set startErr BEFORE calling shutdownCancel so that
 				// the happens-before guarantee of the context Done
@@ -306,6 +320,13 @@ func (s *Server) Start() error {
 				tlsSrv := s.tlsServer
 				s.tlsServerMu.Unlock()
 
+				// The shared TLS port keeps the server's native TLS
+				// serving: its configuration negotiates HTTP/2, whose
+				// dispatch relies on the concrete *tls.Conn type the
+				// header-order capture would hide. Header-order capture
+				// therefore covers the plaintext port and the per-service
+				// listeners; this port falls back to the header map's
+				// order, as the service notes disclose.
 				err := tlsSrv.ListenAndServeTLS("", "")
 				if err != nil && !errors.Is(err, http.ErrServerClosed) {
 					logs.Error("TLS server error", logs.Err(err))

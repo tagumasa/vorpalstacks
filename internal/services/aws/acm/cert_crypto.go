@@ -62,8 +62,16 @@ func renewCertificateMaterial(cert *acmstorelib.Certificate) error {
 		return err
 	}
 
+	// The renewed key pair replaces the stored one so TLS termination on
+	// cross-service listeners keeps serving the renewed certificate.
+	keyPEM, err := vcrypto.EncodePrivateKeyPEM(key)
+	if err != nil {
+		return err
+	}
+
 	cert.Serial = serialBigInt.String()
 	cert.Certificate = vcrypto.EncodeCertificatePEM(certDER)
+	cert.PrivateKey = keyPEM
 	cert.Status = "ISSUED"
 	cert.NotBefore = now
 	cert.NotAfter = notAfter
@@ -109,6 +117,16 @@ func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgo
 
 	certPEM := vcrypto.EncodeCertificatePEM(certDER)
 
+	// The issuing key pair is persisted with the certificate: TLS
+	// termination on cross-service listeners (CloudFront, API Gateway)
+	// needs it to serve the certificate, mirroring how AWS deploys
+	// ACM-held key pairs to its edges. ExportCertificate keeps the
+	// material unavailable to callers through the certificate-type guard.
+	keyPEM, err := vcrypto.EncodePrivateKeyPEM(key)
+	if err != nil {
+		return nil, NewInternalServerException("Failed to encode the issuing private key")
+	}
+
 	// Build domain validation options. ACM creates certs in PENDING_VALIDATION
 	// state; the platform validates synchronously (self-signed) so domain
 	// validation options transition to SUCCESS immediately.
@@ -130,6 +148,7 @@ func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgo
 		Subject:                  domainName,
 		Issuer:                   domainName,
 		Certificate:              certPEM,
+		PrivateKey:               keyPEM,
 		NotBefore:                now,
 		NotAfter:                 notAfter,
 		IssuedAt:                 now,

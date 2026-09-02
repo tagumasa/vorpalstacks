@@ -1,13 +1,17 @@
 package wafv2
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
+	"vorpalstacks/internal/services/aws/wafv2/inspection"
 	"vorpalstacks/internal/store/aws/waf"
+
+	"golang.org/x/crypto/sha3"
 )
 
 // maxRegexPatternStringLength is the Smithy RegexPatternString @length
@@ -175,6 +179,9 @@ func validateRuleAction(action interface{}) error {
 		}
 		if a.Monetize != nil {
 			count++
+			if a.Monetize.PriceMultiplier != "" && !priceMultiplierPattern.MatchString(a.Monetize.PriceMultiplier) {
+				return invalidParamError(fmt.Sprintf("Invalid Monetize PriceMultiplier: %s (must be a string integer 1 to 100)", a.Monetize.PriceMultiplier))
+			}
 		}
 		if count == 0 {
 			return invalidParamError("RuleAction must specify at least one of Allow, Block, Count, Captcha, Challenge, or Monetize")
@@ -226,6 +233,64 @@ func validateLabelMatchScope(scope string) error {
 func validateRateLimit(limit int64) error {
 	if limit < 10 || limit > 2000000000 {
 		return invalidParamError(fmt.Sprintf("RateBasedStatement Limit must be between 10 and 2000000000 (got %d)", limit))
+	}
+	return nil
+}
+
+// validateRateCustomKeys validates the custom aggregation keys of a
+// rate-based statement against the model requirements: CUSTOM_KEYS
+// must carry at least one aggregation key in CustomKeys, and an IP or
+// ForwardedIP custom key cannot be the only key — the model requires
+// at least one other key alongside it (to aggregate on only the
+// (forwarded) IP address, the AggregateKeyType IP or FORWARDED_IP is
+// used instead). Every entry must set exactly one union member.
+func validateRateCustomKeys(rate *waf.RateBasedStatement) error {
+	if rate.AggregateKeyType != "CUSTOM_KEYS" {
+		return nil
+	}
+	if len(rate.CustomKeys) == 0 {
+		return invalidParamError("RateBasedStatement with AggregateKeyType CUSTOM_KEYS must specify at least one custom aggregation key in CustomKeys")
+	}
+	addressKeys, otherKeys := 0, 0
+	for i, custom := range rate.CustomKeys {
+		if custom == nil {
+			return invalidParamError(fmt.Sprintf("CustomKeys[%d] must set exactly one aggregation key", i))
+		}
+		set := 0
+		addressKey := false
+		for _, member := range []struct {
+			present bool
+			isAddr  bool
+		}{
+			{custom.Header != nil, false},
+			{custom.Cookie != nil, false},
+			{custom.QueryArgument != nil, false},
+			{custom.QueryString != nil, false},
+			{custom.HTTPMethod != nil, false},
+			{custom.ForwardedIP != nil, true},
+			{custom.IP != nil, true},
+			{custom.LabelNamespace != nil, false},
+			{custom.UriPath != nil, false},
+			{custom.JA3Fingerprint != nil, false},
+			{custom.JA4Fingerprint != nil, false},
+			{custom.ASN != nil, false},
+		} {
+			if member.present {
+				set++
+				addressKey = member.isAddr
+			}
+		}
+		if set != 1 {
+			return invalidParamError(fmt.Sprintf("CustomKeys[%d] must set exactly one aggregation key, got %d", i, set))
+		}
+		if addressKey {
+			addressKeys++
+		} else {
+			otherKeys++
+		}
+	}
+	if addressKeys > 0 && otherKeys == 0 {
+		return invalidParamError("CustomKeys cannot aggregate on only the IP or forwarded IP address; use AggregateKeyType IP or FORWARDED_IP instead")
 	}
 	return nil
 }
@@ -330,7 +395,10 @@ func isValidTextTransformationType(t string) bool {
 		"REPLACE_COMMENTS", "ESCAPE_SEQ_DECODE", "SQL_HEX_DECODE",
 		"CSS_DECODE", "JS_DECODE", "NORMALIZE_PATH", "NORMALIZE_PATH_WIN",
 		"REMOVE_NULLS", "REPLACE_NULLS", "BASE64_DECODE_EXT",
-		"URL_DECODE_UNI", "UTF8_TO_UNICODE":
+		"URL_DECODE_UNI", "UTF8_TO_UNICODE", "REMOVE_WHITESPACE",
+		"TRIM", "TRIM_LEFT", "TRIM_RIGHT", "REMOVE_COMMENTS_CHAR",
+		"UPPERCASE", "CMD_LINE_WIN", "CMD_LINE_UNIX", "JS_DECODE_EXT",
+		"SHA256":
 		return true
 	}
 	return false
@@ -442,10 +510,16 @@ func validateFieldToMatch(ftm *waf.FieldToMatch) error {
 // validateStatement recursively validates all enum and required fields in
 // a Statement tree. All sixteen Smithy statement types are covered.
 // Returns WAFInvalidParameterException for any invalid enum or missing
-// required field.
-func validateStatement(stmt *waf.Statement) error {
+// required field. nested marks statements reached through a logical or
+// scope-down statement: a ManagedRuleGroupStatement is legal only as a
+// web ACL rule's own top-level statement, never nested, per the API's
+// statement placement rules.
+func validateStatement(stmt *waf.Statement, nested bool) error {
 	if stmt == nil {
 		return nil
+	}
+	if nested && stmt.ManagedRuleGroupStatement != nil {
+		return invalidParamError("A ManagedRuleGroupStatement can only be used as a rule's top-level statement in a web ACL")
 	}
 
 	if stmt.ByteMatchStatement != nil {
@@ -558,7 +632,7 @@ func validateStatement(stmt *waf.Statement) error {
 			return invalidParamError("AndStatement must contain at least one Statement")
 		}
 		for _, s := range stmt.AndStatement.Statements {
-			if err := validateStatement(s); err != nil {
+			if err := validateStatement(s, true); err != nil {
 				return err
 			}
 		}
@@ -569,14 +643,14 @@ func validateStatement(stmt *waf.Statement) error {
 			return invalidParamError("OrStatement must contain at least one Statement")
 		}
 		for _, s := range stmt.OrStatement.Statements {
-			if err := validateStatement(s); err != nil {
+			if err := validateStatement(s, true); err != nil {
 				return err
 			}
 		}
 	}
 
 	if stmt.NotStatement != nil {
-		if err := validateStatement(stmt.NotStatement.Statement); err != nil {
+		if err := validateStatement(stmt.NotStatement.Statement, true); err != nil {
 			return err
 		}
 	}
@@ -588,7 +662,10 @@ func validateStatement(stmt *waf.Statement) error {
 		if stmt.RateBasedStatement.AggregateKeyType != "" && !isValidAggregateKeyType(stmt.RateBasedStatement.AggregateKeyType) {
 			return invalidParamError(fmt.Sprintf("Invalid AggregateKeyType: %s", stmt.RateBasedStatement.AggregateKeyType))
 		}
-		if err := validateStatement(stmt.RateBasedStatement.ScopeDownStatement); err != nil {
+		if err := validateRateCustomKeys(stmt.RateBasedStatement); err != nil {
+			return err
+		}
+		if err := validateStatement(stmt.RateBasedStatement.ScopeDownStatement, true); err != nil {
 			return err
 		}
 	}
@@ -600,7 +677,7 @@ func validateStatement(stmt *waf.Statement) error {
 		if stmt.ManagedRuleGroupStatement.VendorName == "" {
 			return invalidParamError("ManagedRuleGroupStatement VendorName is required")
 		}
-		if err := validateStatement(stmt.ManagedRuleGroupStatement.ScopeDownStatement); err != nil {
+		if err := validateStatement(stmt.ManagedRuleGroupStatement.ScopeDownStatement, true); err != nil {
 			return err
 		}
 	}
@@ -616,8 +693,11 @@ func validateStatement(stmt *waf.Statement) error {
 
 // validateRules validates all statements and action/override fields in a
 // rule list. This is the single entry point for rule validation called by
-// parseRules before any rule is persisted to the store.
-func validateRules(rules []*waf.Rule) error {
+// parseRules before any rule is persisted to the store. Web ACL rules may
+// reference a managed rule group as their top-level statement; rule
+// group rules may not — the API forbids using a managed rule group
+// inside another rule group.
+func validateRules(rules []*waf.Rule, allowManagedRuleGroups bool) error {
 	for _, r := range rules {
 		if r == nil {
 			continue
@@ -628,9 +708,314 @@ func validateRules(rules []*waf.Rule) error {
 		if err := validateOverrideAction(r.OverrideAction); err != nil {
 			return err
 		}
-		if err := validateStatement(r.Statement); err != nil {
+		if err := validateImmunityConfig(r.CaptchaConfig, "Captcha"); err != nil {
+			return err
+		}
+		if err := validateImmunityConfig(r.ChallengeConfig, "Challenge"); err != nil {
+			return err
+		}
+		if !allowManagedRuleGroups && statementReferencesManagedRuleGroup(r.Statement) {
+			return invalidParamError(fmt.Sprintf("Rule %s: a ManagedRuleGroupStatement cannot be used inside a rule group", r.Name))
+		}
+		if err := validateStatement(r.Statement, false); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// statementReferencesManagedRuleGroup reports whether a statement tree
+// contains a managed rule group reference at any depth.
+func statementReferencesManagedRuleGroup(stmt *waf.Statement) bool {
+	if stmt == nil {
+		return false
+	}
+	if stmt.ManagedRuleGroupStatement != nil {
+		return true
+	}
+	if stmt.AndStatement != nil {
+		for _, sub := range stmt.AndStatement.Statements {
+			if statementReferencesManagedRuleGroup(sub) {
+				return true
+			}
+		}
+	}
+	if stmt.OrStatement != nil {
+		for _, sub := range stmt.OrStatement.Statements {
+			if statementReferencesManagedRuleGroup(sub) {
+				return true
+			}
+		}
+	}
+	if stmt.NotStatement != nil && statementReferencesManagedRuleGroup(stmt.NotStatement.Statement) {
+		return true
+	}
+	if stmt.RateBasedStatement != nil && statementReferencesManagedRuleGroup(stmt.RateBasedStatement.ScopeDownStatement) {
+		return true
+	}
+	return false
+}
+
+// The ImmunityTime setting's bounds come from the Smithy
+// TimeWindowSecond range, 60 to 259200 seconds.
+const (
+	immunityTimeMinSeconds = 60
+	immunityTimeMaxSeconds = 259200
+)
+
+// validateImmunityConfig validates one raw CaptchaConfig or
+// ChallengeConfig: ImmunityTime is required inside a present
+// ImmunityTimeProperty, must stay within the TimeWindowSecond range,
+// and the Challenge action documents a minimum of 300 seconds.
+func validateImmunityConfig(raw interface{}, action string) error {
+	if raw == nil {
+		return nil
+	}
+	var config struct {
+		ImmunityTimeProperty *struct {
+			ImmunityTime int64 `json:"ImmunityTime"`
+		} `json:"ImmunityTimeProperty"`
+	}
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return invalidParamError("immunity configuration is not serialisable")
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return invalidParamError(fmt.Sprintf("%sConfig must be an object", action))
+	}
+	if config.ImmunityTimeProperty == nil {
+		return nil
+	}
+	immunity := config.ImmunityTimeProperty.ImmunityTime
+	if immunity == 0 {
+		return invalidParamError("ImmunityTimeProperty ImmunityTime is required")
+	}
+	if immunity < immunityTimeMinSeconds || immunity > immunityTimeMaxSeconds {
+		return invalidParamError(fmt.Sprintf("ImmunityTime must be between %d and %d seconds (got %d)", immunityTimeMinSeconds, immunityTimeMaxSeconds, immunity))
+	}
+	if action == "Challenge" && immunity < waf.ChallengeImmunityTimeMin {
+		return invalidParamError(fmt.Sprintf("The minimum Challenge immunity time is %d seconds (got %d)", waf.ChallengeImmunityTimeMin, immunity))
+	}
+	return nil
+}
+
+// priceMultiplierPattern mirrors the Smithy pattern trait on
+// PriceMultiplier: the string form of an integer 1 to 100.
+var priceMultiplierPattern = regexp.MustCompile(`^([1-9][0-9]?|100)$`)
+
+// managedProductChains is the Smithy BlockchainChain enum.
+var managedProductChains = map[string]bool{
+	"BASE":          true,
+	"SOLANA":        true,
+	"BASE_SEPOLIA":  true,
+	"SOLANA_DEVNET": true,
+}
+
+// testProductChains are the BlockchainChain enum's test networks; a
+// MonetizationConfig's payment networks must be all production or all
+// test.
+var testProductChains = map[string]bool{
+	"BASE_SEPOLIA":  true,
+	"SOLANA_DEVNET": true,
+}
+
+// base58Alphabet is the Base58 alphabet Solana wallet addresses use.
+const base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+// validateMonetizationConfig validates the raw MonetizationConfig of a
+// web ACL or rule group: one or two payment networks, each with a valid
+// chain, a checksum-valid wallet address of the chain's format and
+// exactly one USDC price inside the documented amount bounds, with all
+// networks in the same production or test environment.
+func validateMonetizationConfig(raw interface{}) error {
+	if raw == nil {
+		return nil
+	}
+	var config struct {
+		CryptoConfig *struct {
+			PaymentNetworks []struct {
+				Chain         string `json:"Chain"`
+				WalletAddress string `json:"WalletAddress"`
+				Prices        []struct {
+					Amount   string `json:"Amount"`
+					Currency string `json:"Currency"`
+				} `json:"Prices"`
+			} `json:"PaymentNetworks"`
+		} `json:"CryptoConfig"`
+		CurrencyMode string `json:"CurrencyMode"`
+	}
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return invalidParamError("MonetizationConfig is not serialisable")
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return invalidParamError("MonetizationConfig must be an object")
+	}
+	if config.CurrencyMode != "" && config.CurrencyMode != "REAL" && config.CurrencyMode != "TEST" {
+		return invalidParamError(fmt.Sprintf("Invalid CurrencyMode: %s (must be REAL or TEST)", config.CurrencyMode))
+	}
+	if config.CryptoConfig == nil {
+		return nil
+	}
+	networks := config.CryptoConfig.PaymentNetworks
+	if len(networks) < 1 || len(networks) > 2 {
+		return invalidParamError("CryptoConfig PaymentNetworks must contain 1 to 2 networks")
+	}
+	sawTest := false
+	sawProduction := false
+	for i, network := range networks {
+		if !managedProductChains[network.Chain] {
+			return invalidParamError(fmt.Sprintf("PaymentNetwork %d: Invalid Chain: %s", i, network.Chain))
+		}
+		if testProductChains[network.Chain] {
+			sawTest = true
+		} else {
+			sawProduction = true
+		}
+		if !validWalletAddress(network.Chain, network.WalletAddress) {
+			return invalidParamError(fmt.Sprintf("PaymentNetwork %d: Invalid WalletAddress for chain %s", i, network.Chain))
+		}
+		if len(network.Prices) != 1 {
+			return invalidParamError(fmt.Sprintf("PaymentNetwork %d: Prices must contain exactly one entry", i))
+		}
+		price := network.Prices[0]
+		if price.Currency != "USDC" {
+			return invalidParamError(fmt.Sprintf("PaymentNetwork %d: Currency must be USDC (got %s)", i, price.Currency))
+		}
+		millis, err := inspection.ParsePriceMillis(price.Amount)
+		if err != nil || millis < waf.PriceAmountMinMillis || millis > waf.PriceAmountMaxMillis {
+			return invalidParamError(fmt.Sprintf("PaymentNetwork %d: Amount must be a decimal between 0.001 and 999999999.999 with at most three decimal places (got %s)", i, price.Amount))
+		}
+	}
+	if sawTest && sawProduction {
+		return invalidParamError("CryptoConfig PaymentNetworks must all be production networks or all test networks")
+	}
+	return nil
+}
+
+// validWalletAddress reports whether the address has the format of its
+// chain: EVM chains take a 0x-prefixed 20-byte hex address whose EIP-55
+// checksum must hold whenever the letters mix case, and Solana chains
+// take a 32 to 44 character Base58 public key.
+func validWalletAddress(chain, address string) bool {
+	switch chain {
+	case "BASE", "BASE_SEPOLIA":
+		return validEVMAddress(address)
+	case "SOLANA", "SOLANA_DEVNET":
+		if len(address) < 32 || len(address) > 44 {
+			return false
+		}
+		for i := 0; i < len(address); i++ {
+			if !strings.ContainsRune(base58Alphabet, rune(address[i])) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
+// validEVMAddress checks the 0x-prefixed 40-hex-digit form and, for
+// mixed-case addresses, the EIP-55 checksum. An address set entirely in
+// one case skips the checksum, the bypass the WalletAddress
+// documentation describes.
+func validEVMAddress(address string) bool {
+	if len(address) != 42 || address[0] != '0' || address[1] != 'x' {
+		return false
+	}
+	lower := strings.ToLower(address)
+	for i := 2; i < len(lower); i++ {
+		c := lower[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	if address == lower || address == "0x"+strings.ToUpper(address[2:]) {
+		return true
+	}
+	digest := sha3.NewLegacyKeccak256()
+	digest.Write([]byte(lower[2:]))
+	hash := digest.Sum(nil)
+	for i := 2; i < len(address); i++ {
+		c := address[i]
+		if c < 'a' || c > 'f' {
+			continue
+		}
+		nibble := hash[(i-2)/2]
+		if (i-2)%2 == 0 {
+			nibble >>= 4
+		} else {
+			nibble &= 0x0f
+		}
+		uppercase := c >= 'A' && c <= 'F'
+		if (nibble >= 8) != uppercase {
+			return false
+		}
+	}
+	return true
+}
+
+// validateMonetizeRules enforces the Monetize action's configuration
+// constraints across a rule list: the action requires a
+// MonetizationConfig on the owning web ACL or rule group, is available
+// only for the CloudFront scope, and cannot be used by rate-based
+// rules.
+func validateMonetizeRules(rules []*waf.Rule, scope string, monetizationConfig interface{}) error {
+	if !rulesContainMonetize(rules) {
+		return nil
+	}
+	if monetizationConfig == nil {
+		return invalidParamError("The Monetize action requires a MonetizationConfig on the web ACL or rule group")
+	}
+	if !isGlobalScope(scope) {
+		return invalidParamError("The Monetize action is available only for web ACLs associated with Amazon CloudFront distributions (Scope CLOUDFRONT)")
+	}
+	for _, rule := range rules {
+		if rule == nil {
+			continue
+		}
+		action := typedRuleAction(rule.Action)
+		if action == nil || action.Monetize == nil {
+			continue
+		}
+		if rule.Statement != nil && rule.Statement.RateBasedStatement != nil {
+			return invalidParamError(fmt.Sprintf("Rule %s: the Monetize action cannot be used for rate-based rules", rule.Name))
+		}
+	}
+	return nil
+}
+
+// rulesContainMonetize reports whether any rule carries the Monetize
+// action.
+func rulesContainMonetize(rules []*waf.Rule) bool {
+	for _, rule := range rules {
+		if rule == nil {
+			continue
+		}
+		if action := typedRuleAction(rule.Action); action != nil && action.Monetize != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// typedRuleAction converts a stored rule action — a typed pointer
+// before storage, a raw map after a JSON round-trip — to its typed
+// form.
+func typedRuleAction(action interface{}) *waf.Action {
+	if action == nil {
+		return nil
+	}
+	if typed, ok := action.(*waf.Action); ok {
+		return typed
+	}
+	data, err := json.Marshal(action)
+	if err != nil {
+		return nil
+	}
+	var out waf.Action
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil
+	}
+	return &out
 }

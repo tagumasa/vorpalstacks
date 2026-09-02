@@ -25,9 +25,19 @@ func wafv2MapError(err error) error {
 	return err
 }
 
+// tagStoreForArn resolves the store bundle that owns the tags of the
+// resource the request names: the bundle of the resource ARN's own
+// region, so a CLOUDFRONT-scope resource (whose ARN carries us-east-1)
+// is tagged in the partition where it lives whatever region the call
+// arrives from.
+func (s *WAFv2Service) tagStoreForArn(reqCtx *request.RequestContext, req *request.ParsedRequest) (*wafv2Stores, error) {
+	resourceArn := request.GetStringParam(req.Parameters, "ResourceArn")
+	return s.GetStoresForRegion(s.arnRegion(resourceArn))
+}
+
 // TagResource adds or overwrites tags on a WAFv2 resource.
 func (s *WAFv2Service) TagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.tagStoreForArn(reqCtx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +46,7 @@ func (s *WAFv2Service) TagResource(ctx context.Context, reqCtx *request.RequestC
 
 // UntagResource removes the specified tags from a WAFv2 resource.
 func (s *WAFv2Service) UntagResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.tagStoreForArn(reqCtx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +55,7 @@ func (s *WAFv2Service) UntagResource(ctx context.Context, reqCtx *request.Reques
 
 // ListTagsForResource lists all tags assigned to a WAFv2 resource.
 func (s *WAFv2Service) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	stores, err := s.store(reqCtx)
+	stores, err := s.tagStoreForArn(reqCtx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +63,8 @@ func (s *WAFv2Service) ListTagsForResource(ctx context.Context, reqCtx *request.
 }
 
 // extractResourceTypeFromARN reads the WAFv2 resource type from the ARN
-// resource field. WAFv2 resource paths are either scope-prefixed
-// (regional|cloudfront/<type>/<name>/<id>) or type-direct
-// (<type>/<name>/<id>).
+// resource field. WAFv2 resource paths are scope-prefixed
+// (regional|global/<type>/<name>/<id>).
 func extractResourceTypeFromARN(arn string) string {
 	_, _, _, _, resource := svcarn.SplitARN(arn)
 	subParts := strings.Split(resource, "/")
@@ -63,7 +72,7 @@ func extractResourceTypeFromARN(arn string) string {
 	switch first {
 	case "ipset", "webacl", "rulegroup", "regexpatternset":
 		return first
-	case "regional", "cloudfront":
+	case "regional", "global":
 		if len(subParts) > 1 {
 			return strings.ToLower(subParts[1])
 		}

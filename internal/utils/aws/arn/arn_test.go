@@ -1067,3 +1067,24 @@ func TestIsARNServiceFieldMatching(t *testing.T) {
 		}
 	}
 }
+
+func TestWAFARNBuilder(t *testing.T) {
+	builder := NewARNBuilder("123456789012", "ap-northeast-1").WAF()
+	cases := []struct {
+		got  string
+		want string
+	}{
+		{builder.WebACL("myacl", "id-1", "REGIONAL"), "arn:aws:wafv2:ap-northeast-1:123456789012:regional/webacl/myacl/id-1"},
+		{builder.RuleGroup("mygroup", "id-3", ""), "arn:aws:wafv2:ap-northeast-1:123456789012:regional/rulegroup/mygroup/id-3"},
+		// CLOUDFRONT-scoped ARNs carry the global scope segment and the
+		// us-east-1 region regardless of the builder's region.
+		{builder.WebACL("myacl", "id-1", "CLOUDFRONT"), "arn:aws:wafv2:us-east-1:123456789012:global/webacl/myacl/id-1"},
+		{builder.IPSet("myset", "id-2", "CLOUDFRONT"), "arn:aws:wafv2:us-east-1:123456789012:global/ipset/myset/id-2"},
+		{builder.RegexPatternSet("mypatterns", "id-4", "global"), "arn:aws:wafv2:us-east-1:123456789012:global/regexpatternset/mypatterns/id-4"},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("WAF ARN = %s, want %s", c.got, c.want)
+		}
+	}
+}

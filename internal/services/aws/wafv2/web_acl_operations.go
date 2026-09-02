@@ -21,7 +21,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 	}
 	visibilityConfig := convertVisibilityConfig(request.GetMapParam(req.Parameters, "VisibilityConfig"))
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *WAFv2Service) CreateWebACL(ctx context.Context, reqCtx *request.Request
 
 // GetWebACL retrieves the details of the specified web ACL.
 func (s *WAFv2Service) GetWebACL(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	webACL, err := s.getWebACLCore(reqCtx, request.GetStringParam(req.Parameters, "Id"))
+	webACL, err := s.getWebACLCore(reqCtx, request.GetStringParam(req.Parameters, "Id"), request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *WAFv2Service) ListWebACLs(ctx context.Context, reqCtx *request.RequestC
 	maxItems := pagination.GetMaxItems(req.Parameters, 100, "Limit")
 	nextMarker := pagination.GetMarker(req.Parameters, "NextMarker")
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +147,7 @@ func (s *WAFv2Service) UpdateWebACL(ctx context.Context, reqCtx *request.Request
 	nextLockToken, err := s.updateWebACLCore(reqCtx, WebACLUpdateInput{
 		Id:                        request.GetStringParam(req.Parameters, "Id"),
 		LockToken:                 request.GetStringParam(req.Parameters, "LockToken"),
+		Scope:                     request.GetStringParam(req.Parameters, "Scope"),
 		DefaultActionRaw:          req.Parameters["DefaultAction"],
 		VisibilityConfigRaw:       req.Parameters["VisibilityConfig"],
 		RulesRaw:                  req.Parameters["Rules"],
@@ -175,7 +176,7 @@ func (s *WAFv2Service) DeleteWebACL(ctx context.Context, reqCtx *request.Request
 	id := request.GetStringParam(req.Parameters, "Id")
 	lockToken := request.GetStringParam(req.Parameters, "LockToken")
 
-	stores, err := s.store(reqCtx)
+	stores, err := s.storeForScope(reqCtx, request.GetStringParam(req.Parameters, "Scope"))
 	if err != nil {
 		return nil, err
 	}

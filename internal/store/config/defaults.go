@@ -217,6 +217,15 @@ func loadDefaults() map[string]ConfigEntry {
 			EnvVar:      "VS_PORT_CLOUDFRONT",
 			Category:    CategoryPorts,
 		},
+		"ports.cloudfront_tls": {
+			Key:         "ports.cloudfront_tls",
+			Value:       serviceports.CloudFrontTLS,
+			Type:        ConfigTypePort,
+			Description: "CloudFront distribution TLS port",
+			ReadOnly:    false,
+			EnvVar:      "VS_PORT_CLOUDFRONT_TLS",
+			Category:    CategoryPorts,
+		},
 		"ports.lambda_url": {
 			Key:         "ports.lambda_url",
 			Value:       serviceports.LambdaURL,

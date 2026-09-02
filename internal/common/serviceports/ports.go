@@ -28,6 +28,8 @@ const (
 	AppSync = 50106
 	// IotMQTT is the IoT Core MQTT broker port.
 	IotMQTT = 50107
+	// CloudFrontTLS is the CloudFront distribution TLS port.
+	CloudFrontTLS = 50108
 )
 
 const (

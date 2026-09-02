@@ -2,6 +2,7 @@
 package cloudfront
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +42,33 @@ func (s *DistributionStore) Get(id string) (*Distribution, error) {
 func (s *DistributionStore) GetByCallerReference(callerRef string) (*Distribution, error) {
 	normalizedRef := normalizeCallerReference(callerRef)
 	return common.FindFirst[Distribution](s.BaseStore, func(d *Distribution) bool { return d.CallerReference == normalizedRef })
+}
+
+// GetByAlias returns the distribution that lists the given CNAME alias
+// among its alternate domain names, case-insensitively. A request whose
+// Host is neither the distribution domain nor a registered alias has no
+// distribution to serve.
+func (s *DistributionStore) GetByAlias(alias string) (*Distribution, error) {
+	return common.FindFirst[Distribution](s.BaseStore, func(d *Distribution) bool {
+		if d.DistributionConfig == nil || d.DistributionConfig.Aliases == nil {
+			return false
+		}
+		for _, item := range d.DistributionConfig.Aliases.Items {
+			if strings.EqualFold(item, alias) {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+// GetByDomainName returns the distribution whose assigned CloudFront
+// domain name matches, case-insensitively. Continuous deployment
+// policies reference their staging distribution by this domain name.
+func (s *DistributionStore) GetByDomainName(domain string) (*Distribution, error) {
+	return common.FindFirst[Distribution](s.BaseStore, func(d *Distribution) bool {
+		return strings.EqualFold(d.DomainName, domain)
+	})
 }
 
 // Create creates a new CloudFront distribution in the store.
