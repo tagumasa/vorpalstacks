@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -552,6 +554,7 @@ func runLambdaResponseStreamTests(tc *lambdaTestContext) []TestResult {
 	results = append(results, tc.r.RunTest("lambda", "InvokeWithResponseStream", func() error {
 		resp, err := tc.client.InvokeWithResponseStream(tc.ctx, &lambda.InvokeWithResponseStreamInput{
 			FunctionName: aws.String(iaFuncName),
+			LogType:      types.LogTypeTail,
 		})
 		if err != nil {
 			return err
@@ -561,6 +564,21 @@ func runLambdaResponseStreamTests(tc *lambdaTestContext) []TestResult {
 		}
 		if resp.ResponseStreamContentType == nil {
 			return fmt.Errorf("ResponseStreamContentType is nil")
+		}
+		// LogType=Tail carries the base64 execution log on the
+		// InvokeComplete event; walk the stream until it closes.
+		var logResult string
+		for event := range resp.GetStream().Events() {
+			if ev, ok := event.(*types.InvokeWithResponseStreamResponseEventMemberInvokeComplete); ok {
+				logResult = aws.ToString(ev.Value.LogResult)
+			}
+		}
+		logBytes, err := base64.StdEncoding.DecodeString(logResult)
+		if err != nil {
+			return fmt.Errorf("InvokeComplete LogResult must be base64, got %q: %v", logResult, err)
+		}
+		if !strings.Contains(string(logBytes), "START RequestId:") {
+			return fmt.Errorf("tailed execution log must contain the START line, got:\n%s", string(logBytes))
 		}
 		return nil
 	}))

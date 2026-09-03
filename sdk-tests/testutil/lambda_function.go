@@ -649,30 +649,78 @@ func runLambdaFunctionTests(tc *lambdaTestContext) []TestResult {
 		if unhandled.FunctionError == nil || *unhandled.FunctionError != "Unhandled" {
 			return fmt.Errorf("thrown error should classify as Unhandled, got %v", unhandled.FunctionError)
 		}
+		// The intercepted failure reaches the caller as the runtime error
+		// document, not an empty payload.
+		var errDoc map[string]interface{}
+		if err := json.Unmarshal(unhandled.Payload, &errDoc); err != nil {
+			return fmt.Errorf("unhandled payload must be the error document JSON, got %q: %v", string(unhandled.Payload), err)
+		}
+		if errDoc["errorMessage"] != "boom" {
+			return fmt.Errorf("error document errorMessage mismatch: got %v", errDoc["errorMessage"])
+		}
+		if errDoc["errorType"] != "Error" {
+			return fmt.Errorf("error document errorType mismatch: got %v", errDoc["errorType"])
+		}
+		trace, ok := errDoc["stackTrace"].([]interface{})
+		if !ok || len(trace) == 0 {
+			return fmt.Errorf("error document stackTrace must be non-empty, got %v", errDoc["stackTrace"])
+		}
 
-		// A returned errorMessage envelope is a handled error: HTTP 200
-		// with the error document as the payload.
-		handledCode, err := zipLambdaCode("exports.handler = async () => ({ errorMessage: 'handled-boom', errorType: 'Error' });")
+		// A returned error-shaped document is a plain success on AWS: the
+		// FunctionError header may only be present when an error actually
+		// occurred, so a handler returning {errorMessage: ...} carries no
+		// header and the document round-trips as the payload.
+		returnedCode, err := zipLambdaCode("exports.handler = async () => ({ errorMessage: 'handled-boom', errorType: 'Error' });")
 		if err != nil {
-			return fmt.Errorf("zip handled code: %v", err)
+			return fmt.Errorf("zip returned-envelope code: %v", err)
 		}
 		if _, err := tc.client.UpdateFunctionCode(tc.ctx, &lambda.UpdateFunctionCodeInput{
 			FunctionName: aws.String(feFunc),
-			ZipFile:      handledCode,
+			ZipFile:      returnedCode,
 		}); err != nil {
 			return fmt.Errorf("update code: %v", err)
 		}
-		handled, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+		returned, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
 			FunctionName: aws.String(feFunc),
 		})
 		if err != nil {
 			return err
 		}
-		if handled.FunctionError == nil || *handled.FunctionError != "Handled" {
-			return fmt.Errorf("returned error document should classify as Handled, got %v", handled.FunctionError)
+		if returned.FunctionError != nil {
+			return fmt.Errorf("returned error document must not set FunctionError, got %v", *returned.FunctionError)
 		}
-		if !strings.Contains(string(handled.Payload), "handled-boom") {
-			return fmt.Errorf("Handled payload should carry the error document, got %q", string(handled.Payload))
+		if !strings.Contains(string(returned.Payload), "handled-boom") {
+			return fmt.Errorf("returned error document must round-trip as the payload, got %q", string(returned.Payload))
+		}
+
+		// A failure the handler signalled through the callback is a
+		// Handled error: the runtime reports callback-signalled errors as
+		// handled, unlike uncaught failures.
+		cbCode, err := zipLambdaCode("exports.handler = (event, context, callback) => { callback(new Error('cb-boom')); };")
+		if err != nil {
+			return fmt.Errorf("zip callback-error code: %v", err)
+		}
+		if _, err := tc.client.UpdateFunctionCode(tc.ctx, &lambda.UpdateFunctionCodeInput{
+			FunctionName: aws.String(feFunc),
+			ZipFile:      cbCode,
+		}); err != nil {
+			return fmt.Errorf("update code: %v", err)
+		}
+		cbHandled, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(feFunc),
+		})
+		if err != nil {
+			return err
+		}
+		if cbHandled.FunctionError == nil || *cbHandled.FunctionError != "Handled" {
+			return fmt.Errorf("callback error should classify as Handled, got %v", cbHandled.FunctionError)
+		}
+		var cbDoc map[string]interface{}
+		if err := json.Unmarshal(cbHandled.Payload, &cbDoc); err != nil {
+			return fmt.Errorf("callback error payload must be the error document JSON, got %q: %v", string(cbHandled.Payload), err)
+		}
+		if cbDoc["errorMessage"] != "cb-boom" {
+			return fmt.Errorf("callback error document errorMessage mismatch: got %v", cbDoc["errorMessage"])
 		}
 		return nil
 	}))
@@ -685,10 +733,11 @@ func runLambdaFunctionTests(tc *lambdaTestContext) []TestResult {
 		}
 		defer cleanupLogRole()
 
-		// Handler console output reaches stdout before the runtime appends
-		// the returned payload, so the error envelope must be read from the
-		// final JSON document rather than the whole output.
-		_, cleanupLogFn, err := tc.createFunction(logFunc, logRole, "exports.handler = async () => { console.log('about to fail'); return { errorMessage: 'logged-boom', errorType: 'Error' }; };")
+		// Handler console output reaches stdout before the wrapper appends
+		// the returned payload, so logs and payload stay separate channels.
+		// A callback-signalled failure after logging is a Handled error and
+		// the error document still reaches the caller as the payload.
+		_, cleanupLogFn, err := tc.createFunction(logFunc, logRole, "exports.handler = (event, context, callback) => { console.log('about to fail'); callback(new Error('logged-boom')); };")
 		if err != nil {
 			return fmt.Errorf("create function: %v", err)
 		}
@@ -701,7 +750,7 @@ func runLambdaFunctionTests(tc *lambdaTestContext) []TestResult {
 			return err
 		}
 		if result.FunctionError == nil || *result.FunctionError != "Handled" {
-			return fmt.Errorf("error envelope after log lines should classify as Handled, got %v", result.FunctionError)
+			return fmt.Errorf("callback error after log lines should classify as Handled, got %v", result.FunctionError)
 		}
 		if !strings.Contains(string(result.Payload), "logged-boom") {
 			return fmt.Errorf("payload should carry the error document after the log lines, got %q", string(result.Payload))
@@ -1056,6 +1105,592 @@ func runLambdaFunctionTests(tc *lambdaTestContext) []TestResult {
 		}
 		if body["result"] != "ok" {
 			return fmt.Errorf("body result mismatch: got %v", body["result"])
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_AsyncPayloadLimit", func() error {
+		apFunc := tc.unique("AsyncLimitFn")
+		apRole, cleanupApRole, err := tc.createRole(tc.unique("AsyncLimitRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupApRole()
+		_, cleanupApFn, err := tc.createFunction(apFunc, apRole, "exports.handler = async () => ({ ok: 1 });")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupApFn()
+
+		// 300 KB stays within the 1 MB asynchronous invocation limit and
+		// must be accepted with 202.
+		medium := []byte(`{"pad":"` + strings.Repeat("a", 300*1024) + `"}`)
+		acc, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName:   aws.String(apFunc),
+			InvocationType: types.InvocationTypeEvent,
+			Payload:        medium,
+		})
+		if err != nil {
+			return fmt.Errorf("300 KB event invoke: %v", err)
+		}
+		if acc.StatusCode != 202 {
+			return fmt.Errorf("300 KB event invoke must answer 202, got %d", acc.StatusCode)
+		}
+
+		// 1 MB + 1 KB exceeds the asynchronous limit and must be rejected.
+		oversized := []byte(`{"pad":"` + strings.Repeat("a", 1024*1024+1024) + `"}`)
+		_, err = tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName:   aws.String(apFunc),
+			InvocationType: types.InvocationTypeEvent,
+			Payload:        oversized,
+		})
+		if err == nil {
+			return fmt.Errorf("1 MB+1 KB event invoke must be rejected")
+		}
+		if !strings.Contains(err.Error(), "RequestTooLargeException") {
+			return fmt.Errorf("oversized event invoke must fail as too large, got %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_HandlerContext", func() error {
+		ctxFunc := tc.unique("CtxFn")
+		ctxRole, cleanupCtxRole, err := tc.createRole(tc.unique("CtxRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupCtxRole()
+		_, cleanupCtxFn, err := tc.createFunction(ctxFunc, ctxRole,
+			"exports.handler = async (event, context) => { return { rid: context.awsRequestId, fn: context.functionName, ver: context.functionVersion, arn: context.invokedFunctionArn, mem: context.memoryLimitInMB, lg: context.logGroupName, ls: context.logStreamName, rem: context.getRemainingTimeInMillis() }; }",
+			func(input *lambda.CreateFunctionInput) {
+				input.Timeout = aws.Int32(10)
+				input.MemorySize = aws.Int32(256)
+			})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupCtxFn()
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(ctxFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		rid, _ := out["rid"].(string)
+		if len(rid) != 36 || strings.Count(rid, "-") != 4 {
+			return fmt.Errorf("awsRequestId must be a UUID, got %q", rid)
+		}
+		if out["fn"] != ctxFunc {
+			return fmt.Errorf("functionName mismatch: got %v", out["fn"])
+		}
+		if out["ver"] != "$LATEST" {
+			return fmt.Errorf("functionVersion mismatch: got %v", out["ver"])
+		}
+		arn, _ := out["arn"].(string)
+		if !strings.HasSuffix(arn, "function:"+ctxFunc) {
+			return fmt.Errorf("invokedFunctionArn must end with the function name, got %q", arn)
+		}
+		if out["mem"] != float64(256) {
+			return fmt.Errorf("memoryLimitInMB mismatch: got %v", out["mem"])
+		}
+		if out["lg"] != "/aws/lambda/"+ctxFunc {
+			return fmt.Errorf("logGroupName mismatch: got %v", out["lg"])
+		}
+		ls, _ := out["ls"].(string)
+		if !strings.Contains(ls, "[$LATEST]") {
+			return fmt.Errorf("logStreamName must carry the version bracket, got %q", ls)
+		}
+		rem, ok := out["rem"].(float64)
+		if !ok || rem <= 0 || rem > 10000 {
+			return fmt.Errorf("getRemainingTimeInMillis must be within the 10s timeout, got %v", out["rem"])
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_HandlerContext_Qualifier", func() error {
+		qualFunc := tc.unique("QualCtxFn")
+		qualRole, cleanupQualRole, err := tc.createRole(tc.unique("QualCtxRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupQualRole()
+		qualARN, cleanupQualFn, err := tc.createFunction(qualFunc, qualRole,
+			"exports.handler = async (event, context) => { return { ver: context.functionVersion, arn: context.invokedFunctionArn }; }")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupQualFn()
+
+		pv, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{FunctionName: aws.String(qualFunc)})
+		if err != nil {
+			return fmt.Errorf("publish version: %v", err)
+		}
+		_, err = tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
+			FunctionName:    aws.String(qualFunc),
+			Name:            aws.String("ctxqa"),
+			FunctionVersion: pv.Version,
+		})
+		if err != nil {
+			return fmt.Errorf("create alias: %v", err)
+		}
+		defer tc.client.DeleteAlias(tc.ctx, &lambda.DeleteAliasInput{FunctionName: aws.String(qualFunc), Name: aws.String("ctxqa")})
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(qualARN),
+			Qualifier:    aws.String("ctxqa"),
+		})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		if out["ver"] != aws.ToString(pv.Version) {
+			return fmt.Errorf("functionVersion must be the alias target, got %v want %v", out["ver"], aws.ToString(pv.Version))
+		}
+	arn, _ := out["arn"].(string)
+	if !strings.HasSuffix(arn, ":"+qualFunc+":ctxqa") {
+		return fmt.Errorf("invokedFunctionArn must carry the alias qualifier, got %q", arn)
+	}
+
+	// A qualifier embedded in the FunctionName ARN reaches the context the
+	// same way an explicit Qualifier parameter does.
+	embResp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+		FunctionName: aws.String(qualARN + ":" + aws.ToString(pv.Version)),
+	})
+	if err != nil {
+		return fmt.Errorf("invoke with embedded qualifier: %v", err)
+	}
+	var embOut map[string]interface{}
+	if err := json.Unmarshal(embResp.Payload, &embOut); err != nil {
+		return fmt.Errorf("parse payload: %v (%s)", err, string(embResp.Payload))
+	}
+	if embOut["ver"] != aws.ToString(pv.Version) {
+		return fmt.Errorf("embedded qualifier must execute the published version, got %v want %v", embOut["ver"], aws.ToString(pv.Version))
+	}
+	embArn, _ := embOut["arn"].(string)
+	if !strings.HasSuffix(embArn, ":"+qualFunc+":"+aws.ToString(pv.Version)) {
+		return fmt.Errorf("invokedFunctionArn must carry the embedded version qualifier, got %q", embArn)
+	}
+	return nil
+}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_ClientContext", func() error {
+		ccFunc := tc.unique("CcFn")
+		ccRole, cleanupCcRole, err := tc.createRole(tc.unique("CcRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupCcRole()
+		_, cleanupCcFn, err := tc.createFunction(ccFunc, ccRole,
+			"exports.handler = async (event, context) => { return { k: context.clientContext && context.clientContext.custom && context.clientContext.custom.k }; }")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupCcFn()
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName:  aws.String(ccFunc),
+			ClientContext: aws.String(base64.StdEncoding.EncodeToString([]byte(`{"custom":{"k":"v"}}`))),
+		})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		if out["k"] != "v" {
+			return fmt.Errorf("clientContext.custom.k must round-trip, got %v", out["k"])
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_ContextRequestIdInLogs", func() error {
+		ridFunc := tc.unique("RidFn")
+		ridRole, cleanupRidRole, err := tc.createRole(tc.unique("RidRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupRidRole()
+		_, cleanupRidFn, err := tc.createFunction(ridFunc, ridRole,
+			"exports.handler = async (event, context) => { return { rid: context.awsRequestId }; }",
+			func(input *lambda.CreateFunctionInput) {
+				input.MemorySize = aws.Int32(256)
+			})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupRidFn()
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(ridFunc),
+			LogType:      types.LogTypeTail,
+		})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		rid, _ := out["rid"].(string)
+		if rid == "" {
+			return fmt.Errorf("handler must return its awsRequestId")
+		}
+		logBytes, err := base64.StdEncoding.DecodeString(aws.ToString(resp.LogResult))
+		if err != nil {
+			return fmt.Errorf("decode LogResult: %v", err)
+		}
+		logTail := string(logBytes)
+		for _, needle := range []string{
+			"START RequestId: " + rid + " Version: $LATEST",
+			"END RequestId: " + rid,
+			"REPORT RequestId: " + rid,
+			"Memory Size: 256 MB",
+		} {
+			if !strings.Contains(logTail, needle) {
+				return fmt.Errorf("tailed logs must contain %q, got:\n%s", needle, logTail)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_PythonHandlerContext", func() error {
+		pyFunc := tc.unique("PyCtxFn")
+		pyRole, cleanupPyRole, err := tc.createRole(tc.unique("PyCtxRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupPyRole()
+		pyZip, err := zipLambdaPythonCode("def handler(event, context):\n    return {'rid': context.aws_request_id, 'fn': context.function_name, 'arn': context.invoked_function_arn, 'mem': context.memory_limit_in_mb, 'lg': context.log_group_name, 'rem': context.get_remaining_time_in_millis(), 's': 'x', 'b': True, 'n': None}\n")
+		if err != nil {
+			return fmt.Errorf("zip python code: %v", err)
+		}
+		_, err = tc.client.CreateFunction(tc.ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(pyFunc),
+			Runtime:      types.RuntimePython313,
+			Role:         aws.String(pyRole),
+			Handler:      aws.String("index.handler"),
+			Code:         &types.FunctionCode{ZipFile: pyZip},
+			Timeout:      aws.Int32(10),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(pyFunc)})
+		defer deleteLambdaLogGroup(tc.cwl, tc.ctx, pyFunc)
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(pyFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		rid, _ := out["rid"].(string)
+		if len(rid) != 36 || strings.Count(rid, "-") != 4 {
+			return fmt.Errorf("aws_request_id must be a UUID, got %q", rid)
+		}
+		if out["fn"] != pyFunc {
+			return fmt.Errorf("function_name mismatch: got %v", out["fn"])
+		}
+		arn, _ := out["arn"].(string)
+		if !strings.HasSuffix(arn, "function:"+pyFunc) {
+			return fmt.Errorf("invoked_function_arn must end with the function name, got %q", arn)
+		}
+		if out["mem"] != float64(128) {
+			return fmt.Errorf("memory_limit_in_mb must be the default 128, got %v", out["mem"])
+		}
+		if out["lg"] != "/aws/lambda/"+pyFunc {
+			return fmt.Errorf("log_group_name mismatch: got %v", out["lg"])
+		}
+		rem, ok := out["rem"].(float64)
+		if !ok || rem <= 0 || rem > 10000 {
+			return fmt.Errorf("get_remaining_time_in_millis must be within the 10s timeout, got %v", out["rem"])
+		}
+		// The mixed-type members must serialise strictly as JSON: strings
+		// quoted, booleans lower-case, None as null. The whole-payload
+		// Unmarshal above already proves strict JSON (a bare True/None/x
+		// would not parse); these assertions pin the decoded types.
+		if out["s"] != "x" {
+			return fmt.Errorf("python string return must serialise as a JSON string, got %v", out["s"])
+		}
+		if out["b"] != true {
+			return fmt.Errorf("python True must serialise as JSON true, got %v", out["b"])
+		}
+		if out["n"] != nil {
+			return fmt.Errorf("python None must serialise as JSON null, got %v", out["n"])
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_Timeout_Envelope", func() error {
+		toFunc := tc.unique("ToFn")
+		toRole, cleanupToRole, err := tc.createRole(tc.unique("ToRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupToRole()
+		_, cleanupToFn, err := tc.createFunction(toFunc, toRole,
+			"exports.handler = async () => { await new Promise(r => setTimeout(r, 4000)); return { ok: 1 }; }",
+			func(input *lambda.CreateFunctionInput) {
+				input.Timeout = aws.Int32(1)
+			})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupToFn()
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(toFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("a timeout still answers 200, got %d", resp.StatusCode)
+		}
+		if aws.ToString(resp.FunctionError) != "Unhandled" {
+			return fmt.Errorf("FunctionError must be Unhandled, got %q", aws.ToString(resp.FunctionError))
+		}
+		if !strings.Contains(string(resp.Payload), "Task timed out after 1") {
+			return fmt.Errorf("payload must carry the timeout message, got %s", string(resp.Payload))
+		}
+
+		// A callback response is held until the event loop drains; an
+		// interval behind the callback means it never drains, so the
+		// timeout error replaces the recorded response.
+		cbToFunc := tc.unique("CbToFn")
+		cbToRole, cleanupCbToRole, err := tc.createRole(tc.unique("CbToRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupCbToRole()
+		_, cleanupCbToFn, err := tc.createFunction(cbToFunc, cbToRole,
+			"exports.handler = (event, context, callback) => { setTimeout(() => callback(null, { ok: 1 }), 20); setInterval(() => {}, 500); }",
+			func(input *lambda.CreateFunctionInput) {
+				input.Timeout = aws.Int32(1)
+			})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupCbToFn()
+
+		cbResp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(cbToFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if aws.ToString(cbResp.FunctionError) != "Unhandled" {
+			return fmt.Errorf("a callback handler that never drains must time out as Unhandled, got %q", aws.ToString(cbResp.FunctionError))
+		}
+		if !strings.Contains(string(cbResp.Payload), "Task timed out after 1") {
+			return fmt.Errorf("payload must carry the timeout message, got %s", string(cbResp.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_AsyncHandlerLingeringTimer", func() error {
+		// An async handler settles its response when the promise resolves;
+		// a timer left on the event loop must not hold the invocation open
+		// until the timeout overrides the delivered result.
+		ltFunc := tc.unique("LtFn")
+		ltRole, cleanupLtRole, err := tc.createRole(tc.unique("LtRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupLtRole()
+		_, cleanupLtFn, err := tc.createFunction(ltFunc, ltRole,
+			"exports.handler = async () => { setInterval(() => {}, 1000); return { ok: 1 }; }",
+			func(input *lambda.CreateFunctionInput) {
+				input.Timeout = aws.Int32(3)
+			})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupLtFn()
+
+		invokeStart := time.Now()
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(ltFunc)})
+		elapsed := time.Since(invokeStart)
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if elapsed >= 3*time.Second {
+			return fmt.Errorf("the response must arrive at the promise resolution, not the timeout, took %v", elapsed)
+		}
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+		if aws.ToString(resp.FunctionError) != "" {
+			return fmt.Errorf("unexpected function error %q (payload %s)", aws.ToString(resp.FunctionError), string(resp.Payload))
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		if out["ok"] != float64(1) {
+			return fmt.Errorf("the delivered result must survive the lingering timer, got %v (%s)", out["ok"], string(resp.Payload))
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "Invoke_CallbackHandler", func() error {
+		cbFunc := tc.unique("CbFn")
+		cbRole, cleanupCbRole, err := tc.createRole(tc.unique("CbRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupCbRole()
+		_, cleanupCbFn, err := tc.createFunction(cbFunc, cbRole,
+			"exports.handler = (event, context, callback) => { setTimeout(() => callback(null, { ok: 1 }), 20); }")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupCbFn()
+
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(cbFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		var out map[string]interface{}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		if out["ok"] != float64(1) {
+			return fmt.Errorf("callback result must be the payload, got %v (%s)", out["ok"], string(resp.Payload))
+		}
+
+		// A scalar callback result must serialise as JSON: a string
+		// arrives quoted, not as a bare token.
+		cbStrFunc := tc.unique("CbStrFn")
+		cbStrRole, cleanupCbStrRole, err := tc.createRole(tc.unique("CbStrRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupCbStrRole()
+		_, cleanupCbStrFn, err := tc.createFunction(cbStrFunc, cbStrRole,
+			"exports.handler = (event, context, callback) => { callback(null, 'ok'); }")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupCbStrFn()
+		strResp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(cbStrFunc)})
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if string(strResp.Payload) != `"ok"` {
+			return fmt.Errorf("a string callback result must serialise as a quoted JSON string, got %s", string(strResp.Payload))
+		}
+
+		// The callback response is not sent until all event loop tasks
+		// have finished: work scheduled behind the callback delays the
+		// response, so the answer arrives after the trailing timer runs.
+		drainFunc := tc.unique("CbDrainFn")
+		drainRole, cleanupDrainRole, err := tc.createRole(tc.unique("CbDrainRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupDrainRole()
+		_, cleanupDrainFn, err := tc.createFunction(drainFunc, drainRole,
+			"exports.handler = (event, context, callback) => { setTimeout(() => callback(null, { ok: 1 }), 20); setTimeout(() => console.log('late work'), 400); }")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer cleanupDrainFn()
+		invokeStart := time.Now()
+		drainResp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{FunctionName: aws.String(drainFunc)})
+		elapsed := time.Since(invokeStart)
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if elapsed < 380*time.Millisecond {
+			return fmt.Errorf("the callback response must wait for the event loop to drain, took %v", elapsed)
+		}
+		var drainOut map[string]interface{}
+		if err := json.Unmarshal(drainResp.Payload, &drainOut); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(drainResp.Payload))
+		}
+		if drainOut["ok"] != float64(1) {
+			return fmt.Errorf("the drained callback result must still be the payload, got %v", drainOut["ok"])
+		}
+		return nil
+	}))
+
+	// A custom runtime exchanges the event and its answer over the Runtime
+	// API. The test bootstrap follows the AWS runtime pattern — it answers,
+	// then loops back to /invocation/next for the next event — so the test
+	// also pins that a looping runtime does not hold the synchronous invoke
+	// open until the function timeout: the response must come back as soon
+	// as the answer POST lands.
+	results = append(results, tc.r.RunTest("lambda", "Invoke_ProvidedRuntime_Context", func() error {
+		provFunc := tc.unique("ProvFn")
+		provRole, cleanupProvRole, err := tc.createRole(tc.unique("ProvRole"))
+		if err != nil {
+			return fmt.Errorf("create role: %v", err)
+		}
+		defer cleanupProvRole()
+		bootstrap := `#!/bin/sh
+set -eu
+API="http://$AWS_LAMBDA_RUNTIME_API"
+while :; do
+	hdr="$(curl -sS -f -D - -o /tmp/event.json "$API/2018-06-01/runtime/invocation/next")"
+	rid="$(printf '%s\n' "$hdr" | tr -d '\r' | sed -n 's/^Lambda-Runtime-Aws-Request-Id: //p')"
+	resp="$(printf '{"rid":"%s","event":' "$rid"; cat /tmp/event.json; printf '}')"
+	curl -sS -f -X POST --data-binary "$resp" "$API/2018-06-01/runtime/invocation/$rid/response"
+done
+`
+		provZip, err := zipLambdaBootstrap(bootstrap)
+		if err != nil {
+			return fmt.Errorf("zip bootstrap: %v", err)
+		}
+		_, err = tc.client.CreateFunction(tc.ctx, &lambda.CreateFunctionInput{
+			FunctionName: aws.String(provFunc),
+			Runtime:      types.RuntimeProvidedal2023,
+			Role:         aws.String(provRole),
+			Handler:      aws.String("bootstrap"),
+			Code:         &types.FunctionCode{ZipFile: provZip},
+			Timeout:      aws.Int32(10),
+		})
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(provFunc)})
+		defer deleteLambdaLogGroup(tc.cwl, tc.ctx, provFunc)
+
+		invokeStart := time.Now()
+		resp, err := tc.client.Invoke(tc.ctx, &lambda.InvokeInput{
+			FunctionName: aws.String(provFunc),
+			Payload:      []byte(`{"hello":"provided"}`),
+		})
+		elapsed := time.Since(invokeStart)
+		if err != nil {
+			return fmt.Errorf("invoke: %v", err)
+		}
+		if elapsed >= 8*time.Second {
+			return fmt.Errorf("a looping runtime must not hold the invoke until the timeout, took %v", elapsed)
+		}
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+		if aws.ToString(resp.FunctionError) != "" {
+			return fmt.Errorf("unexpected function error %q (payload %s)", aws.ToString(resp.FunctionError), string(resp.Payload))
+		}
+		var out struct {
+			RID   string                 `json:"rid"`
+			Event map[string]interface{} `json:"event"`
+		}
+		if err := json.Unmarshal(resp.Payload, &out); err != nil {
+			return fmt.Errorf("parse payload: %v (%s)", err, string(resp.Payload))
+		}
+		if len(out.RID) != 36 || strings.Count(out.RID, "-") != 4 {
+			return fmt.Errorf("request id from the Runtime API header must be a UUID, got %q", out.RID)
+		}
+		if out.Event["hello"] != "provided" {
+			return fmt.Errorf("event from /invocation/next must round-trip, got %v (%s)", out.Event["hello"], string(resp.Payload))
 		}
 		return nil
 	}))

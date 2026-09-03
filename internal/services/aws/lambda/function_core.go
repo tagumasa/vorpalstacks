@@ -151,7 +151,7 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 
 	timeout := in.Timeout
 	if timeout == 0 {
-		timeout = 3
+		timeout = lambdastore.DefaultFunctionTimeoutSeconds
 	}
 	if err := validateTimeout(timeout); err != nil {
 		return nil, nil, err
@@ -159,7 +159,7 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 
 	memorySize := in.MemorySize
 	if memorySize == 0 {
-		memorySize = 128
+		memorySize = lambdastore.DefaultFunctionMemorySizeMB
 	}
 	if err := validateMemorySize(memorySize); err != nil {
 		return nil, nil, err

@@ -27,17 +27,19 @@ var (
 	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
 )
 
-// Payload size limits per AWS Lambda specification.
+// Payload size limits per the API model's Invoke documentation: "The
+// maximum payload size is 6 MB for synchronous invocations and 1 MB for
+// asynchronous invocations."
 const (
 	syncMaxPayloadSize  = 6 * 1024 * 1024 // 6 MB for synchronous invocation
-	asyncMaxPayloadSize = 256 * 1024      // 256 KB for asynchronous invocation
+	asyncMaxPayloadSize = 1024 * 1024     // 1 MB for asynchronous invocation
 )
 
 // Invoke synchronously invokes a Lambda function with the given payload.
 // Returns the function output, status code, and executed version.
 // If InvocationType is "Event", the function is invoked asynchronously and HTTP 202 is returned.
 func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, ver, alias, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
+	function, ver, alias, effectiveQualifier, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -49,10 +51,10 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		ver = resolveAliasTargetVersion(function, alias)
 	}
 
-	var payload []byte
-	if payloadStr, ok := req.Parameters["Payload"].(string); ok {
-		payload = []byte(payloadStr)
-	}
+	// The invocation payload is the request body itself — the Smithy model
+	// binds Payload as httpPayload — so it comes from the raw body, never
+	// from the parsed parameters (the body is not a parameter document).
+	payload := req.Body
 
 	invocationType := request.GetStringParam(req.Parameters, "InvocationType")
 	if err := validateInvocationType(invocationType); err != nil {
@@ -73,7 +75,10 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		region := reqCtx.GetRegion()
 		functionCopy := deepCopyFunction(function)
 		verCopy := deepCopyVersion(ver)
-		qualifier := request.GetStringParam(req.Parameters, "Qualifier")
+		// The effective qualifier (explicit parameter or embedded in the
+		// function reference) selects the event-invoke config and reaches
+		// the handler context's invoked ARN.
+		qualifier := effectiveQualifier
 		if alias != nil {
 			qualifier = alias.Name
 		}
@@ -111,7 +116,26 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	result, err := s.invokeFunction(function, ver, store.Functions, reqCtx.GetRegion(), payload, logType)
+	// The invoked ARN records the qualifier the caller used (plain ARN,
+	// ARN:alias or ARN:version — including one embedded in the FunctionName
+	// reference) and ClientContext reaches the handler's context object on
+	// synchronous invocations only — the Smithy model passes it "for
+	// synchronous invocations only".
+	qualifier := effectiveQualifier
+	if alias != nil {
+		qualifier = alias.Name
+	}
+
+	result, err := s.invokeFunction(invokeRequest{
+		Function:         function,
+		Version:          ver,
+		Store:            store.Functions,
+		Region:           reqCtx.GetRegion(),
+		Payload:          payload,
+		LogType:          logType,
+		ClientContextRaw: request.GetStringParam(req.Parameters, "ClientContext"),
+		InvokedARN:       qualifiedInvokeARN(function.FunctionArn, qualifier),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +186,7 @@ func (r *lambdaInvokeResponse) GetStreamStatusCode() int {
 
 // InvokeWithResponseStream invokes a Lambda function with response streaming.
 func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, ver, alias, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
+	function, ver, alias, effectiveQualifier, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -171,10 +195,9 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 		ver = resolveAliasTargetVersion(function, alias)
 	}
 
-	var payload []byte
-	if payloadStr, ok := req.Parameters["Payload"].(string); ok {
-		payload = []byte(payloadStr)
-	}
+	// Payload is bound as httpPayload (the body is the payload document,
+	// not a parameter map).
+	payload := req.Body
 
 	if len(payload) > syncMaxPayloadSize {
 		return nil, ErrRequestTooLarge
@@ -184,7 +207,30 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.invokeFunction(function, ver, store.Functions, reqCtx.GetRegion(), payload, "")
+	// LogType binds to the X-Amz-Log-Type header on this operation too;
+	// Tail carries the execution log in the InvokeComplete event's
+	// LogResult member.
+	logType := request.GetStringParam(req.Parameters, "LogType")
+	if err := validateLogType(logType); err != nil {
+		return nil, err
+	}
+	// ClientContext reaches the handler's context object on synchronous
+	// invocations only (Smithy); the invoked ARN records the qualifier,
+	// including one embedded in the FunctionName reference.
+	streamQualifier := effectiveQualifier
+	if alias != nil {
+		streamQualifier = alias.Name
+	}
+	result, err := s.invokeFunction(invokeRequest{
+		Function:         function,
+		Version:          ver,
+		Store:            store.Functions,
+		Region:           reqCtx.GetRegion(),
+		Payload:          payload,
+		LogType:          logType,
+		ClientContextRaw: request.GetStringParam(req.Parameters, "ClientContext"),
+		InvokedARN:       qualifiedInvokeARN(function.FunctionArn, streamQualifier),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +310,7 @@ func (r *invokeWithResponseStreamResponse) GetStreamStatusCode() int {
 // InvokeAsync asynchronously invokes a Lambda function with the given payload.
 // The function is invoked in the background and returns immediately with HTTP 202.
 func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, ver, alias, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
+	function, ver, alias, effectiveQualifier, err := s.validateAndGetFunctionWithQualifier(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -273,10 +319,9 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 		ver = resolveAliasTargetVersion(function, alias)
 	}
 
-	var payload []byte
-	if payloadStr, ok := req.Parameters["Payload"].(string); ok {
-		payload = []byte(payloadStr)
-	}
+	// InvokeArgs is bound as httpPayload: the body is the argument document
+	// the handler receives as its event.
+	payload := req.Body
 
 	if len(payload) > asyncMaxPayloadSize {
 		return nil, ErrRequestTooLarge
@@ -290,7 +335,10 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 		verCopy = deepCopyVersion(ver)
 	}
 
-	qualifier := request.GetStringParam(req.Parameters, "Qualifier")
+	// The effective qualifier (explicit parameter or embedded in the
+	// function reference) selects the event-invoke config and reaches the
+	// handler context's invoked ARN.
+	qualifier := effectiveQualifier
 	if alias != nil {
 		qualifier = alias.Name
 	}

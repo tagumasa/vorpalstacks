@@ -58,6 +58,15 @@ const (
 	DefaultMaximumEventAgeInSeconds = int32(21600)
 )
 
+// Function configuration defaults applied when CreateFunction omits the
+// member. The invocation plane also relies on the timeout default when it
+// meets a stored configuration carrying a zero, so the exec deadline and
+// the create default can never diverge.
+const (
+	DefaultFunctionTimeoutSeconds = int32(3)
+	DefaultFunctionMemorySizeMB   = int32(128)
+)
+
 // Account-level limits reported by GetAccountSettings. UnreservedConcurrentExecutions
 // is derived per region as the concurrency limit minus the sum of reserved
 // concurrency across the region's functions.

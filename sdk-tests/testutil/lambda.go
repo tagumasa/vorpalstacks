@@ -85,11 +85,42 @@ func (tc *lambdaTestContext) createFunction(name, roleARN, handlerSource string,
 // with entry name "index.js", matching the handler "index.handler".
 // AWS Lambda requires ZipFile to be a base64-encoded zip archive.
 func zipLambdaCode(src string) ([]byte, error) {
+	return zipLambdaSourceAs("index.js", src)
+}
+
+// zipLambdaPythonCode packs Python handler source as index.py — the module
+// the "index.handler" convention resolves for Python runtimes.
+func zipLambdaPythonCode(src string) ([]byte, error) {
+	return zipLambdaSourceAs("index.py", src)
+}
+
+// zipLambdaBootstrap packs a custom-runtime bootstrap script as the zip
+// entry "bootstrap" with the executable bit set — the provided base images
+// only exec /var/task/bootstrap when it passes -x.
+func zipLambdaBootstrap(src string) ([]byte, error) {
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
-	f, err := w.Create("index.js")
+	hdr := &zip.FileHeader{Name: "bootstrap", Method: zip.Deflate}
+	hdr.SetMode(0o755)
+	f, err := w.CreateHeader(hdr)
 	if err != nil {
-		return nil, fmt.Errorf("zip create index.js: %w", err)
+		return nil, fmt.Errorf("zip create bootstrap: %w", err)
+	}
+	if _, err := f.Write([]byte(src)); err != nil {
+		return nil, fmt.Errorf("zip write bootstrap: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return nil, fmt.Errorf("zip close: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func zipLambdaSourceAs(entryName, src string) ([]byte, error) {
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, err := w.Create(entryName)
+	if err != nil {
+		return nil, fmt.Errorf("zip create %s: %w", entryName, err)
 	}
 	if _, err := f.Write([]byte(src)); err != nil {
 		return nil, fmt.Errorf("zip write source: %w", err)

@@ -53,24 +53,31 @@ func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, para
 
 // validateAndGetFunctionWithQualifier resolves the FunctionName wire
 // reference together with its qualifier and resolves the addressed
-// version or alias.
-func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
+// version or alias. The returned effective qualifier is the merged one
+// (an explicit Qualifier parameter wins over one embedded in the
+// function reference), so invoke operations can build the qualifier-aware
+// invoked ARN the handler context reports.
+func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
 	if functionNameRaw == "" {
-		return nil, nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
+		return nil, nil, nil, "", NewInvalidParameter("FunctionName", "Function name is required")
 	}
 
 	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
 	if err := validateFunctionName(functionName); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, "", err
 	}
 
 	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
 	store, err := s.store(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, "", err
 	}
-	return s.resolveQualifier(store.Functions, functionName, qualifier)
+	function, version, alias, err := s.resolveQualifier(store.Functions, functionName, qualifier)
+	if err != nil {
+		return nil, nil, nil, "", err
+	}
+	return function, version, alias, qualifier, nil
 }
 
 // resolveQualifier resolves a function qualifier to its function, version

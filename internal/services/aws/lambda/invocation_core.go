@@ -21,6 +21,33 @@ func (s *LambdaService) getRuntimeImage(runtime lambdastore.Runtime) string {
 	return lambdastore.GetImageForRuntime(runtime)
 }
 
+// invokeRequest is the single input of invokeFunction: every caller — the
+// synchronous Invoke operations, the asynchronous retry engine, and the
+// event-source/gateway path — funnels through this struct so the invocation
+// plane keeps one execution path with one context object.
+type invokeRequest struct {
+	Function *lambdastore.Function
+	Version  *lambdastore.Version
+	Store    *lambdastore.FunctionStore
+	Region   string
+	Payload  []byte
+	LogType  string
+	// ClientContextRaw is the base64 ClientContext parameter of the
+	// synchronous Invoke operations; the Smithy model passes it to the
+	// function "for synchronous invocations only", so every other caller
+	// leaves it empty.
+	ClientContextRaw string
+	// InvokedARN is the qualifier-aware ARN the invoker used (see
+	// qualifiedInvokeARN).
+	InvokedARN string
+}
+
+// containerNameFor returns the deterministic container name of one function
+// version. Both the container lifecycle and the timeout reaper key on it.
+func containerNameFor(region, functionName, version string) string {
+	return fmt.Sprintf("lambda-%s-%s-%s", region, functionName, sanitizeForContainerName(version))
+}
+
 func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string) (string, error) {
 	ctx := context.Background()
 
@@ -29,7 +56,7 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 		version = ver.Version
 	}
 
-	containerName := fmt.Sprintf("lambda-%s-%s-%s", region, function.FunctionName, sanitizeForContainerName(version))
+	containerName := containerNameFor(region, function.FunctionName, version)
 
 	containerID := function.ContainerID
 	if ver != nil && ver.ContainerID != "" {
@@ -213,7 +240,17 @@ func (s *LambdaService) invokeAsyncWithRetry(
 			}
 		}
 
-		result, err := s.invokeFunction(function, ver, store, region, payload, "")
+		result, err := s.invokeFunction(invokeRequest{
+			Function: function,
+			Version:  ver,
+			Store:    store,
+			Region:   region,
+			Payload:  payload,
+			// The qualifier that addressed the function (explicit parameter
+			// or embedded in the reference) reaches the handler context's
+			// invoked ARN on the async path as well.
+			InvokedARN: qualifiedInvokeARN(function.FunctionArn, qualifier),
+		})
 		lastResult = result
 		lastErr = err
 

@@ -79,24 +79,24 @@ func TestFinalJSONDocument(t *testing.T) {
 }
 
 func TestClassifyFunctionError(t *testing.T) {
-	envelope := `{"errorMessage":"handled-boom","errorType":"Error"}`
+	// The classification reads the execution outcome only — the payload
+	// never decides it, because on AWS a handler returning an
+	// error-shaped document is a plain success.
 	cases := []struct {
 		name     string
 		exitCode int
-		stdout   string
 		want     string
 	}{
-		{"non-zero exit is Unhandled", 1, "", "Unhandled"},
-		{"clean error envelope is Handled", 0, envelope, "Handled"},
-		{"log lines before the envelope keep it Handled", 0, "INFO start\nINFO end\n" + envelope, "Handled"},
-		{"log output without an envelope is success", 0, "INFO only", ""},
-		{"non-JSON payload is success", 0, "plain text", ""},
-		{"payload without errorMessage is success", 0, `{"result":"ok"}`, ""},
+		{"zero exit is success", 0, ""},
+		{"handled error exit is Handled", execExitHandledError, "Handled"},
+		{"uncaught error exit is Unhandled", 1, "Unhandled"},
+		{"timeout exit is Unhandled", execExitTimedOut, "Unhandled"},
+		{"killed process exit is Unhandled", 137, "Unhandled"},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, classifyFunctionError(tc.exitCode, tc.stdout))
+			assert.Equal(t, tc.want, classifyFunctionError(tc.exitCode))
 		})
 	}
 }
@@ -181,33 +181,68 @@ func TestSplitResultPayload(t *testing.T) {
 
 func TestBuildInvokeCommandFraming(t *testing.T) {
 	s := &LambdaService{}
-	nodeCmd, nodeMarker := s.buildInvokeCommand("nodejs22.x", "index", "handler", "{}")
+	rec := newInvocationRecord("fn", "$LATEST", "arn:aws:lambda:us-east-1:123456789012:function:fn", 128, 3, "")
+	nodeCmd, nodeMarker := s.buildInvokeCommand("nodejs22.x", "index", "handler", "{}", rec)
+	if nodeCmd[0] != "timeout" || nodeCmd[1] != "-k" || nodeCmd[2] != "2" || nodeCmd[3] != "3" {
+		t.Fatalf("the wrapper command must be wrapped in the function timeout with a kill escalation, got %v", nodeCmd[:4])
+	}
 	if nodeMarker == "" {
 		t.Fatalf("nodejs invocations must frame the return value with a marker")
 	}
-	if got := strings.Count(nodeCmd[2], nodeMarker); got != 4 {
-		t.Fatalf("the node wrapper must frame the serialised value twice (two markers per write), found %d marker occurrences", got)
+	if got := strings.Count(nodeCmd[len(nodeCmd)-1], nodeMarker); got != 6 {
+		t.Fatalf("the node wrapper must frame the promise return, the callback response, and the error document (two markers each), found %d marker occurrences", got)
 	}
-	if nodeMarker == strings.TrimSuffix(strings.TrimPrefix(nodeCmd[2], nodeMarker), nodeMarker) {
+	if nodeMarker == strings.TrimSuffix(strings.TrimPrefix(nodeCmd[len(nodeCmd)-1], nodeMarker), nodeMarker) {
 		t.Fatalf("the marker must not dominate the wrapper script")
 	}
 
-	pyCmd, pyMarker := s.buildInvokeCommand("python3.13", "index", "handler", "{}")
+	pyCmd, pyMarker := s.buildInvokeCommand("python3.13", "index", "handler", "{}", rec)
+	if pyCmd[0] != "timeout" || pyCmd[1] != "-k" {
+		t.Fatalf("python invocations must also be wrapped in the timeout with a kill escalation, got %v", pyCmd[:2])
+	}
 	if pyMarker == "" {
 		t.Fatalf("python invocations must frame the return value with a marker")
 	}
-	if got := strings.Count(pyCmd[2], pyMarker); got != 2 {
-		t.Fatalf("the python wrapper must frame the serialised value, found %d marker occurrences", got)
+	if got := strings.Count(pyCmd[len(pyCmd)-1], pyMarker); got != 4 {
+		t.Fatalf("the python wrapper must frame the serialised value and the error document, found %d marker occurrences", got)
 	}
 	if pyMarker == nodeMarker {
 		t.Fatalf("markers must be generated per invocation")
 	}
 
-	bootCmd, bootMarker := s.buildInvokeCommand("provided.al2023", "index", "handler", "{}")
+	bootCmd, bootMarker := s.buildInvokeCommand("provided.al2023", "index", "handler", "{}", rec)
 	if bootMarker != "" {
 		t.Fatalf("custom runtimes write the response as their whole stdout and carry no marker")
 	}
-	if len(bootCmd) == 0 {
-		t.Fatalf("custom runtimes keep their bootstrap command")
+	// Bootstrap runtimes must not be handed guest-side utility
+	// requirements: their deadline is enforced on the host, so the command
+	// is the image's own entry contract without a timeout prefix.
+	if len(bootCmd) != 1 || bootCmd[0] != "/var/runtime/bootstrap" {
+		t.Fatalf("custom runtimes run their bootstrap command without a timeout prefix, got %v", bootCmd)
+	}
+}
+
+func TestBuildInvokeCommandEscapesHandlerTokens(t *testing.T) {
+	s := &LambdaService{}
+	rec := newInvocationRecord("fn", "$LATEST", "arn:aws:lambda:us-east-1:123456789012:function:fn", 128, 3, "")
+	// The handler validation constrains the format but not the character
+	// set, so a quote in a module or function name must not break out of
+	// the wrapper's single-quoted literals.
+	nodeCmd, _ := s.buildInvokeCommand("nodejs22.x", "in'dex", "h'andler", "{}", rec)
+	nodeScript := nodeCmd[len(nodeCmd)-1]
+	if !strings.Contains(nodeScript, `in\'dex`) || !strings.Contains(nodeScript, `h\'andler`) {
+		t.Fatalf("the node wrapper must escape quotes in the handler tokens")
+	}
+	if strings.Contains(nodeScript, `'in'dex'`) || strings.Contains(nodeScript, `'h'andler'`) {
+		t.Fatalf("unescaped handler tokens must not reach the node wrapper script")
+	}
+
+	pyCmd, _ := s.buildInvokeCommand("python3.13", "in'dex", "h'andler", "{}", rec)
+	pyScript := pyCmd[len(pyCmd)-1]
+	if !strings.Contains(pyScript, `in\'dex`) || !strings.Contains(pyScript, `h\'andler`) {
+		t.Fatalf("the python wrapper must escape quotes in the handler tokens")
+	}
+	if strings.Contains(pyScript, `'in'dex'`) || strings.Contains(pyScript, `'h'andler'`) {
+		t.Fatalf("unescaped handler tokens must not reach the python wrapper script")
 	}
 }

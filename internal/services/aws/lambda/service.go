@@ -9,14 +9,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/google/uuid"
 
 	"vorpalstacks/internal/client/mobyclient"
 	"vorpalstacks/internal/common/handler"
@@ -416,14 +415,25 @@ func (s *LambdaService) copyCodeToContainer(containerID string, code []byte, run
 		}
 
 		destPath := fmt.Sprintf("/var/task/%s", f.Name)
-		if err := s.dockerClient.CreateFileInContainer(ctx, containerID, destPath, data); err != nil {
+		// The deployment zip's permission bits survive the copy: the
+		// custom-runtime contract requires /var/task/bootstrap to arrive
+		// executable (the provided base image checks -x before exec'ing
+		// it). Entries without any exec bit keep the historical 0644 so
+		// wrapper-runtime packages land exactly as before.
+		perm := f.Mode().Perm()
+		if perm&0111 == 0 {
+			perm = 0644
+		}
+		if err := s.dockerClient.CreateFileInContainer(ctx, containerID, destPath, data, perm); err != nil {
 			return fmt.Errorf("failed to copy %s to container: %w", f.Name, err)
 		}
 	}
 	return nil
 }
 
-func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region string, payload []byte, logType string) (*lambdastore.InvocationResult, error) {
+func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.InvocationResult, error) {
+	function, ver, store, region := req.Function, req.Version, req.Store, req.Region
+	payload, logType := req.Payload, req.LogType
 	// Enforce reserved concurrency limit if configured.
 	// ReservedConcurrency=0 means the function is effectively paused
 	// (zero concurrent executions allowed); any non-nil value must be
@@ -492,13 +502,64 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 		eventJSON = string(payload)
 	}
 
-	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON)
+	// ClientContext arrives base64-encoded on the synchronous Invoke plane
+	// (the Smithy model passes it "for synchronous invocations only"); the
+	// handler's context object carries the decoded document.
+	clientContextJSON := ""
+	if req.ClientContextRaw != "" {
+		decoded, decErr := base64.StdEncoding.DecodeString(req.ClientContextRaw)
+		if decErr != nil {
+			return nil, NewInvalidParameter("ClientContext", "must be base64-encoded data")
+		}
+		clientContextJSON = string(decoded)
+	}
 
-	execResult, err := s.dockerClient.Exec(ctx, containerID, mobyclient.ExecConfig{
+	rec := newInvocationRecord(function.FunctionName, version, req.InvokedARN, execCfg.MemorySize, execCfg.Timeout, clientContextJSON)
+
+	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON, rec)
+
+	// Bootstrap runtimes (the provided.* custom runtimes and the RIC-based
+	// managed images) receive the event over the Runtime API instead of a
+	// wrapper script: a per-invocation host-side HTTP server answers
+	// /invocation/next with the event and the Lambda-Runtime-* headers, and
+	// the bootstrap POSTs its answer back. The exec environment carries the
+	// server address; the image entrypoint's own emulator is bypassed
+	// because the exec goes straight to /var/runtime/bootstrap.
+	var execEnv []string
+	var apiServer *runtimeAPIServer
+	if !usesRuntimeWrapper(execCfg.Runtime) {
+		apiServer, err = startRuntimeAPI(rec, []byte(eventJSON))
+		if err != nil {
+			return nil, fmt.Errorf("failed to start the runtime API: %w", err)
+		}
+		defer apiServer.Close()
+		execEnv = append(execEnv, "AWS_LAMBDA_RUNTIME_API="+apiServer.Addr())
+	}
+
+	execConfig := mobyclient.ExecConfig{
 		Cmd:          invokeCmd,
 		AttachStdout: true,
 		AttachStderr: true,
-	})
+		Env:          execEnv,
+	}
+
+	execStart := time.Now()
+	var execResult *mobyclient.ExecResult
+	timedOut := false
+	if apiServer != nil {
+		// A bootstrap execution settles at the captured answer, its own
+		// process exit, or the host-enforced deadline — whichever comes
+		// first; see invocation_exec.go.
+		outcome := s.runBootstrapExecution(ctx, containerID,
+			containerNameFor(region, function.FunctionName, version), execConfig, apiServer, rec.Deadline)
+		execResult, timedOut, err = outcome.result, outcome.timedOut, outcome.err
+	} else {
+		execResult, err = s.dockerClient.Exec(ctx, containerID, execConfig)
+		if err == nil {
+			timedOut = execResult.ExitCode == execExitTimedOut
+		}
+	}
+	execDuration := time.Since(execStart)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exec in container: %w", err)
 	}
@@ -506,24 +567,60 @@ func (s *LambdaService) invokeFunction(function *lambdastore.Function, ver *lamb
 	// The framed region between the markers is exactly the return value and
 	// the output before the opening marker is the handler's console output;
 	// only that part belongs in the CloudWatch logs and the tailed
-	// LogResult. A custom runtime writes no marker, so its whole stdout
-	// remains the payload.
+	// LogResult. A custom runtime writes no marker; its payload arrives
+	// over the Runtime API below, and its stdout is console output.
 	payloadOut := strings.TrimSpace(execResult.Stdout)
 	logOut := payloadOut
 	if resultMarker != "" {
 		payloadOut, logOut = splitResultPayload(execResult.Stdout, resultMarker)
 	}
 
-	s.writeLambdaLogs(function.FunctionName, version, logOut, execResult.Stderr, region)
+	apiAnswered := false
+	var apiKind string
+	if apiServer != nil {
+		// The bootstrap answers over the Runtime API, not stdout: its
+		// stdout is console output only. A captured answer outranks the
+		// process exit status — a bootstrap that loops back to /next after
+		// answering sits idle until the timeout reaps it, which is the
+		// platform ending the execution, not a function failure.
+		apiBody, kind, captured := apiServer.Captured()
+		apiAnswered, apiKind = captured, kind
+		if captured {
+			payloadOut = string(apiBody)
+			timedOut = false
+		} else {
+			payloadOut = ""
+			logOut = strings.TrimSpace(execResult.Stdout)
+		}
+	}
 
-	functionError := classifyFunctionError(execResult.ExitCode, payloadOut)
+	if timedOut {
+		payloadOut = timeoutEnvelope(rec.TimeoutSeconds)
+	}
+
+	logEvents := invocationLogEvents(rec, logOut, execResult.Stderr, execDuration, timedOut)
+	s.writeLambdaLogs(rec, region, logEvents)
+
+	functionError := classifyFunctionError(execResult.ExitCode)
+	if apiAnswered {
+		if apiKind != runtimeAPIResponseKind {
+			// The bootstrap reported the failure through an error endpoint;
+			// the contract marks such invocations Unhandled.
+			functionError = "Unhandled"
+		} else {
+			// A delivered response is a success whatever the payload
+			// contains and whatever the process did after answering — the
+			// header may only be present when an error actually occurred.
+			functionError = ""
+		}
+	}
 
 	return &lambdastore.InvocationResult{
 		StatusCode:      http.StatusOK,
 		ExecutedVersion: version,
 		Payload:         []byte(payloadOut),
 		FunctionError:   functionError,
-		LogResult:       captureLogResult(logType, logOut, execResult.Stderr),
+		LogResult:       captureLogResult(logType, logEvents),
 	}, nil
 }
 
@@ -566,115 +663,113 @@ func splitResultPayload(stdout, marker string) (payload, logs string) {
 	return rest[:closeIdx], stdout[:open]
 }
 
-// classifyFunctionError maps a failed execution onto the AWS wire contract
-// for X-Amz-Function-Error. A non-zero exit means the runtime intercepted
-// the failure ("Unhandled"); a successful exit whose payload is the error
-// document the function returned — a JSON envelope carrying errorMessage —
-// is a "Handled" error. A payload without that envelope is a normal
-// success and reports no function error. The envelope is read from the
-// final JSON document of stdout so handler log lines cannot mask it.
-func classifyFunctionError(exitCode int, stdout string) string {
-	if exitCode != 0 {
-		return "Unhandled"
-	}
-	doc, ok := finalJSONDocument([]byte(stdout))
-	if !ok {
+// classifyFunctionError maps the execution outcome onto the AWS wire
+// contract for X-Amz-Function-Error: "If present, indicates that an error
+// occurred during function execution." A successful exit is therefore
+// never an error, whatever the returned payload looks like — on AWS a
+// handler returning an error-shaped document is a plain success. The
+// classification reads the exit status only: the wrapper runtimes report a
+// callback-signalled failure with execExitHandledError (Handled) and an
+// uncaught failure, or a timeout kill, with any other non-zero status
+// (Unhandled). The Runtime API path overrides this at the call site
+// through the captured answer kind.
+func classifyFunctionError(exitCode int) string {
+	if exitCode == 0 {
 		return ""
 	}
-	var probe struct {
-		ErrorMessage *string `json:"errorMessage"`
-	}
-	if err := json.Unmarshal(doc, &probe); err == nil && probe.ErrorMessage != nil {
+	if exitCode == execExitHandledError {
 		return "Handled"
 	}
-	return ""
+	return "Unhandled"
+}
+
+// timeoutEnvelope is the payload a timed-out invocation answers with: a 200
+// response carrying an Unhandled function error whose errorMessage names
+// the timeout. AWS documents the "Task timed out after" wording; the
+// errorType member varies by runtime generation across AWS services and is
+// deliberately omitted here.
+func timeoutEnvelope(timeoutSeconds int32) string {
+	return fmt.Sprintf(`{"errorMessage":"Task timed out after %.2f seconds"}`, float64(timeoutSeconds))
 }
 
 // captureLogResult captures the last 4 KB of execution logs as base64 when
 // LogType=Tail is requested, matching the AWS Lambda Invoke API behaviour.
-func captureLogResult(logType, stdout, stderr string) string {
+// The tailed text is the full invocation log sequence — START/END/REPORT
+// framing included — because the AWS runtime's own lines are part of what
+// the tail exposes.
+func captureLogResult(logType string, events []eventbus.LogEntry) string {
 	if logType != "Tail" {
 		return ""
 	}
-	logContent := stdout
-	if stderr != "" {
-		logContent += "\n" + stderr
+	var b strings.Builder
+	for _, e := range events {
+		b.WriteString(e.Message)
+		b.WriteByte('\n')
 	}
+	logContent := b.String()
 	if len(logContent) > 4096 {
 		logContent = logContent[len(logContent)-4096:]
 	}
 	return base64.StdEncoding.EncodeToString([]byte(logContent))
 }
 
-func (s *LambdaService) buildInvokeCommand(runtime lambdastore.Runtime, moduleFile, handlerFunc, eventJSON string) ([]string, string) {
-	// The node/python wrappers frame the serialised return value with a
-	// per-invocation marker. Handler code cannot emit the marker (a fresh
-	// one is generated per invocation), so the framed region is exactly the
-	// return value and the preceding output is console logging — mirroring
-	// the AWS runtime contract where the response payload and the logs are
-	// separate channels. A custom runtime keeps writing its response as the
-	// whole stdout, so it gets no marker.
-	marker := ""
-	if strings.HasPrefix(string(runtime), "nodejs") || strings.HasPrefix(string(runtime), "python") {
-		marker = fmt.Sprintf("__VORPALSTACKS_RESULT_%s__", uuid.New().String())
-	}
-	if strings.HasPrefix(string(runtime), "nodejs") {
-		escaped := strings.ReplaceAll(strings.ReplaceAll(eventJSON, `\`, `\\`), "'", `\'`)
-		script := fmt.Sprintf(
-			"const m=require('/var/task/%s');const h=typeof m==='function'?m:m['%s'];const p=Promise.resolve(h(JSON.parse('%s')));p.then(r=>{if(r&&typeof r==='object')process.stdout.write('%s'+JSON.stringify(r)+'%s');else if(r!==undefined)process.stdout.write('%s'+String(r)+'%s');}).catch(e=>{process.stderr.write(e.message||String(e));process.exit(1);});",
-			moduleFile, handlerFunc, escaped, marker, marker, marker, marker,
-		)
-		return []string{"node", "-e", script}, marker
-	}
-	if strings.HasPrefix(string(runtime), "python") {
-		escaped := strings.ReplaceAll(eventJSON, "'", `\'`)
-		return []string{"python3", "-c", fmt.Sprintf(
-			"import json,sys;mod=__import__('%s');h=getattr(mod,'%s',mod);r=h(json.loads('%s'));print('%s'+(json.dumps(r) if isinstance(r,dict) else str(r))+'%s')",
-			moduleFile, handlerFunc, escaped, marker, marker,
-		)}, marker
-	}
-	return []string{"/var/runtime/bootstrap"}, marker
-}
-
-func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, region string) {
-	logGroupName := "/aws/lambda/" + functionName
-	now := time.Now().UTC()
-	requestID := uuid.New().String()
-	streamName := fmt.Sprintf("%d/%02d/%02d/[%s]%s",
-		now.Year(), now.Month(), now.Day(), version, requestID[:8])
-
-	ts := now.UnixNano() / int64(time.Millisecond)
-	busEvents := []eventbus.LogEntry{
-		{Timestamp: ts, Message: fmt.Sprintf("START RequestId: %s", requestID)},
+// invocationLogEvents composes the execution's CloudWatch log lines: the
+// START framing, the handler's console output, the timeout marker, and the
+// END/REPORT framing with the measured duration. The tailed LogResult and
+// the written log stream derive from this single sequence, so what the
+// caller tails is exactly what lands in the log group.
+func invocationLogEvents(rec invocationRecord, stdout, stderr string, duration time.Duration, timedOut bool) []eventbus.LogEntry {
+	ts := time.Now().UTC().UnixNano() / int64(time.Millisecond)
+	events := []eventbus.LogEntry{
+		// AWS log examples frame the start as
+		// "START RequestId: <id> Version: <version>".
+		{Timestamp: ts, Message: fmt.Sprintf("START RequestId: %s Version: %s", rec.RequestID, rec.Version)},
 	}
 
 	for _, line := range strings.Split(stdout, "\n") {
 		if line != "" {
-			busEvents = append(busEvents, eventbus.LogEntry{Timestamp: ts, Message: line})
+			events = append(events, eventbus.LogEntry{Timestamp: ts, Message: line})
 		}
 	}
 	for _, line := range strings.Split(stderr, "\n") {
 		if line != "" {
-			busEvents = append(busEvents, eventbus.LogEntry{Timestamp: ts, Message: line})
+			events = append(events, eventbus.LogEntry{Timestamp: ts, Message: line})
 		}
 	}
 
-	busEvents = append(busEvents, eventbus.LogEntry{
-		Timestamp: ts,
-		Message:   fmt.Sprintf("END RequestId: %s", requestID),
-	})
-	busEvents = append(busEvents, eventbus.LogEntry{
-		Timestamp: ts,
-		Message:   fmt.Sprintf("REPORT RequestId: %s\tDuration: 0.00 ms\tBilled Duration: 0 ms\tMemory Size: 128 MB\tMax Memory Used: 0 MB", requestID),
-	})
+	if timedOut {
+		events = append(events, eventbus.LogEntry{Timestamp: ts, Message: "TASK TIMED OUT"})
+	}
 
+	// Max Memory Used stays 0 because the exec plane exposes no
+	// per-process RSS.
+	billedMS := int64(math.Ceil(duration.Seconds() * 1000))
+	if billedMS < 1 {
+		billedMS = 1
+	}
+	events = append(events, eventbus.LogEntry{
+		Timestamp: ts,
+		Message:   fmt.Sprintf("END RequestId: %s", rec.RequestID),
+	})
+	events = append(events, eventbus.LogEntry{
+		Timestamp: ts,
+		Message: fmt.Sprintf("REPORT RequestId: %s\tDuration: %.2f ms\tBilled Duration: %d ms\tMemory Size: %d MB\tMax Memory Used: 0 MB",
+			rec.RequestID, float64(duration.Microseconds())/1000, billedMS, rec.MemorySize),
+	})
+	return events
+}
+
+func (s *LambdaService) writeLambdaLogs(rec invocationRecord, region string, events []eventbus.LogEntry) {
+	// The request id, log group and log stream are the invocation record's:
+	// the handler saw the same values in its context object, so
+	// context.awsRequestId matches the START/END/REPORT lines.
 	if s.bus != nil {
 		logEvt := &eventbus.LambdaLogWriteEvent{
-			FunctionName: functionName,
-			Version:      version,
-			LogGroup:     logGroupName,
-			LogStream:    streamName,
-			LogEvents:    busEvents,
+			FunctionName: rec.FunctionName,
+			Version:      rec.Version,
+			LogGroup:     rec.LogGroupName,
+			LogStream:    rec.LogStreamName,
+			LogEvents:    events,
 		}
 		logEvt.Region = region
 		if err := s.bus.Publish(context.Background(), logEvt); err != nil {
@@ -683,7 +778,7 @@ func (s *LambdaService) writeLambdaLogs(functionName, version, stdout, stderr, r
 		return
 	}
 
-	s.writeLambdaLogsDirect(logGroupName, streamName, busEvents, functionName, region)
+	s.writeLambdaLogsDirect(rec.LogGroupName, rec.LogStreamName, events, rec.FunctionName, region)
 }
 
 // writeLambdaLogsDirect is the fallback path when the event bus is not
@@ -789,7 +884,14 @@ func (s *LambdaService) InvokeForEventSource(ctx context.Context, functionRef st
 	if alias != nil {
 		ver = resolveAliasTargetVersion(function, alias)
 	}
-	return s.invokeFunction(function, ver, store, region, payload, "")
+	return s.invokeFunction(invokeRequest{
+		Function:   function,
+		Version:    ver,
+		Store:      store,
+		Region:     region,
+		Payload:    payload,
+		InvokedARN: qualifiedInvokeARN(function.FunctionArn, embeddedQualifier),
+	})
 }
 
 // GetFunctionStore returns a new FunctionStore for the Lambda service

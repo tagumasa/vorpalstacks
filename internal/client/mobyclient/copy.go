@@ -126,19 +126,25 @@ func (c *Client) CopyFromContainer(ctx context.Context, containerID string, srcP
 	return nil
 }
 
-// CreateFileInContainer creates a file with content in a container.
-func (c *Client) CreateFileInContainer(ctx context.Context, containerID string, filePath string, content []byte) error {
+// CreateFileInContainer creates a file with content in a container. The
+// mode carries the permission bits the source archive recorded — the
+// Lambda custom-runtime contract, for example, requires /var/task/bootstrap
+// to arrive executable.
+func (c *Client) CreateFileInContainer(ctx context.Context, containerID string, filePath string, content []byte, mode os.FileMode) error {
 	c.logger.Debug("Creating file in container",
 		logs.String("container", containerID),
 		logs.String("path", filePath),
 	)
 
+	if mode == 0 {
+		mode = 0644
+	}
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 
 	hdr := &tar.Header{
 		Name: filepath.Base(filePath),
-		Mode: 0644,
+		Mode: int64(mode.Perm()),
 		Size: int64(len(content)),
 	}
 	if err := tw.WriteHeader(hdr); err != nil {

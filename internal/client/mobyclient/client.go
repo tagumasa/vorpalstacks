@@ -4,6 +4,7 @@ package mobyclient
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"vorpalstacks/internal/core/logs"
 
@@ -24,8 +25,9 @@ type ContainerLifecycle interface {
 	CreateContainerFromConfig(ctx context.Context, cfg AdvancedContainerConfig) (*CreateContainerResult, error)
 	StartContainer(ctx context.Context, containerID string) error
 	RemoveContainer(ctx context.Context, containerID string, force bool) error
+	KillContainer(ctx context.Context, containerID string, signal string) error
 	ListContainers(ctx context.Context, all bool) ([]ContainerInfo, error)
-	CreateFileInContainer(ctx context.Context, containerID string, path string, content []byte) error
+	CreateFileInContainer(ctx context.Context, containerID string, path string, content []byte, mode os.FileMode) error
 	Exec(ctx context.Context, containerID string, cfg ExecConfig) (*ExecResult, error)
 	Close() error
 }
