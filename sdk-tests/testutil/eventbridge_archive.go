@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -17,13 +16,11 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 	results = append(results, r.RunTest("events", "CreateArchive", func() error {
 		caBus := fmt.Sprintf("CaBus-%d", time.Now().UnixNano())
 		caArchive := fmt.Sprintf("CaArchive-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(caBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, caBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(caBus)})
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, caBus)
 		resp, err := client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
@@ -47,13 +44,11 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 	results = append(results, r.RunTest("events", "DescribeArchive", func() error {
 		daBus := fmt.Sprintf("DaBus-%d", time.Now().UnixNano())
 		daArchive := fmt.Sprintf("DaArchive-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(daBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, daBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(daBus)})
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, daBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
@@ -91,40 +86,24 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		_, err := client.DescribeArchive(ctx, &eventbridge.DescribeArchiveInput{
 			ArchiveName: aws.String("nonexistent-archive-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent archive")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteArchive_NonExistent", func() error {
 		_, err := client.DeleteArchive(ctx, &eventbridge.DeleteArchiveInput{
 			ArchiveName: aws.String("nonexistent-archive-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent archive")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteArchive", func() error {
 		dlaBus := fmt.Sprintf("DlaBus-%d", time.Now().UnixNano())
 		dlaArchive := fmt.Sprintf("DlaArchive-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(dlaBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, dlaBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(dlaBus)})
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, dlaBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
@@ -157,13 +136,11 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 	results = append(results, r.RunTest("events", "ListArchives", func() error {
 		laBus := fmt.Sprintf("LaBus-%d", time.Now().UnixNano())
 		laArchive := fmt.Sprintf("LaArchive-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(laBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, laBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(laBus)})
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, laBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
@@ -201,13 +178,11 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 	results = append(results, r.RunTest("events", "UpdateArchive", func() error {
 		uaBus := fmt.Sprintf("UaBus-%d", time.Now().UnixNano())
 		uaArchive := fmt.Sprintf("UaArchive-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(uaBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, uaBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(uaBus)})
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, uaBus)
 		_, err = client.CreateArchive(ctx, &eventbridge.CreateArchiveInput{
@@ -249,12 +224,11 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		srBus := fmt.Sprintf("SrBus-%d", time.Now().UnixNano())
 		srArchive := fmt.Sprintf("SrArchive-%d", time.Now().UnixNano())
 		srReplay := fmt.Sprintf("SrReplay-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(srBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, srBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, srBus)
 		archiveARN := fmt.Sprintf("arn:aws:events:%s:%s:archive/%s", r.region, r.accountID, srArchive)
@@ -311,26 +285,18 @@ func (r *TestRunner) runEventBridgeArchiveTests(ctx context.Context, client *eve
 		_, err := client.CancelReplay(ctx, &eventbridge.CancelReplayInput{
 			ReplayName: aws.String("nonexistent-replay-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent replay")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "ListReplays", func() error {
 		lrBus := fmt.Sprintf("LrBus-%d", time.Now().UnixNano())
 		lrArchive := fmt.Sprintf("LrArchive-%d", time.Now().UnixNano())
 		lrReplay := fmt.Sprintf("LrReplay-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(lrBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, lrBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
+		defer cleanupBus()
 
 		busARN := fmt.Sprintf("arn:aws:events:%s:%s:event-bus/%s", r.region, r.accountID, lrBus)
 		archiveARN := fmt.Sprintf("arn:aws:events:%s:%s:archive/%s", r.region, r.accountID, lrArchive)

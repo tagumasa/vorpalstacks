@@ -64,23 +64,17 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		trBus := fmt.Sprintf("TrBus-%d", time.Now().UnixNano())
 		trRule := fmt.Sprintf("TrRule-%d", time.Now().UnixNano())
 		trTargetID := fmt.Sprintf("TrTarget-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(trBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, trBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(trBus)})
+		defer cleanupBus()
 
-		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(trRule),
-			EventBusName:       aws.String(trBus),
-			ScheduleExpression: aws.String("rate(1 hour)"),
-		})
+		cleanupRule, err := createEventBridgeTestRule(ctx, client, trBus, trRule)
 		if err != nil {
-			return fmt.Errorf("put rule: %v", err)
+			return err
 		}
-		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(trRule), EventBusName: aws.String(trBus)})
+		defer cleanupRule()
 
 		targetARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:TargetFunc", r.region, r.accountID)
 		_, err = client.PutTargets(ctx, &eventbridge.PutTargetsInput{
@@ -141,23 +135,17 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		lrntBus := fmt.Sprintf("LrntBus-%d", time.Now().UnixNano())
 		lrntRule := fmt.Sprintf("LrntRule-%d", time.Now().UnixNano())
 		lrntTargetID := fmt.Sprintf("LrntTarget-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(lrntBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, lrntBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(lrntBus)})
+		defer cleanupBus()
 
-		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(lrntRule),
-			EventBusName:       aws.String(lrntBus),
-			ScheduleExpression: aws.String("rate(1 hour)"),
-		})
+		cleanupRule, err := createEventBridgeTestRule(ctx, client, lrntBus, lrntRule)
 		if err != nil {
-			return fmt.Errorf("put rule: %v", err)
+			return err
 		}
-		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(lrntRule), EventBusName: aws.String(lrntBus)})
+		defer cleanupRule()
 
 		targetARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:ListRulesFn", r.region, r.accountID)
 		_, err = client.PutTargets(ctx, &eventbridge.PutTargetsInput{
@@ -207,28 +195,23 @@ func (r *TestRunner) runEventBridgeTargetTests(ctx context.Context, client *even
 		dtBus := fmt.Sprintf("DtBus-%d", time.Now().UnixNano())
 		dtRule := fmt.Sprintf("DtRule-%d", time.Now().UnixNano())
 		dtTarget := fmt.Sprintf("DtTarget-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(dtBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, dtBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(dtBus)})
+		defer cleanupBus()
 
-		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(dtRule),
-			EventBusName:       aws.String(dtBus),
-			ScheduleExpression: aws.String("rate(1 hour)"),
-		})
+		cleanupRule, err := createEventBridgeTestRule(ctx, client, dtBus, dtRule)
 		if err != nil {
-			return fmt.Errorf("put rule: %v", err)
+			return err
 		}
-		defer func() {
-			client.RemoveTargets(ctx, &eventbridge.RemoveTargetsInput{
-				Rule: aws.String(dtRule), EventBusName: aws.String(dtBus), Ids: []string{dtTarget},
-			})
-			client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(dtRule), EventBusName: aws.String(dtBus)})
-		}()
+		defer cleanupRule()
+
+		// Targets must be removed before the deferred rule deletion can
+		// succeed; this defer runs ahead of the helper cleanups.
+		defer client.RemoveTargets(ctx, &eventbridge.RemoveTargetsInput{
+			Rule: aws.String(dtRule), EventBusName: aws.String(dtBus), Ids: []string{dtTarget},
+		})
 
 		_, err = client.PutTargets(ctx, &eventbridge.PutTargetsInput{
 			Rule:         aws.String(dtRule),

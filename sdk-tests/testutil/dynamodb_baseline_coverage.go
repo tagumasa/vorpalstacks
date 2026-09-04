@@ -29,19 +29,11 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 
 	// --- Backup describe + restore --------------------------------------
 	backupTable := fmt.Sprintf("baseline-backup-%d", suffix)
-	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(backupTable),
-		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
-			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
-		},
-		KeySchema: []dynamodbtypes.KeySchemaElement{
-			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
-		},
-		BillingMode: dynamodbtypes.BillingModePayPerRequest,
-	}); err != nil {
-		return setupErr("DescribeBackup_ReturnsBackupDetails", fmt.Errorf("create table: %v", err))
+	cleanupBackupTable, err := createDynamoTestTable(ctx, client, backupTable, withDynamoHashKey("pk"))
+	if err != nil {
+		return setupErr("DescribeBackup_ReturnsBackupDetails", err)
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(backupTable)})
+	defer cleanupBackupTable()
 	if err := waitKinesisDestTableActive(ctx, client, backupTable); err != nil {
 		return setupErr("DescribeBackup_ReturnsBackupDetails", fmt.Errorf("wait active: %v", err))
 	}
@@ -161,19 +153,11 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 
 	// --- Resource policy put/get/delete ---------------------------------
 	policyTable := fmt.Sprintf("baseline-policy-%d", suffix)
-	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(policyTable),
-		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
-			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
-		},
-		KeySchema: []dynamodbtypes.KeySchemaElement{
-			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
-		},
-		BillingMode: dynamodbtypes.BillingModePayPerRequest,
-	}); err != nil {
-		return setupErr("PutResourcePolicy_RoundTrips", fmt.Errorf("create table: %v", err))
+	cleanupPolicyTable, err := createDynamoTestTable(ctx, client, policyTable, withDynamoHashKey("pk"))
+	if err != nil {
+		return setupErr("PutResourcePolicy_RoundTrips", err)
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(policyTable)})
+	defer cleanupPolicyTable()
 	if err := waitKinesisDestTableActive(ctx, client, policyTable); err != nil {
 		return setupErr("PutResourcePolicy_RoundTrips", fmt.Errorf("wait active: %v", err))
 	}
@@ -426,19 +410,11 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 
 	// --- Replica auto-scaling descriptions ------------------------------
 	asTable := fmt.Sprintf("baseline-autoscaling-%d", suffix)
-	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(asTable),
-		AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
-			{AttributeName: aws.String("pk"), AttributeType: dynamodbtypes.ScalarAttributeTypeS},
-		},
-		KeySchema: []dynamodbtypes.KeySchemaElement{
-			{AttributeName: aws.String("pk"), KeyType: dynamodbtypes.KeyTypeHash},
-		},
-		BillingMode: dynamodbtypes.BillingModePayPerRequest,
-	}); err != nil {
-		return setupErr("TableReplicaAutoScaling_UpdateAndDescribe", fmt.Errorf("create table: %v", err))
+	cleanupAsTable, err := createDynamoTestTable(ctx, client, asTable, withDynamoHashKey("pk"))
+	if err != nil {
+		return setupErr("TableReplicaAutoScaling_UpdateAndDescribe", err)
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(asTable)})
+	defer cleanupAsTable()
 	if err := waitKinesisDestTableActive(ctx, client, asTable); err != nil {
 		return setupErr("TableReplicaAutoScaling_UpdateAndDescribe", fmt.Errorf("wait active: %v", err))
 	}

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -111,14 +110,7 @@ func (r *TestRunner) dynamoDBBatchNonExistentTest(ctx context.Context, client *d
 				},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	return results
@@ -131,20 +123,11 @@ func (r *TestRunner) dynamoDBBatchEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "BatchWriteItem_DeleteRequest", func() error {
 		bwTable := fmt.Sprintf("BWDel-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(bwTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, bwTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(bwTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(bwTable),
@@ -188,20 +171,11 @@ func (r *TestRunner) dynamoDBBatchEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "BatchGetItem_Projection", func() error {
 		bgTable := fmt.Sprintf("BGProj-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(bgTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, bgTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(bgTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(bgTable),

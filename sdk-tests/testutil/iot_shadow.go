@@ -21,7 +21,7 @@ func (r *TestRunner) runIoTShadowTests(tc *iotTestContext) []TestResult {
 		Region:   r.region,
 	})
 	if err != nil {
-		return []TestResult{{Service: "iot", TestName: "Shadow_Setup", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("Shadow_Setup", err.Error())
 	}
 	dataClient := iotdataplane.NewFromConfig(cfg)
 	ctx := context.Background()
@@ -30,7 +30,7 @@ func (r *TestRunner) runIoTShadowTests(tc *iotTestContext) []TestResult {
 	defer tc.client.DeleteThing(ctx, &iot.DeleteThingInput{ThingName: aws.String(thingName)})
 
 	if _, err := tc.client.CreateThing(ctx, &iot.CreateThingInput{ThingName: aws.String(thingName)}); err != nil {
-		return []TestResult{{Service: "iot", TestName: "Shadow_Setup", Status: "FAIL", Error: fmt.Sprintf("CreateThing failed: %v", err)}}
+		return iotSetupFail("Shadow_Setup", fmt.Sprintf("CreateThing failed: %v", err))
 	}
 
 	var results []TestResult

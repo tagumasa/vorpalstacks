@@ -53,30 +53,15 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusters_FilterByID", func() error {
-		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
-		if err != nil {
-			return err
-		}
-		if len(resp.DBClusters) != 1 {
-			return fmt.Errorf("expected 1 cluster, got %d", len(resp.DBClusters))
-		}
-		c := resp.DBClusters[0]
-		if c.DBClusterIdentifier == nil || *c.DBClusterIdentifier != tc.clusterID {
-			return fmt.Errorf("expected DBClusterIdentifier=%s, got %v", tc.clusterID, c.DBClusterIdentifier)
-		}
-		return nil
+		_, err := tc.describeCluster(tc.clusterID)
+		return err
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusters_ContentVerify", func() error {
-		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		c, err := tc.describeCluster(tc.clusterID)
 		if err != nil {
 			return err
 		}
-		c := resp.DBClusters[0]
 		if c.Engine == nil || *c.Engine != "neptune" {
 			return fmt.Errorf("expected engine=neptune, got %v", c.Engine)
 		}
@@ -120,13 +105,10 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBCluster_Verify", func() error {
-		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		c, err := tc.describeCluster(tc.clusterID)
 		if err != nil {
 			return err
 		}
-		c := resp.DBClusters[0]
 		if c.BackupRetentionPeriod == nil || *c.BackupRetentionPeriod != 14 {
 			return fmt.Errorf("expected backup retention=14 after modify, got %v", c.BackupRetentionPeriod)
 		}
@@ -146,13 +128,10 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "AddRoleToDBCluster_Verify", func() error {
-		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		c, err := tc.describeCluster(tc.clusterID)
 		if err != nil {
 			return err
 		}
-		c := resp.DBClusters[0]
 		found := false
 		for _, role := range c.AssociatedRoles {
 			if role.RoleArn != nil && *role.RoleArn == tc.clusterRoleArn() {
@@ -179,13 +158,10 @@ func (r *TestRunner) runNeptuneClusterTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "RemoveRoleFromDBCluster_Verify", func() error {
-		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
-			DBClusterIdentifier: aws.String(tc.clusterID),
-		})
+		c, err := tc.describeCluster(tc.clusterID)
 		if err != nil {
 			return err
 		}
-		c := resp.DBClusters[0]
 		for _, role := range c.AssociatedRoles {
 			if role.RoleArn != nil && *role.RoleArn == tc.clusterRoleArn() {
 				return fmt.Errorf("expected role to be removed from AssociatedRoles after RemoveRoleFromDBCluster")

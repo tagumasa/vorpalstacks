@@ -192,10 +192,11 @@ func (r *TestRunner) iamSSHPublicKeyTests(tc *iamTestContext) []TestResult {
 			return fmt.Errorf("user setup failed")
 		}
 		other := fmt.Sprintf("SSHKey-other-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(other)}); err != nil {
+		cleanupOther, err := tc.createUser(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(other)})
+		defer cleanupOther()
 
 		upload, err := tc.client.UploadSSHPublicKey(tc.ctx, &iam.UploadSSHPublicKeyInput{
 			UserName:         aws.String(owner),

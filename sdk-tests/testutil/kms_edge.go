@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -30,8 +29,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListKeys_ContainsCreatedKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		var marker *string
 		for page := 0; page < 100; page++ {
@@ -65,16 +64,12 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
 		}
-		var nfe *types.NotFoundException
-		if !errors.As(err, &nfe) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.NotFoundException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_DisabledKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: aws.String(tc.keyID)})
 		if err != nil {
@@ -89,16 +84,12 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error when encrypting with disabled key")
 		}
-		var de *types.DisabledException
-		if !errors.As(err, &de) {
-			return fmt.Errorf("expected DisabledException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.DisabledException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKey_DisabledKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: aws.String(tc.keyID)})
 		if err != nil {
@@ -117,8 +108,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Sign_DisabledKey", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: aws.String(tc.rsaKeyID)})
 		if err != nil {
@@ -135,16 +126,12 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error when signing with disabled key")
 		}
-		var de *types.DisabledException
-		if !errors.As(err, &de) {
-			return fmt.Errorf("expected DisabledException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.DisabledException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "ScheduleKeyDeletion_InvalidWindow", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.ScheduleKeyDeletion(tc.ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               aws.String(tc.keyID),
@@ -157,8 +144,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_SignVerifyKey", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
 			KeyId:     aws.String(tc.rsaKeyID),
@@ -167,16 +154,12 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for encrypt with SIGN_VERIFY key")
 		}
-		var ikue *types.InvalidKeyUsageException
-		if !errors.As(err, &ikue) {
-			return fmt.Errorf("expected InvalidKeyUsageException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.InvalidKeyUsageException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_WrongKeyUsage", func() error {
-		if tc.hmacKeyID == "" {
-			return fmt.Errorf("HMAC key ID not available")
+		if err := tc.requireHMACKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
 			KeyId:     aws.String(tc.hmacKeyID),
@@ -185,16 +168,12 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for encrypt with HMAC key")
 		}
-		var ikue *types.InvalidKeyUsageException
-		if !errors.As(err, &ikue) {
-			return fmt.Errorf("expected InvalidKeyUsageException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.InvalidKeyUsageException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "ReEncrypt_InvalidCiphertext", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.ReEncrypt(tc.ctx, &kms.ReEncryptInput{
 			CiphertextBlob:   []byte("not valid ciphertext"),
@@ -207,8 +186,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Sign_InvalidAlgorithm", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.Sign(tc.ctx, &kms.SignInput{
 			KeyId:            aws.String(tc.rsaKeyID),
@@ -222,33 +201,25 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKey_NonExistent", func() error {
-		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
+		fakeKeyID := tc.nonexistentKeyARN()
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
 		}
-		var nfe *types.NotFoundException
-		if !errors.As(err, &nfe) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.NotFoundException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "EnableKey_NonExistent", func() error {
-		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
+		fakeKeyID := tc.nonexistentKeyARN()
 		_, err := tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
 		}
-		var nfe *types.NotFoundException
-		if !errors.As(err, &nfe) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.NotFoundException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "ScheduleKeyDeletion_NonExistent", func() error {
-		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
+		fakeKeyID := tc.nonexistentKeyARN()
 		_, err := tc.client.ScheduleKeyDeletion(tc.ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               aws.String(fakeKeyID),
 			PendingWindowInDays: aws.Int32(7),
@@ -260,7 +231,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GetPublicKey_NonExistent", func() error {
-		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
+		fakeKeyID := tc.nonexistentKeyARN()
 		_, err := tc.client.GetPublicKey(tc.ctx, &kms.GetPublicKeyInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -269,7 +240,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListGrants_NonExistent", func() error {
-		fakeKeyID := fmt.Sprintf("arn:aws:kms:%s:%s:key/ffffffff-ffff-ffff-ffff-ffffffffffff", reg, acct)
+		fakeKeyID := tc.nonexistentKeyARN()
 		_, err := tc.client.ListGrants(tc.ctx, &kms.ListGrantsInput{KeyId: aws.String(fakeKeyID)})
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent key")
@@ -284,11 +255,7 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 		if err == nil {
 			return fmt.Errorf("expected error for non-existent alias")
 		}
-		var nfe *types.NotFoundException
-		if !errors.As(err, &nfe) {
-			return fmt.Errorf("expected NotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return kmsAssertErrorAs[types.NotFoundException](err)
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateAlias_AliasAWSReserved", func() error {
@@ -303,8 +270,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateAlias_WithoutPrefix", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.CreateAlias(tc.ctx, &kms.CreateAliasInput{
 			AliasName:   aws.String("no-prefix-alias"),
@@ -317,8 +284,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "PutKeyPolicy_InvalidJSON", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.PutKeyPolicy(tc.ctx, &kms.PutKeyPolicyInput{
 			KeyId:      aws.String(tc.keyID),
@@ -454,8 +421,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	// UnsupportedOperationException, matching the EnableKeyRotation
 	// behaviour.
 	results = append(results, r.RunTest("kms", "DisableKeyRotation_AsymmetricKey", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKeyRotation(tc.ctx, &kms.DisableKeyRotationInput{
 			KeyId: aws.String(tc.rsaKeyID),
@@ -470,8 +437,8 @@ func (r *TestRunner) runKMSEdgeTests(tc *kmsTestContext) []TestResult {
 	// return ValidationException, not KMSInternalException. The HSM
 	// backend does not implement SM2 key pair generation.
 	results = append(results, r.RunTest("kms", "GenerateDataKeyPair_UnsupportedSpec", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.GenerateDataKeyPair(tc.ctx, &kms.GenerateDataKeyPairInput{
 			KeyId:       aws.String(tc.keyID),

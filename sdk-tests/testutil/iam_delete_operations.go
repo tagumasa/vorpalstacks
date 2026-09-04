@@ -15,25 +15,31 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "DeleteUser_Verified", func() error {
 		user := fmt.Sprintf("DelUser-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		_, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
 		if _, err := tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)}); err != nil {
 			return err
 		}
-		_, err := tc.client.GetUser(tc.ctx, &iam.GetUserInput{UserName: aws.String(user)})
+		_, err = tc.client.GetUser(tc.ctx, &iam.GetUserInput{UserName: aws.String(user)})
 		return iamAssertNoSuchEntity(err, "GetUser after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteGroup_Verified", func() error {
 		group := fmt.Sprintf("DelGroup-%s", tc.ts)
-		if _, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{GroupName: aws.String(group)}); err != nil {
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		_, err := tc.createGroup(group)
+		if err != nil {
 			return err
 		}
 		if _, err := tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(group)}); err != nil {
 			return err
 		}
-		_, err := tc.client.GetGroup(tc.ctx, &iam.GetGroupInput{GroupName: aws.String(group)})
+		_, err = tc.client.GetGroup(tc.ctx, &iam.GetGroupInput{GroupName: aws.String(group)})
 		return iamAssertNoSuchEntity(err, "GetGroup after delete")
 	}))
 
@@ -50,26 +56,26 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "DeletePolicy_Verified", func() error {
 		policy := fmt.Sprintf("DelPolicy-%s", tc.ts)
-		created, err := tc.client.CreatePolicy(tc.ctx, &iam.CreatePolicyInput{
-			PolicyName:     aws.String(policy),
-			PolicyDocument: aws.String(iamAllowPolicy("s3:GetObject")),
-		})
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		arn, _, err := tc.createPolicy(policy, iamAllowPolicy("s3:GetObject"))
 		if err != nil {
 			return err
 		}
-		if _, err := tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: created.Policy.Arn}); err != nil {
+		if _, err := tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)}); err != nil {
 			return err
 		}
-		_, err = tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: created.Policy.Arn})
+		_, err = tc.client.GetPolicy(tc.ctx, &iam.GetPolicyInput{PolicyArn: aws.String(arn)})
 		return iamAssertNoSuchEntity(err, "GetPolicy after delete")
 	}))
 
 	results = append(results, r.RunTest("iam", "DeleteAccessKey_Verified", func() error {
 		user := fmt.Sprintf("DelKey-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
 		key, err := tc.client.CreateAccessKey(tc.ctx, &iam.CreateAccessKeyInput{UserName: aws.String(user)})
 		if err != nil {
@@ -95,9 +101,10 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "DeleteInstanceProfile_Verified", func() error {
 		profile := fmt.Sprintf("DelProf-%s", tc.ts)
-		if _, err := tc.client.CreateInstanceProfile(tc.ctx, &iam.CreateInstanceProfileInput{
-			InstanceProfileName: aws.String(profile),
-		}); err != nil {
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		_, err := tc.createInstanceProfile(profile)
+		if err != nil {
 			return err
 		}
 		if _, err := tc.client.DeleteInstanceProfile(tc.ctx, &iam.DeleteInstanceProfileInput{
@@ -105,7 +112,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 		}); err != nil {
 			return err
 		}
-		_, err := tc.client.GetInstanceProfile(tc.ctx, &iam.GetInstanceProfileInput{
+		_, err = tc.client.GetInstanceProfile(tc.ctx, &iam.GetInstanceProfileInput{
 			InstanceProfileName: aws.String(profile),
 		})
 		return iamAssertNoSuchEntity(err, "GetInstanceProfile after delete")
@@ -113,10 +120,11 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 
 	results = append(results, r.RunTest("iam", "DeleteLoginProfile_Verified", func() error {
 		user := fmt.Sprintf("DelLogin-%s", tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
 		if _, err := tc.client.CreateLoginProfile(tc.ctx, &iam.CreateLoginProfileInput{
 			UserName: aws.String(user),
@@ -129,7 +137,7 @@ func (r *TestRunner) iamDeleteOperationTests(tc *iamTestContext) []TestResult {
 		}); err != nil {
 			return err
 		}
-		_, err := tc.client.GetLoginProfile(tc.ctx, &iam.GetLoginProfileInput{UserName: aws.String(user)})
+		_, err = tc.client.GetLoginProfile(tc.ctx, &iam.GetLoginProfileInput{UserName: aws.String(user)})
 		return iamAssertNoSuchEntity(err, "GetLoginProfile after delete")
 	}))
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptunegraph"
+	"github.com/aws/aws-sdk-go-v2/service/neptunegraph/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"vorpalstacks-sdk-tests/config"
@@ -76,6 +77,62 @@ func (tc *neptunegraphContext) requireSnapshot() error {
 func (tc *neptunegraphContext) getGraph(id string) (*neptunegraph.GetGraphOutput, error) {
 	return tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
 		GraphIdentifier: aws.String(id),
+	})
+}
+
+// requireGraphWithARN fails a test whose prerequisite graph or its ARN was
+// never captured.
+func (tc *neptunegraphContext) requireGraphWithARN() error {
+	if err := tc.requireGraph(); err != nil {
+		return err
+	}
+	return tc.requireGraphARN()
+}
+
+// The all* walkers below traverse every page of a list API so the list
+// assertions hold during full regression when other suites create resources
+// in parallel and a single page may not contain the suite's resources.
+
+func (tc *neptunegraphContext) allGraphs() ([]types.GraphSummary, error) {
+	return paginate(func(next *string) ([]types.GraphSummary, *string, error) {
+		resp, err := tc.client.ListGraphs(tc.ctx, &neptunegraph.ListGraphsInput{NextToken: next})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.Graphs, resp.NextToken, nil
+	})
+}
+
+func (tc *neptunegraphContext) allGraphSnapshots(graphFilter *string) ([]types.GraphSnapshotSummary, error) {
+	return paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
+		resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
+			GraphIdentifier: graphFilter,
+			NextToken:       next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.GraphSnapshots, resp.NextToken, nil
+	})
+}
+
+func (tc *neptunegraphContext) allImportTasks() ([]types.ImportTaskSummary, error) {
+	return paginate(func(next *string) ([]types.ImportTaskSummary, *string, error) {
+		resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{NextToken: next})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.Tasks, resp.NextToken, nil
+	})
+}
+
+func (tc *neptunegraphContext) allExportTasks() ([]types.ExportTaskSummary, error) {
+	return paginate(func(next *string) ([]types.ExportTaskSummary, *string, error) {
+		resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{NextToken: next})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.Tasks, resp.NextToken, nil
 	})
 }
 

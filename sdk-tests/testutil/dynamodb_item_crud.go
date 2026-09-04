@@ -100,20 +100,11 @@ func (r *TestRunner) dynamoDBReturnValueTests(ctx context.Context, client *dynam
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_ReturnValues", func() error {
 		rvTable := fmt.Sprintf("RVTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(rvTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, rvTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(rvTable)})
+		defer cleanupTable()
 
 		resp, err := client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(rvTable),
@@ -155,20 +146,11 @@ func (r *TestRunner) dynamoDBReturnValueTests(ctx context.Context, client *dynam
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_ReturnUpdatedAttributes", func() error {
 		uaTable := fmt.Sprintf("UATable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(uaTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, uaTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(uaTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(uaTable),
@@ -222,20 +204,11 @@ func (r *TestRunner) dynamoDBReturnValueTests(ctx context.Context, client *dynam
 
 	results = append(results, r.RunTest("dynamodb", "Query_ReturnConsumedCapacity", func() error {
 		qTable := fmt.Sprintf("QCapTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(qTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, qTable, withDynamoHashKey("pk"))
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(qTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(qTable),

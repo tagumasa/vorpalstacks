@@ -690,10 +690,11 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 	results = append(results, r.RunTest("iam", "ListPoliciesGrantingServiceAccess", func() error {
 		group := fmt.Sprintf("LPGSA-grp-%s", tc.ts)
 		user := fmt.Sprintf("LPGSA-usr-%s", tc.ts)
-		if _, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{GroupName: aws.String(group)}); err != nil {
+		cleanupGroup, err := tc.createGroup(group)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(group)})
+		defer cleanupGroup()
 		cleanupUser, err := tc.createUser(user)
 		if err != nil {
 			return err

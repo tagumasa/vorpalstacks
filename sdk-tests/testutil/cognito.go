@@ -118,23 +118,77 @@ func (tc *cognitoIDPContext) unique(prefix string) string {
 // cleanup closure deleting it. opts mutate the create input for tests
 // needing Schema, AutoVerifiedAttributes, or Policies beyond PoolName.
 func (tc *cognitoIDPContext) createUserPool(name string, opts ...func(*cognitoidentityprovider.CreateUserPoolInput)) (string, func(), error) {
+	poolID, _, cleanup, err := tc.createUserPoolWithArn(name, opts...)
+	return poolID, cleanup, err
+}
+
+// createUserPoolWithArn creates a throwaway user pool and returns its ID and
+// ARN plus a cleanup closure deleting it. Tag operations address the pool
+// through the returned ARN.
+func (tc *cognitoIDPContext) createUserPoolWithArn(name string, opts ...func(*cognitoidentityprovider.CreateUserPoolInput)) (string, string, func(), error) {
 	input := &cognitoidentityprovider.CreateUserPoolInput{PoolName: aws.String(name)}
 	for _, opt := range opts {
 		opt(input)
 	}
 	resp, err := tc.client.CreateUserPool(tc.ctx, input)
 	if err != nil {
-		return "", func() {}, fmt.Errorf("create user pool %s: %w", name, err)
+		return "", "", func() {}, fmt.Errorf("create user pool %s: %w", name, err)
 	}
 	if resp.UserPool == nil || resp.UserPool.Id == nil {
-		return "", func() {}, fmt.Errorf("create user pool %s: UserPool.Id is nil", name)
+		return "", "", func() {}, fmt.Errorf("create user pool %s: UserPool.Id is nil", name)
+	}
+	if resp.UserPool.Arn == nil {
+		return "", "", func() {}, fmt.Errorf("create user pool %s: UserPool.Arn is nil", name)
 	}
 	poolID := *resp.UserPool.Id
-	return poolID, func() {
+	return poolID, *resp.UserPool.Arn, func() {
 		_, _ = tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
 			UserPoolId: aws.String(poolID),
 		})
 	}, nil
+}
+
+// createGroup creates a throwaway group on the suite pool and returns a
+// cleanup closure deleting it. opts mutate the create input for tests
+// needing Description beyond GroupName.
+func (tc *cognitoIDPContext) createGroup(name string, opts ...func(*cognitoidentityprovider.CreateGroupInput)) (func(), error) {
+	input := &cognitoidentityprovider.CreateGroupInput{
+		GroupName:  aws.String(name),
+		UserPoolId: aws.String(tc.userPoolID),
+	}
+	for _, opt := range opts {
+		opt(input)
+	}
+	if _, err := tc.client.CreateGroup(tc.ctx, input); err != nil {
+		return func() {}, fmt.Errorf("create group %s: %w", name, err)
+	}
+	return func() {
+		_, _ = tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
+			GroupName:  aws.String(name),
+			UserPoolId: aws.String(tc.userPoolID),
+		})
+	}, nil
+}
+
+// createConfirmedUser creates a throwaway user with a known permanent
+// password so tests can sign in as it. opts mutate the AdminCreateUser input;
+// passing MessageAction: "" restores the unsuppressed invitation behaviour.
+func (tc *cognitoIDPContext) createConfirmedUser(username, password string, opts ...func(*cognitoidentityprovider.AdminCreateUserInput)) (func(), error) {
+	cleanup, err := tc.adminCreateUser(username, opts...)
+	if err != nil {
+		return func() {}, err
+	}
+	_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
+		UserPoolId: aws.String(tc.userPoolID),
+		Username:   aws.String(username),
+		Password:   aws.String(password),
+		Permanent:  true,
+	})
+	if err != nil {
+		cleanup()
+		return func() {}, fmt.Errorf("set permanent password for %s: %w", username, err)
+	}
+	return cleanup, nil
 }
 
 // createPoolClient creates a throwaway app client on the given pool and

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -228,14 +227,7 @@ func (r *TestRunner) dynamoDBNonExistentTableTests(ctx context.Context, client *
 				"id": &types.AttributeValueMemberS{Value: "k"},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_NonExistentTable", func() error {
@@ -245,42 +237,21 @@ func (r *TestRunner) dynamoDBNonExistentTableTests(ctx context.Context, client *
 				"id": &types.AttributeValueMemberS{Value: "k"},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "DescribeTable_NonExistentTable", func() error {
 		_, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
 			TableName: aws.String("NoSuchTable_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "DeleteTable_NonExistentTable", func() error {
 		_, err := client.DeleteTable(ctx, &dynamodb.DeleteTableInput{
 			TableName: aws.String("NoSuchTable_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "Query_NonExistentTable", func() error {
@@ -291,28 +262,14 @@ func (r *TestRunner) dynamoDBNonExistentTableTests(ctx context.Context, client *
 				":id": &types.AttributeValueMemberS{Value: "k"},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "Scan_NonExistentTable", func() error {
 		_, err := client.Scan(ctx, &dynamodb.ScanInput{
 			TableName: aws.String("NoSuchTable_xyz"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	return results
@@ -323,20 +280,11 @@ func (r *TestRunner) dynamoDBConditionalCheckTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_ConditionalCheckFail", func() error {
 		errTable := fmt.Sprintf("CondTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(errTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, errTable)
 		if err != nil {
-			return fmt.Errorf("create table: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(errTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(errTable),
@@ -364,32 +312,16 @@ func (r *TestRunner) dynamoDBConditionalCheckTests(ctx context.Context, client *
 				":expected": &types.AttributeValueMemberS{Value: "deleted"},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected ConditionalCheckFailedException")
-		}
-		var ccf *types.ConditionalCheckFailedException
-		if !errors.As(err, &ccf) {
-			return fmt.Errorf("expected ConditionalCheckFailedException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectConditionalCheckFailed(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "GetItem_NonExistentKey", func() error {
 		errTable := fmt.Sprintf("GetItemErr-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(errTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, errTable)
 		if err != nil {
-			return fmt.Errorf("create table: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(errTable)})
+		defer cleanupTable()
 
 		resp, err := client.GetItem(ctx, &dynamodb.GetItemInput{
 			TableName: aws.String(errTable),
@@ -408,20 +340,11 @@ func (r *TestRunner) dynamoDBConditionalCheckTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "DeleteItem_ConditionalCheckFail", func() error {
 		errTable := fmt.Sprintf("DelCondTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(errTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, errTable)
 		if err != nil {
-			return fmt.Errorf("create table: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(errTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(errTable),
@@ -441,14 +364,7 @@ func (r *TestRunner) dynamoDBConditionalCheckTests(ctx context.Context, client *
 			},
 			ConditionExpression: aws.String("attribute_not_exists(id)"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected ConditionalCheckFailedException")
-		}
-		var ccf *types.ConditionalCheckFailedException
-		if !errors.As(err, &ccf) {
-			return fmt.Errorf("expected ConditionalCheckFailedException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectConditionalCheckFailed(err)
 	}))
 
 	return results

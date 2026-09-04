@@ -31,24 +31,10 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (n:Person) WHERE n.age > 25 AND n.age < 40 RETURN n.name", `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereOR", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.name = 'alice' OR n.name = 'dave' RETURN n.name ORDER BY n.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected alice and dave, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE n.name = 'alice' OR n.name = 'dave' RETURN n.name ORDER BY n.name", `"alice"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereNOT", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE NOT n.name = 'alice' AND NOT n.name = 'dave' RETURN n.name ORDER BY n.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"bob"`) || !strings.Contains(s, `"charlie"`) {
-			return fmt.Errorf("expected bob and charlie, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE NOT n.name = 'alice' AND NOT n.name = 'dave' RETURN n.name ORDER BY n.name", `"bob"`, `"charlie"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereContains", func() error {
 		return tc.cypherContains("MATCH (n:Person) WHERE n.name CONTAINS 'li' RETURN n.name", `"alice"`)
@@ -60,40 +46,17 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (n:Person) WHERE n.name ENDS WITH 'ie' RETURN n.name", `"charlie"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereIN", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.name IN ['alice', 'dave'] RETURN n.name ORDER BY n.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected alice and dave, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE n.name IN ['alice', 'dave'] RETURN n.name ORDER BY n.name", `"alice"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereIsNull", func() error {
 		tc.cypher("CREATE (n:Person {name:'eve'})")
 		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NULL RETURN n.name", `"eve"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WhereIsNotNull", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN count(n) AS cnt")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "4") {
-			return fmt.Errorf("expected 4 persons with age, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN count(n) AS cnt", "4")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_ReturnDistinct", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person)-[:KNOWS]->(m) RETURN DISTINCT m.name ORDER BY m.name")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"bob"`, `"charlie"`, `"dave"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected %s in DISTINCT results, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person)-[:KNOWS]->(m) RETURN DISTINCT m.name ORDER BY m.name", `"bob"`, `"charlie"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_OrderByDesc", func() error {
 		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN n.name, n.age ORDER BY n.age DESC")
@@ -114,14 +77,7 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (n:Person) RETURN n.name LIMIT 1", `"alice"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_SkipAndLimit", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN n.name ORDER BY n.age SKIP 1 LIMIT 1")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"bob"`) {
-			return fmt.Errorf("expected bob at skip 1 limit 1, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN n.name ORDER BY n.age SKIP 1 LIMIT 1", `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_AggregationSum", func() error {
 		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN sum(n.age) AS total", `130`)
@@ -136,16 +92,7 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN max(n.age) AS mx", `40`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_AggregationCollect", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN collect(n.name) AS names")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"alice"`, `"bob"`, `"charlie"`, `"dave"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected %s in collect, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL RETURN collect(n.name) AS names", `"alice"`, `"bob"`, `"charlie"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_CountDistinct", func() error {
 		return tc.cypherContains("MATCH (n:Person)-[:KNOWS]->(m) RETURN count(DISTINCT m.name) AS cnt", `3`)
@@ -172,14 +119,7 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		if err := tc.cypher("MATCH (n:Person {name:'alice'}) REMOVE n:Employee"); err != nil {
 			return err
 		}
-		s, err := tc.cypherResult("MATCH (n:Employee) RETURN count(n) AS cnt")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "0") {
-			return fmt.Errorf("expected 0 employees after REMOVE, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Employee) RETURN count(n) AS cnt", "0")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_RemoveProperty", func() error {
 		if err := tc.cypher("MATCH (n:Person {name:'alice'}) REMOVE n.city"); err != nil {
@@ -202,27 +142,10 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (n:Temp) RETURN count(n) AS cnt", `0`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_OptionalMatch", func() error {
-		s, err := tc.cypherResult("MATCH (a:Person {name:'alice'}) OPTIONAL MATCH (a)-[:WORKS_WITH]->(c) RETURN a.name, c.name ORDER BY c.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) {
-			return fmt.Errorf("expected alice, got %s", s)
-		}
-		if !strings.Contains(s, `"bob"`) {
-			return fmt.Errorf("expected bob (WORKS_WITH target), got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (a:Person {name:'alice'}) OPTIONAL MATCH (a)-[:WORKS_WITH]->(c) RETURN a.name, c.name ORDER BY c.name", `"alice"`, `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_OptionalMatchNull", func() error {
-		s, err := tc.cypherResult("MATCH (a:Person {name:'dave'}) OPTIONAL MATCH (a)-[:WORKS_WITH]->(c) RETURN a.name, c.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected dave, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (a:Person {name:'dave'}) OPTIONAL MATCH (a)-[:WORKS_WITH]->(c) RETURN a.name, c.name", `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_WithClause", func() error {
 		return tc.cypherContains("MATCH (n:Person) WHERE n.age IS NOT NULL WITH n.name AS name ORDER BY name LIMIT 2 RETURN name", `"alice"`)
@@ -243,14 +166,7 @@ func (r *TestRunner) runNeptunedataCypherAdvancedTests(tc *neptunedataContext) [
 		return tc.cypherContains("MATCH (a:Person {name:'alice'})-[:KNOWS*1..2]->(b) RETURN DISTINCT b.name ORDER BY b.name", `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_CommaPatterns", func() error {
-		s, err := tc.cypherResult("MATCH (a:Person {name:'alice'}), (b:Person {name:'bob'}) RETURN a.name, b.name")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"bob"`) {
-			return fmt.Errorf("expected both alice and bob, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (a:Person {name:'alice'}), (b:Person {name:'bob'}) RETURN a.name, b.name", `"alice"`, `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Cypher_MultiMatch", func() error {
 		return tc.cypherContains("MATCH (a:Person {name:'alice'})-[:KNOWS]->(b) MATCH (b)-[:KNOWS]->(c) RETURN c.name", `"dave"`)

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
@@ -14,10 +13,7 @@ func (r *TestRunner) runCloudTrailQueryAITests(tc *cloudTrailTestContext) []Test
 	// Create a dedicated EDS for query AI tests.
 	var edsID string
 	results = append(results, r.RunTest("cloudtrail", "QueryAI_Setup_EDS", func() error {
-		resp, err := tc.client.CreateEventDataStore(tc.ctx, &cloudtrail.CreateEventDataStoreInput{
-			Name:                         aws.String(fmt.Sprintf("queryai-test-%d", time.Now().UnixNano())),
-			TerminationProtectionEnabled: aws.Bool(false),
-		})
+		resp, err := tc.createEventDataStore("queryai-test", nil)
 		if err != nil {
 			return fmt.Errorf("create EDS for query AI: %w", err)
 		}
@@ -29,9 +25,7 @@ func (r *TestRunner) runCloudTrailQueryAITests(tc *cloudTrailTestContext) []Test
 	}))
 	defer func() {
 		if edsID != "" {
-			_, _ = tc.client.DeleteEventDataStore(tc.ctx, &cloudtrail.DeleteEventDataStoreInput{
-				EventDataStore: aws.String(edsID),
-			})
+			_ = tc.deleteEventDataStore(edsID)
 		}
 	}()
 

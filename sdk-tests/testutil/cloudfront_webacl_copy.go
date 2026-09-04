@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudfront"
+	"github.com/aws/aws-sdk-go-v2/service/cloudfront/types"
 	"github.com/aws/aws-sdk-go-v2/service/wafv2"
 	wafv2types "github.com/aws/aws-sdk-go-v2/service/wafv2/types"
 
@@ -16,7 +17,7 @@ func cfWebACLCopyTests(tc *cfTestContext) []TestResult {
 	client := tc.client
 	ctx := tc.ctx
 
-	distID, _, err := tc.createDistribution(tc.uniqueCallerRef("webacl-dist"), "WebACL test distribution", "example.net")
+	distID, _, err := tc.createDistribution(tc.uniquePrefix("webacl-dist"), "WebACL test distribution", "example.net")
 	if err != nil {
 		return append(results, TestResult{
 			Service:  "cloudfront",
@@ -27,56 +28,33 @@ func cfWebACLCopyTests(tc *cfTestContext) []TestResult {
 	}
 	copyDistID := ""
 
-	// disableAndDeleteCurrent fetches the distribution's current ETag
-	// before disabling and deleting it, so callers need not track ETags.
-	disableAndDeleteCurrent := func(id string) error {
-		cfgResp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{Id: aws.String(id)})
-		if err != nil {
-			return err
-		}
-		cfgResp.DistributionConfig.Enabled = aws.Bool(false)
-		updResp, err := client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
-			Id:                 aws.String(id),
-			IfMatch:            cfgResp.ETag,
-			DistributionConfig: cfgResp.DistributionConfig,
-		})
-		if err != nil {
-			return err
-		}
-		_, err = client.DeleteDistribution(ctx, &cloudfront.DeleteDistributionInput{
-			Id:      aws.String(id),
-			IfMatch: updResp.ETag,
-		})
-		return err
-	}
-
 	// Sweep staging distributions left behind by earlier runs so repeated
 	// executions do not accumulate copies.
-	if listResp, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{MaxItems: aws.Int32(100)}); err == nil {
-		for {
-			for _, d := range listResp.DistributionList.Items {
-				if d.Staging != nil && *d.Staging {
-					disableAndDeleteCurrent(*d.Id)
-				}
-			}
-			if listResp.DistributionList.NextMarker == nil || *listResp.DistributionList.NextMarker == "" {
-				break
-			}
-			listResp, err = client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
-				Marker:   listResp.DistributionList.NextMarker,
-				MaxItems: aws.Int32(100),
-			})
-			if err != nil {
-				break
+	if allDists, err := paginate(func(next *string) ([]types.DistributionSummary, *string, error) {
+		resp, lerr := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{
+			MaxItems: aws.Int32(100),
+			Marker:   next,
+		})
+		if lerr != nil {
+			return nil, nil, lerr
+		}
+		if resp.DistributionList == nil {
+			return nil, nil, nil
+		}
+		return resp.DistributionList.Items, resp.DistributionList.NextMarker, nil
+	}); err == nil {
+		for _, d := range allDists {
+			if d.Staging != nil && *d.Staging {
+				_ = tc.disableAndDeleteDistributionByID(*d.Id)
 			}
 		}
 	}
 
 	defer func() {
 		if copyDistID != "" {
-			disableAndDeleteCurrent(copyDistID)
+			_ = tc.disableAndDeleteDistributionByID(copyDistID)
 		}
-		disableAndDeleteCurrent(distID)
+		_ = tc.disableAndDeleteDistributionByID(distID)
 	}()
 
 	// A real Web ACL is needed for a successful association; the WAFv2
@@ -220,7 +198,7 @@ func cfWebACLCopyTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "CopyDistribution_Verify", func() error {
-		copyRef := tc.uniqueCallerRef("copy-dist")
+		copyRef := tc.uniquePrefix("copy-dist")
 		resp, err := client.CopyDistribution(ctx, &cloudfront.CopyDistributionInput{
 			PrimaryDistributionId: aws.String(distID),
 			CallerReference:       aws.String(copyRef),
@@ -253,28 +231,27 @@ func cfWebACLCopyTests(tc *cfTestContext) []TestResult {
 		if copyDistID == "" {
 			return fmt.Errorf("no copy distribution from the previous test")
 		}
-		var marker *string
+		summaries, err := paginate(func(next *string) ([]types.DistributionSummary, *string, error) {
+			resp, lerr := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{Marker: next})
+			if lerr != nil {
+				return nil, nil, lerr
+			}
+			if resp.DistributionList == nil {
+				return nil, nil, nil
+			}
+			return resp.DistributionList.Items, resp.DistributionList.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
 		found := false
-		for {
-			listResp, err := client.ListDistributions(ctx, &cloudfront.ListDistributionsInput{Marker: marker})
-			if err != nil {
-				return err
-			}
-			if listResp.DistributionList == nil {
-				break
-			}
-			for _, d := range listResp.DistributionList.Items {
-				if aws.ToString(d.Id) == copyDistID {
-					found = true
-					if d.Staging == nil || !*d.Staging {
-						return fmt.Errorf("summary Staging flag is false for the staging copy")
-					}
+		for _, d := range summaries {
+			if aws.ToString(d.Id) == copyDistID {
+				found = true
+				if d.Staging == nil || !*d.Staging {
+					return fmt.Errorf("summary Staging flag is false for the staging copy")
 				}
 			}
-			if listResp.DistributionList.NextMarker == nil || !*listResp.DistributionList.IsTruncated {
-				break
-			}
-			marker = listResp.DistributionList.NextMarker
 		}
 		if !found {
 			return fmt.Errorf("staging copy %q not found in ListDistributions", copyDistID)
@@ -317,7 +294,7 @@ func cfWebACLCopyTests(tc *cfTestContext) []TestResult {
 	results = append(results, tc.runner.RunTest("cloudfront", "CopyDistribution_StagingFalse_Rejected", func() error {
 		_, err := client.CopyDistribution(ctx, &cloudfront.CopyDistributionInput{
 			PrimaryDistributionId: aws.String(distID),
-			CallerReference:       aws.String(tc.uniqueCallerRef("copy-bad")),
+			CallerReference:       aws.String(tc.uniquePrefix("copy-bad")),
 			Staging:               aws.Bool(false),
 		})
 		return AssertErrorContains(err, "InvalidArgument")

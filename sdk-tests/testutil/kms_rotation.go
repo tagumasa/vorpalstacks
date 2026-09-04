@@ -11,8 +11,8 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "EnableKeyRotation", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.EnableKeyRotation(tc.ctx, &kms.EnableKeyRotationInput{
 			KeyId: aws.String(tc.keyID),
@@ -20,25 +20,9 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 		return err
 	}))
 
-	results = append(results, r.RunTest("kms", "GetKeyRotationStatus", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
-		}
-		resp, err := tc.client.GetKeyRotationStatus(tc.ctx, &kms.GetKeyRotationStatusInput{
-			KeyId: aws.String(tc.keyID),
-		})
-		if err != nil {
-			return err
-		}
-		if !resp.KeyRotationEnabled {
-			return fmt.Errorf("expected KeyRotationEnabled=true")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("kms", "GetKeyRotationStatus_ContentVerify", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetKeyRotationStatus(tc.ctx, &kms.GetKeyRotationStatusInput{
 			KeyId: aws.String(tc.keyID),
@@ -56,8 +40,8 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListKeyRotations", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListKeyRotations(tc.ctx, &kms.ListKeyRotationsInput{
 			KeyId: aws.String(tc.keyID),
@@ -78,8 +62,8 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKeyRotation", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKeyRotation(tc.ctx, &kms.DisableKeyRotationInput{
 			KeyId: aws.String(tc.keyID),
@@ -88,8 +72,8 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GetKeyRotationStatus_DisabledRotation", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetKeyRotationStatus(tc.ctx, &kms.GetKeyRotationStatusInput{
 			KeyId: aws.String(tc.keyID),

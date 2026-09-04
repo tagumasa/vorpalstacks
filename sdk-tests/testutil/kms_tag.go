@@ -13,8 +13,8 @@ func (r *TestRunner) runKMSTagTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "TagResource", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.TagResource(tc.ctx, &kms.TagResourceInput{
 			KeyId: aws.String(tc.keyID),
@@ -26,25 +26,9 @@ func (r *TestRunner) runKMSTagTests(tc *kmsTestContext) []TestResult {
 		return err
 	}))
 
-	results = append(results, r.RunTest("kms", "ListResourceTags", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
-		}
-		resp, err := tc.client.ListResourceTags(tc.ctx, &kms.ListResourceTagsInput{
-			KeyId: aws.String(tc.keyID),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Tags == nil {
-			return fmt.Errorf("tags list is nil")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("kms", "UntagResource", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.UntagResource(tc.ctx, &kms.UntagResourceInput{
 			KeyId:   aws.String(tc.keyID),
@@ -54,20 +38,15 @@ func (r *TestRunner) runKMSTagTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "TagResource_ByAlias", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tagAlias := fmt.Sprintf("alias/tag-test-%d", time.Now().UnixNano())
-		_, err := tc.client.CreateAlias(tc.ctx, &kms.CreateAliasInput{
-			AliasName:   aws.String(tagAlias),
-			TargetKeyId: aws.String(tc.keyID),
-		})
-		if err != nil {
-			return fmt.Errorf("create alias: %v", err)
+		if err := tc.createAlias(tagAlias, tc.keyID); err != nil {
+			return err
 		}
-		tc.addCleanupAlias(tagAlias)
 
-		_, err = tc.client.TagResource(tc.ctx, &kms.TagResourceInput{
+		_, err := tc.client.TagResource(tc.ctx, &kms.TagResourceInput{
 			KeyId: aws.String(tagAlias),
 			Tags: []types.Tag{
 				{TagKey: aws.String("AliasTag"), TagValue: aws.String("test-value")},
@@ -99,8 +78,8 @@ func (r *TestRunner) runKMSTagTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListResourceTags_ContentVerify", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		testTags := []types.Tag{
 			{TagKey: aws.String("Env"), TagValue: aws.String("prod")},

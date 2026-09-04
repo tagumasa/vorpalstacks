@@ -22,12 +22,12 @@ func (r *TestRunner) runIoTFinalRemainingTests(tc *iotTestContext) []TestResult 
 	// after the setup step it replaces.
 	cleanupThing, err := tc.createThing(thingName)
 	if err != nil {
-		return []TestResult{{Service: "iot", TestName: "FinalRem_Setup", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("FinalRem_Setup", err.Error())
 	}
 	defer cleanupThing()
 	cleanupPolicy, err := tc.createPolicy(policyName, `{"Version":"2012-10-17","Statement":[]}`)
 	if err != nil {
-		return []TestResult{{Service: "iot", TestName: "FinalRem_Setup", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("FinalRem_Setup", err.Error())
 	}
 	defer cleanupPolicy()
 

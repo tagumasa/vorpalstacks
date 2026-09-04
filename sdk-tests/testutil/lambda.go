@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -43,6 +44,62 @@ func (tc *lambdaTestContext) createRole(name string) (string, func(), error) {
 	}
 	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.r.accountID, name)
 	return roleARN, func() { IAMDeleteRole(tc.iam, name) }, nil
+}
+
+// setupFunction creates the IAM role and the function in one step: the
+// function is named "<prefix>-<seed>" on a role named "<prefix>Role-<seed>",
+// both carrying the platform-default shape (nodejs22x runtime,
+// "index.handler" entry point). The returned cleanup deletes the function
+// (with any event source mappings and its log group) and then the role, in
+// that order. Options mutate the CreateFunctionInput for non-default shapes.
+func (tc *lambdaTestContext) setupFunction(prefix, handlerSource string, opts ...func(*lambda.CreateFunctionInput)) (string, func(), error) {
+	fnName := tc.unique(prefix)
+	roleARN, cleanupRole, err := tc.createRole(tc.unique(prefix + "Role"))
+	if err != nil {
+		return "", nil, fmt.Errorf("create role: %w", err)
+	}
+	_, cleanupFn, err := tc.createFunction(fnName, roleARN, handlerSource, opts...)
+	if err != nil {
+		cleanupRole()
+		return "", nil, fmt.Errorf("create function: %w", err)
+	}
+	return fnName, func() { cleanupFn(); cleanupRole() }, nil
+}
+
+// deleteFunctionAndLogs deletes the function and then its log group. Tests
+// that drive CreateFunction by hand (rejection pins, special code shapes)
+// register this as a deferred cleanup so no site repeats the pair.
+func (tc *lambdaTestContext) deleteFunctionAndLogs(functionName string) {
+	tc.client.DeleteFunction(tc.ctx, &lambda.DeleteFunctionInput{FunctionName: aws.String(functionName)})
+	deleteLambdaLogGroup(tc.cwl, tc.ctx, functionName)
+}
+
+// invokeAndDecode invokes the function expecting a successful invocation:
+// the response must answer 200 without a FunctionError header and the
+// payload must decode as a JSON object. The full response is returned for
+// the caller's own assertions on top of the decoded body.
+func (tc *lambdaTestContext) invokeAndDecode(functionName string, in *lambda.InvokeInput) (*lambda.InvokeOutput, map[string]interface{}, error) {
+	if in == nil {
+		in = &lambda.InvokeInput{}
+	}
+	if in.FunctionName == nil {
+		in.FunctionName = aws.String(functionName)
+	}
+	resp, err := tc.client.Invoke(tc.ctx, in)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, nil, fmt.Errorf("expected status 200, got %d (payload %s)", resp.StatusCode, string(resp.Payload))
+	}
+	if aws.ToString(resp.FunctionError) != "" {
+		return nil, nil, fmt.Errorf("unexpected function error %q (payload %s)", aws.ToString(resp.FunctionError), string(resp.Payload))
+	}
+	var out map[string]interface{}
+	if err := json.Unmarshal(resp.Payload, &out); err != nil {
+		return nil, nil, fmt.Errorf("parse payload: %w (%s)", err, string(resp.Payload))
+	}
+	return resp, out, nil
 }
 
 // createFunction zips the given JavaScript handler source into a zip

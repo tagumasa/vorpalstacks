@@ -172,6 +172,14 @@ func cfResponseHeadersPolicyTests(tc *cfTestContext) []TestResult {
 			_, err := client.GetResponseHeadersPolicy(ctx, &cloudfront.GetResponseHeadersPolicyInput{
 				Id: aws.String(rhpID),
 			})
+			if aerr := AssertErrorContains(err, "NoSuchResponseHeadersPolicy"); aerr != nil {
+				return aerr
+			}
+			// An ID that never existed must fail identically to the
+			// deleted one.
+			_, err = client.GetResponseHeadersPolicy(ctx, &cloudfront.GetResponseHeadersPolicyInput{
+				Id: aws.String("nonexistent-policy-id"),
+			})
 			return AssertErrorContains(err, "NoSuchResponseHeadersPolicy")
 		}))
 	}

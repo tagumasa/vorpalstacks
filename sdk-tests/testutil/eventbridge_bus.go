@@ -37,13 +37,11 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 
 	results = append(results, r.RunTest("events", "UpdateEventBus", func() error {
 		ueBus := fmt.Sprintf("UeBus-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(ueBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, ueBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(ueBus)})
+		defer cleanupBus()
 
 		resp, err := client.UpdateEventBus(ctx, &eventbridge.UpdateEventBusInput{
 			Name:        aws.String(ueBus),
@@ -63,14 +61,13 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 
 	results = append(results, r.RunTest("events", "UpdateEventBus_VerifyDescription", func() error {
 		uvBus := fmt.Sprintf("UvBus-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name:        aws.String(uvBus),
-			Description: aws.String("original"),
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, uvBus, func(input *eventbridge.CreateEventBusInput) {
+			input.Description = aws.String("original")
 		})
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(uvBus)})
+		defer cleanupBus()
 
 		_, err = client.UpdateEventBus(ctx, &eventbridge.UpdateEventBusInput{
 			Name:        aws.String(uvBus),
@@ -94,13 +91,11 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 
 	results = append(results, r.RunTest("events", "CreateEventBus_DuplicateName", func() error {
 		dupBus := fmt.Sprintf("DupBus-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(dupBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, dupBus)
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(dupBus)})
+		defer cleanupBus()
 
 		_, err = client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
 			Name: aws.String(dupBus),
@@ -117,13 +112,11 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 
 	results = append(results, r.RunTest("events", "ListEventBuses_NamePrefix", func() error {
 		lnpBus := fmt.Sprintf("LnpPrefixBus-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(lnpBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, lnpBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(lnpBus)})
+		defer cleanupBus()
 
 		resp, err := client.ListEventBuses(ctx, &eventbridge.ListEventBusesInput{
 			NamePrefix: aws.String("LnpPrefixBus"),
@@ -149,17 +142,16 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 
 	results = append(results, r.RunTest("events", "EventBus_LogConfigRoundTrip", func() error {
 		lcBus := fmt.Sprintf("LcBus-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(lcBus),
-			LogConfig: &types.LogConfig{
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, lcBus, func(input *eventbridge.CreateEventBusInput) {
+			input.LogConfig = &types.LogConfig{
 				IncludeDetail: types.IncludeDetailNone,
 				Level:         types.LevelInfo,
-			},
+			}
 		})
 		if err != nil {
-			return fmt.Errorf("create bus with log config: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(lcBus)})
+		defer cleanupBus()
 
 		desc, err := client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{
 			Name: aws.String(lcBus),
@@ -223,13 +215,11 @@ func (r *TestRunner) runEventBridgeBusTests(ctx context.Context, client *eventbr
 			return fmt.Errorf("create rejection: %v", codeErr)
 		}
 
-		_, err = client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(leBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, leBus)
 		if err != nil {
-			return fmt.Errorf("create plain bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(leBus)})
+		defer cleanupBus()
 
 		_, err = client.UpdateEventBus(ctx, &eventbridge.UpdateEventBusInput{
 			Name: aws.String(leBus),

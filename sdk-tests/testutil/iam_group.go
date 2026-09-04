@@ -102,10 +102,11 @@ func (r *TestRunner) iamGroupTests(tc *iamTestContext) []TestResult {
 			return fmt.Errorf("invalid NewGroupName: got %v, want InvalidInput", err)
 		}
 		other := fmt.Sprintf("UpdateGroupOther-%s", tc.ts)
-		if _, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{GroupName: aws.String(other)}); err != nil {
+		cleanupOther, err := tc.createGroup(other)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(other)})
+		defer cleanupOther()
 		if _, err := tc.client.UpdateGroup(tc.ctx, &iam.UpdateGroupInput{
 			GroupName:    aws.String(tc.group),
 			NewGroupName: aws.String(other),

@@ -12,10 +12,10 @@ func (r *TestRunner) runKMSGrantTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "CreateGrant", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::%s:user/TestUser", tc.accountID)
+		granteePrincipal := tc.iamUserARN("TestUser")
 		resp, err := tc.client.CreateGrant(tc.ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(tc.keyID),
 			GranteePrincipal: aws.String(granteePrincipal),
@@ -34,8 +34,8 @@ func (r *TestRunner) runKMSGrantTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListGrants", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListGrants(tc.ctx, &kms.ListGrantsInput{
 			KeyId: aws.String(tc.keyID),
@@ -51,7 +51,7 @@ func (r *TestRunner) runKMSGrantTests(tc *kmsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("kms", "ListRetirableGrants", func() error {
 		resp, err := tc.client.ListRetirableGrants(tc.ctx, &kms.ListRetirableGrantsInput{
-			RetiringPrincipal: aws.String(fmt.Sprintf("arn:aws:iam::%s:user/TestUser", tc.accountID)),
+			RetiringPrincipal: aws.String(tc.iamUserARN("TestUser")),
 		})
 		if err != nil {
 			return err
@@ -63,10 +63,10 @@ func (r *TestRunner) runKMSGrantTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "RetireGrant", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::%s:user/RetireUser", tc.accountID)
+		granteePrincipal := tc.iamUserARN("RetireUser")
 		createResp, err := tc.client.CreateGrant(tc.ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(tc.keyID),
 			GranteePrincipal: aws.String(granteePrincipal),
@@ -87,10 +87,10 @@ func (r *TestRunner) runKMSGrantTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "RevokeGrant", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
-		granteePrincipal := fmt.Sprintf("arn:aws:iam::%s:user/RevokeUser", tc.accountID)
+		granteePrincipal := tc.iamUserARN("RevokeUser")
 		createResp, err := tc.client.CreateGrant(tc.ctx, &kms.CreateGrantInput{
 			KeyId:            aws.String(tc.keyID),
 			GranteePrincipal: aws.String(granteePrincipal),

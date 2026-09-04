@@ -14,7 +14,7 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 		_, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
 			GraphIdentifier: aws.String("g-nonexist00"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -25,7 +25,7 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 			GraphIdentifier: aws.String("g-nonexist00"),
 			SkipSnapshot:    aws.Bool(true),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -75,7 +75,7 @@ func (r *TestRunner) runNeptunegraphEdgeTests(tc *neptunegraphContext) []TestRes
 		_, err := tc.client.GetGraph(tc.ctx, &neptunegraph.GetGraphInput{
 			GraphIdentifier: aws.String(tc.graphID),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

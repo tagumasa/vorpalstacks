@@ -40,20 +40,14 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("events", "DescribeConnection", func() error {
 		dcName := fmt.Sprintf("DcConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(dcName),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("testuser"),
-					Password: aws.String("testpass"),
-				},
-			},
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, dcName, func(input *eventbridge.CreateConnectionInput) {
+			input.AuthParameters.BasicAuthParameters.Username = aws.String("testuser")
+			input.AuthParameters.BasicAuthParameters.Password = aws.String("testpass")
 		})
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(dcName)})
+		defer cleanupConn()
 
 		resp, err := client.DescribeConnection(ctx, &eventbridge.DescribeConnectionInput{
 			Name: aws.String(dcName),
@@ -75,18 +69,11 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("events", "DeleteConnection", func() error {
 		dlcName := fmt.Sprintf("DlcConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(dlcName),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		_, err := createEventBridgeTestConnection(ctx, client, dlcName)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
 
 		resp, err := client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{
@@ -110,20 +97,11 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("events", "ListConnections", func() error {
 		lcName := fmt.Sprintf("LcConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(lcName),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, lcName)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(lcName)})
+		defer cleanupConn()
 
 		resp, err := client.ListConnections(ctx, &eventbridge.ListConnectionsInput{})
 		if err != nil {
@@ -150,20 +128,19 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("events", "UpdateConnection", func() error {
 		ucName := fmt.Sprintf("UcConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(ucName),
-			AuthorizationType: types.ConnectionAuthorizationTypeApiKey,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, ucName, func(input *eventbridge.CreateConnectionInput) {
+			input.AuthorizationType = types.ConnectionAuthorizationTypeApiKey
+			input.AuthParameters = &types.CreateConnectionAuthRequestParameters{
 				ApiKeyAuthParameters: &types.CreateConnectionApiKeyAuthRequestParameters{
 					ApiKeyName:  aws.String("key"),
 					ApiKeyValue: aws.String("value"),
 				},
-			},
+			}
 		})
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(ucName)})
+		defer cleanupConn()
 
 		resp, err := client.UpdateConnection(ctx, &eventbridge.UpdateConnectionInput{
 			Name:        aws.String(ucName),
@@ -193,20 +170,11 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 	results = append(results, r.RunTest("events", "CreateApiDestination", func() error {
 		cadName := fmt.Sprintf("CadDest-%d", time.Now().UnixNano())
 		connName := fmt.Sprintf("CadConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(connName),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, connName)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(connName)})
+		defer cleanupConn()
 
 		resp, err := client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
 			Name:               aws.String(cadName),
@@ -231,33 +199,20 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 	results = append(results, r.RunTest("events", "DescribeApiDestination", func() error {
 		dadName := fmt.Sprintf("DadDest-%d", time.Now().UnixNano())
 		dadConn := fmt.Sprintf("DadConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(dadConn),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, dadConn)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(dadConn)})
+		defer cleanupConn()
 
 		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, dadConn)
-		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
-			Name:               aws.String(dadName),
-			ConnectionArn:      aws.String(connARN),
-			HttpMethod:         types.ApiDestinationHttpMethodPost,
-			InvocationEndpoint: aws.String("https://example.com/webhook"),
-			Description:        aws.String("test api destination for describe"),
+		cleanupDest, err := createEventBridgeTestApiDestination(ctx, client, dadName, connARN, func(input *eventbridge.CreateApiDestinationInput) {
+			input.Description = aws.String("test api destination for describe")
 		})
 		if err != nil {
-			return fmt.Errorf("create api destination: %v", err)
+			return err
 		}
-		defer client.DeleteApiDestination(ctx, &eventbridge.DeleteApiDestinationInput{Name: aws.String(dadName)})
+		defer cleanupDest()
 
 		resp, err := client.DescribeApiDestination(ctx, &eventbridge.DescribeApiDestinationInput{
 			Name: aws.String(dadName),
@@ -286,30 +241,18 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 	results = append(results, r.RunTest("events", "DeleteApiDestination", func() error {
 		dladName := fmt.Sprintf("DladDest-%d", time.Now().UnixNano())
 		dladConn := fmt.Sprintf("DladConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(dladConn),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, dladConn)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(dladConn)})
+		defer cleanupConn()
 
 		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, dladConn)
-		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
-			Name:               aws.String(dladName),
-			ConnectionArn:      aws.String(connARN),
-			HttpMethod:         types.ApiDestinationHttpMethodPost,
-			InvocationEndpoint: aws.String("https://example.com/webhook"),
-		})
+		// The deletion below is the operation under test, so the helper's
+		// cleanup is discarded.
+		_, err = createEventBridgeTestApiDestination(ctx, client, dladName, connARN)
 		if err != nil {
-			return fmt.Errorf("create api destination: %v", err)
+			return err
 		}
 
 		resp, err := client.DeleteApiDestination(ctx, &eventbridge.DeleteApiDestinationInput{
@@ -334,32 +277,18 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 	results = append(results, r.RunTest("events", "ListApiDestinations", func() error {
 		ladName := fmt.Sprintf("LadDest-%d", time.Now().UnixNano())
 		ladConn := fmt.Sprintf("LadConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(ladConn),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, ladConn)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(ladConn)})
+		defer cleanupConn()
 
 		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, ladConn)
-		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
-			Name:               aws.String(ladName),
-			ConnectionArn:      aws.String(connARN),
-			HttpMethod:         types.ApiDestinationHttpMethodPost,
-			InvocationEndpoint: aws.String("https://example.com/webhook"),
-		})
+		cleanupDest, err := createEventBridgeTestApiDestination(ctx, client, ladName, connARN)
 		if err != nil {
-			return fmt.Errorf("create api destination: %v", err)
+			return err
 		}
-		defer client.DeleteApiDestination(ctx, &eventbridge.DeleteApiDestinationInput{Name: aws.String(ladName)})
+		defer cleanupDest()
 
 		resp, err := client.ListApiDestinations(ctx, &eventbridge.ListApiDestinationsInput{})
 		if err != nil {
@@ -387,32 +316,20 @@ func (r *TestRunner) runEventBridgeConnectionTests(ctx context.Context, client *
 	results = append(results, r.RunTest("events", "UpdateApiDestination", func() error {
 		uadName := fmt.Sprintf("UadDest-%d", time.Now().UnixNano())
 		uadConn := fmt.Sprintf("UadConn-%d", time.Now().UnixNano())
-		_, err := client.CreateConnection(ctx, &eventbridge.CreateConnectionInput{
-			Name:              aws.String(uadConn),
-			AuthorizationType: types.ConnectionAuthorizationTypeBasic,
-			AuthParameters: &types.CreateConnectionAuthRequestParameters{
-				BasicAuthParameters: &types.CreateConnectionBasicAuthRequestParameters{
-					Username: aws.String("u"),
-					Password: aws.String("p"),
-				},
-			},
-		})
+		cleanupConn, err := createEventBridgeTestConnection(ctx, client, uadConn)
 		if err != nil {
-			return fmt.Errorf("create connection: %v", err)
+			return err
 		}
-		defer client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{Name: aws.String(uadConn)})
+		defer cleanupConn()
 
 		connARN := fmt.Sprintf("arn:aws:events:%s:%s:connection/%s", r.region, r.accountID, uadConn)
-		_, err = client.CreateApiDestination(ctx, &eventbridge.CreateApiDestinationInput{
-			Name:               aws.String(uadName),
-			ConnectionArn:      aws.String(connARN),
-			HttpMethod:         types.ApiDestinationHttpMethodPost,
-			InvocationEndpoint: aws.String("https://example.com/original"),
+		cleanupDest, err := createEventBridgeTestApiDestination(ctx, client, uadName, connARN, func(input *eventbridge.CreateApiDestinationInput) {
+			input.InvocationEndpoint = aws.String("https://example.com/original")
 		})
 		if err != nil {
-			return fmt.Errorf("create api destination: %v", err)
+			return err
 		}
-		defer client.DeleteApiDestination(ctx, &eventbridge.DeleteApiDestinationInput{Name: aws.String(uadName)})
+		defer cleanupDest()
 
 		resp, err := client.UpdateApiDestination(ctx, &eventbridge.UpdateApiDestinationInput{
 			Name:               aws.String(uadName),

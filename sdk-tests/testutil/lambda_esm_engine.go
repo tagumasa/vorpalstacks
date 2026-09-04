@@ -209,6 +209,49 @@ func (ec *esmEngineContext) createStreamTable(tableName string) (string, error) 
 
 }
 
+// createActiveKinesisStream creates a stream with the requested shard count
+// and blocks until it reports ACTIVE, returning its ARN together with a
+// cleanup that deletes the stream.
+func (ec *esmEngineContext) createActiveKinesisStream(streamName string, shardCount int32) (string, func(), error) {
+	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
+		StreamName: aws.String(streamName),
+		ShardCount: aws.Int32(shardCount),
+	}); err != nil {
+		return "", nil, fmt.Errorf("create stream: %v", err)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
+		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
+			arn := aws.ToString(out.StreamDescription.StreamARN)
+			return arn, func() {
+				ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
+			}, nil
+		}
+		if time.Now().After(deadline) {
+			ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
+			return "", nil, fmt.Errorf("stream did not become ACTIVE: %v", err)
+		}
+		time.Sleep(150 * time.Millisecond)
+	}
+}
+
+// createQueue creates the named queue with optional attributes and returns
+// its URL together with a cleanup that deletes it.
+func (ec *esmEngineContext) createQueue(queueName string, attributes map[string]string) (string, func(), error) {
+	input := &sqs.CreateQueueInput{QueueName: aws.String(queueName)}
+	if len(attributes) > 0 {
+		input.Attributes = attributes
+	}
+	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, input)
+	if err != nil {
+		return "", nil, fmt.Errorf("create queue: %v", err)
+	}
+	return aws.ToString(qResp.QueueUrl), func() {
+		ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
+	}, nil
+}
+
 func runLambdaESMEngineTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
@@ -249,33 +292,23 @@ func runLambdaESMEngineTests(tc *lambdaTestContext) []TestResult {
 // functionErrorNotAcknowledged exercises ESM_FunctionError_NotAcknowledged end to end.
 func (ec *esmEngineContext) functionErrorNotAcknowledged() error {
 	suffix := time.Now().UnixNano()
-	fnName := fmt.Sprintf("EsmFailFn-%d", suffix)
 	queueName := fmt.Sprintf("esm-fail-queue-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmFailRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmFail", "exports.handler = async () => { throw new Error('poison'); };")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-
-	// A short visibility timeout returns the unacknowledged message to
-	// the queue quickly so the poller keeps retrying it.
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{
-		QueueName:  aws.String(queueName),
-		Attributes: map[string]string{"VisibilityTimeout": "2"},
-	})
-	if err != nil {
-		return fmt.Errorf("create queue: %v", err)
-	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => { throw new Error('poison'); };")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
 
+	// A short visibility timeout returns the unacknowledged message to
+	// the queue quickly so the poller keeps retrying it.
+	queueURL, cleanupQueue, err := ec.createQueue(queueName, map[string]string{"VisibilityTimeout": "2"})
+	if err != nil {
+		return err
+	}
+	defer cleanupQueue()
+
 	if _, err := ec.sqsClient.SendMessage(ec.tc.ctx, &sqs.SendMessageInput{
-		QueueUrl:    qResp.QueueUrl,
+		QueueUrl:    aws.String(queueURL),
 		MessageBody: aws.String(`{"id":"poison-1"}`),
 	}); err != nil {
 		return fmt.Errorf("send message: %v", err)
@@ -303,26 +336,17 @@ func (ec *esmEngineContext) functionErrorNotAcknowledged() error {
 func (ec *esmEngineContext) updateReplacesFunctionResponseTypes() error {
 	suffix := time.Now().UnixNano()
 	queueName := fmt.Sprintf("esm-frt-queue-%d", suffix)
-	fnName := fmt.Sprintf("EsmFrtFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmFrtRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmFrt", "exports.handler = async () => ({});")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{
-		QueueName: aws.String(queueName),
-	})
-	if err != nil {
-		return fmt.Errorf("create queue: %v", err)
-	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => ({});")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	_, cleanupQueue, err := ec.createQueue(queueName, nil)
+	if err != nil {
+		return err
+	}
+	defer cleanupQueue()
 
 	// The mapping stays disabled: the response-type list is pure
 	// configuration and needs no event flow.
@@ -366,38 +390,7 @@ func (ec *esmEngineContext) updateReplacesFunctionResponseTypes() error {
 func (ec *esmEngineContext) kinesisBisectDiscardsPoisonRecord() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-bisect-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmBisectFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmBisectRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	// Kinesis record data reaches the function base64-encoded, matching
-	// the documented Kinesis event format; the handler decodes before
-	// comparing.
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmBisect", `exports.handler = async (event) => {
 		for (const r of event.Records) {
 			if (Buffer.from(r.kinesis.data, 'base64').toString() === 'poison') {
 				throw new Error('poison record');
@@ -406,10 +399,19 @@ func (ec *esmEngineContext) kinesisBisectDiscardsPoisonRecord() error {
 		return 'ok';
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
 
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
+
+	// Kinesis record data reaches the function base64-encoded, matching
+	// the documented Kinesis event format; the handler decodes before
+	// comparing.
 	// Seven healthy records with a poison record in the middle of the
 	// batch: bisection must isolate and discard only the poison record.
 	for i := 1; i <= 7; i++ {
@@ -466,50 +468,28 @@ func (ec *esmEngineContext) kinesisBisectDiscardsPoisonRecord() error {
 func (ec *esmEngineContext) kinesisOnFailureDestinationSQS() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-dest-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmDestFn-%d", suffix)
 	queueName := fmt.Sprintf("esm-dest-queue-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmDestRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmDest", "exports.handler = async () => { throw new Error('always fails'); };")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
+		return err
 	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
+	defer cleanupFn()
 
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{QueueName: aws.String(queueName)})
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
 	if err != nil {
-		return fmt.Errorf("create destination queue: %v", err)
+		return err
 	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
+	defer cleanupStream()
+
+	queueURL, cleanupQueue, err := ec.createQueue(queueName, nil)
+	if err != nil {
+		return err
+	}
+	defer cleanupQueue()
 	queueARN := fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ec.tc.r.region, ec.tc.r.accountID, queueName)
 
 	// The function always fails, so the whole batch is discarded once
 	// the single configured retry attempt is spent.
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => { throw new Error('always fails'); };")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
-	}
-	defer cleanupFn()
-
 	for i := 1; i <= 3; i++ {
 		if _, err := ec.kinesisClient.PutRecord(ec.tc.ctx, &kinesis.PutRecordInput{
 			StreamName:   aws.String(streamName),
@@ -542,7 +522,7 @@ func (ec *esmEngineContext) kinesisOnFailureDestinationSQS() error {
 	waitDeadline := time.Now().Add(30 * time.Second)
 	for record == nil && time.Now().Before(waitDeadline) {
 		out, rerr := ec.sqsClient.ReceiveMessage(ec.tc.ctx, &sqs.ReceiveMessageInput{
-			QueueUrl:        qResp.QueueUrl,
+			QueueUrl:        aws.String(queueURL),
 			WaitTimeSeconds: 2,
 		})
 		if rerr != nil {
@@ -602,23 +582,16 @@ func (ec *esmEngineContext) kinesisOnFailureDestinationSQS() error {
 func (ec *esmEngineContext) tagsCreateTagUntag() error {
 	suffix := time.Now().UnixNano()
 	queueName := fmt.Sprintf("esm-tag-queue-%d", suffix)
-	fnName := fmt.Sprintf("EsmTagFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmTagRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmTag", "exports.handler = async () => 'ok';")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{QueueName: aws.String(queueName)})
-	if err != nil {
-		return fmt.Errorf("create queue: %v", err)
-	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => 'ok';")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+	_, cleanupQueue, err := ec.createQueue(queueName, nil)
+	if err != nil {
+		return err
+	}
+	defer cleanupQueue()
 	functionARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", ec.tc.r.region, ec.tc.r.accountID, fnName)
 
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
@@ -676,8 +649,8 @@ func (ec *esmEngineContext) tagsCreateTagUntag() error {
 		Resource: aws.String(functionARN + ":$LATEST"),
 	}); err == nil {
 		return fmt.Errorf("ListTags on a qualified function ARN must be rejected")
-	} else if !strings.Contains(err.Error(), "InvalidParameterValueException") {
-		return fmt.Errorf("qualified function ARN rejection = %v, want InvalidParameterValueException", err)
+	} else if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
+		return err
 	}
 
 	// Deleting the mapping drops its tags.
@@ -686,8 +659,8 @@ func (ec *esmEngineContext) tagsCreateTagUntag() error {
 	}
 	if _, err := ec.tc.client.ListTags(ec.tc.ctx, &lambda.ListTagsInput{Resource: aws.String(esmARN)}); err == nil {
 		return fmt.Errorf("ListTags on a deleted mapping must fail")
-	} else if !strings.Contains(err.Error(), "ResourceNotFoundException") {
-		return fmt.Errorf("deleted mapping ListTags = %v, want ResourceNotFoundException", err)
+	} else if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
+		return err
 	}
 	return nil
 }
@@ -696,45 +669,23 @@ func (ec *esmEngineContext) tagsCreateTagUntag() error {
 func (ec *esmEngineContext) kinesisTumblingWindowFinalInvoke() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-window-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmWindowFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmWindowRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	// The handler echoes the whole time-window event into the logs and
-	// answers with the state the response contract requires.
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmWindow", `exports.handler = async (event) => {
 		console.log('WINDOW_EVENT ' + JSON.stringify(event));
 		return { state: { n: (event.Records || []).length } };
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
 
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
+
+	// The handler echoes the whole time-window event into the logs and
+	// answers with the state the response contract requires.
 	// A one-second window makes every record appended a few seconds
 	// apart land in a distinct window.
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
@@ -800,43 +751,21 @@ func (ec *esmEngineContext) kinesisTumblingWindowFinalInvoke() error {
 func (ec *esmEngineContext) kinesisParallelizationFactorExactlyOnce() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-pf-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmPfFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPfRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPf", `exports.handler = async (event) => {
 		const seen = (event.Records || []).map(r => Buffer.from(r.kinesis.data, 'base64').toString());
 		console.log('PF_EVENT ' + JSON.stringify(seen));
 		return {};
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
 
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:          aws.String(fnName),
@@ -930,24 +859,17 @@ func (ec *esmEngineContext) kinesisParallelizationFactorExactlyOnce() error {
 func (ec *esmEngineContext) batchSizeOverTenRequiresWindow() error {
 	suffix := time.Now().UnixNano()
 	queueName := fmt.Sprintf("esm-window-pair-queue-%d", suffix)
-	fnName := fmt.Sprintf("EsmPairFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPairRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPair", "exports.handler = async () => ({});")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => ({});")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
 
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{QueueName: aws.String(queueName)})
+	_, cleanupQueue, err := ec.createQueue(queueName, nil)
 	if err != nil {
-		return fmt.Errorf("create queue: %v", err)
+		return err
 	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
+	defer cleanupQueue()
 
 	queueARN := fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ec.tc.r.region, ec.tc.r.accountID, queueName)
 
@@ -963,7 +885,7 @@ func (ec *esmEngineContext) batchSizeOverTenRequiresWindow() error {
 	if err == nil {
 		return fmt.Errorf("BatchSize 100 without a batching window must be rejected")
 	}
-	if cerr := AssertErrorContains(err, "InvalidParameterValueException"); cerr != nil {
+	if cerr := expectAWSErrorCode(err, "InvalidParameterValueException"); cerr != nil {
 		return cerr
 	}
 
@@ -1000,7 +922,7 @@ func (ec *esmEngineContext) batchSizeOverTenRequiresWindow() error {
 	if err == nil {
 		return fmt.Errorf("lowering the window under a BatchSize above 10 must be rejected")
 	}
-	if cerr := AssertErrorContains(err, "InvalidParameterValueException"); cerr != nil {
+	if cerr := expectAWSErrorCode(err, "InvalidParameterValueException"); cerr != nil {
 		return cerr
 	}
 	return nil
@@ -1010,39 +932,17 @@ func (ec *esmEngineContext) batchSizeOverTenRequiresWindow() error {
 func (ec *esmEngineContext) kinesisBatchingWindowHoldsPartialBatch() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-gather-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmGatherFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmGatherRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmGather", "exports.handler = async () => ({});")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => ({});")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
 
 	// A five-second window with a batch size of ten: three records are
 	// a partial batch and must be held until the window elapses.
@@ -1091,12 +991,16 @@ func (ec *esmEngineContext) kinesisBatchingWindowHoldsPartialBatch() error {
 func (ec *esmEngineContext) dynamoDBLatestSkipsHistory() error {
 	suffix := time.Now().UnixNano()
 	tableName := fmt.Sprintf("esm-ddb-latest-%d", suffix)
-	fnName := fmt.Sprintf("EsmDdbLatestFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmDdbLatestRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmDdbLatest", `exports.handler = async (event) => {
+		for (const r of event.Records) {
+			console.log('DELIVERED ' + r.dynamodb.NewImage.id.S);
+		}
+		return 'ok';
+	};`)
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
+		return err
 	}
-	defer cleanupRole()
+	defer cleanupFn()
 	streamARN, err := ec.createStreamTable(tableName)
 	if err != nil {
 		return err
@@ -1121,17 +1025,6 @@ func (ec *esmEngineContext) dynamoDBLatestSkipsHistory() error {
 			return err
 		}
 	}
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
-		for (const r of event.Records) {
-			console.log('DELIVERED ' + r.dynamodb.NewImage.id.S);
-		}
-		return 'ok';
-	};`)
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
-	}
-	defer cleanupFn()
 
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:     aws.String(fnName),
@@ -1171,23 +1064,16 @@ func (ec *esmEngineContext) dynamoDBLatestSkipsHistory() error {
 func (ec *esmEngineContext) dynamoDBRejectsAtTimestamp() error {
 	suffix := time.Now().UnixNano()
 	tableName := fmt.Sprintf("esm-ddb-ats-%d", suffix)
-	fnName := fmt.Sprintf("EsmDdbAtsFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmDdbAtsRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmDdbAts", "exports.handler = async () => 'ok';")
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
+		return err
 	}
-	defer cleanupRole()
+	defer cleanupFn()
 	streamARN, err := ec.createStreamTable(tableName)
 	if err != nil {
 		return err
 	}
 	defer ec.dynamodbClient.DeleteTable(ec.tc.ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, "exports.handler = async () => 'ok';")
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
-	}
-	defer cleanupFn()
 
 	// AT_TIMESTAMP is a stream start position for Kinesis-family
 	// sources only; a DynamoDB stream source must reject it.
@@ -1201,44 +1087,16 @@ func (ec *esmEngineContext) dynamoDBRejectsAtTimestamp() error {
 	if err == nil {
 		return fmt.Errorf("AT_TIMESTAMP must be rejected for DynamoDB stream sources")
 	}
-	return AssertErrorContains(err, "InvalidParameterValueException")
+	return expectAWSErrorCode(err, "InvalidParameterValueException")
 }
 
 // kinesisPartialBatchResponse exercises ESM_Kinesis_PartialBatchResponse end to end.
 func (ec *esmEngineContext) kinesisPartialBatchResponse() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-pbr-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmPbrFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPbrRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
 	// The handler reports the poison record's sequence number in its
 	// partial batch response; everything else is a success.
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPbr", `exports.handler = async (event) => {
 		const failures = [];
 		for (const r of event.Records) {
 			const data = Buffer.from(r.kinesis.data, 'base64').toString();
@@ -1250,9 +1108,15 @@ func (ec *esmEngineContext) kinesisPartialBatchResponse() error {
 		return { batchItemFailures: failures };
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
 
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:     aws.String(fnName),
@@ -1303,27 +1167,10 @@ func (ec *esmEngineContext) kinesisPartialBatchResponse() error {
 func (ec *esmEngineContext) sqsPartialBatchResponse() error {
 	suffix := time.Now().UnixNano()
 	queueName := fmt.Sprintf("esm-pbr-queue-%d", suffix)
-	fnName := fmt.Sprintf("EsmPbrSqsFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPbrSqsRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-
-	// A short visibility timeout returns the reported message quickly so
-	// the retry loop is observable within the test window.
-	qResp, err := ec.sqsClient.CreateQueue(ec.tc.ctx, &sqs.CreateQueueInput{
-		QueueName:  aws.String(queueName),
-		Attributes: map[string]string{"VisibilityTimeout": "2"},
-	})
-	if err != nil {
-		return fmt.Errorf("create queue: %v", err)
-	}
-	defer ec.sqsClient.DeleteQueue(ec.tc.ctx, &sqs.DeleteQueueInput{QueueUrl: qResp.QueueUrl})
 
 	// The handler reports the poison message id; the messages it does
 	// not report are deleted from the queue.
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPbrSqs", `exports.handler = async (event) => {
 		const failures = [];
 		for (const m of event.Records) {
 			console.log('DELIVERED ' + m.body);
@@ -1334,9 +1181,17 @@ func (ec *esmEngineContext) sqsPartialBatchResponse() error {
 		return { batchItemFailures: failures };
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	// A short visibility timeout returns the reported message quickly so
+	// the retry loop is observable within the test window.
+	queueURL, cleanupQueue, err := ec.createQueue(queueName, map[string]string{"VisibilityTimeout": "2"})
+	if err != nil {
+		return err
+	}
+	defer cleanupQueue()
 
 	mapping, err := ec.tc.client.CreateEventSourceMapping(ec.tc.ctx, &lambda.CreateEventSourceMappingInput{
 		FunctionName:   aws.String(fnName),
@@ -1354,7 +1209,7 @@ func (ec *esmEngineContext) sqsPartialBatchResponse() error {
 
 	for _, body := range []string{"pbr-ok-1", "pbr-poison", "pbr-ok-2"} {
 		if _, err := ec.sqsClient.SendMessage(ec.tc.ctx, &sqs.SendMessageInput{
-			QueueUrl:    qResp.QueueUrl,
+			QueueUrl:    aws.String(queueURL),
 			MessageBody: aws.String(body),
 		}); err != nil {
 			return fmt.Errorf("send %s: %v", body, err)
@@ -1385,35 +1240,7 @@ func (ec *esmEngineContext) sqsPartialBatchResponse() error {
 func (ec *esmEngineContext) kinesisParallelizationFactorPartialBatchResponse() error {
 	suffix := time.Now().UnixNano()
 	streamName := fmt.Sprintf("esm-pbrpf-stream-%d", suffix)
-	fnName := fmt.Sprintf("EsmPbrPfFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPbrPfRole"))
-	if err != nil {
-		return fmt.Errorf("create role: %v", err)
-	}
-	defer cleanupRole()
-	if _, err := ec.kinesisClient.CreateStream(ec.tc.ctx, &kinesis.CreateStreamInput{
-		StreamName: aws.String(streamName),
-		ShardCount: aws.Int32(1),
-	}); err != nil {
-		return fmt.Errorf("create stream: %v", err)
-	}
-	defer ec.kinesisClient.DeleteStream(ec.tc.ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
-
-	streamARN := ""
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		out, err := ec.kinesisClient.DescribeStream(ec.tc.ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
-		if err == nil && out.StreamDescription.StreamStatus == kinesistypes.StreamStatusActive {
-			streamARN = aws.ToString(out.StreamDescription.StreamARN)
-			break
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("stream did not become ACTIVE: %v", err)
-		}
-		time.Sleep(150 * time.Millisecond)
-	}
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPbrPf", `exports.handler = async (event) => {
 		const failures = [];
 		for (const r of event.Records) {
 			const data = Buffer.from(r.kinesis.data, 'base64').toString();
@@ -1425,9 +1252,15 @@ func (ec *esmEngineContext) kinesisParallelizationFactorPartialBatchResponse() e
 		return { batchItemFailures: failures };
 	};`)
 	if err != nil {
-		return fmt.Errorf("create function: %v", err)
+		return err
 	}
 	defer cleanupFn()
+
+	streamARN, cleanupStream, err := ec.createActiveKinesisStream(streamName, 1)
+	if err != nil {
+		return err
+	}
+	defer cleanupStream()
 
 	// Two concurrent batches per shard: the first carries the poison
 	// record, the second succeeds — the checkpoint must stay at the
@@ -1491,12 +1324,20 @@ func (ec *esmEngineContext) kinesisParallelizationFactorPartialBatchResponse() e
 func (ec *esmEngineContext) dynamoDBBatchingWindowPartialBatchResponse() error {
 	suffix := time.Now().UnixNano()
 	tableName := fmt.Sprintf("esm-pbrbw-table-%d", suffix)
-	fnName := fmt.Sprintf("EsmPbrBwFn-%d", suffix)
-	roleARN, cleanupRole, err := ec.tc.createRole(ec.tc.unique("EsmPbrBwRole"))
+	fnName, cleanupFn, err := ec.tc.setupFunction("EsmPbrBw", `exports.handler = async (event) => {
+		const failures = [];
+		for (const r of event.Records) {
+			console.log('DELIVERED ' + r.dynamodb.NewImage.id.S);
+			if (r.dynamodb.NewImage.id.S === 'pbrbw-poison') {
+				failures.push({ itemIdentifier: r.dynamodb.SequenceNumber });
+			}
+		}
+		return { batchItemFailures: failures };
+	};`)
 	if err != nil {
-		return fmt.Errorf("create role: %v", err)
+		return err
 	}
-	defer cleanupRole()
+	defer cleanupFn()
 	streamARN, err := ec.createStreamTable(tableName)
 	if err != nil {
 		return err
@@ -1510,21 +1351,6 @@ func (ec *esmEngineContext) dynamoDBBatchingWindowPartialBatchResponse() error {
 		})
 		return err
 	}
-
-	_, cleanupFn, err := ec.tc.createFunction(fnName, roleARN, `exports.handler = async (event) => {
-		const failures = [];
-		for (const r of event.Records) {
-			console.log('DELIVERED ' + r.dynamodb.NewImage.id.S);
-			if (r.dynamodb.NewImage.id.S === 'pbrbw-poison') {
-				failures.push({ itemIdentifier: r.dynamodb.SequenceNumber });
-			}
-		}
-		return { batchItemFailures: failures };
-	};`)
-	if err != nil {
-		return fmt.Errorf("create function: %v", err)
-	}
-	defer cleanupFn()
 
 	// The batching window gathers four records into two chunks; the
 	// first chunk carries the poison record — its partial cursor must

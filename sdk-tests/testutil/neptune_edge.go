@@ -27,7 +27,7 @@ func (r *TestRunner) runNeptuneEdgeTests(tc *neptuneContext) []TestResult {
 		_, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String("nonexistent-cluster"),
 		})
-		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBClusterNotFoundFault"); err != nil {
 			return err
 		}
 		return nil
@@ -37,7 +37,7 @@ func (r *TestRunner) runNeptuneEdgeTests(tc *neptuneContext) []TestResult {
 		_, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{
 			DBInstanceIdentifier: aws.String("nonexistent-instance"),
 		})
-		if err := AssertErrorContains(err, "DBInstanceNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBInstanceNotFoundFault"); err != nil {
 			return err
 		}
 		return nil
@@ -50,11 +50,8 @@ func (r *TestRunner) runNeptuneEdgeTests(tc *neptuneContext) []TestResult {
 			MasterUsername:      aws.String("admin"),
 			MasterUserPassword:  aws.String("Pass123456"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for duplicate cluster creation")
-		}
-		if err := AssertErrorContains(err, "DBClusterAlreadyExistsFault"); err != nil {
-			return fmt.Errorf("expected DBClusterAlreadyExistsFault, got: %v", err)
+		if err := expectAWSErrorCode(err, "DBClusterAlreadyExistsFault"); err != nil {
+			return err
 		}
 		return nil
 	}))

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
@@ -13,13 +12,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	var results []TestResult
 
 	results = append(results, r.RunTest("cloudtrail", "GetEventSelectors", func() error {
-		name := fmt.Sprintf("ges-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("ges")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("ges-bucket"),
-		})
+		_, err := tc.createTrail(name, "ges-bucket")
 		if err != nil {
 			return err
 		}
@@ -30,8 +26,8 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		if err != nil {
 			return err
 		}
-		if len(resp.EventSelectors) < 1 {
-			return fmt.Errorf("expected at least 1 default event selector, got %d", len(resp.EventSelectors))
+		if len(resp.EventSelectors) != 1 {
+			return fmt.Errorf("expected exactly 1 default event selector, got %d", len(resp.EventSelectors))
 		}
 		es := resp.EventSelectors[0]
 		if es.ReadWriteType != types.ReadWriteTypeAll {
@@ -44,13 +40,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors", func() error {
-		name := fmt.Sprintf("pes-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("pes")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("pes-bucket"),
-		})
+		_, err := tc.createTrail(name, "pes-bucket")
 		if err != nil {
 			return err
 		}
@@ -85,13 +78,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors_VerifyContent", func() error {
-		name := fmt.Sprintf("vc-es-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("vc-es")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("vc-es-bucket"),
-		})
+		_, err := tc.createTrail(name, "vc-es-bucket")
 		if err != nil {
 			return err
 		}
@@ -131,13 +121,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutEventSelectors_ExcludeManagementEventSources", func() error {
-		name := fmt.Sprintf("emes-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("emes")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("emes-bucket"),
-		})
+		_, err := tc.createTrail(name, "emes-bucket")
 		if err != nil {
 			return err
 		}
@@ -175,45 +162,11 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 		return nil
 	}))
 
-	results = append(results, r.RunTest("cloudtrail", "GetEventSelectors_DefaultValues", func() error {
-		name := fmt.Sprintf("def-es-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
-
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("def-es-bucket"),
-		})
-		if err != nil {
-			return err
-		}
-
-		resp, err := tc.client.GetEventSelectors(tc.ctx, &cloudtrail.GetEventSelectorsInput{
-			TrailName: aws.String(name),
-		})
-		if err != nil {
-			return fmt.Errorf("get: %v", err)
-		}
-		if len(resp.EventSelectors) != 1 {
-			return fmt.Errorf("expected 1 default event selector, got %d", len(resp.EventSelectors))
-		}
-		es := resp.EventSelectors[0]
-		if es.ReadWriteType != types.ReadWriteTypeAll {
-			return fmt.Errorf("expected default ReadWriteType=All, got %s", es.ReadWriteType)
-		}
-		if es.IncludeManagementEvents == nil || !*es.IncludeManagementEvents {
-			return fmt.Errorf("expected default IncludeManagementEvents=true")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("cloudtrail", "PutInsightSelectors", func() error {
-		name := fmt.Sprintf("insight-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("insight")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("insight-bucket"),
-		})
+		_, err := tc.createTrail(name, "insight-bucket")
 		if err != nil {
 			return err
 		}
@@ -239,13 +192,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetInsightSelectors", func() error {
-		name := fmt.Sprintf("get-insight-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("get-insight")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("get-insight-bucket"),
-		})
+		_, err := tc.createTrail(name, "get-insight-bucket")
 		if err != nil {
 			return err
 		}
@@ -278,13 +228,10 @@ func (r *TestRunner) runCloudTrailSelectorTests(tc *cloudTrailTestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetInsightSelectors_Empty", func() error {
-		name := fmt.Sprintf("empty-insight-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("empty-insight")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("empty-insight-bucket"),
-		})
+		_, err := tc.createTrail(name, "empty-insight-bucket")
 		if err != nil {
 			return err
 		}

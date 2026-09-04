@@ -51,16 +51,8 @@ func (r *TestRunner) dynamoDBItemCollectionMetricsTests(ctx context.Context, cli
 	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(lsiTable)})
 
 	plainTable := fmt.Sprintf("ICM-Plain-%d", time.Now().UnixNano())
-	if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(plainTable),
-		AttributeDefinitions: []types.AttributeDefinition{
-			{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-		},
-		BillingMode: types.BillingModePayPerRequest,
-	}); err != nil {
+	cleanupTable, err := createDynamoTestTable(ctx, client, plainTable)
+	if err != nil {
 		return append(results, TestResult{
 			Service:  "dynamodb",
 			TestName: "ItemCollectionMetrics_SetupPlainTable",
@@ -68,7 +60,7 @@ func (r *TestRunner) dynamoDBItemCollectionMetricsTests(ctx context.Context, cli
 			Error:    fmt.Sprintf("create plain table: %v", err),
 		})
 	}
-	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(plainTable)})
+	defer cleanupTable()
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_ItemCollectionMetrics", func() error {
 		resp, err := client.PutItem(ctx, &dynamodb.PutItemInput{

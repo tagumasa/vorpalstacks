@@ -158,10 +158,7 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 		if err != nil {
 			return fmt.Errorf("list tags: %v", err)
 		}
-		tagMap := make(map[string]string)
-		for _, t := range tagResp.Tags {
-			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-		}
+		tagMap := kinesisTagMap(tagResp.Tags)
 		if tagMap["Environment"] != "test" {
 			return fmt.Errorf("tag Environment: got %q, want %q", tagMap["Environment"], "test")
 		}
@@ -201,15 +198,11 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 	results = append(results, r.RunTest("kinesis", "DescribeStream_VerifyTimestamp", func() error {
 		sn := kinesisStream(ts, "ts")
 		beforeCreate := time.Now()
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
 			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 		resp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
 			StreamName: aws.String(sn),
 		})

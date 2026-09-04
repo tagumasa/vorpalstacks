@@ -74,19 +74,11 @@ func (r *TestRunner) cognitoWebAuthnTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "WebAuthn_RegistrationRoundTrip", func() error {
 		waUser := tc.unique("webauthn-user")
-		cleanupUser, err := tc.adminCreateUser(waUser)
+		cleanupUser, err := tc.createConfirmedUser(waUser, "WebAuthnPass123!")
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupUser()
-		if _, err := tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(waUser),
-			Password:   aws.String("WebAuthnPass123!"),
-			Permanent:  true,
-		}); err != nil {
-			return fmt.Errorf("set password: %v", err)
-		}
 		auth := func(clientID string) (string, error) {
 			resp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
 				UserPoolId: aws.String(tc.userPoolID),

@@ -56,13 +56,7 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListGraphSnapshots", func() error {
-		snapshots, err := paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
-			resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{NextToken: next})
-			if err != nil {
-				return nil, nil, err
-			}
-			return resp.GraphSnapshots, resp.NextToken, nil
-		})
+		snapshots, err := tc.allGraphSnapshots(nil)
 		if err != nil {
 			return err
 		}
@@ -78,16 +72,7 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 		if err := tc.requireGraph(); err != nil {
 			return err
 		}
-		snapshots, err := paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
-			resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
-				GraphIdentifier: aws.String(tc.graphID),
-				NextToken:       next,
-			})
-			if err != nil {
-				return nil, nil, err
-			}
-			return resp.GraphSnapshots, resp.NextToken, nil
-		})
+		snapshots, err := tc.allGraphSnapshots(aws.String(tc.graphID))
 		if err != nil {
 			return err
 		}
@@ -124,7 +109,7 @@ func (r *TestRunner) runNeptunegraphSnapshotTests(tc *neptunegraphContext) []Tes
 		_, err := tc.client.GetGraphSnapshot(tc.ctx, &neptunegraph.GetGraphSnapshotInput{
 			SnapshotIdentifier: aws.String(tc.snapshotID),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

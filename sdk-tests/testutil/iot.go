@@ -60,6 +60,12 @@ func (tc *iotTestContext) iamRoleARN(suffix string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", tc.accountID, suffix)
 }
 
+// lambdaARN returns a placeholder Lambda function ARN in the test region, for
+// IoT resources that reference an authorizer or certificate-provider lambda.
+func (tc *iotTestContext) lambdaARN(functionName string) string {
+	return fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", tc.region, tc.accountID, functionName)
+}
+
 // createThing registers a thing and returns a cleanup function that deletes
 // it. Callers defer the cleanup so a mid-suite failure never strands the
 // resource; on creation failure no cleanup is returned and nothing was created.
@@ -120,6 +126,48 @@ func (tc *iotTestContext) createPolicy(policyName, policyDocument string) (func(
 	}
 	cleanup := func() {
 		_, _ = tc.client.DeletePolicy(tc.ctx, &iot.DeletePolicyInput{PolicyName: aws.String(policyName)})
+	}
+	return cleanup, nil
+}
+
+// createThingType registers a thing type and returns a cleanup function that
+// deletes it; on creation failure no cleanup is returned and nothing was
+// created.
+func (tc *iotTestContext) createThingType(name string) (func(), error) {
+	if _, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{ThingTypeName: aws.String(name)}); err != nil {
+		return nil, fmt.Errorf("CreateThingType failed: %w", err)
+	}
+	cleanup := func() {
+		_, _ = tc.client.DeleteThingType(tc.ctx, &iot.DeleteThingTypeInput{ThingTypeName: aws.String(name)})
+	}
+	return cleanup, nil
+}
+
+// createThingGroup registers a thing group and returns a cleanup function
+// that deletes it; on creation failure no cleanup is returned and nothing was
+// created.
+func (tc *iotTestContext) createThingGroup(name string) (func(), error) {
+	if _, err := tc.client.CreateThingGroup(tc.ctx, &iot.CreateThingGroupInput{ThingGroupName: aws.String(name)}); err != nil {
+		return nil, fmt.Errorf("CreateThingGroup failed: %w", err)
+	}
+	cleanup := func() {
+		_, _ = tc.client.DeleteThingGroup(tc.ctx, &iot.DeleteThingGroupInput{ThingGroupName: aws.String(name)})
+	}
+	return cleanup, nil
+}
+
+// createSecurityProfile registers a security profile carrying the given
+// behaviors (may be nil) and returns a cleanup function that deletes it; on
+// creation failure no cleanup is returned and nothing was created.
+func (tc *iotTestContext) createSecurityProfile(name string, behaviors []iottypes.Behavior) (func(), error) {
+	if _, err := tc.client.CreateSecurityProfile(tc.ctx, &iot.CreateSecurityProfileInput{
+		SecurityProfileName: aws.String(name),
+		Behaviors:           behaviors,
+	}); err != nil {
+		return nil, fmt.Errorf("CreateSecurityProfile failed: %w", err)
+	}
+	cleanup := func() {
+		_, _ = tc.client.DeleteSecurityProfile(tc.ctx, &iot.DeleteSecurityProfileInput{SecurityProfileName: aws.String(name)})
 	}
 	return cleanup, nil
 }
@@ -252,6 +300,31 @@ func (tc *iotTestContext) certificateExists(certID string) (bool, error) {
 	return false, nil
 }
 
+// resourceHasTag reports whether the resource's tags include key=value. It
+// paginates ListTagsForResource so the answer covers every tag page; the
+// caller keeps its own failure wording for the not-found case.
+func (tc *iotTestContext) resourceHasTag(resourceArn *string, key, value string) (bool, error) {
+	tags, err := paginate(func(next *string) ([]iottypes.Tag, *string, error) {
+		out, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{
+			ResourceArn: resourceArn,
+			NextToken:   next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return out.Tags, out.NextToken, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, t := range tags {
+		if aws.ToString(t.Key) == key && aws.ToString(t.Value) == value {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // awsHTTPStatus extracts the HTTP status code from an AWS SDK v2 error, or 0
 // when the error carries no HTTP status information.
 func awsHTTPStatus(err error) int {
@@ -315,6 +388,18 @@ func expectValidationError(err error) error {
 		return nil
 	}
 	return fmt.Errorf("expected a Validation error, got: %w", err)
+}
+
+// iotSetupFail returns the single FAIL row that replaces a test group's
+// registrations when a setup prerequisite fails: the row is named after the
+// setup step it replaces so the failure surfaces at its true location.
+func iotSetupFail(testName, message string) []TestResult {
+	return []TestResult{{
+		Service:  "iot",
+		TestName: testName,
+		Status:   "FAIL",
+		Error:    message,
+	}}
 }
 
 func (r *TestRunner) RunIoTTests() []TestResult {

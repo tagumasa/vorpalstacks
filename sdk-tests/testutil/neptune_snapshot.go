@@ -67,13 +67,10 @@ func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBClusterSnapshots_ContentVerify", func() error {
-		resp, err := tc.client.DescribeDBClusterSnapshots(tc.ctx, &neptune.DescribeDBClusterSnapshotsInput{
-			DBClusterSnapshotIdentifier: aws.String(tc.snapshotID),
-		})
+		snap, err := tc.describeSnapshot(tc.snapshotID)
 		if err != nil {
 			return err
 		}
-		snap := resp.DBClusterSnapshots[0]
 		if snap.Engine == nil || *snap.Engine != "neptune" {
 			return fmt.Errorf("expected engine=neptune, got %v", snap.Engine)
 		}
@@ -207,16 +204,11 @@ func (r *TestRunner) runNeptuneSnapshotTests(tc *neptuneContext) []TestResult {
 		resp, err := tc.client.DescribeDBClusterSnapshots(tc.ctx, &neptune.DescribeDBClusterSnapshotsInput{
 			DBClusterSnapshotIdentifier: aws.String(tc.snapshotID),
 		})
-		if err != nil {
-			if err := AssertErrorContains(err, "DBClusterSnapshotNotFoundFault"); err != nil {
-				return err
-			}
-			return nil
+		got := 0
+		if resp != nil {
+			got = len(resp.DBClusterSnapshots)
 		}
-		if len(resp.DBClusterSnapshots) != 0 {
-			return fmt.Errorf("expected 0 snapshots after delete, got %d", len(resp.DBClusterSnapshots))
-		}
-		return nil
+		return assertDescribeGone(err, got, "DBClusterSnapshotNotFoundFault", "snapshots")
 	}))
 
 	return results

@@ -328,25 +328,20 @@ func (r *TestRunner) iamPaginationTests(tc *iamTestContext) []TestResult {
 	// DeleteServiceLinkedRole on a non-service-linked role must return DeleteConflict.
 	results = append(results, r.RunTest("iam", "Error_DeleteServiceLinkedRoleNonSLR", func() error {
 		roleName := "EdgeSLRTest-" + tc.ts
-		_, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
-			RoleName:                 aws.String(roleName),
-			AssumeRolePolicyDocument: aws.String(assumeRolePolicy),
-		})
+		cleanupRole, err := tc.createRole(roleName)
 		if err != nil {
 			return fmt.Errorf("setup CreateRole failed: %w", err)
 		}
+		defer cleanupRole()
 		_, err = tc.client.DeleteServiceLinkedRole(tc.ctx, &iam.DeleteServiceLinkedRoleInput{
 			RoleName: aws.String(roleName),
 		})
 		if err == nil {
-			tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
 			return fmt.Errorf("expected error when deleting non-service-linked role via DeleteServiceLinkedRole")
 		}
 		if !strings.Contains(err.Error(), "DeleteConflict") && !strings.Contains(err.Error(), "ConflictException") {
-			tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
 			return fmt.Errorf("expected DeleteConflict error, got: %v", err)
 		}
-		tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{RoleName: aws.String(roleName)})
 		return nil
 	}))
 

@@ -15,15 +15,11 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "ListShards", func() error {
 		sn := kinesisStream(ts, "shards")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
 		if err != nil {
@@ -48,15 +44,11 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 	results = append(results, r.RunTest("kinesis", "ListShards_MultiShard", func() error {
 		sn := kinesisStream(ts, "multi")
 		const shardCount = 3
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(shardCount),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, shardCount, 1*time.Second)
 		if err != nil {
-			return fmt.Errorf("failed to create stream: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(1 * time.Second)
+		defer cleanup()
 
 		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
 		if err != nil {
@@ -77,14 +69,11 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "ListShards_MaxResultsWindow", func() error {
 		sn := kinesisStream(ts, "mrw")
-		if _, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(2),
-		}); err != nil {
-			return fmt.Errorf("create: %v", err)
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 2, 1*time.Second)
+		if err != nil {
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(1 * time.Second)
+		defer cleanup()
 
 		// The MaxResults wire member must bound the page, and the accepted
 		// input window is 1-10000.
@@ -119,15 +108,11 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "UpdateShardCount", func() error {
 		sn := kinesisStream(ts, "usc")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.UpdateShardCount(ctx, &kinesis.UpdateShardCountInput{
 			StreamName:       aws.String(sn),
@@ -148,26 +133,17 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "MergeShards", func() error {
 		sn := kinesisStream(ts, "merge")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(2),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 2, 500*time.Millisecond)
 		if err != nil {
 			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
 		if err != nil {
 			return err
 		}
-		var openShards []types.Shard
-		for _, s := range resp.Shards {
-			if s.SequenceNumberRange.EndingSequenceNumber == nil || *s.SequenceNumberRange.EndingSequenceNumber == "" {
-				openShards = append(openShards, s)
-			}
-		}
+		openShards := kinesisOpenShards(resp.Shards)
 		if len(openShards) < 2 {
 			return fmt.Errorf("need at least 2 open shards for merge, got %d", len(openShards))
 		}
@@ -185,12 +161,7 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 		if err != nil {
 			return fmt.Errorf("post-merge list shards: %v", err)
 		}
-		var postOpenShards []types.Shard
-		for _, s := range postResp.Shards {
-			if s.SequenceNumberRange.EndingSequenceNumber == nil || *s.SequenceNumberRange.EndingSequenceNumber == "" {
-				postOpenShards = append(postOpenShards, s)
-			}
-		}
+		postOpenShards := kinesisOpenShards(postResp.Shards)
 		if len(postOpenShards) >= len(openShards) {
 			return fmt.Errorf("expected fewer open shards after merge, before=%d after=%d", len(openShards), len(postOpenShards))
 		}
@@ -199,33 +170,23 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "SplitShard", func() error {
 		sn := kinesisStream(ts, "split")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
 			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
 		if err != nil {
 			return err
 		}
-		var openShard *types.Shard
-		for _, s := range resp.Shards {
-			if s.SequenceNumberRange.EndingSequenceNumber == nil || *s.SequenceNumberRange.EndingSequenceNumber == "" {
-				openShard = &s
-				break
-			}
-		}
-		if openShard == nil {
+		open := kinesisOpenShards(resp.Shards)
+		if len(open) == 0 {
 			return fmt.Errorf("no open shard found for split")
 		}
 		_, err = client.SplitShard(ctx, &kinesis.SplitShardInput{
 			StreamName:         aws.String(sn),
-			ShardToSplit:       openShard.ShardId,
+			ShardToSplit:       open[0].ShardId,
 			NewStartingHashKey: aws.String("9223372036854775808"),
 		})
 		if err != nil {
@@ -237,12 +198,7 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 		if err != nil {
 			return fmt.Errorf("post-split list shards: %v", err)
 		}
-		var postOpenShards []types.Shard
-		for _, s := range postResp.Shards {
-			if s.SequenceNumberRange.EndingSequenceNumber == nil || *s.SequenceNumberRange.EndingSequenceNumber == "" {
-				postOpenShards = append(postOpenShards, s)
-			}
-		}
+		postOpenShards := kinesisOpenShards(postResp.Shards)
 		if len(postOpenShards) < 2 {
 			return fmt.Errorf("expected >= 2 open shards after split, got %d", len(postOpenShards))
 		}
@@ -251,15 +207,11 @@ func (r *TestRunner) kinesisShardTests(ctx context.Context, client *kinesis.Clie
 
 	results = append(results, r.RunTest("kinesis", "ListShardsWithExclusiveStart", func() error {
 		sn := kinesisStream(ts, "lsex")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 1*time.Second)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(1 * time.Second)
+		defer cleanup()
 
 		resp, err := client.ListShards(ctx, &kinesis.ListShardsInput{StreamName: aws.String(sn)})
 		if err != nil {

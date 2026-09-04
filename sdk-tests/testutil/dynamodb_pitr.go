@@ -24,21 +24,12 @@ func (r *TestRunner) dynamoDBPITRTests(ctx context.Context, client *dynamodb.Cli
 	// status depends on the table settings, and no restorable window is
 	// reported while recovery is disabled.
 	descTable := fmt.Sprintf("PitrDesc-%d", suffix)
-	_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(descTable),
-		AttributeDefinitions: []types.AttributeDefinition{
-			{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-		},
-		BillingMode: types.BillingModePayPerRequest,
-	})
+	cleanupDescTable, err := createDynamoTestTable(ctx, client, descTable)
 	results = append(results, r.RunTest("dynamodb", "DescribeContinuousBackups_DisabledShape", func() error {
 		if err != nil {
-			return fmt.Errorf("create table: %w", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(descTable)})
+		defer cleanupDescTable()
 
 		resp, err := client.DescribeContinuousBackups(ctx, &dynamodb.DescribeContinuousBackupsInput{
 			TableName: aws.String(descTable),
@@ -154,21 +145,13 @@ func (r *TestRunner) dynamoDBPITRTests(ctx context.Context, client *dynamodb.Cli
 
 	noPitrTable := fmt.Sprintf("PitrNone-%d", suffix)
 	results = append(results, r.RunTest("dynamodb", "RestoreTableToPointInTime_WithoutRecovery_Rejected", func() error {
-		if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(noPitrTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		}); err != nil {
-			return fmt.Errorf("create table: %w", err)
+		cleanupTable, err := createDynamoTestTable(ctx, client, noPitrTable)
+		if err != nil {
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(noPitrTable)})
+		defer cleanupTable()
 
-		_, err := client.RestoreTableToPointInTime(ctx, &dynamodb.RestoreTableToPointInTimeInput{
+		_, err = client.RestoreTableToPointInTime(ctx, &dynamodb.RestoreTableToPointInTimeInput{
 			SourceTableName:         aws.String(noPitrTable),
 			TargetTableName:         aws.String(noPitrTable + "-restored"),
 			UseLatestRestorableTime: aws.Bool(true),
@@ -206,19 +189,11 @@ func (r *TestRunner) dynamoDBPITRTests(ctx context.Context, client *dynamodb.Cli
 
 	latestTable := fmt.Sprintf("PitrLatest-%d", suffix)
 	results = append(results, r.RunTest("dynamodb", "RestoreTableToPointInTime_UseLatestRestorableTime", func() error {
-		if _, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(latestTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		}); err != nil {
-			return fmt.Errorf("create table: %w", err)
+		cleanupTable, err := createDynamoTestTable(ctx, client, latestTable)
+		if err != nil {
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(latestTable)})
+		defer cleanupTable()
 
 		if _, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
 			TableName: aws.String(latestTable),
@@ -378,18 +353,12 @@ func (r *TestRunner) dynamoDBPITRTests(ctx context.Context, client *dynamodb.Cli
 // their "at the point" values before it, and are overwritten or deleted
 // after it. The caller deletes the table.
 func (r *TestRunner) pitrSeedTableWithHistory(ctx context.Context, client *dynamodb.Client, tableName string) (time.Time, error) {
-	_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-		TableName: aws.String(tableName),
-		AttributeDefinitions: []types.AttributeDefinition{
-			{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-		},
-		KeySchema: []types.KeySchemaElement{
-			{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-		},
-		BillingMode: types.BillingModePayPerRequest,
-	})
+	// The seed table lives across several tests after this helper returns,
+	// so unlike the throwaway fixtures it is deleted only on the failure
+	// paths below; the caller deletes it on success.
+	cleanupSeedTable, err := createDynamoTestTable(ctx, client, tableName)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("create table: %w", err)
+		return time.Time{}, err
 	}
 	if _, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
 		TableName: aws.String(tableName),
@@ -397,7 +366,7 @@ func (r *TestRunner) pitrSeedTableWithHistory(ctx context.Context, client *dynam
 			PointInTimeRecoveryEnabled: aws.Bool(true),
 		},
 	}); err != nil {
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
+		cleanupSeedTable()
 		return time.Time{}, fmt.Errorf("enable recovery: %w", err)
 	}
 
@@ -412,11 +381,11 @@ func (r *TestRunner) pitrSeedTableWithHistory(ctx context.Context, client *dynam
 		return err
 	}
 	if err := put("k", "v1"); err != nil {
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
+		cleanupSeedTable()
 		return time.Time{}, fmt.Errorf("put v1: %w", err)
 	}
 	if err := put("k2", "keep"); err != nil {
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
+		cleanupSeedTable()
 		return time.Time{}, fmt.Errorf("put keep: %w", err)
 	}
 
@@ -428,14 +397,14 @@ func (r *TestRunner) pitrSeedTableWithHistory(ctx context.Context, client *dynam
 	time.Sleep(1100 * time.Millisecond)
 
 	if err := put("k", "v2"); err != nil {
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
+		cleanupSeedTable()
 		return time.Time{}, fmt.Errorf("put v2: %w", err)
 	}
 	if _, err := client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(tableName),
 		Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "k2"}},
 	}); err != nil {
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(tableName)})
+		cleanupSeedTable()
 		return time.Time{}, fmt.Errorf("delete k2: %w", err)
 	}
 	return restoreAt, nil

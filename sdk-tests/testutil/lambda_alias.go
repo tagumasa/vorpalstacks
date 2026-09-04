@@ -11,18 +11,10 @@ import (
 func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	funcName := tc.unique("AliasFunc")
-	roleARN, cleanupRole, err := tc.createRole(tc.unique("AliasRole"))
+	funcName, cleanupFn, err := tc.setupFunction("AliasFunc", lambdaFunctionCode)
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupRole()
-
-	_, cleanupFn, err := tc.createFunction(funcName, roleARN, lambdaFunctionCode)
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "Alias_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupFn()
 
@@ -35,6 +27,11 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 		}
 		if resp.Version == nil {
 			return fmt.Errorf("version is nil")
+		}
+		// The published response must carry the new version number, never
+		// the $LATEST qualifier.
+		if *resp.Version == "$LATEST" {
+			return fmt.Errorf("published version must not be $LATEST, got %v", resp.Version)
 		}
 		if *resp.Version != "1" {
 			return fmt.Errorf("first published version should be 1, got %v", resp.Version)
@@ -162,50 +159,16 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("live"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
 	}))
 
-	results = append(results, tc.r.RunTest("lambda", "PublishVersion_VerifyVersion", func() error {
-		pvFunc := tc.unique("PvFunc")
-		pvRole, cleanupPvRole, err := tc.createRole(tc.unique("PvRole"))
-		if err != nil {
-			return fmt.Errorf("create role: %v", err)
-		}
-		defer cleanupPvRole()
-		_, cleanupPvFn, err := tc.createFunction(pvFunc, pvRole, "exports.handler = async () => { return 1; };")
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer cleanupPvFn()
-
-		resp, err := tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
-			FunctionName: aws.String(pvFunc),
-		})
-		if err != nil {
-			return fmt.Errorf("publish: %v", err)
-		}
-		if resp.Version == nil || *resp.Version == "$LATEST" {
-			return fmt.Errorf("published version should not be $LATEST, got %v", resp.Version)
-		}
-		if resp.Version != nil && *resp.Version != "1" {
-			return fmt.Errorf("first published version should be 1, got %v", resp.Version)
-		}
-		return nil
-	}))
-
 	results = append(results, tc.r.RunTest("lambda", "CreateAlias_DuplicateName", func() error {
-		caFunc := tc.unique("CaFunc")
-		caRole, cleanupCaRole, err := tc.createRole(tc.unique("CaRole"))
+		caFunc, cleanupCaFn, err := tc.setupFunction("CaFunc", "exports.handler = async () => { return 1; };")
 		if err != nil {
-			return fmt.Errorf("create role: %v", err)
-		}
-		defer cleanupCaRole()
-		_, cleanupCaFn, err := tc.createFunction(caFunc, caRole, "exports.handler = async () => { return 1; };")
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer cleanupCaFn()
 
@@ -223,7 +186,7 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 			Name:            aws.String("prod"),
 			FunctionVersion: aws.String("$LATEST"),
 		})
-		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceConflictException"); err != nil {
 			return err
 		}
 		return nil
@@ -234,22 +197,16 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 			FunctionName: aws.String(funcName),
 			Name:         aws.String("nonexistent-alias-xyz"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
 	}))
 
 	results = append(results, tc.r.RunTest("lambda", "AliasQualifier_ReturnsPublishedVersionConfig", func() error {
-		aqFunc := tc.unique("AqFunc")
-		aqRole, cleanupAqRole, err := tc.createRole(tc.unique("AqRole"))
+		aqFunc, cleanupAqFn, err := tc.setupFunction("AqFunc", "exports.handler = async () => { return 1; };")
 		if err != nil {
-			return fmt.Errorf("create role: %v", err)
-		}
-		defer cleanupAqRole()
-		_, cleanupAqFn, err := tc.createFunction(aqFunc, aqRole, "exports.handler = async () => { return 1; };")
-		if err != nil {
-			return fmt.Errorf("create function: %v", err)
+			return err
 		}
 		defer cleanupAqFn()
 
@@ -321,7 +278,7 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 				AdditionalVersionWeights: map[string]float64{"2": 1.5},
 			},
 		})
-		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
 			return err
 		}
 
@@ -334,7 +291,7 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 				AdditionalVersionWeights: map[string]float64{"9": 0.5},
 			},
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 

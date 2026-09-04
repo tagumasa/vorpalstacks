@@ -191,24 +191,20 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 	results = append(results, r.RunTest("events", "PutRule_DisableAndVerify", func() error {
 		rdBus := fmt.Sprintf("RdBus-%d", time.Now().UnixNano())
 		rdRule := fmt.Sprintf("RdRule-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(rdBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, rdBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(rdBus)})
+		defer cleanupBus()
 
-		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:               aws.String(rdRule),
-			EventBusName:       aws.String(rdBus),
-			Description:        aws.String("test rule for disable"),
-			ScheduleExpression: aws.String("rate(5 minutes)"),
+		cleanupRule, err := createEventBridgeTestRule(ctx, client, rdBus, rdRule, func(input *eventbridge.PutRuleInput) {
+			input.Description = aws.String("test rule for disable")
+			input.ScheduleExpression = aws.String("rate(5 minutes)")
 		})
 		if err != nil {
-			return fmt.Errorf("put rule: %v", err)
+			return err
 		}
-		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(rdRule), EventBusName: aws.String(rdBus)})
+		defer cleanupRule()
 
 		_, err = client.DisableRule(ctx, &eventbridge.DisableRuleInput{
 			Name:         aws.String(rdRule),
@@ -253,13 +249,11 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 	results = append(results, r.RunTest("events", "PutRule_WithEventPattern", func() error {
 		epBus := fmt.Sprintf("EpBus-%d", time.Now().UnixNano())
 		epRule := fmt.Sprintf("EpRule-%d", time.Now().UnixNano())
-		_, err := client.CreateEventBus(ctx, &eventbridge.CreateEventBusInput{
-			Name: aws.String(epBus),
-		})
+		cleanupBus, err := createEventBridgeTestBus(ctx, client, epBus)
 		if err != nil {
-			return fmt.Errorf("create bus: %v", err)
+			return err
 		}
-		defer client.DeleteEventBus(ctx, &eventbridge.DeleteEventBusInput{Name: aws.String(epBus)})
+		defer cleanupBus()
 
 		pattern := map[string]interface{}{
 			"source":      []string{"com.example.test"},
@@ -267,15 +261,14 @@ func (r *TestRunner) runEventBridgeRuleTests(ctx context.Context, client *eventb
 		}
 		patternJSON, _ := json.Marshal(pattern)
 
-		_, err = client.PutRule(ctx, &eventbridge.PutRuleInput{
-			Name:         aws.String(epRule),
-			EventBusName: aws.String(epBus),
-			EventPattern: aws.String(string(patternJSON)),
+		cleanupRule, err := createEventBridgeTestRule(ctx, client, epBus, epRule, func(input *eventbridge.PutRuleInput) {
+			input.ScheduleExpression = nil
+			input.EventPattern = aws.String(string(patternJSON))
 		})
 		if err != nil {
-			return fmt.Errorf("put rule: %v", err)
+			return err
 		}
-		defer client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{Name: aws.String(epRule), EventBusName: aws.String(epBus)})
+		defer cleanupRule()
 
 		resp, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
 			Name:         aws.String(epRule),

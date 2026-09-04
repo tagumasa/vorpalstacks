@@ -25,18 +25,10 @@ func runLambdaConfigTests(tc *lambdaTestContext) []TestResult {
 func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	pcFuncName := tc.unique("PcFunc")
-	pcRole, cleanupPcRole, err := tc.createRole(tc.unique("PcRole"))
+	pcFuncName, cleanupPcFn, err := tc.setupFunction("PcFunc", "exports.handler = async () => { return 1; };")
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "PutProvisionedConcurrencyConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupPcRole()
-
-	_, cleanupPcFn, err := tc.createFunction(pcFuncName, pcRole, "exports.handler = async () => { return 1; };")
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "PutProvisionedConcurrencyConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupPcFn()
 
@@ -76,7 +68,7 @@ func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 			Qualifier:                       aws.String("$LATEST"),
 			ProvisionedConcurrentExecutions: aws.Int32(5),
 		})
-		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
 			return err
 		}
 		return nil
@@ -88,7 +80,7 @@ func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 			Qualifier:                       aws.String("999"),
 			ProvisionedConcurrentExecutions: aws.Int32(5),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -152,7 +144,7 @@ func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 			FunctionName: aws.String(pcFuncName),
 			Qualifier:    aws.String(pcVersion),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -163,7 +155,7 @@ func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 			FunctionName: aws.String(pcFuncName),
 			Qualifier:    aws.String(pcVersion),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -175,18 +167,10 @@ func runLambdaProvisionedConcurrencyTests(tc *lambdaTestContext) []TestResult {
 func runLambdaEventInvokeConfigTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	eicFuncName := tc.unique("EicFunc")
-	eicRole, cleanupEicRole, err := tc.createRole(tc.unique("EicRole"))
+	eicFuncName, cleanupEicFn, err := tc.setupFunction("EicFunc", "exports.handler = async () => { return 1; };")
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "PutFunctionEventInvokeConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupEicRole()
-
-	_, cleanupEicFn, err := tc.createFunction(eicFuncName, eicRole, "exports.handler = async () => { return 1; };")
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "PutFunctionEventInvokeConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupEicFn()
 
@@ -287,7 +271,7 @@ func runLambdaEventInvokeConfigTests(tc *lambdaTestContext) []TestResult {
 		_, err = tc.client.GetFunctionEventInvokeConfig(tc.ctx, &lambda.GetFunctionEventInvokeConfigInput{
 			FunctionName: aws.String(eicFuncName),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -384,18 +368,10 @@ func runLambdaEventInvokeConfigTests(tc *lambdaTestContext) []TestResult {
 func runLambdaFunctionUrlConfigTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	furlFuncName := tc.unique("FurlFunc")
-	furlRole, cleanupFurlRole, err := tc.createRole(tc.unique("FurlRole"))
+	furlFuncName, cleanupFurlFn, err := tc.setupFunction("FurlFunc", "exports.handler = async () => { return 1; };")
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateFunctionUrlConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupFurlRole()
-
-	_, cleanupFurlFn, err := tc.createFunction(furlFuncName, furlRole, "exports.handler = async () => { return 1; };")
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "CreateFunctionUrlConfig_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupFurlFn()
 
@@ -479,22 +455,16 @@ func runLambdaFunctionUrlConfigTests(tc *lambdaTestContext) []TestResult {
 		_, err = tc.client.GetFunctionUrlConfig(tc.ctx, &lambda.GetFunctionUrlConfigInput{
 			FunctionName: aws.String(furlFuncName),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
 	}))
 
 	results = append(results, tc.r.RunTest("lambda", "CreateFunctionUrlConfig_QualifierValidation", func() error {
-		uqFunc := tc.unique("UqFunc")
-		uqRole, cleanupUqRole, err := tc.createRole(tc.unique("UqRole"))
+		uqFunc, cleanupUqFn, err := tc.setupFunction("UqFunc", "exports.handler = async () => { return 1; };")
 		if err != nil {
-			return fmt.Errorf("create role: %v", err)
-		}
-		defer cleanupUqRole()
-		_, cleanupUqFn, err := tc.createFunction(uqFunc, uqRole, "exports.handler = async () => { return 1; };")
-		if err != nil {
-			return fmt.Errorf("create function: %v", err)
+			return err
 		}
 		defer cleanupUqFn()
 		if _, err := tc.client.CreateAlias(tc.ctx, &lambda.CreateAliasInput{
@@ -512,7 +482,7 @@ func runLambdaFunctionUrlConfigTests(tc *lambdaTestContext) []TestResult {
 			AuthType:     types.FunctionUrlAuthTypeNone,
 			Qualifier:    aws.String("1"),
 		})
-		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
 			return err
 		}
 
@@ -536,18 +506,10 @@ func runLambdaFunctionUrlConfigTests(tc *lambdaTestContext) []TestResult {
 func runLambdaResponseStreamTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	iaFuncName := tc.unique("IaFunc")
-	iaRole, cleanupIaRole, err := tc.createRole(tc.unique("IaRole"))
+	iaFuncName, cleanupIaFn, err := tc.setupFunction("IaFunc", "exports.handler = async () => { return { statusCode: 200 }; };")
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupIaRole()
-
-	_, cleanupIaFn, err := tc.createFunction(iaFuncName, iaRole, "exports.handler = async () => { return { statusCode: 200 }; };")
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "ResponseStream_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupIaFn()
 
@@ -590,25 +552,19 @@ func runLambdaConfigErrorTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, tc.r.RunTest("lambda", "GetFunctionUrlConfig_NoConfig", func() error {
-		nofcFuncName := tc.unique("NofcFunc")
-		nofcRole, cleanupNofcRole, err := tc.createRole(tc.unique("NofcRole"))
-		if err != nil {
-			return fmt.Errorf("create role: %v", err)
-		}
-		defer cleanupNofcRole()
-		_, cleanupNofcFn, err := tc.createFunction(nofcFuncName, nofcRole, "",
+		nofcFuncName, cleanupNofcFn, err := tc.setupFunction("NofcFunc", "",
 			func(input *lambda.CreateFunctionInput) {
 				input.Code = &types.FunctionCode{ZipFile: []byte("code")}
 			})
 		if err != nil {
-			return fmt.Errorf("create function: %v", err)
+			return err
 		}
 		defer cleanupNofcFn()
 
 		_, err = tc.client.GetFunctionUrlConfig(tc.ctx, &lambda.GetFunctionUrlConfigInput{
 			FunctionName: aws.String(nofcFuncName),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -619,7 +575,7 @@ func runLambdaConfigErrorTests(tc *lambdaTestContext) []TestResult {
 			FunctionName:             aws.String("nonexistent-func-xyz-123"),
 			MaximumEventAgeInSeconds: aws.Int32(3600),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

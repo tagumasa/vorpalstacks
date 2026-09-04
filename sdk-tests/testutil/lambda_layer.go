@@ -156,7 +156,7 @@ func runLambdaLayerTests(tc *lambdaTestContext) []TestResult {
 			LayerName:     aws.String(layerName),
 			VersionNumber: aws.Int64(1),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -167,7 +167,7 @@ func runLambdaLayerTests(tc *lambdaTestContext) []TestResult {
 			LayerName:     aws.String("nonexistent-layer-xyz"),
 			VersionNumber: aws.Int64(999),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

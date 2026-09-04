@@ -12,8 +12,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "Encrypt", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		plaintext := []byte("Hello, KMS!")
@@ -29,24 +29,6 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 		}
 		if resp.KeyId == nil || *resp.KeyId == "" {
 			return fmt.Errorf("KeyId in response is nil or empty")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("kms", "Encrypt (for Decrypt)", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
-		}
-		plaintext := []byte("Hello, KMS!")
-		resp, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
-			KeyId:     aws.String(tc.keyID),
-			Plaintext: plaintext,
-		})
-		if err != nil {
-			return err
-		}
-		if resp.CiphertextBlob == nil {
-			return fmt.Errorf("ciphertext blob is nil")
 		}
 		tc.ciphertextBlob = resp.CiphertextBlob
 		return nil
@@ -75,8 +57,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_DecryptRoundtrip", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		plaintext := []byte("roundtrip-test-data-12345")
@@ -100,8 +82,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_ByKeyARN", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		descResp, err := tc.client.DescribeKey(tc.ctx, &kms.DescribeKeyInput{KeyId: aws.String(tc.keyID)})
@@ -130,8 +112,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_ByAlias", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		testAlias := fmt.Sprintf("alias/encrypt-test-%s", tc.keyID[len(tc.keyID)-8:])
@@ -165,8 +147,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Encrypt_EncryptionContext", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		plaintext := []byte("context-test-data")
 		encResp, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
@@ -192,8 +174,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ReEncrypt", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		if tc.ciphertextBlob == nil {
 			return fmt.Errorf("ciphertext not available")
@@ -215,16 +197,15 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ReEncrypt_WithDifferentKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
-		newKeyResp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		newKeyMeta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("ReEncrypt target key"),
 		})
 		if err != nil {
-			return fmt.Errorf("create key: %v", err)
+			return err
 		}
-		tc.addCleanupKey(*newKeyResp.KeyMetadata.KeyId)
 
 		plaintext := []byte("re-encrypt-test")
 		encResp, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
@@ -237,7 +218,7 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 
 		reResp, err := tc.client.ReEncrypt(tc.ctx, &kms.ReEncryptInput{
 			CiphertextBlob:   encResp.CiphertextBlob,
-			DestinationKeyId: newKeyResp.KeyMetadata.KeyId,
+			DestinationKeyId: newKeyMeta.KeyId,
 		})
 		if err != nil {
 			return fmt.Errorf("re-encrypt: %v", err)
@@ -245,7 +226,7 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 
 		decResp, err := tc.client.Decrypt(tc.ctx, &kms.DecryptInput{
 			CiphertextBlob: reResp.CiphertextBlob,
-			KeyId:          newKeyResp.KeyMetadata.KeyId,
+			KeyId:          newKeyMeta.KeyId,
 		})
 		if err != nil {
 			return fmt.Errorf("decrypt re-encrypted: %v", err)
@@ -261,16 +242,15 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	// under RSAES_OAEP_SHA_1 only re-encrypts when the source member names
 	// that algorithm, and the response echoes the algorithms actually used.
 	results = append(results, r.RunTest("kms", "ReEncrypt_SourceAlgorithmHonoured", func() error {
-		keyResp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		keyMeta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("ReEncrypt RSA source key"),
 			KeySpec:     types.KeySpecRsa2048,
 			KeyUsage:    types.KeyUsageTypeEncryptDecrypt,
 		})
 		if err != nil {
-			return fmt.Errorf("create RSA key: %v", err)
+			return err
 		}
-		rsaKeyID := *keyResp.KeyMetadata.KeyId
-		tc.addCleanupKey(rsaKeyID)
+		rsaKeyID := *keyMeta.KeyId
 
 		plaintext := []byte("re-encrypt-sha1")
 		encResp, err := tc.client.Encrypt(tc.ctx, &kms.EncryptInput{
@@ -326,8 +306,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GenerateDataKey(tc.ctx, &kms.GenerateDataKeyInput{
 			KeyId:   aws.String(tc.keyID),
@@ -349,8 +329,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKeyWithoutPlaintext", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GenerateDataKeyWithoutPlaintext(tc.ctx, &kms.GenerateDataKeyWithoutPlaintextInput{
 			KeyId:   aws.String(tc.keyID),
@@ -369,8 +349,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKey_NumberOfBytes", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		resp, err := tc.client.GenerateDataKey(tc.ctx, &kms.GenerateDataKeyInput{
@@ -387,8 +367,8 @@ func (r *TestRunner) runKMSCryptoTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKey_ContentVerify", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		resp, err := tc.client.GenerateDataKey(tc.ctx, &kms.GenerateDataKeyInput{

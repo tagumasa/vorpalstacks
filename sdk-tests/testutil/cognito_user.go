@@ -202,20 +202,11 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "AdminResetUserPassword", func() error {
 		rpUser := tc.unique("rp-user")
-		cleanupRpUser, err := tc.adminCreateUser(rpUser)
+		cleanupRpUser, err := tc.createConfirmedUser(rpUser, "PermPass123!")
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupRpUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(rpUser),
-			Password:   aws.String("PermPass123!"),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("AdminSetUserPassword failed: %v", err)
-		}
 		_, err = tc.client.AdminResetUserPassword(tc.ctx, &cognitoidentityprovider.AdminResetUserPasswordInput{
 			UserPoolId: aws.String(tc.userPoolID),
 			Username:   aws.String(rpUser),
@@ -330,20 +321,11 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "AdminInitiateAuth", func() error {
 		authUser := tc.unique("auth-user")
-		cleanupAuthUser, err := tc.adminCreateUser(authUser)
+		cleanupAuthUser, err := tc.createConfirmedUser(authUser, "AuthPass123!")
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupAuthUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(authUser),
-			Password:   aws.String("AuthPass123!"),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("set password: %v", err)
-		}
 		authClientID, cleanupAuthClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("auth-client"))
 		if err != nil {
 			return fmt.Errorf("create auth client: %v", err)
@@ -375,20 +357,11 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "AdminUserGlobalSignOut", func() error {
 		gsoUser := tc.unique("gso-user")
-		cleanupGsoUser, err := tc.adminCreateUser(gsoUser)
+		cleanupGsoUser, err := tc.createConfirmedUser(gsoUser, "GSOPass123!")
 		if err != nil {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupGsoUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(gsoUser),
-			Password:   aws.String("GSOPass123!"),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("set password: %v", err)
-		}
 		gsoClientID, cleanupGsoClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("gso-client"))
 		if err != nil {
 			return fmt.Errorf("create client: %v", err)

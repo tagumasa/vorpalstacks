@@ -36,15 +36,9 @@ func (r *TestRunner) runIoTDomainConfigTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected non-empty domainConfigurationArn")
 		}
 		// Create-time tags must be visible through ListTagsForResource.
-		tags, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.DomainConfigurationArn})
+		found, err := tc.resourceHasTag(out.DomainConfigurationArn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tags.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", *out.DomainConfigurationArn)

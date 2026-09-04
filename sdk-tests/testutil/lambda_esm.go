@@ -12,22 +12,14 @@ import (
 func runLambdaESMTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	esmFuncName := tc.unique("EsmFunc")
-	esmRole, cleanupRole, err := tc.createRole(tc.unique("EsmRole"))
+	esmFuncName, cleanupEsmFunc, err := tc.setupFunction("EsmFunc", "exports.handler = async () => { return 1; };")
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "CreateEventSourceMapping_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupRole()
-
-	esmEventSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:test-queue", tc.r.region, tc.r.accountID)
-
-	_, cleanupEsmFunc, err := tc.createFunction(esmFuncName, esmRole, "exports.handler = async () => { return 1; };")
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "CreateEventSourceMapping_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupEsmFunc()
+
+	esmEventSourceArn := fmt.Sprintf("arn:aws:sqs:%s:%s:test-queue", tc.r.region, tc.r.accountID)
 
 	var esmUUID string
 
@@ -134,7 +126,7 @@ func runLambdaESMTests(tc *lambdaTestContext) []TestResult {
 		_, err = tc.client.GetEventSourceMapping(tc.ctx, &lambda.GetEventSourceMappingInput{
 			UUID: aws.String(esmUUID),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -144,7 +136,7 @@ func runLambdaESMTests(tc *lambdaTestContext) []TestResult {
 		_, err := tc.client.GetEventSourceMapping(tc.ctx, &lambda.GetEventSourceMappingInput{
 			UUID: aws.String("00000000-0000-0000-0000-000000000000"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -172,7 +164,7 @@ func runLambdaESMTests(tc *lambdaTestContext) []TestResult {
 			EventSourceArn: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:orders.fifo", tc.r.region, tc.r.accountID)),
 			BatchSize:      aws.Int32(11),
 		})
-		if err := AssertErrorContains(err, "InvalidParameterValueException"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
 			return err
 		}
 		return nil

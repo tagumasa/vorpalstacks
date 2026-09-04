@@ -14,7 +14,7 @@ import (
 func (r *TestRunner) runIoTAuthorizerTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
 	authName := uniqueName("authorizer")
-	fnARN := "arn:aws:lambda:" + tc.region + ":" + tc.accountID + ":function:auth-fn"
+	fnARN := tc.lambdaARN("auth-fn")
 
 	defer func() {
 		// Clearing the default first avoids delete being blocked while default.
@@ -60,7 +60,7 @@ func (r *TestRunner) runIoTAuthorizerTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "Authorizer_UpdateAuthorizer", func() error {
-		fnARN2 := "arn:aws:lambda:" + tc.region + ":" + tc.accountID + ":function:auth-fn-v2"
+		fnARN2 := tc.lambdaARN("auth-fn-v2")
 		if _, err := tc.client.UpdateAuthorizer(tc.ctx, &iot.UpdateAuthorizerInput{
 			AuthorizerName:        aws.String(authName),
 			AuthorizerFunctionArn: aws.String(fnARN2),

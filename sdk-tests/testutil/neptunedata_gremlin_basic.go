@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/neptunedata"
@@ -52,29 +51,11 @@ func (r *TestRunner) runNeptunedataGremlinBasicTests(tc *neptunedataContext) []T
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_Traversal", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','marko').out('knows').values('name')")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{"vadas", "josh"} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected '%s' in gremlin traversal results, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','marko').out('knows').values('name')", "vadas", "josh")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_ValueMap", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','marko').valueMap()")
-		if err != nil {
-			return err
-		}
-		for _, key := range []string{"name", "age"} {
-			if !strings.Contains(s, key) {
-				return fmt.Errorf("expected key '%s' in valueMap result, got %s", key, s)
-			}
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','marko').valueMap()", "name", "age")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteGremlinQuery_HasLabel", func() error {

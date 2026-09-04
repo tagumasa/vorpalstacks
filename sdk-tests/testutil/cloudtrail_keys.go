@@ -13,8 +13,8 @@ func (r *TestRunner) runCloudTrailKeysTests(tc *cloudTrailTestContext) []TestRes
 	var results []TestResult
 
 	results = append(results, r.RunTest("cloudtrail", "ListPublicKeys", func() error {
-		name := fmt.Sprintf("pk-trail-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("pk-trail")
+		defer tc.deleteTrail(name)
 
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                    aws.String(name),
@@ -59,7 +59,7 @@ func (r *TestRunner) runCloudTrailKeysTests(tc *cloudTrailTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "ListPublicKeys_TimeFilter", func() error {
-		trailName := fmt.Sprintf("pk-time-%d", time.Now().UnixNano())
+		trailName := tc.uniqueName("pk-time")
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                    aws.String(trailName),
 			S3BucketName:            aws.String("pk-time-bucket"),
@@ -68,7 +68,7 @@ func (r *TestRunner) runCloudTrailKeysTests(tc *cloudTrailTestContext) []TestRes
 		if err != nil {
 			return fmt.Errorf("create trail for time filter test: %v", err)
 		}
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(trailName)})
+		defer tc.deleteTrail(trailName)
 
 		now := time.Now().UTC()
 		past := now.Add(-1 * time.Hour)

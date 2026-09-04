@@ -11,8 +11,8 @@ func (r *TestRunner) runKMSPolicyTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "PutKeyPolicy", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		policy := `{
 			"Version": "2012-10-17",
@@ -31,26 +31,9 @@ func (r *TestRunner) runKMSPolicyTests(tc *kmsTestContext) []TestResult {
 		return err
 	}))
 
-	results = append(results, r.RunTest("kms", "GetKeyPolicy", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
-		}
-		resp, err := tc.client.GetKeyPolicy(tc.ctx, &kms.GetKeyPolicyInput{
-			KeyId:      aws.String(tc.keyID),
-			PolicyName: aws.String("default"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Policy == nil || *resp.Policy == "" {
-			return fmt.Errorf("policy is empty")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("kms", "GetKeyPolicy_ContentVerify", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"kms:*","Resource":"*"}]}`
 		_, err := tc.client.PutKeyPolicy(tc.ctx, &kms.PutKeyPolicyInput{
@@ -78,8 +61,8 @@ func (r *TestRunner) runKMSPolicyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ListKeyPolicies", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ListKeyPolicies(tc.ctx, &kms.ListKeyPoliciesInput{
 			KeyId: aws.String(tc.keyID),

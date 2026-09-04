@@ -58,16 +58,10 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DescribeDBInstances_FilterByID", func() error {
-		resp, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{
-			DBInstanceIdentifier: aws.String(tc.instanceID),
-		})
+		dbi, err := tc.describeInstance(tc.instanceID)
 		if err != nil {
 			return err
 		}
-		if len(resp.DBInstances) != 1 {
-			return fmt.Errorf("expected 1 instance, got %d", len(resp.DBInstances))
-		}
-		dbi := resp.DBInstances[0]
 		if dbi.Engine == nil || *dbi.Engine != "neptune" {
 			return fmt.Errorf("expected Engine=neptune, got %v", dbi.Engine)
 		}
@@ -96,16 +90,10 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyDBInstance_Verify", func() error {
-		resp, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{
-			DBInstanceIdentifier: aws.String(tc.instanceID),
-		})
+		dbi, err := tc.describeInstance(tc.instanceID)
 		if err != nil {
 			return err
 		}
-		if len(resp.DBInstances) != 1 {
-			return fmt.Errorf("expected 1 instance, got %d", len(resp.DBInstances))
-		}
-		dbi := resp.DBInstances[0]
 		if dbi.DBInstanceClass == nil || *dbi.DBInstanceClass != "db.r5.xlarge" {
 			return fmt.Errorf("expected DBInstanceClass=db.r5.xlarge after modify, got %v", dbi.DBInstanceClass)
 		}
@@ -143,7 +131,7 @@ func (r *TestRunner) runNeptuneInstanceTests(tc *neptuneContext) []TestResult {
 		_, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{
 			DBInstanceIdentifier: aws.String(tc.instanceID),
 		})
-		if err := AssertErrorContains(err, "DBInstanceNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBInstanceNotFoundFault"); err != nil {
 			return err
 		}
 		return nil

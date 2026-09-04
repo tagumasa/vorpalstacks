@@ -164,7 +164,7 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 
 		srpUser := tc.unique("srp-user")
 		srpPassword := "SrpPassword123!"
-		cleanupSrpUser, err := tc.adminCreateUser(srpUser,
+		cleanupSrpUser, err := tc.createConfirmedUser(srpUser, srpPassword,
 			func(input *cognitoidentityprovider.AdminCreateUserInput) {
 				input.MessageAction = ""
 			})
@@ -172,15 +172,6 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("admin create user: %v", err)
 		}
 		defer cleanupSrpUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(srpUser),
-			Password:   aws.String(srpPassword),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("admin set user password: %v", err)
-		}
 
 		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, srpPassword)
 		if err != nil {
@@ -238,7 +229,7 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 		defer cleanupSrpClientID()
 
 		srpUser := tc.unique("srp-wrong")
-		cleanupSrpUser, err := tc.adminCreateUser(srpUser,
+		cleanupSrpUser, err := tc.createConfirmedUser(srpUser, "CorrectPassword123!",
 			func(input *cognitoidentityprovider.AdminCreateUserInput) {
 				input.MessageAction = ""
 			})
@@ -246,15 +237,6 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("admin create user: %v", err)
 		}
 		defer cleanupSrpUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(srpUser),
-			Password:   aws.String("CorrectPassword123!"),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("admin set user password: %v", err)
-		}
 
 		// Client uses the WRONG password.
 		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, "WrongPassword456!")
@@ -310,7 +292,7 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 
 		selectUser := tc.unique("select-user")
 		selectPassword := "SelectPassword123!"
-		cleanupSelectUser, err := tc.adminCreateUser(selectUser,
+		cleanupSelectUser, err := tc.createConfirmedUser(selectUser, selectPassword,
 			func(input *cognitoidentityprovider.AdminCreateUserInput) {
 				input.MessageAction = ""
 			})
@@ -318,15 +300,6 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("admin create user: %v", err)
 		}
 		defer cleanupSelectUser()
-		_, err = tc.client.AdminSetUserPassword(tc.ctx, &cognitoidentityprovider.AdminSetUserPasswordInput{
-			UserPoolId: aws.String(tc.userPoolID),
-			Username:   aws.String(selectUser),
-			Password:   aws.String(selectPassword),
-			Permanent:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("admin set user password: %v", err)
-		}
 
 		// USER_AUTH takes USERNAME inside AuthParameters per the AWS API
 		// reference.

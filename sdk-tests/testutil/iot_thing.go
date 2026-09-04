@@ -110,12 +110,13 @@ func (r *TestRunner) runIoTThingTests(tc *iotTestContext) []TestResult {
 	ttName := uniqueName("thing-type")
 	thingWithType := uniqueName("thing-tt")
 	defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingWithType)})
-	defer tc.client.DeleteThingType(tc.ctx, &iot.DeleteThingTypeInput{ThingTypeName: aws.String(ttName)})
 
 	results = append(results, r.RunTest("iot", "Thing_UpdateThing_RemoveThingType", func() error {
-		if _, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{ThingTypeName: aws.String(ttName)}); err != nil {
+		cleanupType, err := tc.createThingType(ttName)
+		if err != nil {
 			return fmt.Errorf("CreateThingType prerequisite failed: %w", err)
 		}
+		defer cleanupType()
 		if _, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{
 			ThingName:     aws.String(thingWithType),
 			ThingTypeName: aws.String(ttName),
@@ -157,16 +158,18 @@ func (r *TestRunner) runIoTThingTests(tc *iotTestContext) []TestResult {
 	// ThingTypeName path).
 	thingForSet := uniqueName("thing-set")
 	ttForSet := uniqueName("thing-type-set")
-	defer tc.client.DeleteThing(tc.ctx, &iot.DeleteThingInput{ThingName: aws.String(thingForSet)})
-	defer tc.client.DeleteThingType(tc.ctx, &iot.DeleteThingTypeInput{ThingTypeName: aws.String(ttForSet)})
 
 	results = append(results, r.RunTest("iot", "Thing_UpdateThing_SetThingType", func() error {
-		if _, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{ThingTypeName: aws.String(ttForSet)}); err != nil {
+		cleanupType, err := tc.createThingType(ttForSet)
+		if err != nil {
 			return fmt.Errorf("CreateThingType prerequisite failed: %w", err)
 		}
-		if _, err := tc.client.CreateThing(tc.ctx, &iot.CreateThingInput{ThingName: aws.String(thingForSet)}); err != nil {
+		defer cleanupType()
+		cleanupThingForSet, err := tc.createThing(thingForSet)
+		if err != nil {
 			return fmt.Errorf("CreateThing prerequisite failed: %w", err)
 		}
+		defer cleanupThingForSet()
 		if _, err := tc.client.UpdateThing(tc.ctx, &iot.UpdateThingInput{
 			ThingName:       aws.String(thingForSet),
 			RemoveThingType: false,

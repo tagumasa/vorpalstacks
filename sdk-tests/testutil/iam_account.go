@@ -3,7 +3,6 @@ package testutil
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -56,10 +55,11 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		policy := fmt.Sprintf("AuthzDetail-Policy-%s", tc.ts)
 		doc := iamAllowPolicy("s3:ListBucket")
 
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
+		defer cleanupUser()
 
 		policyArn, cleanupPolicy, err := tc.createPolicy(policy, doc)
 		if err != nil {
@@ -97,12 +97,11 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}); err != nil {
 			return err
 		}
-		if _, err := tc.client.CreateInstanceProfile(tc.ctx, &iam.CreateInstanceProfileInput{
-			InstanceProfileName: aws.String(profile),
-		}); err != nil {
+		cleanupProfile, err := tc.createInstanceProfile(profile)
+		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteInstanceProfile(tc.ctx, &iam.DeleteInstanceProfileInput{InstanceProfileName: aws.String(profile)})
+		defer cleanupProfile()
 		if _, err := tc.client.AddRoleToInstanceProfile(tc.ctx, &iam.AddRoleToInstanceProfileInput{
 			InstanceProfileName: aws.String(profile),
 			RoleName:            aws.String(role),
@@ -599,27 +598,9 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 
 		// The report generation is asynchronous; poll until completion.
-		var status string
-		var completed *iam.GetServiceLastAccessedDetailsOutput
-		for i := 0; i < 20; i++ {
-			resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
-				JobId: gen.JobId,
-			})
-			if err != nil {
-				return err
-			}
-			completed = resp
-			if resp.JobStatus == types.JobStatusTypeCompleted {
-				status = string(resp.JobStatus)
-				break
-			}
-			if resp.JobStatus == types.JobStatusTypeFailed {
-				return fmt.Errorf("service last accessed job failed")
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		if status == "" {
-			return fmt.Errorf("service last accessed job did not complete in time")
+		completed, err := tc.awaitServiceLastAccessedDetails(gen.JobId)
+		if err != nil {
+			return err
 		}
 
 		// A generate call without Granularity defaults to SERVICE_LEVEL, and
@@ -650,20 +631,8 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 
 		// The entity-level report becomes available once the job completes.
-		for i := 0; i < 20; i++ {
-			resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
-				JobId: gen.JobId,
-			})
-			if err != nil {
-				return err
-			}
-			if resp.JobStatus == types.JobStatusTypeCompleted {
-				break
-			}
-			if resp.JobStatus == types.JobStatusTypeFailed {
-				return fmt.Errorf("service last accessed job failed")
-			}
-			time.Sleep(500 * time.Millisecond)
+		if _, err := tc.awaitServiceLastAccessedDetails(gen.JobId); err != nil {
+			return err
 		}
 
 		resp, err := tc.client.GetServiceLastAccessedDetailsWithEntities(tc.ctx, &iam.GetServiceLastAccessedDetailsWithEntitiesInput{
@@ -714,25 +683,9 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 			return fmt.Errorf("generate returned an empty job id")
 		}
 
-		var completed *iam.GetServiceLastAccessedDetailsOutput
-		for i := 0; i < 20; i++ {
-			resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
-				JobId: gen.JobId,
-			})
-			if err != nil {
-				return err
-			}
-			completed = resp
-			if resp.JobStatus == types.JobStatusTypeCompleted {
-				break
-			}
-			if resp.JobStatus == types.JobStatusTypeFailed {
-				return fmt.Errorf("service last accessed job failed")
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		if completed == nil || completed.JobStatus != types.JobStatusTypeCompleted {
-			return fmt.Errorf("action-level job did not complete in time")
+		completed, err := tc.awaitServiceLastAccessedDetails(gen.JobId)
+		if err != nil {
+			return err
 		}
 		if completed.JobType != types.AccessAdvisorUsageGranularityTypeActionLevel {
 			return fmt.Errorf("action-level report JobType: got %q, want ACTION_LEVEL", completed.JobType)

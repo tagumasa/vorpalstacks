@@ -663,14 +663,7 @@ func (r *TestRunner) dynamoDBQueryScanConformanceTests(ctx context.Context, clie
 				}},
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected ResourceNotFoundException for a nonexistent transaction table")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "TransactWriteItems_InvalidTableName_Rejected", func() error {

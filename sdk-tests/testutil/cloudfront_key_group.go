@@ -16,22 +16,8 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 	client := tc.client
 	ctx := tc.ctx
 
-	createPublicKey := func(tag string) (id, etag string, err error) {
-		resp, cerr := client.CreatePublicKey(ctx, &cloudfront.CreatePublicKeyInput{
-			PublicKeyConfig: &types.PublicKeyConfig{
-				Name:            aws.String(tc.uniquePrefix(tag)),
-				EncodedKey:      aws.String(cloudfrontEncodedKeyB64),
-				CallerReference: aws.String(tc.uniqueCallerRef(tag + "-ref")),
-			},
-		})
-		if cerr != nil {
-			return "", "", cerr
-		}
-		return aws.ToString(resp.PublicKey.Id), aws.ToString(resp.ETag), nil
-	}
-
 	results = append(results, tc.runner.RunTest("cloudfront", "KeyGroup_RoundTrip", func() error {
-		pkID, pkETag, err := createPublicKey("kg-rt-pk")
+		pkID, pkETag, err := tc.createPublicKey("kg-rt-pk")
 		if err != nil {
 			return err
 		}
@@ -98,26 +84,25 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 			return fmt.Errorf("ETag should change after update")
 		}
 
+		groups, err := paginate(func(next *string) ([]types.KeyGroupSummary, *string, error) {
+			resp, lerr := client.ListKeyGroups(ctx, &cloudfront.ListKeyGroupsInput{Marker: next})
+			if lerr != nil {
+				return nil, nil, lerr
+			}
+			if resp.KeyGroupList == nil {
+				return nil, nil, nil
+			}
+			return resp.KeyGroupList.Items, resp.KeyGroupList.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
 		found := false
-		marker := ""
-		for {
-			input := &cloudfront.ListKeyGroupsInput{}
-			if marker != "" {
-				input.Marker = aws.String(marker)
-			}
-			listResp, err := client.ListKeyGroups(ctx, input)
-			if err != nil {
-				return err
-			}
-			for _, item := range listResp.KeyGroupList.Items {
-				if aws.ToString(item.KeyGroup.Id) == kgID {
-					found = true
-				}
-			}
-			if found || listResp.KeyGroupList.NextMarker == nil || aws.ToString(listResp.KeyGroupList.NextMarker) == "" {
+		for _, item := range groups {
+			if aws.ToString(item.KeyGroup.Id) == kgID {
+				found = true
 				break
 			}
-			marker = aws.ToString(listResp.KeyGroupList.NextMarker)
 		}
 		if !found {
 			return fmt.Errorf("key group %q not listed", kgID)
@@ -144,7 +129,7 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "KeyGroup_DuplicateName_Rejected", func() error {
-		pkID, pkETag, err := createPublicKey("kg-dup-pk")
+		pkID, pkETag, err := tc.createPublicKey("kg-dup-pk")
 		if err != nil {
 			return err
 		}
@@ -187,7 +172,7 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "KeyGroup_Preconditions_Rejected", func() error {
-		pkID, pkETag, err := createPublicKey("kg-pre-pk")
+		pkID, pkETag, err := tc.createPublicKey("kg-pre-pk")
 		if err != nil {
 			return err
 		}
@@ -252,50 +237,18 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_UnknownTrustedKeyGroup_Rejected", func() error {
-		originID := tc.uniquePrefix("origin")
-		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
-			DistributionConfig: &types.DistributionConfig{
-				CallerReference: aws.String(tc.uniqueCallerRef("kg-unknown-kg")),
-				Enabled:         aws.Bool(true),
-				Comment:         aws.String("unknown trusted key group"),
-				Origins: &types.Origins{
-					Quantity: aws.Int32(1),
-					Items: []types.Origin{
-						{
-							Id:         aws.String(originID),
-							DomainName: aws.String("example.org"),
-							CustomOriginConfig: &types.CustomOriginConfig{
-								HTTPPort:             aws.Int32(80),
-								HTTPSPort:            aws.Int32(443),
-								OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
-							},
-						},
-					},
-				},
-				DefaultCacheBehavior: &types.DefaultCacheBehavior{
-					TargetOriginId:       aws.String(originID),
-					ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
-					TrustedKeyGroups: &types.TrustedKeyGroups{
-						Enabled:  aws.Bool(true),
-						Quantity: aws.Int32(1),
-						Items:    []string{tc.uniquePrefix("no-such-key-group")},
-					},
-					ForwardedValues: &types.ForwardedValues{
-						QueryString: aws.Bool(false),
-						Cookies:     &types.CookiePreference{Forward: types.ItemSelectionNone},
-					},
-				},
-				ViewerCertificate: &types.ViewerCertificate{CloudFrontDefaultCertificate: aws.Bool(true)},
-				Restrictions: &types.Restrictions{
-					GeoRestriction: &types.GeoRestriction{RestrictionType: types.GeoRestrictionTypeNone, Quantity: aws.Int32(0)},
-				},
-			},
-		})
+		cfg := tc.baseDistributionConfig(tc.uniquePrefix("kg-unknown-kg"), "unknown trusted key group", "example.org")
+		cfg.DefaultCacheBehavior.TrustedKeyGroups = &types.TrustedKeyGroups{
+			Enabled:  aws.Bool(true),
+			Quantity: aws.Int32(1),
+			Items:    []string{tc.uniquePrefix("no-such-key-group")},
+		}
+		_, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
 		return AssertErrorContains(err, "InvalidArgument")
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "ListDistributionsByKeyGroup_AttachedDistribution", func() error {
-		pkID, pkETag, err := createPublicKey("kg-att-pk")
+		pkID, pkETag, err := tc.createPublicKey("kg-att-pk")
 		if err != nil {
 			return err
 		}
@@ -318,45 +271,13 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 			}
 		}()
 
-		originID := tc.uniquePrefix("origin")
-		distResp, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
-			DistributionConfig: &types.DistributionConfig{
-				CallerReference: aws.String(tc.uniqueCallerRef("kg-att-dist")),
-				Enabled:         aws.Bool(true),
-				Comment:         aws.String("key group attachment"),
-				Origins: &types.Origins{
-					Quantity: aws.Int32(1),
-					Items: []types.Origin{
-						{
-							Id:         aws.String(originID),
-							DomainName: aws.String("example.org"),
-							CustomOriginConfig: &types.CustomOriginConfig{
-								HTTPPort:             aws.Int32(80),
-								HTTPSPort:            aws.Int32(443),
-								OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
-							},
-						},
-					},
-				},
-				DefaultCacheBehavior: &types.DefaultCacheBehavior{
-					TargetOriginId:       aws.String(originID),
-					ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
-					TrustedKeyGroups: &types.TrustedKeyGroups{
-						Enabled:  aws.Bool(true),
-						Quantity: aws.Int32(1),
-						Items:    []string{kgID},
-					},
-					ForwardedValues: &types.ForwardedValues{
-						QueryString: aws.Bool(false),
-						Cookies:     &types.CookiePreference{Forward: types.ItemSelectionNone},
-					},
-				},
-				ViewerCertificate: &types.ViewerCertificate{CloudFrontDefaultCertificate: aws.Bool(true)},
-				Restrictions: &types.Restrictions{
-					GeoRestriction: &types.GeoRestriction{RestrictionType: types.GeoRestrictionTypeNone, Quantity: aws.Int32(0)},
-				},
-			},
-		})
+		cfg := tc.baseDistributionConfig(tc.uniquePrefix("kg-att-dist"), "key group attachment", "example.org")
+		cfg.DefaultCacheBehavior.TrustedKeyGroups = &types.TrustedKeyGroups{
+			Enabled:  aws.Bool(true),
+			Quantity: aws.Int32(1),
+			Items:    []string{kgID},
+		}
+		distResp, err := client.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{DistributionConfig: cfg})
 		if err != nil {
 			return err
 		}
@@ -366,26 +287,28 @@ func cfKeyGroupTests(tc *cfTestContext) []TestResult {
 			_ = tc.disableAndDeleteDistribution(distID, distETag)
 		}()
 
+		ids, err := paginate(func(next *string) ([]string, *string, error) {
+			resp, lerr := client.ListDistributionsByKeyGroup(ctx, &cloudfront.ListDistributionsByKeyGroupInput{
+				KeyGroupId: aws.String(kgID),
+				Marker:     next,
+			})
+			if lerr != nil {
+				return nil, nil, lerr
+			}
+			if resp.DistributionIdList == nil {
+				return nil, nil, nil
+			}
+			return resp.DistributionIdList.Items, resp.DistributionIdList.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
 		found := false
-		marker := ""
-		for {
-			input := &cloudfront.ListDistributionsByKeyGroupInput{KeyGroupId: aws.String(kgID)}
-			if marker != "" {
-				input.Marker = aws.String(marker)
-			}
-			listResp, err := client.ListDistributionsByKeyGroup(ctx, input)
-			if err != nil {
-				return err
-			}
-			for _, id := range listResp.DistributionIdList.Items {
-				if id == distID {
-					found = true
-				}
-			}
-			if found || listResp.DistributionIdList.NextMarker == nil || aws.ToString(listResp.DistributionIdList.NextMarker) == "" {
+		for _, id := range ids {
+			if id == distID {
+				found = true
 				break
 			}
-			marker = aws.ToString(listResp.DistributionIdList.NextMarker)
 		}
 		if !found {
 			return fmt.Errorf("distribution %q not listed under key group %q", distID, kgID)

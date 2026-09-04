@@ -15,20 +15,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_CreateNonExistent", func() error {
 		uaTable := fmt.Sprintf("UACreate-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(uaTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, uaTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(uaTable)})
+		defer cleanupTable()
 
 		resp, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 			TableName: aws.String(uaTable),
@@ -63,20 +54,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_IfNotExists", func() error {
 		ineTable := fmt.Sprintf("INETable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ineTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ineTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ineTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(ineTable),
@@ -111,20 +93,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_IfNotExists_NoExisting", func() error {
 		ineTable := fmt.Sprintf("INENE-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ineTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ineTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ineTable)})
+		defer cleanupTable()
 
 		resp, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 			TableName: aws.String(ineTable),
@@ -148,20 +121,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_Arithmetic", func() error {
 		arithTable := fmt.Sprintf("Arith-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(arithTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, arithTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(arithTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(arithTable),
@@ -193,20 +157,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_Remove", func() error {
 		rmTable := fmt.Sprintf("RmTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(rmTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, rmTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(rmTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(rmTable),
@@ -239,20 +194,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_AddNumber", func() error {
 		addTable := fmt.Sprintf("AddN-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(addTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, addTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(addTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(addTable),
@@ -284,20 +230,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_AddStringSet", func() error {
 		ssTable := fmt.Sprintf("AddSS-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ssTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ssTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ssTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(ssTable),
@@ -341,20 +278,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_DeleteStringSet", func() error {
 		dsTable := fmt.Sprintf("DelSS-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(dsTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, dsTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(dsTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(dsTable),
@@ -389,20 +317,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_UpdatedOld", func() error {
 		uoTable := fmt.Sprintf("UO-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(uoTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, uoTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(uoTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(uoTable),
@@ -444,20 +363,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_UpdatedNew", func() error {
 		unTable := fmt.Sprintf("UN-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(unTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, unTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(unTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(unTable),
@@ -497,20 +407,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 	// UpdateItem list_append appends elements to an existing list attribute.
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_ListAppendNested", func() error {
 		listTable := fmt.Sprintf("ListAppend-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(listTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, listTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(listTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(listTable),
@@ -558,20 +459,11 @@ func (r *TestRunner) dynamoDBUpdateExpressionTests(ctx context.Context, client *
 	// list_append on a non-List attribute (SS, NS, BS, etc.) must return ValidationException.
 	results = append(results, r.RunTest("dynamodb", "UpdateItem_ListAppend_TypeMismatch", func() error {
 		laTable := fmt.Sprintf("ListAppendErr-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(laTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, laTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(laTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(laTable),

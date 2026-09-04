@@ -332,28 +332,24 @@ func (r *TestRunner) runIoTAuditSecurityTests(tc *iotTestContext) []TestResult {
 	profileMetric := uniqueName("sp-metric")
 	profileDim := uniqueName("sp-dimension")
 	results = append(results, r.RunTest("iot", "ListSecurityProfiles_DimensionMetricFilters", func() error {
-		defer tc.client.DeleteSecurityProfile(tc.ctx, &iot.DeleteSecurityProfileInput{SecurityProfileName: aws.String(profileMetric)})
-		defer tc.client.DeleteSecurityProfile(tc.ctx, &iot.DeleteSecurityProfileInput{SecurityProfileName: aws.String(profileDim)})
-		if _, err := tc.client.CreateSecurityProfile(tc.ctx, &iot.CreateSecurityProfileInput{
-			SecurityProfileName: aws.String(profileMetric),
-			Behaviors: []iottypes.Behavior{{
-				Name:     aws.String("count-behavior"),
-				Metric:   aws.String("aws:num-connected-devices"),
-				Criteria: &iottypes.BehaviorCriteria{ComparisonOperator: iottypes.ComparisonOperatorLessThan, Value: &iottypes.MetricValue{Count: aws.Int64(10)}},
-			}},
-		}); err != nil {
+		cleanupMetric, err := tc.createSecurityProfile(profileMetric, []iottypes.Behavior{{
+			Name:     aws.String("count-behavior"),
+			Metric:   aws.String("aws:num-connected-devices"),
+			Criteria: &iottypes.BehaviorCriteria{ComparisonOperator: iottypes.ComparisonOperatorLessThan, Value: &iottypes.MetricValue{Count: aws.Int64(10)}},
+		}})
+		if err != nil {
 			return fmt.Errorf("create metric profile failed: %w", err)
 		}
-		if _, err := tc.client.CreateSecurityProfile(tc.ctx, &iot.CreateSecurityProfileInput{
-			SecurityProfileName: aws.String(profileDim),
-			Behaviors: []iottypes.Behavior{{
-				Name:            aws.String("dim-behavior"),
-				MetricDimension: &iottypes.MetricDimension{DimensionName: aws.String("sdk-test-dimension"), Operator: iottypes.DimensionValueOperatorNotIn},
-				Criteria:        &iottypes.BehaviorCriteria{ComparisonOperator: iottypes.ComparisonOperatorLessThan, Value: &iottypes.MetricValue{Count: aws.Int64(10)}},
-			}},
-		}); err != nil {
+		defer cleanupMetric()
+		cleanupDim, err := tc.createSecurityProfile(profileDim, []iottypes.Behavior{{
+			Name:            aws.String("dim-behavior"),
+			MetricDimension: &iottypes.MetricDimension{DimensionName: aws.String("sdk-test-dimension"), Operator: iottypes.DimensionValueOperatorNotIn},
+			Criteria:        &iottypes.BehaviorCriteria{ComparisonOperator: iottypes.ComparisonOperatorLessThan, Value: &iottypes.MetricValue{Count: aws.Int64(10)}},
+		}})
+		if err != nil {
 			return fmt.Errorf("create dimension profile failed: %w", err)
 		}
+		defer cleanupDim()
 		// The metricDimension operator round-trips with the dimension
 		// name through describe.
 		described, err := tc.client.DescribeSecurityProfile(tc.ctx, &iot.DescribeSecurityProfileInput{

@@ -37,40 +37,15 @@ func (r *TestRunner) runNeptunedataCypherBasicTests(tc *neptunedataContext) []Te
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteOpenCypherQuery_MatchAllNodes", func() error {
-		s, err := tc.cypherResult("MATCH (n) RETURN n.name ORDER BY n.name")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"marko"`, `"vadas"`, `"josh"`, `"lop"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected node name %s in results, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.cypherContains("MATCH (n) RETURN n.name ORDER BY n.name", `"marko"`, `"vadas"`, `"josh"`, `"lop"`)
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteOpenCypherQuery_MatchByProperty", func() error {
-		s, err := tc.cypherResult("MATCH (n:Person {name: 'marko'}) RETURN n.age")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "29") {
-			return fmt.Errorf("expected age 29 in results, got %s", s)
-		}
-		return nil
+		return tc.cypherContains("MATCH (n:Person {name: 'marko'}) RETURN n.age", "29")
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteOpenCypherQuery_Traversal", func() error {
-		s, err := tc.cypherResult("MATCH (a:Person {name: 'marko'})-[:KNOWS]->(friend) RETURN friend.name")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"vadas"`, `"josh"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected friend %s in traversal results, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.cypherContains("MATCH (a:Person {name: 'marko'})-[:KNOWS]->(friend) RETURN friend.name", `"vadas"`, `"josh"`)
 	}))
 
 	results = append(results, r.RunTest("neptunedata", "ExecuteOpenCypherQuery_Aggregation", func() error {

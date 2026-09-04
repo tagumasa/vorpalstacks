@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -16,20 +15,11 @@ func (r *TestRunner) dynamoDBPutConditionTests(ctx context.Context, client *dyna
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_ConditionPass", func() error {
 		condTable := fmt.Sprintf("CondPut-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(condTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, condTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(condTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(condTable),
@@ -63,20 +53,11 @@ func (r *TestRunner) dynamoDBPutConditionTests(ctx context.Context, client *dyna
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_ConditionFail", func() error {
 		condTable := fmt.Sprintf("CondPutF-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(condTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, condTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(condTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(condTable),
@@ -94,32 +75,16 @@ func (r *TestRunner) dynamoDBPutConditionTests(ctx context.Context, client *dyna
 			},
 			ConditionExpression: aws.String("attribute_not_exists(id)"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected ConditionalCheckFailedException")
-		}
-		var ccf *types.ConditionalCheckFailedException
-		if !errors.As(err, &ccf) {
-			return fmt.Errorf("expected ConditionalCheckFailedException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectConditionalCheckFailed(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_ReturnConsumedCapacity", func() error {
 		rcTable := fmt.Sprintf("RCapP-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(rcTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, rcTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(rcTable)})
+		defer cleanupTable()
 
 		resp, err := client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(rcTable),
@@ -153,20 +118,11 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 
 	results = append(results, r.RunTest("dynamodb", "Condition_AttributeExists_True", func() error {
 		ceTable := fmt.Sprintf("CE-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ceTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ceTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ceTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(ceTable),
@@ -203,20 +159,11 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 
 	results = append(results, r.RunTest("dynamodb", "Condition_AttributeNotExists_False", func() error {
 		ceTable := fmt.Sprintf("CENE-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ceTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ceTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ceTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(ceTable),
@@ -234,32 +181,16 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 			ExpressionAttributeNames:  map[string]string{"#s": "status"},
 			ExpressionAttributeValues: map[string]types.AttributeValue{":v": &types.AttributeValueMemberS{Value: "active"}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected ConditionalCheckFailedException")
-		}
-		var ccf *types.ConditionalCheckFailedException
-		if !errors.As(err, &ccf) {
-			return fmt.Errorf("expected ConditionalCheckFailedException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectConditionalCheckFailed(err)
 	}))
 
 	results = append(results, r.RunTest("dynamodb", "Condition_BeginsWith", func() error {
 		bwTable := fmt.Sprintf("BW-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(bwTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, bwTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(bwTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(bwTable),
@@ -297,20 +228,11 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 
 	results = append(results, r.RunTest("dynamodb", "Condition_Contains", func() error {
 		ctTable := fmt.Sprintf("CT-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ctTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ctTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ctTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(ctTable),
@@ -348,20 +270,11 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 
 	results = append(results, r.RunTest("dynamodb", "Condition_ComparisonOperators", func() error {
 		coTable := fmt.Sprintf("CO-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(coTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, coTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(coTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(coTable),
@@ -406,20 +319,11 @@ func (r *TestRunner) dynamoDBConditionExpressionTests(ctx context.Context, clien
 
 	results = append(results, r.RunTest("dynamodb", "Condition_AND_OR", func() error {
 		aoTable := fmt.Sprintf("AO-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(aoTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, aoTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(aoTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(aoTable),

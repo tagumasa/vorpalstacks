@@ -272,3 +272,66 @@ func (tc *iamTestContext) createPolicy(name, doc string) (string, func(), error)
 		tc.client.DeletePolicy(tc.ctx, &iam.DeletePolicyInput{PolicyArn: aws.String(arn)})
 	}, nil
 }
+
+// createGroup creates a throwaway group and returns its cleanup.
+func (tc *iamTestContext) createGroup(name string) (func(), error) {
+	if _, err := tc.client.CreateGroup(tc.ctx, &iam.CreateGroupInput{GroupName: aws.String(name)}); err != nil {
+		return nil, err
+	}
+	return func() {
+		tc.client.DeleteGroup(tc.ctx, &iam.DeleteGroupInput{GroupName: aws.String(name)})
+	}, nil
+}
+
+// createInstanceProfile creates a throwaway instance profile and returns
+// its cleanup.
+func (tc *iamTestContext) createInstanceProfile(name string) (func(), error) {
+	if _, err := tc.client.CreateInstanceProfile(tc.ctx, &iam.CreateInstanceProfileInput{
+		InstanceProfileName: aws.String(name),
+	}); err != nil {
+		return nil, err
+	}
+	return func() {
+		tc.client.DeleteInstanceProfile(tc.ctx, &iam.DeleteInstanceProfileInput{InstanceProfileName: aws.String(name)})
+	}, nil
+}
+
+// createMFADevice creates a throwaway virtual MFA device and returns the
+// device — its Base32StringSeed feeds TOTP code generation — plus a
+// cleanup closure deleting it by serial number.
+func (tc *iamTestContext) createMFADevice(name string) (*types.VirtualMFADevice, func(), error) {
+	resp, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
+		VirtualMFADeviceName: aws.String(name),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	serial := resp.VirtualMFADevice.SerialNumber
+	return resp.VirtualMFADevice, func() {
+		tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{SerialNumber: serial})
+	}, nil
+}
+
+// awaitServiceLastAccessedDetails polls a generated Service Last Accessed
+// report until it completes. Report generation is asynchronous, so the
+// completion wait is part of the AWS contract: up to 20 attempts at
+// 500 ms intervals, a FAILED status or exhausted attempts aborting with
+// an error.
+func (tc *iamTestContext) awaitServiceLastAccessedDetails(jobID *string) (*iam.GetServiceLastAccessedDetailsOutput, error) {
+	for i := 0; i < 20; i++ {
+		resp, err := tc.client.GetServiceLastAccessedDetails(tc.ctx, &iam.GetServiceLastAccessedDetailsInput{
+			JobId: jobID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp.JobStatus == types.JobStatusTypeCompleted {
+			return resp, nil
+		}
+		if resp.JobStatus == types.JobStatusTypeFailed {
+			return nil, fmt.Errorf("service last accessed job failed")
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return nil, fmt.Errorf("service last accessed job did not complete in time")
+}

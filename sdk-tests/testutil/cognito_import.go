@@ -24,16 +24,16 @@ func (r *TestRunner) cognitoImportJobTests(tc *cognitoIDPContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("cognito", "UserImportJob_ImportFlow", func() error {
-		return r.runUserImportFlowTest(tc.ctx, tc.client)
+		return r.runUserImportFlowTest(tc)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_PasswordHashImport", func() error {
-		return r.runUserImportHashTest(tc.ctx, tc.client)
+		return r.runUserImportHashTest(tc)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_Stop", func() error {
-		return r.runUserImportStopTest(tc.ctx, tc.client)
+		return r.runUserImportStopTest(tc)
 	}))
 	results = append(results, r.RunTest("cognito", "UserImportJob_NegativePaths", func() error {
-		return r.runUserImportNegativeTest(tc.ctx, tc.client)
+		return r.runUserImportNegativeTest(tc)
 	}))
 
 	return results
@@ -42,8 +42,8 @@ func (r *TestRunner) cognitoImportJobTests(tc *cognitoIDPContext) []TestResult {
 // createImportTestPool creates a pool with email as the auto-verified
 // attribute, a required email, and an optional custom rank attribute, plus
 // an app client allowed to use USER_PASSWORD_AUTH.
-func (r *TestRunner) createImportTestPool(ctx context.Context, client *cognitoidentityprovider.Client, poolName string) (string, string, error) {
-	createPool, err := client.CreateUserPool(ctx, &cognitoidentityprovider.CreateUserPoolInput{
+func (tc *cognitoIDPContext) createImportTestPool(poolName string) (string, string, error) {
+	createPool, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
 		PoolName:               aws.String(poolName),
 		AutoVerifiedAttributes: []types.VerifiedAttributeType{types.VerifiedAttributeTypeEmail},
 		Schema: []types.SchemaAttributeType{
@@ -64,13 +64,13 @@ func (r *TestRunner) createImportTestPool(ctx context.Context, client *cognitoid
 	}
 	poolID := aws.ToString(createPool.UserPool.Id)
 
-	createClient, err := client.CreateUserPoolClient(ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
+	createClient, err := tc.client.CreateUserPoolClient(tc.ctx, &cognitoidentityprovider.CreateUserPoolClientInput{
 		UserPoolId:        aws.String(poolID),
 		ClientName:        aws.String(poolName + "-client"),
 		ExplicitAuthFlows: []types.ExplicitAuthFlowsType{types.ExplicitAuthFlowsTypeUserPasswordAuth},
 	})
 	if err != nil {
-		_, _ = client.DeleteUserPool(ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(poolID)})
+		_, _ = tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{UserPoolId: aws.String(poolID)})
 		return "", "", err
 	}
 	return poolID, aws.ToString(createClient.UserPoolClient.ClientId), nil
@@ -150,9 +150,10 @@ func waitImportJobTerminal(ctx context.Context, client *cognitoidentityprovider.
 	}
 }
 
-func (r *TestRunner) runUserImportFlowTest(ctx context.Context, client *cognitoidentityprovider.Client) error {
-	poolName := fmt.Sprintf("import-flow-pool-%d", time.Now().UnixNano())
-	poolID, clientID, err := r.createImportTestPool(ctx, client, poolName)
+func (r *TestRunner) runUserImportFlowTest(tc *cognitoIDPContext) error {
+	ctx, client := tc.ctx, tc.client
+	poolName := tc.unique("import-flow-pool")
+	poolID, clientID, err := tc.createImportTestPool(poolName)
 	if err != nil {
 		return fmt.Errorf("pool setup failed: %w", err)
 	}
@@ -339,9 +340,10 @@ func (r *TestRunner) assertImportLogs(ctx context.Context, poolID, poolName, job
 // importedHashBCrypt verifies "Import3d!Pass" (bcrypt cost 4).
 const importedHashBCrypt = "$2a$04$YobgTqYzyZqdRBYyNUR6teChu./N4lVp2O0MWbNGwlvPEP6cYW/ke"
 
-func (r *TestRunner) runUserImportHashTest(ctx context.Context, client *cognitoidentityprovider.Client) error {
-	poolName := fmt.Sprintf("import-hash-pool-%d", time.Now().UnixNano())
-	poolID, clientID, err := r.createImportTestPool(ctx, client, poolName)
+func (r *TestRunner) runUserImportHashTest(tc *cognitoIDPContext) error {
+	ctx, client := tc.ctx, tc.client
+	poolName := tc.unique("import-hash-pool")
+	poolID, clientID, err := tc.createImportTestPool(poolName)
 	if err != nil {
 		return fmt.Errorf("pool setup failed: %w", err)
 	}
@@ -428,9 +430,10 @@ func (r *TestRunner) runUserImportHashTest(ctx context.Context, client *cognitoi
 	return nil
 }
 
-func (r *TestRunner) runUserImportStopTest(ctx context.Context, client *cognitoidentityprovider.Client) error {
-	poolName := fmt.Sprintf("import-stop-pool-%d", time.Now().UnixNano())
-	poolID, _, err := r.createImportTestPool(ctx, client, poolName)
+func (r *TestRunner) runUserImportStopTest(tc *cognitoIDPContext) error {
+	ctx, client := tc.ctx, tc.client
+	poolName := tc.unique("import-stop-pool")
+	poolID, _, err := tc.createImportTestPool(poolName)
 	if err != nil {
 		return fmt.Errorf("pool setup failed: %w", err)
 	}
@@ -500,7 +503,8 @@ func (r *TestRunner) runUserImportStopTest(ctx context.Context, client *cognitoi
 	return nil
 }
 
-func (r *TestRunner) runUserImportNegativeTest(ctx context.Context, client *cognitoidentityprovider.Client) error {
+func (r *TestRunner) runUserImportNegativeTest(tc *cognitoIDPContext) error {
+	ctx, client := tc.ctx, tc.client
 	if _, err := client.StartUserImportJob(ctx, &cognitoidentityprovider.StartUserImportJobInput{
 		UserPoolId: aws.String(r.region + "_nonexistentpool"),
 		JobId:      aws.String("import-nonexistent"),
@@ -510,8 +514,8 @@ func (r *TestRunner) runUserImportNegativeTest(ctx context.Context, client *cogn
 		return err
 	}
 
-	poolName := fmt.Sprintf("import-neg-pool-%d", time.Now().UnixNano())
-	poolID, _, err := r.createImportTestPool(ctx, client, poolName)
+	poolName := tc.unique("import-neg-pool")
+	poolID, _, err := tc.createImportTestPool(poolName)
 	if err != nil {
 		return fmt.Errorf("pool setup failed: %w", err)
 	}

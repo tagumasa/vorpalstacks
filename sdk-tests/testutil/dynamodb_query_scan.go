@@ -59,20 +59,11 @@ func (r *TestRunner) dynamoDBConditionNotCaseTest(ctx context.Context, client *d
 	// NOT operator in condition expressions is case-insensitive (not, NOT, Not all valid).
 	results = append(results, r.RunTest("dynamodb", "Query_ConditionNot_CaseInsensitive", func() error {
 		notTable := fmt.Sprintf("NotCase-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(notTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, notTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(notTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(notTable),
@@ -337,20 +328,11 @@ func (r *TestRunner) dynamoDBNestedTypeTests(ctx context.Context, client *dynamo
 
 	results = append(results, r.RunTest("dynamodb", "Query_Scan_NestedTypes", func() error {
 		nestedTable := fmt.Sprintf("NestedTypes-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(nestedTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, nestedTable, withDynamoHashKey("pk"))
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(nestedTable)})
+		defer cleanupTable()
 
 		mapItem := map[string]types.AttributeValue{
 			"pk": &types.AttributeValueMemberS{Value: "nested1"},
@@ -427,19 +409,11 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 
 	results = append(results, r.RunTest("dynamodb", "Query_Limit_Pagination", func() error {
 		pagTableName := fmt.Sprintf("PagTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(pagTableName),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, pagTableName, withDynamoHashKey("pk"))
 		if err != nil {
-			return fmt.Errorf("create table: %v", err)
+			return err
 		}
+		defer cleanupTable()
 
 		for i := 0; i < 5; i++ {
 			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
@@ -450,7 +424,6 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 				},
 			})
 			if err != nil {
-				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
 				return fmt.Errorf("put item %d: %v", i, err)
 			}
 		}
@@ -469,7 +442,6 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 				ExclusiveStartKey: exclusiveStartKey,
 			})
 			if err != nil {
-				client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
 				return fmt.Errorf("query page: %v", err)
 			}
 			pageCount++
@@ -485,7 +457,6 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 			}
 		}
 
-		client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pagTableName)})
 		if len(allItems) != 1 {
 			return fmt.Errorf("expected 1 item for pk=item-0, got %d", len(allItems))
 		}

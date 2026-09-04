@@ -312,20 +312,11 @@ func (r *TestRunner) dynamoDBDuplicateTableTest(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "CreateTable_DuplicateName", func() error {
 		dupTable := fmt.Sprintf("DupTable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(dupTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, dupTable)
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(dupTable)})
+		defer cleanupTable()
 
 		_, err = client.CreateTable(ctx, &dynamodb.CreateTableInput{
 			TableName: aws.String(dupTable),
@@ -368,19 +359,11 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "DeleteTable_Protected", func() error {
 		dpTable := fmt.Sprintf("DP-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(dpTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode:               types.BillingModePayPerRequest,
-			DeletionProtectionEnabled: aws.Bool(true),
+		_, err := createDynamoTestTable(ctx, client, dpTable, func(input *dynamodb.CreateTableInput) {
+			input.DeletionProtectionEnabled = aws.Bool(true)
 		})
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer func() {
 			client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
@@ -482,20 +465,11 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "UpdateTable_EnableSSE", func() error {
 		sseTable := fmt.Sprintf("SSETable-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(sseTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, sseTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(sseTable)})
+		defer cleanupTable()
 
 		resp, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
 			TableName: aws.String(sseTable),
@@ -521,21 +495,15 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "UpdateTable_AddGSI", func() error {
 		agTable := fmt.Sprintf("AddGSI-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(agTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-				{AttributeName: aws.String("gsi_pk"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
+		cleanupTable, err := createDynamoTestTable(ctx, client, agTable, func(input *dynamodb.CreateTableInput) {
+			input.AttributeDefinitions = append(input.AttributeDefinitions, types.AttributeDefinition{
+				AttributeName: aws.String("gsi_pk"), AttributeType: types.ScalarAttributeTypeS,
+			})
 		})
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(agTable)})
+		defer cleanupTable()
 
 		resp, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
 			TableName: aws.String(agTable),
@@ -567,20 +535,11 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 
 	results = append(results, r.RunTest("dynamodb", "UpdateTimeToLive_Disable", func() error {
 		ttlTable := fmt.Sprintf("TTLDis-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(ttlTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, ttlTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(ttlTable)})
+		defer cleanupTable()
 
 		client.UpdateTimeToLive(ctx, &dynamodb.UpdateTimeToLiveInput{
 			TableName: aws.String(ttlTable),

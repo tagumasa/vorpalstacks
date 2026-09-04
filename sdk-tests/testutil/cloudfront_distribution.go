@@ -144,37 +144,7 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 	// invalid distribution configurations on both the create and update
 	// paths.
 	baseCfg := func() *types.DistributionConfig {
-		oid := tc.uniquePrefix("neg-origin")
-		return &types.DistributionConfig{
-			CallerReference: aws.String(tc.uniquePrefix("neg-cf")),
-			Enabled:         aws.Bool(true),
-			Comment:         aws.String("negative validation"),
-			Origins: &types.Origins{
-				Quantity: aws.Int32(1),
-				Items: []types.Origin{
-					{
-						Id:         aws.String(oid),
-						DomainName: aws.String("example.com"),
-						CustomOriginConfig: &types.CustomOriginConfig{
-							HTTPPort:             aws.Int32(80),
-							HTTPSPort:            aws.Int32(443),
-							OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
-						},
-					},
-				},
-			},
-			DefaultCacheBehavior: &types.DefaultCacheBehavior{
-				TargetOriginId:       aws.String(oid),
-				ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
-				ForwardedValues: &types.ForwardedValues{
-					QueryString: aws.Bool(false),
-					Cookies:     &types.CookiePreference{Forward: types.ItemSelectionNone},
-				},
-			},
-			ViewerCertificate: &types.ViewerCertificate{
-				CloudFrontDefaultCertificate: aws.Bool(true),
-			},
-		}
+		return tc.baseDistributionConfig(tc.uniquePrefix("neg-cf"), "negative validation", "example.com")
 	}
 
 	results = append(results, tc.runner.RunTest("cloudfront", "CreateDistribution_MissingOriginDomain_Rejected", func() error {
@@ -444,6 +414,14 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 		_, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
 			Id: aws.String(distID),
 		})
+		if aerr := AssertErrorContains(err, "NoSuchDistribution"); aerr != nil {
+			return aerr
+		}
+		// An ID that never existed must fail identically to the deleted
+		// one.
+		_, err = client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
+			Id: aws.String("nonexistent-dist-id"),
+		})
 		return AssertErrorContains(err, "NoSuchDistribution")
 	}))
 
@@ -459,46 +437,8 @@ func cfDistributionTests(tc *cfTestContext) []TestResult {
 }
 
 func (tc *cfTestContext) createDistribution(callerRef, comment, originDomain string) (distID, distETag string, err error) {
-	originID := tc.uniquePrefix("origin")
 	resp, rerr := tc.client.CreateDistribution(tc.ctx, &cloudfront.CreateDistributionInput{
-		DistributionConfig: &types.DistributionConfig{
-			CallerReference: aws.String(callerRef),
-			Enabled:         aws.Bool(true),
-			Comment:         aws.String(comment),
-			Origins: &types.Origins{
-				Quantity: aws.Int32(1),
-				Items: []types.Origin{
-					{
-						Id:         aws.String(originID),
-						DomainName: aws.String(originDomain),
-						CustomOriginConfig: &types.CustomOriginConfig{
-							HTTPPort:             aws.Int32(80),
-							HTTPSPort:            aws.Int32(443),
-							OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
-						},
-					},
-				},
-			},
-			DefaultCacheBehavior: &types.DefaultCacheBehavior{
-				TargetOriginId:       aws.String(originID),
-				ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
-				ForwardedValues: &types.ForwardedValues{
-					QueryString: aws.Bool(false),
-					Cookies: &types.CookiePreference{
-						Forward: types.ItemSelectionNone,
-					},
-				},
-			},
-			ViewerCertificate: &types.ViewerCertificate{
-				CloudFrontDefaultCertificate: aws.Bool(true),
-			},
-			Restrictions: &types.Restrictions{
-				GeoRestriction: &types.GeoRestriction{
-					RestrictionType: types.GeoRestrictionTypeNone,
-					Quantity:        aws.Int32(0),
-				},
-			},
-		},
+		DistributionConfig: tc.baseDistributionConfig(callerRef, comment, originDomain),
 	})
 	if rerr != nil {
 		return "", "", rerr
@@ -527,8 +467,4 @@ func (tc *cfTestContext) disableAndDeleteDistribution(distID, etag string) error
 		IfMatch: updateResp.ETag,
 	})
 	return err
-}
-
-func (tc *cfTestContext) uniqueCallerRef(prefix string) string {
-	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
 }

@@ -42,15 +42,9 @@ func (r *TestRunner) runIoTSecurityProfileTests(tc *iotTestContext) []TestResult
 		// The create output type carries only the name and ARN members, so
 		// the two-member response shape is pinned at compile time.
 		// Create-time tags must be visible through ListTagsForResource.
-		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.SecurityProfileArn})
+		found, err := tc.resourceHasTag(out.SecurityProfileArn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tagOut.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(out.SecurityProfileArn))

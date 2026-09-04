@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
@@ -12,13 +11,10 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	var results []TestResult
 
 	results = append(results, r.RunTest("cloudtrail", "PutResourcePolicy_GetResourcePolicy", func() error {
-		name := fmt.Sprintf("policy-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("policy")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("policy-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "policy-bucket")
 		if err != nil {
 			return err
 		}
@@ -48,13 +44,10 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetResourcePolicy_NotFound", func() error {
-		name := fmt.Sprintf("nopolicy-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("nopolicy")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("nopolicy-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "nopolicy-bucket")
 		if err != nil {
 			return err
 		}
@@ -69,13 +62,10 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DeleteResourcePolicy", func() error {
-		name := fmt.Sprintf("delpolicy-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("delpolicy")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("delpolicy-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "delpolicy-bucket")
 		if err != nil {
 			return err
 		}
@@ -109,7 +99,7 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "PutResourcePolicy_NonExistentTrail", func() error {
-		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-policy-trail", tc.region, tc.accountID)
+		fakeARN := tc.trailARN("nonexistent-policy-trail")
 		_, err := tc.client.PutResourcePolicy(tc.ctx, &cloudtrail.PutResourcePolicyInput{
 			ResourceArn:    aws.String(fakeARN),
 			ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),
@@ -124,20 +114,14 @@ func (r *TestRunner) runCloudTrailPolicyTests(tc *cloudTrailTestContext) []TestR
 	// and channels as well as trails, so the Put/Get round trip must work
 	// on an event data store ARN too.
 	results = append(results, r.RunTest("cloudtrail", "PutResourcePolicy_GetResourcePolicy_EventDataStore", func() error {
-		createResp, err := tc.client.CreateEventDataStore(tc.ctx, &cloudtrail.CreateEventDataStoreInput{
-			Name:                         aws.String(fmt.Sprintf("ct-eds-policy-%d", time.Now().UnixNano())),
-			TerminationProtectionEnabled: aws.Bool(false),
-			RetentionPeriod:              aws.Int32(90),
-		})
+		createResp, err := tc.createEventDataStore("ct-eds-policy", aws.Int32(90))
 		if err != nil {
 			return fmt.Errorf("CreateEventDataStore failed: %w", err)
 		}
 		if createResp.EventDataStoreArn == nil {
 			return fmt.Errorf("EventDataStoreArn is nil")
 		}
-		defer tc.client.DeleteEventDataStore(tc.ctx, &cloudtrail.DeleteEventDataStoreInput{
-			EventDataStore: createResp.EventDataStoreArn,
-		})
+		defer tc.deleteEventDataStore(aws.ToString(createResp.EventDataStoreArn))
 
 		policyDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"cloudtrail:GetQueryResults","Resource":"*"}]}`
 		if _, err := tc.client.PutResourcePolicy(tc.ctx, &cloudtrail.PutResourcePolicyInput{

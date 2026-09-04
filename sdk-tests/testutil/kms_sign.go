@@ -15,8 +15,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	var results []TestResult
 
 	results = append(results, r.RunTest("kms", "GetPublicKey_RSA", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetPublicKey(tc.ctx, &kms.GetPublicKeyInput{
 			KeyId: aws.String(tc.rsaKeyID),
@@ -43,8 +43,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Sign_RSA", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		message := []byte("message to sign")
 		resp, err := tc.client.Sign(tc.ctx, &kms.SignInput{
@@ -70,8 +70,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Verify_RSA", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		if tc.signature == nil {
 			return fmt.Errorf("signature not available")
@@ -97,8 +97,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "Verify_RSA_InvalidSignature", func() error {
-		if tc.rsaKeyID == "" {
-			return fmt.Errorf("RSA key ID not available")
+		if err := tc.requireRSAKeyID(); err != nil {
+			return err
 		}
 		message := []byte("different message")
 		badSig := make([]byte, 256)
@@ -125,8 +125,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateMac", func() error {
-		if tc.hmacKeyID == "" {
-			return fmt.Errorf("HMAC key ID not available")
+		if err := tc.requireHMACKeyID(); err != nil {
+			return err
 		}
 		message := []byte("message to mac")
 		resp, err := tc.client.GenerateMac(tc.ctx, &kms.GenerateMacInput{
@@ -151,8 +151,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "VerifyMac", func() error {
-		if tc.hmacKeyID == "" {
-			return fmt.Errorf("HMAC key ID not available")
+		if err := tc.requireHMACKeyID(); err != nil {
+			return err
 		}
 		if tc.macValue == nil {
 			return fmt.Errorf("MAC value not available")
@@ -177,8 +177,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "VerifyMac_InvalidMac", func() error {
-		if tc.hmacKeyID == "" {
-			return fmt.Errorf("HMAC key ID not available")
+		if err := tc.requireHMACKeyID(); err != nil {
+			return err
 		}
 		message := []byte("message to mac")
 		badMac := make([]byte, 32)
@@ -204,8 +204,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKeyPair", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		resp, err := tc.client.GenerateDataKeyPair(tc.ctx, &kms.GenerateDataKeyPairInput{
@@ -234,8 +234,8 @@ func (r *TestRunner) runKMSSignTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "GenerateDataKeyPairWithoutPlaintext", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{KeyId: aws.String(tc.keyID)})
 		resp, err := tc.client.GenerateDataKeyPairWithoutPlaintext(tc.ctx, &kms.GenerateDataKeyPairWithoutPlaintextInput{

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
@@ -13,7 +12,7 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 
 	var trailName string
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail", func() error {
-		trailName = fmt.Sprintf("test-trail-%d", time.Now().UnixNano())
+		trailName = tc.uniqueName("test-trail")
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(trailName),
 			S3BucketName:               aws.String("test-bucket"),
@@ -142,13 +141,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_DefaultFields", func() error {
-		name := fmt.Sprintf("defaults-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("defaults")
+		defer tc.deleteTrail(name)
 
-		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("defaults-bucket"),
-		})
+		resp, err := tc.createTrail(name, "defaults-bucket")
 		if err != nil {
 			return err
 		}
@@ -171,21 +167,15 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_Duplicate", func() error {
-		name := fmt.Sprintf("dup-trail-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("dup-trail")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("dup-bucket"),
-		})
+		_, err := tc.createTrail(name, "dup-bucket")
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
 
-		_, err = tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("dup-bucket"),
-		})
+		_, err = tc.createTrail(name, "dup-bucket")
 		if err := AssertErrorContains(err, "TrailAlreadyExists"); err != nil {
 			return err
 		}
@@ -193,13 +183,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetTrail_ByARN", func() error {
-		name := fmt.Sprintf("arn-trail-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("arn-trail")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("arn-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "arn-bucket")
 		if err != nil {
 			return err
 		}
@@ -220,13 +207,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DescribeTrails_ByARN", func() error {
-		name := fmt.Sprintf("desc-arn-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("desc-arn")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("desc-arn-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "desc-arn-bucket")
 		if err != nil {
 			return err
 		}
@@ -251,13 +235,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DescribeTrails_ListAll", func() error {
-		name := fmt.Sprintf("listall-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("listall")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("listall-bucket"),
-		})
+		_, err := tc.createTrail(name, "listall-bucket")
 		if err != nil {
 			return err
 		}
@@ -286,13 +267,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "UpdateTrail_EnableLogFileValidation", func() error {
-		name := fmt.Sprintf("lfv-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("lfv")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("lfv-bucket"),
-		})
+		_, err := tc.createTrail(name, "lfv-bucket")
 		if err != nil {
 			return err
 		}
@@ -311,8 +289,8 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_WithLogFileValidation", func() error {
-		name := fmt.Sprintf("lfv-create-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("lfv-create")
+		defer tc.deleteTrail(name)
 
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(name),
@@ -337,8 +315,8 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_ContentVerify", func() error {
-		name := fmt.Sprintf("verify-trail-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("verify-trail")
+		defer tc.deleteTrail(name)
 
 		resp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:                       aws.String(name),
@@ -359,13 +337,10 @@ func (r *TestRunner) runCloudTrailTrailTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "UpdateTrail_VerifyChange", func() error {
-		name := fmt.Sprintf("upd-verify-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("upd-verify")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("upd-verify-bucket"),
-		})
+		_, err := tc.createTrail(name, "upd-verify-bucket")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}

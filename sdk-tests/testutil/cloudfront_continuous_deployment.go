@@ -17,7 +17,7 @@ func cfContinuousDeploymentTests(tc *cfTestContext) []TestResult {
 	client := tc.client
 	ctx := tc.ctx
 
-	distID, _, err := tc.createDistribution(tc.uniqueCallerRef("cdp-primary"), "CDP test distribution", "127.0.0.1:50080")
+	distID, _, err := tc.createDistribution(tc.uniquePrefix("cdp-primary"), "CDP test distribution", "127.0.0.1:50080")
 	if err != nil {
 		return append(results, TestResult{
 			Service:  "cloudfront",
@@ -31,7 +31,7 @@ func cfContinuousDeploymentTests(tc *cfTestContext) []TestResult {
 	// documented way to obtain one.
 	copyResp, err := client.CopyDistribution(ctx, &cloudfront.CopyDistributionInput{
 		PrimaryDistributionId: aws.String(distID),
-		CallerReference:       aws.String(tc.uniqueCallerRef("cdp-staging")),
+		CallerReference:       aws.String(tc.uniquePrefix("cdp-staging")),
 		Staging:               aws.Bool(true),
 	})
 	if err != nil {
@@ -48,25 +48,8 @@ func cfContinuousDeploymentTests(tc *cfTestContext) []TestResult {
 		stagingDomain = stagingID + ".cloudfront.net"
 	}
 
-	disableAndDelete := func(id string) error {
-		cfgResp, err := client.GetDistributionConfig(ctx, &cloudfront.GetDistributionConfigInput{Id: aws.String(id)})
-		if err != nil {
-			return err
-		}
-		cfgResp.DistributionConfig.Enabled = aws.Bool(false)
-		updResp, err := client.UpdateDistribution(ctx, &cloudfront.UpdateDistributionInput{
-			Id: aws.String(id), IfMatch: cfgResp.ETag, DistributionConfig: cfgResp.DistributionConfig,
-		})
-		if err != nil {
-			return err
-		}
-		_, err = client.DeleteDistribution(ctx, &cloudfront.DeleteDistributionInput{
-			Id: aws.String(id), IfMatch: updResp.ETag,
-		})
-		return err
-	}
-	defer disableAndDelete(stagingID)
-	defer disableAndDelete(distID)
+	defer func() { _ = tc.disableAndDeleteDistributionByID(stagingID) }()
+	defer func() { _ = tc.disableAndDeleteDistributionByID(distID) }()
 
 	policyConfig := func(weight float64) *cftypes.ContinuousDeploymentPolicyConfig {
 		return &cftypes.ContinuousDeploymentPolicyConfig{
@@ -143,21 +126,23 @@ func cfContinuousDeploymentTests(tc *cfTestContext) []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "CDP_List_ContainsPolicy", func() error {
-		var marker *string
-		for {
-			resp, err := client.ListContinuousDeploymentPolicies(ctx, &cloudfront.ListContinuousDeploymentPoliciesInput{Marker: marker})
-			if err != nil {
-				return err
+		policies, err := paginate(func(next *string) ([]cftypes.ContinuousDeploymentPolicySummary, *string, error) {
+			resp, lerr := client.ListContinuousDeploymentPolicies(ctx, &cloudfront.ListContinuousDeploymentPoliciesInput{Marker: next})
+			if lerr != nil {
+				return nil, nil, lerr
 			}
-			for _, summary := range resp.ContinuousDeploymentPolicyList.Items {
-				if aws.ToString(summary.ContinuousDeploymentPolicy.Id) == policyID {
-					return nil
-				}
+			if resp.ContinuousDeploymentPolicyList == nil {
+				return nil, nil, nil
 			}
-			if resp.ContinuousDeploymentPolicyList.NextMarker == nil {
-				break
+			return resp.ContinuousDeploymentPolicyList.Items, resp.ContinuousDeploymentPolicyList.NextMarker, nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, summary := range policies {
+			if aws.ToString(summary.ContinuousDeploymentPolicy.Id) == policyID {
+				return nil
 			}
-			marker = resp.ContinuousDeploymentPolicyList.NextMarker
 		}
 		return fmt.Errorf("policy %q not found in the list", policyID)
 	}))

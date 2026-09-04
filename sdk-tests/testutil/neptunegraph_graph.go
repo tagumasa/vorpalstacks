@@ -73,13 +73,7 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 		if err := tc.requireGraph(); err != nil {
 			return err
 		}
-		graphs, err := paginate(func(next *string) ([]types.GraphSummary, *string, error) {
-			resp, err := tc.client.ListGraphs(tc.ctx, &neptunegraph.ListGraphsInput{NextToken: next})
-			if err != nil {
-				return nil, nil, err
-			}
-			return resp.Graphs, resp.NextToken, nil
-		})
+		graphs, err := tc.allGraphs()
 		if err != nil {
 			return err
 		}
@@ -213,19 +207,8 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 		if err := tc.requireGraph(); err != nil {
 			return err
 		}
-		snapshotsFor := func() ([]types.GraphSnapshotSummary, error) {
-			return paginate(func(next *string) ([]types.GraphSnapshotSummary, *string, error) {
-				resp, err := tc.client.ListGraphSnapshots(tc.ctx, &neptunegraph.ListGraphSnapshotsInput{
-					GraphIdentifier: aws.String(tc.graphID),
-					NextToken:       next,
-				})
-				if err != nil {
-					return nil, nil, err
-				}
-				return resp.GraphSnapshots, resp.NextToken, nil
-			})
-		}
-		before, err := snapshotsFor()
+		graphFilter := aws.String(tc.graphID)
+		before, err := tc.allGraphSnapshots(graphFilter)
 		if err != nil {
 			return err
 		}
@@ -239,7 +222,7 @@ func (r *TestRunner) runNeptunegraphGraphTests(tc *neptunegraphContext) []TestRe
 		if resp.Id == nil || *resp.Id != tc.graphID {
 			return fmt.Errorf("expected id=%s, got %v", tc.graphID, resp.Id)
 		}
-		after, err := snapshotsFor()
+		after, err := tc.allGraphSnapshots(graphFilter)
 		if err != nil {
 			return err
 		}

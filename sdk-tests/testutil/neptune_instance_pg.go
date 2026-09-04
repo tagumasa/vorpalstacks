@@ -219,16 +219,11 @@ func (r *TestRunner) runNeptuneInstanceParamGroupTests(tc *neptuneContext) []Tes
 		resp, err := tc.client.DescribeDBParameterGroups(tc.ctx, &neptune.DescribeDBParameterGroupsInput{
 			DBParameterGroupName: aws.String(instancePGName),
 		})
-		if err != nil {
-			if err := AssertErrorContains(err, "DBParameterGroupNotFoundFault"); err != nil {
-				return err
-			}
-			return nil
+		got := 0
+		if resp != nil {
+			got = len(resp.DBParameterGroups)
 		}
-		if len(resp.DBParameterGroups) != 0 {
-			return fmt.Errorf("expected 0 parameter groups after delete, got %d", len(resp.DBParameterGroups))
-		}
-		return nil
+		return assertDescribeGone(err, got, "DBParameterGroupNotFoundFault", "parameter groups")
 	}))
 
 	return results

@@ -23,7 +23,7 @@ func (r *TestRunner) runIoTMQTTTests(tc *iotTestContext) []TestResult {
 	// row named after the setup step they replace.
 	cert, certCleanup, certErr := tc.createCertificate(true)
 	if certErr != nil {
-		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_CreateKeysAndCertificate", Status: "FAIL", Error: certErr.Error()}}
+		return iotSetupFail("MQTT_Setup_CreateKeysAndCertificate", certErr.Error())
 	}
 	certPEM := cert.PEM
 	keyPEM := aws.ToString(cert.KeyPair.PrivateKey)
@@ -63,7 +63,7 @@ func (r *TestRunner) runIoTMQTTTests(tc *iotTestContext) []TestResult {
 		}`, thingName)
 	cleanupPolicy, policyErr := tc.createPolicy(policyName, policyDoc)
 	if policyErr != nil {
-		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_CreatePolicy", Status: "FAIL", Error: policyErr.Error()}}
+		return iotSetupFail("MQTT_Setup_CreatePolicy", policyErr.Error())
 	}
 	policyCleanup = cleanupPolicy
 
@@ -71,7 +71,7 @@ func (r *TestRunner) runIoTMQTTTests(tc *iotTestContext) []TestResult {
 		PolicyName: aws.String(policyName),
 		Target:     aws.String(cert.ARN),
 	}); err != nil {
-		return []TestResult{{Service: "iot", TestName: "MQTT_Setup_AttachPolicy", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("MQTT_Setup_AttachPolicy", err.Error())
 	}
 
 	// Resolve the broker endpoint.

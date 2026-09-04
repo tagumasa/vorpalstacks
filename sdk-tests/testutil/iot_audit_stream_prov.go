@@ -121,10 +121,6 @@ func (r *TestRunner) runIoTAuditStreamProvTests(tc *iotTestContext) []TestResult
 	// the read-only aggregations.
 
 	// ── Read-only aggregations ──
-	results = append(results, r.RunTest("iot", "ListStreams", func() error {
-		_, err := tc.client.ListStreams(tc.ctx, &iot.ListStreamsInput{})
-		return err
-	}))
 	results = append(results, r.RunTest("iot", "GetBucketsAggregation_Validation", func() error {
 		_, err := tc.client.GetBucketsAggregation(tc.ctx, &iot.GetBucketsAggregationInput{IndexName: aws.String("AWS_Things")})
 		return expectValidationError(err)

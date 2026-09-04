@@ -80,20 +80,11 @@ func (r *TestRunner) dynamoDBDeleteEdgeCaseTests(ctx context.Context, client *dy
 
 	results = append(results, r.RunTest("dynamodb", "DeleteItem_NonExistentKey_NoCondition", func() error {
 		delTable := fmt.Sprintf("DelNE-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(delTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, delTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(delTable)})
+		defer cleanupTable()
 
 		_, err = client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 			TableName: aws.String(delTable),
@@ -116,20 +107,11 @@ func (r *TestRunner) dynamoDBDeleteEdgeCaseTests(ctx context.Context, client *dy
 
 	results = append(results, r.RunTest("dynamodb", "DeleteItem_ReturnValuesAllOld", func() error {
 		rvDelTable := fmt.Sprintf("RVDel-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(rvDelTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, rvDelTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(rvDelTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(rvDelTable),
@@ -162,20 +144,11 @@ func (r *TestRunner) dynamoDBDeleteEdgeCaseTests(ctx context.Context, client *dy
 
 	results = append(results, r.RunTest("dynamodb", "DeleteItem_ReturnValuesAllOld_NonExistent", func() error {
 		rvDelTable := fmt.Sprintf("RVDelNE-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(rvDelTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, rvDelTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(rvDelTable)})
+		defer cleanupTable()
 
 		resp, err := client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 			TableName: aws.String(rvDelTable),

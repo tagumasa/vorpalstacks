@@ -154,7 +154,6 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 	defer func() {
 		_, _ = tc.client.DeleteJob(tc.ctx, &iot.DeleteJobInput{JobId: aws.String(contJobID)})
 		_, _ = tc.client.DeleteJob(tc.ctx, &iot.DeleteJobInput{JobId: aws.String(groupJobID)})
-		_, _ = tc.client.DeleteThingGroup(tc.ctx, &iot.DeleteThingGroupInput{ThingGroupName: aws.String(groupName)})
 	}()
 
 	results = append(results, r.RunTest("iot", "Job_ListJobs_TargetSelectionFilter", func() error {
@@ -209,11 +208,11 @@ func (r *TestRunner) runIoTJobTests(tc *iotTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("iot", "Job_ListJobs_ThingGroupFilter", func() error {
-		if _, err := tc.client.CreateThingGroup(tc.ctx, &iot.CreateThingGroupInput{
-			ThingGroupName: aws.String(groupName),
-		}); err != nil {
+		cleanupGroup, err := tc.createThingGroup(groupName)
+		if err != nil {
 			return fmt.Errorf("CreateThingGroup prerequisite failed: %w", err)
 		}
+		defer cleanupGroup()
 		if _, err := tc.client.CreateJob(tc.ctx, &iot.CreateJobInput{
 			JobId:    aws.String(groupJobID),
 			Document: aws.String(doc),

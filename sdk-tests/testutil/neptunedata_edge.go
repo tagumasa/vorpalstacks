@@ -39,42 +39,39 @@ func (r *TestRunner) runNeptunedataServerAPITests(tc *neptunedataContext) []Test
 		return nil
 	}))
 
-	// Cancel tests use nonexistent query IDs because vorpalstacks executes
-	// queries synchronously — by the time a cancel request reaches the server
-	// the query has already completed.  Only error-path coverage is feasible
-	// without an artificially slow query execution environment.
-	results = append(results, r.RunTest("neptunedata", "CancelGremlinQuery", func() error {
-		_, err := tc.client.CancelGremlinQuery(tc.ctx, &neptunedata.CancelGremlinQueryInput{
-			QueryId: aws.String("nonexistent-query-id"),
-		})
-		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	// See note above regarding synchronous execution and cancel timing.
-	results = append(results, r.RunTest("neptunedata", "CancelOpenCypherQuery", func() error {
-		_, err := tc.client.CancelOpenCypherQuery(tc.ctx, &neptunedata.CancelOpenCypherQueryInput{
-			QueryId: aws.String("nonexistent-query-id"),
-		})
-		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	// GetOpenCypherQueryStatus cannot be tested with a real query ID because
-	// vorpalstacks executes synchronously and ListOpenCypherQueries only
-	// returns running/waiting queries per AWS spec.  The query completes
-	// before the list call returns, so no queryId can be obtained.
-	// Verify that nonexistent query returns proper error.
-	results = append(results, r.RunTest("neptunedata", "GetOpenCypherQueryStatus_NotFound", func() error {
-		_, err := tc.client.GetOpenCypherQueryStatus(tc.ctx, &neptunedata.GetOpenCypherQueryStatusInput{
-			QueryId: aws.String("nonexistent-query-id"),
-		})
-		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
-			return err
+	// Cancel and status tests use nonexistent query IDs because vorpalstacks
+	// executes queries synchronously — by the time a cancel or status request
+	// reaches the server the query has already completed, and
+	// ListOpenCypherQueries only returns running/waiting queries per AWS
+	// spec, so no real queryId can be obtained.  Only error-path coverage is
+	// feasible without an artificially slow query execution environment.
+	results = append(results, r.RunTest("neptunedata", "QueryCancelStatusErrorPaths", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+		}{
+			{"CancelGremlinQuery", func() error {
+				_, err := tc.client.CancelGremlinQuery(tc.ctx, &neptunedata.CancelGremlinQueryInput{
+					QueryId: aws.String("nonexistent-query-id"),
+				})
+				return err
+			}},
+			{"CancelOpenCypherQuery", func() error {
+				_, err := tc.client.CancelOpenCypherQuery(tc.ctx, &neptunedata.CancelOpenCypherQueryInput{
+					QueryId: aws.String("nonexistent-query-id"),
+				})
+				return err
+			}},
+			{"GetOpenCypherQueryStatus", func() error {
+				_, err := tc.client.GetOpenCypherQueryStatus(tc.ctx, &neptunedata.GetOpenCypherQueryStatusInput{
+					QueryId: aws.String("nonexistent-query-id"),
+				})
+				return err
+			}},
+		} {
+			if err := expectAWSErrorCode(c.call(), "BadRequestException"); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))
@@ -85,29 +82,32 @@ func (r *TestRunner) runNeptunedataServerAPITests(tc *neptunedataContext) []Test
 func (r *TestRunner) runNeptunedataUnsupportedTests(tc *neptunedataContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("neptunedata", "GetSparqlStatistics_Unsupported", func() error {
-		_, err := tc.client.GetSparqlStatistics(tc.ctx, &neptunedata.GetSparqlStatisticsInput{})
-		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "GetRDFGraphSummary_Unsupported", func() error {
-		_, err := tc.client.GetRDFGraphSummary(tc.ctx, &neptunedata.GetRDFGraphSummaryInput{})
-		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "StartMLDataProcessingJob_Unsupported", func() error {
-		_, err := tc.client.StartMLDataProcessingJob(tc.ctx, &neptunedata.StartMLDataProcessingJobInput{
-			InputDataS3Location:     aws.String("s3://test/ml-input"),
-			ProcessedDataS3Location: aws.String("s3://test/ml-output"),
-		})
-		if err := AssertErrorContains(err, "UnsupportedOperationException"); err != nil {
-			return err
+	// Each row pins the UnsupportedOperationException contract of one RDF or
+	// ML surface that has no substrate on this platform.
+	results = append(results, r.RunTest("neptunedata", "UnsupportedSurfaces", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+		}{
+			{"GetSparqlStatistics", func() error {
+				_, err := tc.client.GetSparqlStatistics(tc.ctx, &neptunedata.GetSparqlStatisticsInput{})
+				return err
+			}},
+			{"GetRDFGraphSummary", func() error {
+				_, err := tc.client.GetRDFGraphSummary(tc.ctx, &neptunedata.GetRDFGraphSummaryInput{})
+				return err
+			}},
+			{"StartMLDataProcessingJob", func() error {
+				_, err := tc.client.StartMLDataProcessingJob(tc.ctx, &neptunedata.StartMLDataProcessingJobInput{
+					InputDataS3Location:     aws.String("s3://test/ml-input"),
+					ProcessedDataS3Location: aws.String("s3://test/ml-output"),
+				})
+				return err
+			}},
+		} {
+			if err := expectAWSErrorCode(c.call(), "UnsupportedOperationException"); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))
@@ -118,73 +118,61 @@ func (r *TestRunner) runNeptunedataUnsupportedTests(tc *neptunedataContext) []Te
 func (r *TestRunner) runNeptunedataEdgeTests(tc *neptunedataContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_InvalidCypherSyntax", func() error {
-		_, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
-			OpenCypherQuery: aws.String("INVALID CYPHER QUERY"),
-		})
-		if err := AssertErrorContains(err, "MalformedQueryException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_InvalidGremlinSyntax", func() error {
-		_, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String("g.INVALID_STEP()"),
-		})
-		if err := AssertErrorContains(err, "MalformedQueryException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_FastResetInvalidToken", func() error {
-		_, err := tc.client.ExecuteFastReset(tc.ctx, &neptunedata.ExecuteFastResetInput{
-			Action: types.ActionPerformReset,
-			Token:  aws.String("invalid-token-12345"),
-		})
-		if err := AssertErrorContains(err, "PreconditionsFailedException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_NonExistentLoaderJob", func() error {
-		_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
-			LoadId: aws.String("nonexistent-load-id"),
-		})
-		if err := AssertErrorContains(err, "BulkLoadIdNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_CancelNonExistentLoaderJob", func() error {
-		_, err := tc.client.CancelLoaderJob(tc.ctx, &neptunedata.CancelLoaderJobInput{
-			LoadId: aws.String("nonexistent-load-id"),
-		})
-		if err := AssertErrorContains(err, "BulkLoadIdNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_EmptyCypherQuery", func() error {
-		_, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
-			OpenCypherQuery: aws.String(""),
-		})
-		if err := AssertErrorContains(err, "MissingParameterException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("neptunedata", "ErrorCase_EmptyGremlinQuery", func() error {
-		_, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
-			GremlinQuery: aws.String(""),
-		})
-		if err := AssertErrorContains(err, "MissingParameterException"); err != nil {
-			return err
+	// Each row pins the error contract of one query/loader API against a
+	// malformed, empty, or nonexistent request.
+	results = append(results, r.RunTest("neptunedata", "ErrorCases", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+			code string
+		}{
+			{"InvalidCypherSyntax", func() error {
+				_, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
+					OpenCypherQuery: aws.String("INVALID CYPHER QUERY"),
+				})
+				return err
+			}, "MalformedQueryException"},
+			{"InvalidGremlinSyntax", func() error {
+				_, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
+					GremlinQuery: aws.String("g.INVALID_STEP()"),
+				})
+				return err
+			}, "MalformedQueryException"},
+			{"FastResetInvalidToken", func() error {
+				_, err := tc.client.ExecuteFastReset(tc.ctx, &neptunedata.ExecuteFastResetInput{
+					Action: types.ActionPerformReset,
+					Token:  aws.String("invalid-token-12345"),
+				})
+				return err
+			}, "PreconditionsFailedException"},
+			{"NonExistentLoaderJob", func() error {
+				_, err := tc.client.GetLoaderJobStatus(tc.ctx, &neptunedata.GetLoaderJobStatusInput{
+					LoadId: aws.String("nonexistent-load-id"),
+				})
+				return err
+			}, "BulkLoadIdNotFoundException"},
+			{"CancelNonExistentLoaderJob", func() error {
+				_, err := tc.client.CancelLoaderJob(tc.ctx, &neptunedata.CancelLoaderJobInput{
+					LoadId: aws.String("nonexistent-load-id"),
+				})
+				return err
+			}, "BulkLoadIdNotFoundException"},
+			{"EmptyCypherQuery", func() error {
+				_, err := tc.client.ExecuteOpenCypherQuery(tc.ctx, &neptunedata.ExecuteOpenCypherQueryInput{
+					OpenCypherQuery: aws.String(""),
+				})
+				return err
+			}, "MissingParameterException"},
+			{"EmptyGremlinQuery", func() error {
+				_, err := tc.client.ExecuteGremlinQuery(tc.ctx, &neptunedata.ExecuteGremlinQueryInput{
+					GremlinQuery: aws.String(""),
+				})
+				return err
+			}, "MissingParameterException"},
+		} {
+			if err := expectAWSErrorCode(c.call(), c.code); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))

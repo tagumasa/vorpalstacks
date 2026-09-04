@@ -100,20 +100,20 @@ func (r *TestRunner) runNeptuneTagTests(tc *neptuneContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBClusterNotFoundFault"); err != nil {
 			return fmt.Errorf("AddTagsToResource: %v", err)
 		}
 		_, err = tc.client.RemoveTagsFromResource(tc.ctx, &neptune.RemoveTagsFromResourceInput{
 			ResourceName: aws.String(arn),
 			TagKeys:      []string{"Environment"},
 		})
-		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBClusterNotFoundFault"); err != nil {
 			return fmt.Errorf("RemoveTagsFromResource: %v", err)
 		}
 		_, err = tc.client.ListTagsForResource(tc.ctx, &neptune.ListTagsForResourceInput{
 			ResourceName: aws.String(arn),
 		})
-		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
+		if err := expectAWSErrorCode(err, "DBClusterNotFoundFault"); err != nil {
 			return fmt.Errorf("ListTagsForResource: %v", err)
 		}
 		return nil

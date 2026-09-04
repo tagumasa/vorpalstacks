@@ -34,8 +34,8 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DescribeKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.DescribeKey(tc.ctx, &kms.DescribeKeyInput{
 			KeyId: aws.String(tc.keyID),
@@ -59,8 +59,8 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "EnableKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.EnableKey(tc.ctx, &kms.EnableKeyInput{
 			KeyId: aws.String(tc.keyID),
@@ -69,8 +69,8 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DisableKey", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		_, err := tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{
 			KeyId: aws.String(tc.keyID),
@@ -78,27 +78,14 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 		return err
 	}))
 
-	results = append(results, r.RunTest("kms", "UpdateKeyDescription", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
-		}
-		newDescription := fmt.Sprintf("Updated Key %d", time.Now().UnixNano())
-		_, err := tc.client.UpdateKeyDescription(tc.ctx, &kms.UpdateKeyDescriptionInput{
-			KeyId:       aws.String(tc.keyID),
-			Description: aws.String(newDescription),
-		})
-		return err
-	}))
-
 	results = append(results, r.RunTest("kms", "CreateKey_ContentVerify", func() error {
 		desc := fmt.Sprintf("ContentVerify %d", time.Now().UnixNano())
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		m, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String(desc),
 		})
 		if err != nil {
 			return err
 		}
-		m := resp.KeyMetadata
 		if m.KeyId == nil || *m.KeyId == "" {
 			return fmt.Errorf("KeyId is nil or empty")
 		}
@@ -129,27 +116,25 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 		if len(m.EncryptionAlgorithms) == 0 {
 			return fmt.Errorf("EncryptionAlgorithms is empty")
 		}
-		tc.addCleanupKey(*m.KeyId)
 		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateKey_MultiRegion", func() error {
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		meta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("Multi-Region Key"),
 			MultiRegion: aws.Bool(true),
 		})
 		if err != nil {
 			return err
 		}
-		if resp.KeyMetadata.MultiRegion == nil || !*resp.KeyMetadata.MultiRegion {
+		if meta.MultiRegion == nil || !*meta.MultiRegion {
 			return fmt.Errorf("expected MultiRegion=true")
 		}
-		tc.addCleanupKey(*resp.KeyMetadata.KeyId)
 		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateKey_WithTags", func() error {
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		meta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("Key with tags"),
 			Tags: []types.Tag{
 				{TagKey: aws.String("Purpose"), TagValue: aws.String("testing")},
@@ -159,7 +144,7 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 			return err
 		}
 		tagResp, err := tc.client.ListResourceTags(tc.ctx, &kms.ListResourceTagsInput{
-			KeyId: resp.KeyMetadata.KeyId,
+			KeyId: meta.KeyId,
 		})
 		if err != nil {
 			return fmt.Errorf("list tags: %v", err)
@@ -174,28 +159,26 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 		if !found {
 			return fmt.Errorf("tag not found after create")
 		}
-		tc.addCleanupKey(*resp.KeyMetadata.KeyId)
 		return nil
 	}))
 
 	results = append(results, r.RunTest("kms", "CreateKey_ExternalOrigin", func() error {
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		meta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("External origin key"),
 			Origin:      types.OriginTypeExternal,
 		})
 		if err != nil {
 			return err
 		}
-		if resp.KeyMetadata.Origin != types.OriginTypeExternal {
-			return fmt.Errorf("expected Origin=EXTERNAL, got %s", resp.KeyMetadata.Origin)
+		if meta.Origin != types.OriginTypeExternal {
+			return fmt.Errorf("expected Origin=EXTERNAL, got %s", meta.Origin)
 		}
-		if resp.KeyMetadata.KeyState != types.KeyStatePendingImport {
-			return fmt.Errorf("expected KeyState=PendingImport for EXTERNAL origin, got %s", resp.KeyMetadata.KeyState)
+		if meta.KeyState != types.KeyStatePendingImport {
+			return fmt.Errorf("expected KeyState=PendingImport for EXTERNAL origin, got %s", meta.KeyState)
 		}
-		if resp.KeyMetadata.Enabled {
+		if meta.Enabled {
 			return fmt.Errorf("expected Enabled=false for EXTERNAL origin")
 		}
-		tc.addCleanupKey(*resp.KeyMetadata.KeyId)
 		return nil
 	}))
 
@@ -256,8 +239,8 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "ScheduleKeyDeletion_ReturnsKeyID", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		resp, err := tc.client.ScheduleKeyDeletion(tc.ctx, &kms.ScheduleKeyDeletionInput{
 			KeyId:               aws.String(tc.keyID),
@@ -290,12 +273,11 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 
 	results = append(results, r.RunTest("kms", "CancelKeyDeletion_RestoresEnabledState", func() error {
 		desc := fmt.Sprintf("CancelRestore %d", time.Now().UnixNano())
-		createResp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{Description: aws.String(desc)})
+		meta, err := tc.createKey(&kms.CreateKeyInput{Description: aws.String(desc)})
 		if err != nil {
 			return err
 		}
-		newKeyID := createResp.KeyMetadata.KeyId
-		tc.addCleanupKey(*newKeyID)
+		newKeyID := meta.KeyId
 
 		_, err = tc.client.DisableKey(tc.ctx, &kms.DisableKeyInput{KeyId: newKeyID})
 		if err != nil {
@@ -329,18 +311,13 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "DescribeKey_ByAlias", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		testAlias := fmt.Sprintf("alias/desc-test-%d", time.Now().UnixNano())
-		_, err := tc.client.CreateAlias(tc.ctx, &kms.CreateAliasInput{
-			AliasName:   aws.String(testAlias),
-			TargetKeyId: aws.String(tc.keyID),
-		})
-		if err != nil {
-			return fmt.Errorf("create alias: %v", err)
+		if err := tc.createAlias(testAlias, tc.keyID); err != nil {
+			return err
 		}
-		tc.addCleanupAlias(testAlias)
 
 		resp, err := tc.client.DescribeKey(tc.ctx, &kms.DescribeKeyInput{KeyId: aws.String(testAlias)})
 		if err != nil {
@@ -353,8 +330,8 @@ func (r *TestRunner) runKMSKeyTests(tc *kmsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("kms", "UpdateKeyDescription_VerifyChange", func() error {
-		if tc.keyID == "" {
-			return fmt.Errorf("key ID not available")
+		if err := tc.requireKeyID(); err != nil {
+			return err
 		}
 		newDesc := fmt.Sprintf("Verified %d", time.Now().UnixNano())
 		_, err := tc.client.UpdateKeyDescription(tc.ctx, &kms.UpdateKeyDescriptionInput{

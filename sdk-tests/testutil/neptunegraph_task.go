@@ -56,13 +56,7 @@ func (r *TestRunner) runNeptunegraphImportTaskTests(tc *neptunegraphContext) []T
 		if err := requireID(importTaskID, "import task ID"); err != nil {
 			return err
 		}
-		tasks, err := paginate(func(next *string) ([]types.ImportTaskSummary, *string, error) {
-			resp, err := tc.client.ListImportTasks(tc.ctx, &neptunegraph.ListImportTasksInput{NextToken: next})
-			if err != nil {
-				return nil, nil, err
-			}
-			return resp.Tasks, resp.NextToken, nil
-		})
+		tasks, err := tc.allImportTasks()
 		if err != nil {
 			return err
 		}
@@ -193,13 +187,7 @@ func (r *TestRunner) runNeptunegraphExportTaskTests(tc *neptunegraphContext) []T
 		if err := requireID(exportTaskID, "export task ID"); err != nil {
 			return err
 		}
-		tasks, err := paginate(func(next *string) ([]types.ExportTaskSummary, *string, error) {
-			resp, err := tc.client.ListExportTasks(tc.ctx, &neptunegraph.ListExportTasksInput{NextToken: next})
-			if err != nil {
-				return nil, nil, err
-			}
-			return resp.Tasks, resp.NextToken, nil
-		})
+		tasks, err := tc.allExportTasks()
 		if err != nil {
 			return err
 		}

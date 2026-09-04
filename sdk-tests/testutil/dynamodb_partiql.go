@@ -91,20 +91,11 @@ func (r *TestRunner) dynamoDBPartiQLInsertParamsTest(ctx context.Context, client
 	// PartiQL INSERT with parameterised values (?) substitutes placeholders correctly.
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_InsertWithParams", func() error {
 		paramTable := fmt.Sprintf("ParamInsert-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(paramTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, paramTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(paramTable)})
+		defer cleanupTable()
 
 		_, err = client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
 			Statement: aws.String("INSERT INTO \"" + paramTable + "\" VALUE {'id': ?, 'name': ?}"),
@@ -166,20 +157,11 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_Update", func() error {
 		puTable := fmt.Sprintf("PQUpd-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(puTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, puTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(puTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(puTable),
@@ -217,20 +199,11 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_Delete", func() error {
 		pdTable := fmt.Sprintf("PQDel-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(pdTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, pdTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(pdTable)})
+		defer cleanupTable()
 
 		client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(pdTable),
@@ -265,20 +238,11 @@ func (r *TestRunner) dynamoDBPartiQLEdgeCaseTests(ctx context.Context, client *d
 	// SELECT with column projection returns only the specified columns, not all attributes.
 	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_SelectProjection", func() error {
 		projTable := fmt.Sprintf("PQProj-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(projTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, projTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(projTable)})
+		defer cleanupTable()
 
 		_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
 			TableName: aws.String(projTable),

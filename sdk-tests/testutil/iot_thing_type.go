@@ -112,13 +112,22 @@ func (r *TestRunner) runIoTThingTypeTests(tc *iotTestContext) []TestResult {
 	}))
 
 	// ── Deprecate / UndoDeprecate lifecycle ──
+	// The type is created in the first test and deleted at group end, because
+	// the UndoDeprecate test below reuses it.
 	ttDep := uniqueName("thing-type-dep")
-	defer tc.client.DeleteThingType(tc.ctx, &iot.DeleteThingTypeInput{ThingTypeName: aws.String(ttDep)})
+	var cleanupDep func()
+	defer func() {
+		if cleanupDep != nil {
+			cleanupDep()
+		}
+	}()
 
 	results = append(results, r.RunTest("iot", "ThingType_Deprecate_Persist", func() error {
-		if _, err := tc.client.CreateThingType(tc.ctx, &iot.CreateThingTypeInput{ThingTypeName: aws.String(ttDep)}); err != nil {
+		cleanup, err := tc.createThingType(ttDep)
+		if err != nil {
 			return fmt.Errorf("CreateThingType failed: %w", err)
 		}
+		cleanupDep = cleanup
 		if _, err := tc.client.DeprecateThingType(tc.ctx, &iot.DeprecateThingTypeInput{ThingTypeName: aws.String(ttDep)}); err != nil {
 			return fmt.Errorf("DeprecateThingType failed: %w", err)
 		}

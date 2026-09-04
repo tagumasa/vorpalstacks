@@ -28,44 +28,16 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().has('name','bob').in('knows').values('name')", `"alice"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Both", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','bob').both('knows').values('name').order()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected alice and dave, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','bob').both('knows').values('name').order()", `"alice"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_OutE", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').outE('knows').count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "2") {
-			return fmt.Errorf("expected 2 outgoing edges from alice, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').outE('knows').count()", "2")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_InE", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','bob').inE('knows').count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "1") {
-			return fmt.Errorf("expected 1 incoming edge to bob, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','bob').inE('knows').count()", "1")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_BothE", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','bob').bothE().count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "2") {
-			return fmt.Errorf("expected 2 edges for bob (1 in + 1 out), got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','bob').bothE().count()", "2")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_OutV", func() error {
 		return tc.gremlinContains("g.E().hasLabel('knows').outV().has('name','alice').count()", `2`)
@@ -80,37 +52,16 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().has('age',P.gt(30)).values('name')", `"charlie"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_HasGte", func() error {
-		s, err := tc.gremlinResult("g.V().has('age',P.gte(30)).count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "3") {
-			return fmt.Errorf("expected 3 vertices with age>=30, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('age',P.gte(30)).count()", "3")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_HasLt", func() error {
 		return tc.gremlinContains("g.V().has('age',P.lt(30)).values('name')", `"alice"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_HasNeq", func() error {
-		s, err := tc.gremlinResult("g.V().has('name',P.neq('alice')).count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "3") {
-			return fmt.Errorf("expected 3 non-alice vertices, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name',P.neq('alice')).count()", "3")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_HasBetween", func() error {
-		s, err := tc.gremlinResult("g.V().has('age',P.between(25,35)).count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "3") {
-			return fmt.Errorf("expected 3 vertices with age between 25-35, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('age',P.between(25,35)).count()", "3")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_HasWithin", func() error {
 		return tc.gremlinContains("g.V().has('name',P.within('alice','dave')).values('name').order()", `"alice"`)
@@ -144,14 +95,7 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().has('name','alice').label()", `"person"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Keys", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').keys()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"name"`) || !strings.Contains(s, `"age"`) {
-			return fmt.Errorf("expected name and age keys, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').keys()", `"name"`, `"age"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Properties", func() error {
 		return tc.gremlinContains("g.V().has('name','alice').properties('name')", `"name"`)
@@ -179,88 +123,30 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().hasLabel('person').range(1,3).count()", `2`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Skip", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').order().by('name').skip(2).values('name')")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"charlie"`) {
-			return fmt.Errorf("expected charlie at skip 2, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').order().by('name').skip(2).values('name')", `"charlie"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Dedup", func() error {
 		tc.gremlin("g.addV('dup').property('name','dup1')")
 		tc.gremlin("g.addV('dup').property('name','dup1')")
-		s, err := tc.gremlinResult("g.V().hasLabel('dup').dedup().by('name').count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "1") {
-			return fmt.Errorf("expected 1 after dedup by name, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('dup').dedup().by('name').count()", "1")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_OrderByAsc", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').order().by('name',asc).values('name').limit(1)")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) {
-			return fmt.Errorf("expected alice first in ASC order, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').order().by('name',asc).values('name').limit(1)", `"alice"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_OrderByDesc", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').order().by('name',desc).values('name').limit(1)")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected dave first in DESC order, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').order().by('name',desc).values('name').limit(1)", `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_GroupCount", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').groupCount().by('name')")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"alice"`, `"bob"`, `"charlie"`, `"dave"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected %s in groupCount, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').groupCount().by('name')", `"alice"`, `"bob"`, `"charlie"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_GroupBy", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').group().by('name').by('age')")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"bob"`) {
-			return fmt.Errorf("expected grouped names, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').group().by('name').by('age')", `"alice"`, `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Path", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').out('knows').limit(1).path()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) {
-			return fmt.Errorf("expected alice in path, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').out('knows').limit(1).path()", `"alice"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Union", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','bob').union(in('knows'),out('knows')).values('name').dedup().order()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected alice and dave from union, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','bob').union(in('knows'),out('knows')).values('name').dedup().order()", `"alice"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Coalesce", func() error {
 		return tc.gremlinContains("g.V().has('name','bob').coalesce(out('nonexistent'),in('knows')).values('name')", `"alice"`)
@@ -282,28 +168,10 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().has('name','alice').repeat(out('knows')).times(2).values('name')", `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_RepeatEmit", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').repeat(out('knows')).emit().values('name').dedup().order()")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"bob"`, `"charlie"`, `"dave"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected %s in repeat-emit, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').repeat(out('knows')).emit().values('name').dedup().order()", `"bob"`, `"charlie"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Fold", func() error {
-		s, err := tc.gremlinResult("g.V().hasLabel('person').values('name').fold()")
-		if err != nil {
-			return err
-		}
-		for _, name := range []string{`"alice"`, `"bob"`, `"charlie"`, `"dave"`} {
-			if !strings.Contains(s, name) {
-				return fmt.Errorf("expected %s in fold, got %s", name, s)
-			}
-		}
-		return nil
+		return tc.gremlinContains("g.V().hasLabel('person').values('name').fold()", `"alice"`, `"bob"`, `"charlie"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Unfold", func() error {
 		return tc.gremlinContains("g.V().hasLabel('person').values('name').fold().unfold().count()", `4`)
@@ -321,14 +189,7 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().and(out('knows'),in('knows')).values('name')", `"bob"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Or", func() error {
-		s, err := tc.gremlinResult("g.V().or(has('name','alice'),has('name','dave')).values('name').order()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected alice or dave, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().or(has('name','alice'),has('name','dave')).values('name').order()", `"alice"`, `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Mean", func() error {
 		return tc.gremlinContains("g.V().hasLabel('person').values('age').mean()", `32.5`)
@@ -361,24 +222,10 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_MergeVIdempotent", func() error {
 		tc.gremlin("g.mergeV([~label:'item',name:'widget',price:10])")
-		s, err := tc.gremlinResult("g.V().has('name','widget').count()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, "1") {
-			return fmt.Errorf("expected 1 widget after idempotent mergeV, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','widget').count()", "1")
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_ElementMap", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').elementMap()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"alice"`) || !strings.Contains(s, `"person"`) {
-			return fmt.Errorf("expected alice and person in elementMap, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').elementMap()", `"alice"`, `"person"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_Project", func() error {
 		return tc.gremlinContains("g.V().as('a').out('knows').as('b').project('from','to').by('name').limit(1)", `"from"`)
@@ -390,14 +237,7 @@ func (r *TestRunner) runNeptunedataGremlinAdvancedTests(tc *neptunedataContext) 
 		return tc.gremlinContains("g.V().has('name','alice').out().out().values('name')", `"dave"`)
 	}))
 	results = append(results, r.RunTest("neptunedata", "Gremlin_SimplePath", func() error {
-		s, err := tc.gremlinResult("g.V().has('name','alice').repeat(__.out('knows')).times(2).simplePath().values('name').dedup()")
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(s, `"dave"`) {
-			return fmt.Errorf("expected dave in simplePath result, got %s", s)
-		}
-		return nil
+		return tc.gremlinContains("g.V().has('name','alice').repeat(__.out('knows')).times(2).simplePath().values('name').dedup()", `"dave"`)
 	}))
 
 	return results

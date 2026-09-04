@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,20 +16,14 @@ func (r *TestRunner) runCloudTrailEDSTests(tc *cloudTrailTestContext) []TestResu
 
 	// Create EDS for lifecycle tests.
 	results = append(results, r.RunTest("cloudtrail", "CreateEventDataStore_Lifecycle", func() error {
-		resp, err := tc.client.CreateEventDataStore(tc.ctx, &cloudtrail.CreateEventDataStoreInput{
-			Name:                         aws.String(fmt.Sprintf("ct-eds-lifecycle-%d", time.Now().UnixNano())),
-			TerminationProtectionEnabled: aws.Bool(false),
-			RetentionPeriod:              aws.Int32(90),
-		})
+		resp, err := tc.createEventDataStore("ct-eds-lifecycle", aws.Int32(90))
 		if err != nil {
 			return fmt.Errorf("CreateEventDataStore failed: %w", err)
 		}
 		if resp.EventDataStoreArn == nil {
 			return fmt.Errorf("EventDataStoreArn is nil")
 		}
-		if idx := strings.LastIndex(*resp.EventDataStoreArn, "/"); idx >= 0 {
-			edsID = (*resp.EventDataStoreArn)[idx+1:]
-		}
+		edsID = tc.edsIDFromARN(aws.ToString(resp.EventDataStoreArn))
 		return nil
 	}))
 
@@ -145,10 +138,7 @@ func (r *TestRunner) runCloudTrailEDSTests(tc *cloudTrailTestContext) []TestResu
 
 	// Clean up: delete the restored EDS.
 	results = append(results, r.RunTest("cloudtrail", "DeleteEDS_Cleanup", func() error {
-		_, err := tc.client.DeleteEventDataStore(tc.ctx, &cloudtrail.DeleteEventDataStoreInput{
-			EventDataStore: aws.String(edsID),
-		})
-		return err
+		return tc.deleteEventDataStore(edsID)
 	}))
 
 	return results
@@ -228,7 +218,7 @@ func (r *TestRunner) runCloudTrailChannelTests(tc *cloudTrailTestContext) []Test
 
 	// CreateChannel with tags (regression: CreateChannel uses "Tags" not "TagsList").
 	results = append(results, r.RunTest("cloudtrail", "CreateChannel_WithTags", func() error {
-		tagCh := fmt.Sprintf("ct-channel-tags-%d", time.Now().UnixNano())
+		tagCh := tc.uniqueName("ct-channel-tags")
 		resp, err := tc.client.CreateChannel(tc.ctx, &cloudtrail.CreateChannelInput{
 			Name:   aws.String(tagCh),
 			Source: aws.String("Custom"),
@@ -254,10 +244,7 @@ func (r *TestRunner) runCloudTrailChannelTests(tc *cloudTrailTestContext) []Test
 		if len(resp.Tags) != 2 {
 			return fmt.Errorf("expected 2 tags in CreateChannel response, got %d", len(resp.Tags))
 		}
-		tagMap := make(map[string]string)
-		for _, t := range resp.Tags {
-			tagMap[*t.Key] = *t.Value
-		}
+		tagMap := tagListToMap(resp.Tags)
 		if tagMap["Environment"] != "production" {
 			return fmt.Errorf("expected Environment=production, got %s", tagMap["Environment"])
 		}
@@ -298,16 +285,11 @@ func (r *TestRunner) runCloudTrailQueryTests(tc *cloudTrailTestContext) []TestRe
 	// Create an EDS for query tests.
 	var edsID string
 	results = append(results, r.RunTest("cloudtrail", "Query_CreateEDS", func() error {
-		resp, err := tc.client.CreateEventDataStore(tc.ctx, &cloudtrail.CreateEventDataStoreInput{
-			Name:                         aws.String(fmt.Sprintf("ct-query-eds-%d", time.Now().UnixNano())),
-			TerminationProtectionEnabled: aws.Bool(false),
-		})
+		resp, err := tc.createEventDataStore("ct-query-eds", nil)
 		if err != nil {
 			return err
 		}
-		if idx := strings.LastIndex(*resp.EventDataStoreArn, "/"); idx >= 0 {
-			edsID = (*resp.EventDataStoreArn)[idx+1:]
-		}
+		edsID = tc.edsIDFromARN(aws.ToString(resp.EventDataStoreArn))
 		return nil
 	}))
 
@@ -386,10 +368,7 @@ func (r *TestRunner) runCloudTrailQueryTests(tc *cloudTrailTestContext) []TestRe
 
 	// Clean up EDS.
 	results = append(results, r.RunTest("cloudtrail", "Query_CleanupEDS", func() error {
-		_, err := tc.client.DeleteEventDataStore(tc.ctx, &cloudtrail.DeleteEventDataStoreInput{
-			EventDataStore: aws.String(edsID),
-		})
-		return err
+		return tc.deleteEventDataStore(edsID)
 	}))
 
 	return results

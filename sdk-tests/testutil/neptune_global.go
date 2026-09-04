@@ -49,39 +49,15 @@ func (r *TestRunner) runNeptuneGlobalClusterTests(tc *neptuneContext) []TestResu
 		return nil
 	}))
 
-	results = append(results, r.RunTest("neptune", "DescribeGlobalClusters_FilterByID", func() error {
-		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
-			GlobalClusterIdentifier: aws.String(tc.globalClusterID),
-		})
-		if err != nil {
-			return err
-		}
-		if len(resp.GlobalClusters) != 1 {
-			return fmt.Errorf("expected 1 global cluster, got %d", len(resp.GlobalClusters))
-		}
-		gc := resp.GlobalClusters[0]
-		if gc.GlobalClusterIdentifier == nil || *gc.GlobalClusterIdentifier != tc.globalClusterID {
-			return fmt.Errorf("expected GlobalClusterIdentifier=%s, got %v", tc.globalClusterID, gc.GlobalClusterIdentifier)
-		}
-		return nil
-	}))
-
+	// The filtered describe pins count and identifier via describeGlobalCluster;
+	// the content check below adds the engine field on the same call.
 	results = append(results, r.RunTest("neptune", "DescribeGlobalClusters_ContentVerify", func() error {
-		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
-			GlobalClusterIdentifier: aws.String(tc.globalClusterID),
-		})
+		gc, err := tc.describeGlobalCluster(tc.globalClusterID)
 		if err != nil {
 			return err
 		}
-		if len(resp.GlobalClusters) != 1 {
-			return fmt.Errorf("expected 1 global cluster, got %d", len(resp.GlobalClusters))
-		}
-		gc := resp.GlobalClusters[0]
 		if gc.Engine == nil || *gc.Engine != "neptune" {
 			return fmt.Errorf("expected engine=neptune, got %v", gc.Engine)
-		}
-		if gc.GlobalClusterIdentifier == nil || *gc.GlobalClusterIdentifier != tc.globalClusterID {
-			return fmt.Errorf("expected globalClusterId=%s, got %v", tc.globalClusterID, gc.GlobalClusterIdentifier)
 		}
 		return nil
 	}))
@@ -95,16 +71,10 @@ func (r *TestRunner) runNeptuneGlobalClusterTests(tc *neptuneContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptune", "ModifyGlobalCluster_Verify", func() error {
-		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
-			GlobalClusterIdentifier: aws.String(tc.globalClusterID),
-		})
+		gc, err := tc.describeGlobalCluster(tc.globalClusterID)
 		if err != nil {
 			return err
 		}
-		if len(resp.GlobalClusters) != 1 {
-			return fmt.Errorf("expected 1 global cluster, got %d", len(resp.GlobalClusters))
-		}
-		gc := resp.GlobalClusters[0]
 		if gc.EngineVersion == nil || *gc.EngineVersion != "1.3.2.0" {
 			return fmt.Errorf("expected engineVersion=1.3.2.0 after modify, got %v", gc.EngineVersion)
 		}
@@ -122,16 +92,11 @@ func (r *TestRunner) runNeptuneGlobalClusterTests(tc *neptuneContext) []TestResu
 		resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
 			GlobalClusterIdentifier: aws.String(tc.globalClusterID),
 		})
-		if err != nil {
-			if err := AssertErrorContains(err, "GlobalClusterNotFoundFault"); err != nil {
-				return err
-			}
-			return nil
+		got := 0
+		if resp != nil {
+			got = len(resp.GlobalClusters)
 		}
-		if len(resp.GlobalClusters) != 0 {
-			return fmt.Errorf("expected 0 global clusters after delete, got %d", len(resp.GlobalClusters))
-		}
-		return nil
+		return assertDescribeGone(err, got, "GlobalClusterNotFoundFault", "global clusters")
 	}))
 
 	return results

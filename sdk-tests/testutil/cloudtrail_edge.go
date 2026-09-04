@@ -133,7 +133,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "AddTags_NonExistent", func() error {
 		_, err := tc.client.AddTags(tc.ctx, &cloudtrail.AddTagsInput{
-			ResourceId: aws.String(fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-tag-xyz", tc.region, tc.accountID)),
+			ResourceId: aws.String(tc.trailARN("nonexistent-tag-xyz")),
 			TagsList:   []types.Tag{{Key: aws.String("K"), Value: aws.String("V")}},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
@@ -144,7 +144,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "RemoveTags_NonExistent", func() error {
 		_, err := tc.client.RemoveTags(tc.ctx, &cloudtrail.RemoveTagsInput{
-			ResourceId: aws.String(fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-rm-xyz", tc.region, tc.accountID)),
+			ResourceId: aws.String(tc.trailARN("nonexistent-rm-xyz")),
 			TagsList:   []types.Tag{{Key: aws.String("K")}},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
@@ -155,7 +155,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 
 	results = append(results, r.RunTest("cloudtrail", "ListTags_NonExistent", func() error {
 		_, err := tc.client.ListTags(tc.ctx, &cloudtrail.ListTagsInput{
-			ResourceIdList: []string{fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-lt-xyz", tc.region, tc.accountID)},
+			ResourceIdList: []string{tc.trailARN("nonexistent-lt-xyz")},
 		})
 		if err := AssertErrorContains(err, "TrailNotFoundException"); err != nil {
 			return err
@@ -164,7 +164,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "GetResourcePolicy_NonExistentTrail", func() error {
-		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-grp-xyz", tc.region, tc.accountID)
+		fakeARN := tc.trailARN("nonexistent-grp-xyz")
 		_, err := tc.client.GetResourcePolicy(tc.ctx, &cloudtrail.GetResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})
@@ -187,7 +187,7 @@ func (r *TestRunner) runCloudTrailEdgeTests(tc *cloudTrailTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "DeleteResourcePolicy_NonExistent", func() error {
-		fakeARN := fmt.Sprintf("arn:aws:cloudtrail:%s:%s:trail/nonexistent-drp-xyz", tc.region, tc.accountID)
+		fakeARN := tc.trailARN("nonexistent-drp-xyz")
 		_, err := tc.client.DeleteResourcePolicy(tc.ctx, &cloudtrail.DeleteResourcePolicyInput{
 			ResourceArn: aws.String(fakeARN),
 		})

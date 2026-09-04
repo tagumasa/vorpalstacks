@@ -14,18 +14,10 @@ import (
 func runLambdaReferenceTests(tc *lambdaTestContext) []TestResult {
 	var results []TestResult
 
-	funcName := tc.unique("RefFunc")
-	roleARN, cleanupRole, err := tc.createRole(tc.unique("RefRole"))
+	funcName, cleanupFn, err := tc.setupFunction("RefFunc", lambdaFunctionCode)
 	if err != nil {
 		return []TestResult{{Service: "lambda", TestName: "Ref_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create IAM role: %v", err)}}
-	}
-	defer cleanupRole()
-
-	_, cleanupFn, err := tc.createFunction(funcName, roleARN, lambdaFunctionCode)
-	if err != nil {
-		return []TestResult{{Service: "lambda", TestName: "Ref_Setup", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create function: %v", err)}}
+			Error: fmt.Sprintf("Failed to set up function: %v", err)}}
 	}
 	defer cleanupFn()
 
@@ -88,7 +80,7 @@ func runLambdaReferenceTests(tc *lambdaTestContext) []TestResult {
 		esmUUID = *created.UUID
 
 		_, err = tc.client.CreateEventSourceMapping(tc.ctx, in)
-		if err := AssertErrorContains(err, "ResourceConflictException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceConflictException"); err != nil {
 			return err
 		}
 		return nil
@@ -104,7 +96,7 @@ func runLambdaReferenceTests(tc *lambdaTestContext) []TestResult {
 			FunctionName: aws.String(funcName),
 			Qualifier:    aws.String("999"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -114,7 +106,7 @@ func runLambdaReferenceTests(tc *lambdaTestContext) []TestResult {
 		_, err := tc.client.GetFunctionConcurrency(tc.ctx, &lambda.GetFunctionConcurrencyInput{
 			FunctionName: aws.String(funcName),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

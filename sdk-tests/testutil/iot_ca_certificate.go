@@ -60,15 +60,9 @@ func (r *TestRunner) runIoTCACertificateTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected certificateMode=DEFAULT, got %v", desc.CertificateDescription.CertificateMode)
 		}
 		// Registration-time tags are visible through ListTagsForResource.
-		tags, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: out.CertificateArn})
+		found, err := tc.resourceHasTag(out.CertificateArn, "purpose", "ca-sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tags.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "ca-sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("registration tag purpose=ca-sdk-test not found on %s", aws.ToString(out.CertificateArn))

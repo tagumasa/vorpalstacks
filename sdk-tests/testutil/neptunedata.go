@@ -69,14 +69,16 @@ func (tc *neptunedataContext) gremlinResult(q string) (string, error) {
 }
 
 // gremlinContains runs one Gremlin query and asserts that the marshalled
-// result document contains substr.
-func (tc *neptunedataContext) gremlinContains(q, substr string) error {
+// result document contains every listed substring.
+func (tc *neptunedataContext) gremlinContains(q string, subs ...string) error {
 	s, err := tc.gremlinResult(q)
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(s, substr) {
-		return fmt.Errorf("expected %q in result, got %s", substr, s)
+	for _, substr := range subs {
+		if !strings.Contains(s, substr) {
+			return fmt.Errorf("expected %q in result, got %s", substr, s)
+		}
 	}
 	return nil
 }
@@ -108,14 +110,16 @@ func (tc *neptunedataContext) cypherResult(q string) (string, error) {
 }
 
 // cypherContains runs one openCypher query and asserts that the marshalled
-// results document contains substr.
-func (tc *neptunedataContext) cypherContains(q, substr string) error {
+// results document contains every listed substring.
+func (tc *neptunedataContext) cypherContains(q string, subs ...string) error {
 	s, err := tc.cypherResult(q)
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(s, substr) {
-		return fmt.Errorf("expected %q in results, got %s", substr, s)
+	for _, substr := range subs {
+		if !strings.Contains(s, substr) {
+			return fmt.Errorf("expected %q in results, got %s", substr, s)
+		}
 	}
 	return nil
 }

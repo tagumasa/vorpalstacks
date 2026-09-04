@@ -13,8 +13,6 @@ import (
 // and Command operations that were previously unregistered stubs.
 func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []TestResult {
 	var results []TestResult
-	reg := tc.region
-	acct := tc.accountID
 	pkgName := uniqueName("test-pkg")
 	versionName := "1.0.0"
 	cmdID := uniqueName("test-cmd")
@@ -412,7 +410,7 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 
 	// --- CertificateProvider lifecycle ---
 	results = append(results, r.RunTest("iot", "CertProvider_InvalidOperationsRejected", func() error {
-		badLambda := fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", reg, acct)
+		badLambda := tc.lambdaARN("test-cert-signer")
 		if _, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
 			CertificateProviderName: aws.String(uniqueName("bad-provider-two-ops")),
 			LambdaFunctionArn:       aws.String(badLambda),
@@ -440,7 +438,7 @@ func (r *TestRunner) runIoTPackageCommandProviderTests(tc *iotTestContext) []Tes
 	results = append(results, r.RunTest("iot", "CertProvider_Create", func() error {
 		_, err := tc.client.CreateCertificateProvider(tc.ctx, &iot.CreateCertificateProviderInput{
 			CertificateProviderName: aws.String(certProviderName),
-			LambdaFunctionArn:       aws.String(fmt.Sprintf("arn:aws:lambda:%s:%s:function:test-cert-signer", reg, acct)),
+			LambdaFunctionArn:       aws.String(tc.lambdaARN("test-cert-signer")),
 			AccountDefaultForOperations: []iottypes.CertificateProviderOperation{
 				iottypes.CertificateProviderOperationCreateCertificateFromCsr,
 			},

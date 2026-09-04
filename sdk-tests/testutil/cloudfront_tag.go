@@ -13,7 +13,7 @@ func cfTagTests(tc *cfTestContext) []TestResult {
 	client := tc.client
 	ctx := tc.ctx
 
-	callerRef := tc.uniqueCallerRef("test-cftags")
+	callerRef := tc.uniquePrefix("test-cftags")
 	distID, distETag, err := tc.createDistributionWithTags(callerRef, "Tagged distribution", "example.org",
 		[]types.Tag{
 			{Key: aws.String("Environment"), Value: aws.String("test")},
@@ -163,47 +163,9 @@ func cfTagTests(tc *cfTestContext) []TestResult {
 }
 
 func (tc *cfTestContext) createDistributionWithTags(callerRef, comment, originDomain string, tags []types.Tag) (distID, distETag string, err error) {
-	originID := tc.uniquePrefix("origin")
 	resp, rerr := tc.client.CreateDistributionWithTags(tc.ctx, &cloudfront.CreateDistributionWithTagsInput{
 		DistributionConfigWithTags: &types.DistributionConfigWithTags{
-			DistributionConfig: &types.DistributionConfig{
-				CallerReference: aws.String(callerRef),
-				Enabled:         aws.Bool(true),
-				Comment:         aws.String(comment),
-				Origins: &types.Origins{
-					Quantity: aws.Int32(1),
-					Items: []types.Origin{
-						{
-							Id:         aws.String(originID),
-							DomainName: aws.String(originDomain),
-							CustomOriginConfig: &types.CustomOriginConfig{
-								HTTPPort:             aws.Int32(80),
-								HTTPSPort:            aws.Int32(443),
-								OriginProtocolPolicy: types.OriginProtocolPolicyHttpOnly,
-							},
-						},
-					},
-				},
-				DefaultCacheBehavior: &types.DefaultCacheBehavior{
-					TargetOriginId:       aws.String(originID),
-					ViewerProtocolPolicy: types.ViewerProtocolPolicyAllowAll,
-					ForwardedValues: &types.ForwardedValues{
-						QueryString: aws.Bool(false),
-						Cookies: &types.CookiePreference{
-							Forward: types.ItemSelectionNone,
-						},
-					},
-				},
-				ViewerCertificate: &types.ViewerCertificate{
-					CloudFrontDefaultCertificate: aws.Bool(true),
-				},
-				Restrictions: &types.Restrictions{
-					GeoRestriction: &types.GeoRestriction{
-						RestrictionType: types.GeoRestrictionTypeNone,
-						Quantity:        aws.Int32(0),
-					},
-				},
-			},
+			DistributionConfig: tc.baseDistributionConfig(callerRef, comment, originDomain),
 			Tags: &types.Tags{
 				Items: tags,
 			},

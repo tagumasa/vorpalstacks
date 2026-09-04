@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -17,14 +16,7 @@ func (r *TestRunner) runEventBridgeEdgeTests(ctx context.Context, client *eventb
 		_, err := client.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{
 			Name: aws.String("nonexistent-bus-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent event bus")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteEventBus_NonExistent", func() error {
@@ -41,84 +33,42 @@ func (r *TestRunner) runEventBridgeEdgeTests(ctx context.Context, client *eventb
 		_, err := client.DescribeRule(ctx, &eventbridge.DescribeRuleInput{
 			Name: aws.String("nonexistent-rule-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent rule")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteRule_NonExistent", func() error {
 		_, err := client.DeleteRule(ctx, &eventbridge.DeleteRuleInput{
 			Name: aws.String("nonexistent-rule-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent rule")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DescribeConnection_NonExistent", func() error {
 		_, err := client.DescribeConnection(ctx, &eventbridge.DescribeConnectionInput{
 			Name: aws.String("nonexistent-conn-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent connection")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteConnection_NonExistent", func() error {
 		_, err := client.DeleteConnection(ctx, &eventbridge.DeleteConnectionInput{
 			Name: aws.String("nonexistent-conn-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent connection")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DescribeApiDestination_NonExistent", func() error {
 		_, err := client.DescribeApiDestination(ctx, &eventbridge.DescribeApiDestinationInput{
 			Name: aws.String("nonexistent-apidest-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent api destination")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	results = append(results, r.RunTest("events", "DeleteApiDestination_NonExistent", func() error {
 		_, err := client.DeleteApiDestination(ctx, &eventbridge.DeleteApiDestinationInput{
 			Name: aws.String("nonexistent-apidest-xyz-12345"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error for non-existent api destination")
-		}
-		var rnf *types.ResourceNotFoundException
-		if !errors.As(err, &rnf) {
-			return fmt.Errorf("expected ResourceNotFoundException, got: %T: %v", err, err)
-		}
-		return nil
+		return expectEventBridgeResourceNotFound(err)
 	}))
 
 	return results

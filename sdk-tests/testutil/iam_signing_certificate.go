@@ -82,7 +82,7 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 
 	newCertUser := func(suffix string) (string, *iam.Client, *types.AccessKey, func()) {
 		user := fmt.Sprintf("SignCert-%s-%s", suffix, tc.ts)
-		if _, err := tc.client.CreateUser(tc.ctx, &iam.CreateUserInput{UserName: aws.String(user)}); err != nil {
+		if _, err := tc.createUser(user); err != nil {
 			return "", nil, nil, func() {}
 		}
 		client, key, err := newIAMClientForUser(r, tc, user)
@@ -97,6 +97,24 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 			_, _ = tc.client.DeleteUser(tc.ctx, &iam.DeleteUserInput{UserName: aws.String(user)})
 		}
 		return user, client, key, cleanup
+	}
+
+	// uploadTestCert generates a fresh self-signed certificate and uploads
+	// it as the given user's own credential, for tests whose subject is the
+	// listing, update or deletion of an uploaded certificate rather than
+	// the upload itself.
+	uploadTestCert := func(client *iam.Client, user string) (*types.SigningCertificate, error) {
+		certPEM, _, err := generateSelfSignedCertificate(user)
+		if err != nil {
+			return nil, err
+		}
+		up, err := client.UploadSigningCertificate(tc.ctx, &iam.UploadSigningCertificateInput{
+			CertificateBody: aws.String(certPEM),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return up.Certificate, nil
 	}
 
 	results = append(results, r.RunTest("iam", "UploadSigningCertificate", func() error {
@@ -225,13 +243,7 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 			return fmt.Errorf("user client setup failed")
 		}
 
-		certPEM, _, err := generateSelfSignedCertificate(user)
-		if err != nil {
-			return err
-		}
-		if _, err := client.UploadSigningCertificate(tc.ctx, &iam.UploadSigningCertificateInput{
-			CertificateBody: aws.String(certPEM),
-		}); err != nil {
+		if _, err := uploadTestCert(client, user); err != nil {
 			return err
 		}
 
@@ -256,17 +268,11 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 			return fmt.Errorf("user client setup failed")
 		}
 
-		certPEM, _, err := generateSelfSignedCertificate(user)
+		cert, err := uploadTestCert(client, user)
 		if err != nil {
 			return err
 		}
-		upload, err := client.UploadSigningCertificate(tc.ctx, &iam.UploadSigningCertificateInput{
-			CertificateBody: aws.String(certPEM),
-		})
-		if err != nil {
-			return err
-		}
-		certID := upload.Certificate.CertificateId
+		certID := cert.CertificateId
 
 		if _, err := tc.client.UpdateSigningCertificate(tc.ctx, &iam.UpdateSigningCertificateInput{
 			UserName:      aws.String(user),
@@ -322,17 +328,11 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 			return fmt.Errorf("user client setup failed")
 		}
 
-		certPEM, _, err := generateSelfSignedCertificate(user)
+		cert, err := uploadTestCert(client, user)
 		if err != nil {
 			return err
 		}
-		upload, err := client.UploadSigningCertificate(tc.ctx, &iam.UploadSigningCertificateInput{
-			CertificateBody: aws.String(certPEM),
-		})
-		if err != nil {
-			return err
-		}
-		certID := upload.Certificate.CertificateId
+		certID := cert.CertificateId
 
 		// Deleting through a UserName that does not own the certificate
 		// must fail with NoSuchEntity.
@@ -385,17 +385,11 @@ func (r *TestRunner) iamSigningCertificateTests(tc *iamTestContext) []TestResult
 			return fmt.Errorf("other client setup failed")
 		}
 
-		certPEM, _, err := generateSelfSignedCertificate(owner)
+		cert, err := uploadTestCert(ownerClient, owner)
 		if err != nil {
 			return err
 		}
-		upload, err := ownerClient.UploadSigningCertificate(tc.ctx, &iam.UploadSigningCertificateInput{
-			CertificateBody: aws.String(certPEM),
-		})
-		if err != nil {
-			return err
-		}
-		certID := upload.Certificate.CertificateId
+		certID := cert.CertificateId
 
 		// The owner may act on their own certificate without naming a user.
 		if _, err := ownerClient.UpdateSigningCertificate(tc.ctx, &iam.UpdateSigningCertificateInput{

@@ -13,7 +13,7 @@ func cfInvalidationTests(tc *cfTestContext) []TestResult {
 	client := tc.client
 	ctx := tc.ctx
 
-	callerRef := tc.uniqueCallerRef("test-inv")
+	callerRef := tc.uniquePrefix("test-inv")
 	distID, distETag, err := tc.createDistribution(callerRef, "For invalidation tests", "inv-test.example.com")
 	if err != nil {
 		results = append(results, TestResult{
@@ -30,7 +30,7 @@ func cfInvalidationTests(tc *cfTestContext) []TestResult {
 		Status:   "PASS",
 	})
 
-	invCallerRef := tc.uniqueCallerRef("inv-ref")
+	invCallerRef := tc.uniquePrefix("inv-ref")
 	var invID string
 	results = append(results, tc.runner.RunTest("cloudfront", "CreateInvalidation_VerifyFields", func() error {
 		resp, err := client.CreateInvalidation(ctx, &cloudfront.CreateInvalidationInput{

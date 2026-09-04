@@ -12,10 +12,7 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	var results []TestResult
 
 	results = append(results, r.RunTest("neptunegraph", "TagResource", func() error {
-		if err := tc.requireGraph(); err != nil {
-			return err
-		}
-		if err := tc.requireGraphARN(); err != nil {
+		if err := tc.requireGraphWithARN(); err != nil {
 			return err
 		}
 		_, err := tc.client.TagResource(tc.ctx, &neptunegraph.TagResourceInput{
@@ -72,10 +69,7 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListTagsForResource", func() error {
-		if err := tc.requireGraph(); err != nil {
-			return err
-		}
-		if err := tc.requireGraphARN(); err != nil {
+		if err := tc.requireGraphWithARN(); err != nil {
 			return err
 		}
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{
@@ -100,10 +94,7 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "UntagResource", func() error {
-		if err := tc.requireGraph(); err != nil {
-			return err
-		}
-		if err := tc.requireGraphARN(); err != nil {
+		if err := tc.requireGraphWithARN(); err != nil {
 			return err
 		}
 		_, err := tc.client.UntagResource(tc.ctx, &neptunegraph.UntagResourceInput{
@@ -114,10 +105,7 @@ func (r *TestRunner) runNeptunegraphTagTests(tc *neptunegraphContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("neptunegraph", "ListTagsForResource_AfterUntag", func() error {
-		if err := tc.requireGraph(); err != nil {
-			return err
-		}
-		if err := tc.requireGraphARN(); err != nil {
+		if err := tc.requireGraphWithARN(); err != nil {
 			return err
 		}
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &neptunegraph.ListTagsForResourceInput{

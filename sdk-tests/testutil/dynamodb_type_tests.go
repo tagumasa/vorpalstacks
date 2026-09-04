@@ -16,20 +16,11 @@ func (r *TestRunner) dynamoDBTypeTests(ctx context.Context, client *dynamodb.Cli
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_GetItem_AllScalarTypes", func() error {
 		allTypesTable := fmt.Sprintf("AllTypes-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(allTypesTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, allTypesTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(allTypesTable)})
+		defer cleanupTable()
 
 		binaryData := []byte("\x00\x01\x02\xff\xfe")
 		putItem := map[string]types.AttributeValue{
@@ -86,20 +77,11 @@ func (r *TestRunner) dynamoDBTypeTests(ctx context.Context, client *dynamodb.Cli
 
 	results = append(results, r.RunTest("dynamodb", "PutItem_GetItem_SetTypes", func() error {
 		setTable := fmt.Sprintf("SetTypes-%d", time.Now().UnixNano())
-		_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
-			TableName: aws.String(setTable),
-			AttributeDefinitions: []types.AttributeDefinition{
-				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
-			},
-			KeySchema: []types.KeySchemaElement{
-				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
-			},
-			BillingMode: types.BillingModePayPerRequest,
-		})
+		cleanupTable, err := createDynamoTestTable(ctx, client, setTable)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(setTable)})
+		defer cleanupTable()
 
 		nsItem := map[string]types.AttributeValue{
 			"id":   &types.AttributeValueMemberS{Value: "setitem1"},

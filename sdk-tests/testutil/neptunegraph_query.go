@@ -38,7 +38,7 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 			GraphIdentifier: aws.String(tc.graphID),
 			QueryId:         aws.String("q-fake123456"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -86,7 +86,7 @@ func (r *TestRunner) runNeptunegraphQueryTests(tc *neptunegraphContext) []TestRe
 			GraphIdentifier: aws.String(tc.graphID),
 			QueryId:         aws.String("q-nonexist00"),
 		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil

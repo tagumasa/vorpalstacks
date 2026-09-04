@@ -32,13 +32,6 @@ func cfEdgeTests(tc *cfTestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("cloudfront", "GetDistribution_StaleETag", func() error {
-		_, err := client.GetDistribution(ctx, &cloudfront.GetDistributionInput{
-			Id: aws.String("nonexistent-dist-id"),
-		})
-		return AssertErrorContains(err, "NoSuchDistribution")
-	}))
-
 	results = append(results, tc.runner.RunTest("cloudfront", "GetInvalidation_NonExistentDist", func() error {
 		_, err := client.GetInvalidation(ctx, &cloudfront.GetInvalidationInput{
 			DistributionId: aws.String("nonexistent-dist-id"),
@@ -59,27 +52,6 @@ func cfEdgeTests(tc *cfTestContext) []TestResult {
 			},
 		})
 		return AssertErrorContains(err, "NoSuchDistribution")
-	}))
-
-	results = append(results, tc.runner.RunTest("cloudfront", "GetCachePolicy_NonExistent", func() error {
-		_, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
-			Id: aws.String("nonexistent-policy-id"),
-		})
-		return AssertErrorContains(err, "NoSuchCachePolicy")
-	}))
-
-	results = append(results, tc.runner.RunTest("cloudfront", "GetOriginRequestPolicy_NonExistent", func() error {
-		_, err := client.GetOriginRequestPolicy(ctx, &cloudfront.GetOriginRequestPolicyInput{
-			Id: aws.String("nonexistent-policy-id"),
-		})
-		return AssertErrorContains(err, "NoSuchOriginRequestPolicy")
-	}))
-
-	results = append(results, tc.runner.RunTest("cloudfront", "GetResponseHeadersPolicy_NonExistent", func() error {
-		_, err := client.GetResponseHeadersPolicy(ctx, &cloudfront.GetResponseHeadersPolicyInput{
-			Id: aws.String("nonexistent-policy-id"),
-		})
-		return AssertErrorContains(err, "NoSuchResponseHeadersPolicy")
 	}))
 
 	results = append(results, tc.runner.RunTest("cloudfront", "CreatePublicKey_MissingCallerReference_Rejected", func() error {

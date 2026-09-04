@@ -121,10 +121,5 @@ func (r *TestRunner) runIoTLastBatchTests(tc *iotTestContext) []TestResult {
 		return expectNotFound(err)
 	}))
 
-	results = append(results, r.RunTest("iot", "DeleteRegistrationCode", func() error {
-		_, err := tc.client.DeleteRegistrationCode(tc.ctx, &iot.DeleteRegistrationCodeInput{})
-		return err
-	}))
-
 	return results
 }

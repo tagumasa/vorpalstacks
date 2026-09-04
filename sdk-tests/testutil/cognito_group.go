@@ -59,17 +59,11 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "GetGroup", func() error {
 		newGroupName := tc.unique("get-group")
-		_, err := tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:  aws.String(newGroupName),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		cleanupGroup, err := tc.createGroup(newGroupName)
 		if err != nil {
-			return fmt.Errorf("create group: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(newGroupName),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupGroup()
 		resp, err := tc.client.GetGroup(tc.ctx, &cognitoidentityprovider.GetGroupInput{
 			GroupName:  aws.String(newGroupName),
 			UserPoolId: aws.String(tc.userPoolID),
@@ -91,18 +85,14 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 
 	results = append(results, r.RunTest("cognito", "UpdateGroup", func() error {
 		ugGroupName := tc.unique("ug-group")
-		_, err := tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:   aws.String(ugGroupName),
-			UserPoolId:  aws.String(tc.userPoolID),
-			Description: aws.String("Original description"),
-		})
+		cleanupUgGroup, err := tc.createGroup(ugGroupName,
+			func(input *cognitoidentityprovider.CreateGroupInput) {
+				input.Description = aws.String("Original description")
+			})
 		if err != nil {
-			return fmt.Errorf("create group: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(ugGroupName),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupUgGroup()
 		_, err = tc.client.UpdateGroup(tc.ctx, &cognitoidentityprovider.UpdateGroupInput{
 			GroupName:   aws.String(ugGroupName),
 			UserPoolId:  aws.String(tc.userPoolID),
@@ -136,17 +126,11 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupUgUser()
-		_, err = tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:  aws.String(ugGroup),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		cleanupUgGroup, err := tc.createGroup(ugGroup)
 		if err != nil {
-			return fmt.Errorf("create group: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(ugGroup),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupUgGroup()
 		_, err = tc.client.AdminAddUserToGroup(tc.ctx, &cognitoidentityprovider.AdminAddUserToGroupInput{
 			UserPoolId: aws.String(tc.userPoolID),
 			GroupName:  aws.String(ugGroup),
@@ -183,17 +167,11 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupUgUser2()
-		_, err = tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:  aws.String(ugGroup2),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		cleanupUgGroup2, err := tc.createGroup(ugGroup2)
 		if err != nil {
-			return fmt.Errorf("create group: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(ugGroup2),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupUgGroup2()
 		_, err = tc.client.AdminAddUserToGroup(tc.ctx, &cognitoidentityprovider.AdminAddUserToGroupInput{
 			UserPoolId: aws.String(tc.userPoolID),
 			GroupName:  aws.String(ugGroup2),
@@ -251,28 +229,16 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 			return fmt.Errorf("create user: %v", err)
 		}
 		defer cleanupLgUser()
-		_, err = tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:  aws.String(lgGroup1),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		cleanupLgGroup1, err := tc.createGroup(lgGroup1)
 		if err != nil {
-			return fmt.Errorf("create group1: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(lgGroup1),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
-		_, err = tc.client.CreateGroup(tc.ctx, &cognitoidentityprovider.CreateGroupInput{
-			GroupName:  aws.String(lgGroup2),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupLgGroup1()
+		cleanupLgGroup2, err := tc.createGroup(lgGroup2)
 		if err != nil {
-			return fmt.Errorf("create group2: %v", err)
+			return err
 		}
-		defer tc.client.DeleteGroup(tc.ctx, &cognitoidentityprovider.DeleteGroupInput{
-			GroupName:  aws.String(lgGroup2),
-			UserPoolId: aws.String(tc.userPoolID),
-		})
+		defer cleanupLgGroup2()
 		_, err = tc.client.AdminAddUserToGroup(tc.ctx, &cognitoidentityprovider.AdminAddUserToGroupInput{
 			UserPoolId: aws.String(tc.userPoolID),
 			GroupName:  aws.String(lgGroup1),

@@ -20,16 +20,9 @@ func (r *TestRunner) runIoTFinalBatchTests(tc *iotTestContext) []TestResult {
 	// single FAIL row named after the setup step it replaces.
 	cleanupThing, err := tc.createThing(thingName)
 	if err != nil {
-		return []TestResult{{Service: "iot", TestName: "Final_Setup_CreateThing", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("Final_Setup_CreateThing", err.Error())
 	}
 	defer cleanupThing()
-
-	results = append(results, r.RunTest("iot", "GetRegistrationCode", func() error {
-		// The edge platform may not issue a real registration code; assert the
-		// handler is reachable and succeeds.
-		_, err := tc.client.GetRegistrationCode(tc.ctx, &iot.GetRegistrationCodeInput{})
-		return err
-	}))
 
 	results = append(results, r.RunTest("iot", "GetStatistics", func() error {
 		out, err := tc.client.GetStatistics(tc.ctx, &iot.GetStatisticsInput{
@@ -54,16 +47,14 @@ func (r *TestRunner) runIoTFinalBatchTests(tc *iotTestContext) []TestResult {
 		}); err != nil {
 			return fmt.Errorf("TagResource failed: %w", err)
 		}
-		tags, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: aws.String(thingARN)})
+		found, err := tc.resourceHasTag(aws.String(thingARN), tagKey, "test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
 		}
-		for _, t := range tags.Tags {
-			if aws.ToString(t.Key) == tagKey && aws.ToString(t.Value) == "test" {
-				return nil
-			}
+		if !found {
+			return fmt.Errorf("tag %s not found after TagResource", tagKey)
 		}
-		return fmt.Errorf("tag %s not found after TagResource", tagKey)
+		return nil
 	}))
 
 	results = append(results, r.RunTest("iot", "UntagResource", func() error {

@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
@@ -13,13 +12,10 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	var results []TestResult
 
 	results = append(results, r.RunTest("cloudtrail", "Tags_Lifecycle", func() error {
-		name := fmt.Sprintf("tagcycle-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("tagcycle")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("tagcycle-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "tagcycle-bucket")
 		if err != nil {
 			return err
 		}
@@ -99,8 +95,8 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "CreateTrail_WithTags", func() error {
-		name := fmt.Sprintf("tagtrail-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("tagtrail")
+		defer tc.deleteTrail(name)
 
 		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),
@@ -135,13 +131,10 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "AddTags", func() error {
-		name := fmt.Sprintf("addtags-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("addtags")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("addtags-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "addtags-bucket")
 		if err != nil {
 			return err
 		}
@@ -172,12 +165,7 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 		if len(tags) != 2 {
 			return fmt.Errorf("expected 2 tags, got %d", len(tags))
 		}
-		tagMap := make(map[string]string)
-		for _, t := range tags {
-			if t.Key != nil && t.Value != nil {
-				tagMap[*t.Key] = *t.Value
-			}
-		}
+		tagMap := tagListToMap(tags)
 		if tagMap["Environment"] != "test" {
 			return fmt.Errorf("expected Environment=test, got %s", tagMap["Environment"])
 		}
@@ -188,8 +176,8 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "ListTags", func() error {
-		name := fmt.Sprintf("listtags-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("listtags")
+		defer tc.deleteTrail(name)
 
 		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),
@@ -228,8 +216,8 @@ func (r *TestRunner) runCloudTrailTagTests(tc *cloudTrailTestContext) []TestResu
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "RemoveTags", func() error {
-		name := fmt.Sprintf("rmtags-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("rmtags")
+		defer tc.deleteTrail(name)
 
 		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
 			Name:         aws.String(name),

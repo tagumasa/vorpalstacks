@@ -159,15 +159,11 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		// Create a fresh device so the test does not depend on the
 		// lifecycle of the earlier device tests.
 		deviceName := fmt.Sprintf("AssignMFA-%s", tc.ts)
-		created, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
-			VirtualMFADeviceName: aws.String(deviceName),
-		})
+		device, cleanupDevice, err := tc.createMFADevice(deviceName)
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{
-			SerialNumber: created.VirtualMFADevice.SerialNumber,
-		})
+		defer cleanupDevice()
 
 		resp, err := tc.client.ListVirtualMFADevices(tc.ctx, &iam.ListVirtualMFADevicesInput{
 			AssignmentStatus: types.AssignmentStatusTypeUnassigned,
@@ -178,7 +174,7 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		}
 		found := false
 		for _, d := range resp.VirtualMFADevices {
-			if aws.ToString(d.SerialNumber) == aws.ToString(created.VirtualMFADevice.SerialNumber) {
+			if aws.ToString(d.SerialNumber) == aws.ToString(device.SerialNumber) {
 				found = true
 				break
 			}
@@ -195,7 +191,7 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 			return err
 		}
 		for _, d := range assigned.VirtualMFADevices {
-			if aws.ToString(d.SerialNumber) == aws.ToString(created.VirtualMFADevice.SerialNumber) {
+			if aws.ToString(d.SerialNumber) == aws.ToString(device.SerialNumber) {
 				return fmt.Errorf("unassigned device must not appear under AssignmentStatus=Assigned")
 			}
 		}
@@ -217,21 +213,19 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		}
 		defer cleanupUser()
 
-		device, err := tc.client.CreateVirtualMFADevice(tc.ctx, &iam.CreateVirtualMFADeviceInput{
-			VirtualMFADeviceName: aws.String(fmt.Sprintf("MFALife-Dev-%s", tc.ts)),
-		})
+		device, cleanupDevice, err := tc.createMFADevice(fmt.Sprintf("MFALife-Dev-%s", tc.ts))
 		if err != nil {
 			return err
 		}
-		serial := device.VirtualMFADevice.SerialNumber
-		defer tc.client.DeleteVirtualMFADevice(tc.ctx, &iam.DeleteVirtualMFADeviceInput{SerialNumber: serial})
+		serial := device.SerialNumber
+		defer cleanupDevice()
 
 		// EnableMFADevice requires two consecutive codes.
 		if _, err := tc.client.EnableMFADevice(tc.ctx, &iam.EnableMFADeviceInput{
 			UserName:            aws.String(user),
 			SerialNumber:        serial,
-			AuthenticationCode1: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 0)),
-			AuthenticationCode2: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 1)),
+			AuthenticationCode1: aws.String(totpCodeAt(device.Base32StringSeed, 0)),
+			AuthenticationCode2: aws.String(totpCodeAt(device.Base32StringSeed, 1)),
 		}); err != nil {
 			return fmt.Errorf("EnableMFADevice: %w", err)
 		}
@@ -266,8 +260,8 @@ func (r *TestRunner) iamMFATests(tc *iamTestContext) []TestResult {
 		if _, err := tc.client.ResyncMFADevice(tc.ctx, &iam.ResyncMFADeviceInput{
 			UserName:            aws.String(user),
 			SerialNumber:        serial,
-			AuthenticationCode1: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 0)),
-			AuthenticationCode2: aws.String(totpCodeAt(device.VirtualMFADevice.Base32StringSeed, 1)),
+			AuthenticationCode1: aws.String(totpCodeAt(device.Base32StringSeed, 0)),
+			AuthenticationCode2: aws.String(totpCodeAt(device.Base32StringSeed, 1)),
 		}); err != nil {
 			return fmt.Errorf("ResyncMFADevice: %w", err)
 		}

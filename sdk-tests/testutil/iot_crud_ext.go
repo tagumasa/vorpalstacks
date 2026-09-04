@@ -21,7 +21,7 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 	// single FAIL row named after the setup step it replaces.
 	cleanupThing, err := tc.createThing(thingName)
 	if err != nil {
-		return []TestResult{{Service: "iot", TestName: "CRUDExt_Setup_CreateThing", Status: "FAIL", Error: err.Error()}}
+		return iotSetupFail("CRUDExt_Setup_CreateThing", err.Error())
 	}
 	defer cleanupThing()
 
@@ -194,15 +194,9 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected actionId=%s on describe, got %v", *created.ActionId, out.ActionId)
 		}
 		// Create-time tags must be visible through ListTagsForResource.
-		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: created.ActionArn})
+		found, err := tc.resourceHasTag(created.ActionArn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tagOut.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(created.ActionArn))
@@ -230,15 +224,9 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected name=%s", dimName)
 		}
 		// Create-time tags must be visible through ListTagsForResource.
-		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: created.Arn})
+		found, err := tc.resourceHasTag(created.Arn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tagOut.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(created.Arn))
@@ -313,15 +301,9 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected metricType echoed back")
 		}
 		// Create-time tags must be visible through ListTagsForResource.
-		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: created.MetricArn})
+		found, err := tc.resourceHasTag(created.MetricArn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tagOut.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(created.MetricArn))
@@ -401,18 +383,12 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 		if aws.ToString(out.Description) != "integration fleet metric" {
 			return fmt.Errorf("expected description echoed back, got %q", aws.ToString(out.Description))
 		}
-		tagged, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: created.MetricArn})
+		found, err := tc.resourceHasTag(created.MetricArn, "stage", "integration")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
 		}
-		found := false
-		for _, tag := range tagged.Tags {
-			if aws.ToString(tag.Key) == "stage" && aws.ToString(tag.Value) == "integration" {
-				found = true
-			}
-		}
 		if !found {
-			return fmt.Errorf("expected the creation tag on %s, got %v", aws.ToString(created.MetricArn), tagged.Tags)
+			return fmt.Errorf("expected the creation tag on %s", aws.ToString(created.MetricArn))
 		}
 		return nil
 	}))
@@ -486,15 +462,9 @@ func (r *TestRunner) runIoTCRUDExtTests(tc *iotTestContext) []TestResult {
 			return fmt.Errorf("expected frequency=daily, got %s", out.Frequency)
 		}
 		// Create-time tags must be visible through ListTagsForResource.
-		tagOut, err := tc.client.ListTagsForResource(tc.ctx, &iot.ListTagsForResourceInput{ResourceArn: created.ScheduledAuditArn})
+		found, err := tc.resourceHasTag(created.ScheduledAuditArn, "purpose", "sdk-test")
 		if err != nil {
 			return fmt.Errorf("ListTagsForResource failed: %w", err)
-		}
-		found := false
-		for _, t := range tagOut.Tags {
-			if aws.ToString(t.Key) == "purpose" && aws.ToString(t.Value) == "sdk-test" {
-				found = true
-			}
 		}
 		if !found {
 			return fmt.Errorf("create-time tag purpose=sdk-test not found on %s", aws.ToString(created.ScheduledAuditArn))

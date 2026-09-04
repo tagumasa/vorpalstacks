@@ -240,6 +240,14 @@ func cfCachePolicyTests(tc *cfTestContext) []TestResult {
 			_, err := client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
 				Id: aws.String(cpID),
 			})
+			if aerr := AssertErrorContains(err, "NoSuchCachePolicy"); aerr != nil {
+				return aerr
+			}
+			// An ID that never existed must fail identically to the
+			// deleted one.
+			_, err = client.GetCachePolicy(ctx, &cloudfront.GetCachePolicyInput{
+				Id: aws.String("nonexistent-policy-id"),
+			})
 			return AssertErrorContains(err, "NoSuchCachePolicy")
 		}))
 	}
@@ -320,7 +328,7 @@ func cfCachePolicyTests(tc *cfTestContext) []TestResult {
 		byRefCpID := aws.ToString(cpResp.CachePolicy.Id)
 		byRefCpETag := aws.ToString(cpResp.ETag)
 
-		distID, distETag, err := tc.createDistribution(tc.uniqueCallerRef("byref-dist"), "list-by-reference distribution", "example.net")
+		distID, distETag, err := tc.createDistribution(tc.uniquePrefix("byref-dist"), "list-by-reference distribution", "example.net")
 		if err != nil {
 			client.DeleteCachePolicy(ctx, &cloudfront.DeleteCachePolicyInput{Id: aws.String(byRefCpID), IfMatch: aws.String(byRefCpETag)})
 			return err

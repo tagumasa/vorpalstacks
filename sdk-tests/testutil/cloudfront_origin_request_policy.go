@@ -188,6 +188,14 @@ func cfOriginRequestPolicyTests(tc *cfTestContext) []TestResult {
 			_, err := client.GetOriginRequestPolicy(ctx, &cloudfront.GetOriginRequestPolicyInput{
 				Id: aws.String(orpID),
 			})
+			if aerr := AssertErrorContains(err, "NoSuchOriginRequestPolicy"); aerr != nil {
+				return aerr
+			}
+			// An ID that never existed must fail identically to the
+			// deleted one.
+			_, err = client.GetOriginRequestPolicy(ctx, &cloudfront.GetOriginRequestPolicyInput{
+				Id: aws.String("nonexistent-policy-id"),
+			})
 			return AssertErrorContains(err, "NoSuchOriginRequestPolicy")
 		}))
 	}

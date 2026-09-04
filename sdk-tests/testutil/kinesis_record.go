@@ -16,15 +16,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "PutRecord", func() error {
 		sn := kinesisStream(ts, "rec")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
 			StreamName:   aws.String(sn),
@@ -47,15 +43,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 	// carries no pattern), so a 200-character CJK key (600 bytes) is legal.
 	results = append(results, r.RunTest("kinesis", "PutRecord_PartitionKeyMultibyteAccepted", func() error {
 		sn := kinesisStream(ts, "recmb")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		key := strings.Repeat("\u65e5", 200)
 		resp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
@@ -74,15 +66,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "PutRecords", func() error {
 		sn := kinesisStream(ts, "recs")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		resp, err := client.PutRecords(ctx, &kinesis.PutRecordsInput{
 			StreamName: aws.String(sn),
@@ -119,15 +107,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "GetShardIterator", func() error {
 		sn := kinesisStream(ts, "iter")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		descResp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(sn)})
 		if err != nil {
@@ -154,15 +138,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "GetRecords", func() error {
 		sn := kinesisStream(ts, "getrec")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		testData := []byte("getrecords-test-data")
 		putResp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{
@@ -212,15 +192,11 @@ func (r *TestRunner) kinesisRecordTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "PutRecord_GetRecords_Roundtrip", func() error {
 		sn := kinesisStream(ts, "rt")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 1*time.Second)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(1 * time.Second)
+		defer cleanup()
 
 		testData := []byte("roundtrip-kinesis-data-verify")
 		putResp, err := client.PutRecord(ctx, &kinesis.PutRecordInput{

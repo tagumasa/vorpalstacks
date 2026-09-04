@@ -14,17 +14,16 @@ func (r *TestRunner) runKMSMultiRegionTests(tc *kmsTestContext) []TestResult {
 	var multiKeyID string
 
 	results = append(results, r.RunTest("kms", "ReplicateKey", func() error {
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		meta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("Multi-Region primary for ReplicateKey"),
 			MultiRegion: aws.Bool(true),
 		})
 		if err != nil {
-			return fmt.Errorf("create multi-region key: %v", err)
+			return err
 		}
-		multiKeyID = *resp.KeyMetadata.KeyId
-		tc.addCleanupKey(multiKeyID)
+		multiKeyID = *meta.KeyId
 
-		if resp.KeyMetadata.MultiRegion == nil || !*resp.KeyMetadata.MultiRegion {
+		if meta.MultiRegion == nil || !*meta.MultiRegion {
 			return fmt.Errorf("expected MultiRegion=true")
 		}
 

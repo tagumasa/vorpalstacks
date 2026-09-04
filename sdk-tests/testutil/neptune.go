@@ -153,6 +153,89 @@ func (tc *neptuneContext) allParameterGroups(filter *string) ([]types.DBParamete
 	})
 }
 
+// The describe* helpers below fetch a single resource by identifier and
+// fail unless the filtered describe returns exactly that resource.
+
+func (tc *neptuneContext) describeCluster(id string) (*types.DBCluster, error) {
+	resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
+		DBClusterIdentifier: aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.DBClusters) != 1 {
+		return nil, fmt.Errorf("expected 1 cluster for %s, got %d", id, len(resp.DBClusters))
+	}
+	c := resp.DBClusters[0]
+	if c.DBClusterIdentifier == nil || *c.DBClusterIdentifier != id {
+		return nil, fmt.Errorf("expected DBClusterIdentifier=%s, got %v", id, c.DBClusterIdentifier)
+	}
+	return &c, nil
+}
+
+func (tc *neptuneContext) describeSnapshot(id string) (*types.DBClusterSnapshot, error) {
+	resp, err := tc.client.DescribeDBClusterSnapshots(tc.ctx, &neptune.DescribeDBClusterSnapshotsInput{
+		DBClusterSnapshotIdentifier: aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.DBClusterSnapshots) != 1 {
+		return nil, fmt.Errorf("expected 1 snapshot for %s, got %d", id, len(resp.DBClusterSnapshots))
+	}
+	s := resp.DBClusterSnapshots[0]
+	if s.DBClusterSnapshotIdentifier == nil || *s.DBClusterSnapshotIdentifier != id {
+		return nil, fmt.Errorf("expected DBClusterSnapshotIdentifier=%s, got %v", id, s.DBClusterSnapshotIdentifier)
+	}
+	return &s, nil
+}
+
+func (tc *neptuneContext) describeInstance(id string) (*types.DBInstance, error) {
+	resp, err := tc.client.DescribeDBInstances(tc.ctx, &neptune.DescribeDBInstancesInput{
+		DBInstanceIdentifier: aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.DBInstances) != 1 {
+		return nil, fmt.Errorf("expected 1 instance for %s, got %d", id, len(resp.DBInstances))
+	}
+	i := resp.DBInstances[0]
+	if i.DBInstanceIdentifier == nil || *i.DBInstanceIdentifier != id {
+		return nil, fmt.Errorf("expected DBInstanceIdentifier=%s, got %v", id, i.DBInstanceIdentifier)
+	}
+	return &i, nil
+}
+
+func (tc *neptuneContext) describeGlobalCluster(id string) (*types.GlobalCluster, error) {
+	resp, err := tc.client.DescribeGlobalClusters(tc.ctx, &neptune.DescribeGlobalClustersInput{
+		GlobalClusterIdentifier: aws.String(id),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.GlobalClusters) != 1 {
+		return nil, fmt.Errorf("expected 1 global cluster for %s, got %d", id, len(resp.GlobalClusters))
+	}
+	g := resp.GlobalClusters[0]
+	if g.GlobalClusterIdentifier == nil || *g.GlobalClusterIdentifier != id {
+		return nil, fmt.Errorf("expected GlobalClusterIdentifier=%s, got %v", id, g.GlobalClusterIdentifier)
+	}
+	return &g, nil
+}
+
+// assertDescribeGone accepts either the resource-specific not-found fault or
+// an empty filtered result list as proof that a deleted resource is gone.
+func assertDescribeGone(err error, got int, code, noun string) error {
+	if err != nil {
+		return expectAWSErrorCode(err, code)
+	}
+	if got != 0 {
+		return fmt.Errorf("expected 0 %s after delete, got %d", noun, got)
+	}
+	return nil
+}
+
 func (r *TestRunner) RunNeptuneTests() []TestResult {
 	var results []TestResult
 
@@ -229,13 +312,14 @@ func (r *TestRunner) runNeptuneCleanup(tc *neptuneContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("neptune", "DeleteDBCluster_VerifyDeleted", func() error {
-		_, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
+		resp, err := tc.client.DescribeDBClusters(tc.ctx, &neptune.DescribeDBClustersInput{
 			DBClusterIdentifier: aws.String(tc.clusterID),
 		})
-		if err := AssertErrorContains(err, "DBClusterNotFoundFault"); err != nil {
-			return err
+		got := 0
+		if resp != nil {
+			got = len(resp.DBClusters)
 		}
-		return nil
+		return assertDescribeGone(err, got, "DBClusterNotFoundFault", "clusters")
 	}))
 
 	return results

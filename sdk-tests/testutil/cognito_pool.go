@@ -306,18 +306,13 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("cognito", "TagResource", func() error {
-		newPoolName := tc.unique("test-pool-tags")
-		newPool, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(newPoolName),
-		})
+		_, poolArn, cleanupPool, err := tc.createUserPoolWithArn(tc.unique("test-pool-tags"))
 		if err != nil {
 			return err
 		}
-		if newPool.UserPool == nil || newPool.UserPool.Arn == nil {
-			return fmt.Errorf("new pool Arn is nil")
-		}
+		defer cleanupPool()
 		_, err = tc.client.TagResource(tc.ctx, &cognitoidentityprovider.TagResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 			Tags: map[string]string{
 				"Environment": "test",
 				"Owner":       "test-user",
@@ -326,49 +321,29 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		listResp, listErr := tc.client.ListTagsForResource(tc.ctx, &cognitoidentityprovider.ListTagsForResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
-		})
-		if listErr != nil {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
-			return listErr
-		}
-		if listResp.Tags == nil {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
-			return fmt.Errorf("tags is nil after tagging")
-		}
-		if listResp.Tags["Environment"] != "test" {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
-			return fmt.Errorf("tag Environment not found after TagResource")
-		}
-		tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: newPool.UserPool.Id,
-		})
-		return nil
-	}))
-
-	results = append(results, r.RunTest("cognito", "TagResource_ReservedPrefixRejected", func() error {
-		newPoolName := tc.unique("test-pool-tagres")
-		newPool, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(newPoolName),
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentityprovider.ListTagsForResourceInput{
+			ResourceArn: aws.String(poolArn),
 		})
 		if err != nil {
 			return err
 		}
-		if newPool.UserPool == nil || newPool.UserPool.Arn == nil {
-			return fmt.Errorf("new pool Arn is nil")
+		if listResp.Tags == nil {
+			return fmt.Errorf("tags is nil after tagging")
 		}
-		defer tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: newPool.UserPool.Id,
-		})
+		if listResp.Tags["Environment"] != "test" {
+			return fmt.Errorf("tag Environment not found after TagResource")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito", "TagResource_ReservedPrefixRejected", func() error {
+		_, poolArn, cleanupPool, err := tc.createUserPoolWithArn(tc.unique("test-pool-tagres"))
+		if err != nil {
+			return err
+		}
+		defer cleanupPool()
 		_, err = tc.client.TagResource(tc.ctx, &cognitoidentityprovider.TagResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 			Tags: map[string]string{
 				"aws:reserved": "v",
 			},
@@ -380,18 +355,13 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("cognito", "ListTagsForResource", func() error {
-		newPoolName := tc.unique("test-pool-listtags")
-		newPool, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(newPoolName),
-		})
+		_, poolArn, cleanupPool, err := tc.createUserPoolWithArn(tc.unique("test-pool-listtags"))
 		if err != nil {
 			return err
 		}
-		if newPool.UserPool == nil || newPool.UserPool.Arn == nil {
-			return fmt.Errorf("new pool Arn is nil")
-		}
+		defer cleanupPool()
 		_, err = tc.client.TagResource(tc.ctx, &cognitoidentityprovider.TagResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 			Tags: map[string]string{
 				"Test": "value",
 			},
@@ -400,45 +370,28 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 			return err
 		}
 		resp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentityprovider.ListTagsForResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 		})
 		if err != nil {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
 			return err
 		}
 		if resp.Tags == nil {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
 			return fmt.Errorf("tags is nil")
 		}
 		if resp.Tags["Test"] != "value" {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
 			return fmt.Errorf("expected tag Test=value, got %v", resp.Tags["Test"])
 		}
-		tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: newPool.UserPool.Id,
-		})
 		return nil
 	}))
 
 	results = append(results, r.RunTest("cognito", "UntagResource", func() error {
-		newPoolName := tc.unique("test-pool-untag")
-		newPool, err := tc.client.CreateUserPool(tc.ctx, &cognitoidentityprovider.CreateUserPoolInput{
-			PoolName: aws.String(newPoolName),
-		})
+		_, poolArn, cleanupPool, err := tc.createUserPoolWithArn(tc.unique("test-pool-untag"))
 		if err != nil {
 			return err
 		}
-		if newPool.UserPool == nil || newPool.UserPool.Arn == nil {
-			return fmt.Errorf("new pool Arn is nil")
-		}
+		defer cleanupPool()
 		_, err = tc.client.TagResource(tc.ctx, &cognitoidentityprovider.TagResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 			Tags: map[string]string{
 				"Test": "value",
 			},
@@ -447,30 +400,21 @@ func (r *TestRunner) cognitoPoolCoreTests(tc *cognitoIDPContext) []TestResult {
 			return err
 		}
 		_, err = tc.client.UntagResource(tc.ctx, &cognitoidentityprovider.UntagResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+			ResourceArn: aws.String(poolArn),
 			TagKeys:     []string{"Test"},
 		})
 		if err != nil {
 			return err
 		}
-		listResp, listErr := tc.client.ListTagsForResource(tc.ctx, &cognitoidentityprovider.ListTagsForResourceInput{
-			ResourceArn: newPool.UserPool.Arn,
+		listResp, err := tc.client.ListTagsForResource(tc.ctx, &cognitoidentityprovider.ListTagsForResourceInput{
+			ResourceArn: aws.String(poolArn),
 		})
-		if listErr != nil {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
-			return listErr
+		if err != nil {
+			return err
 		}
 		if _, exists := listResp.Tags["Test"]; exists {
-			tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-				UserPoolId: newPool.UserPool.Id,
-			})
 			return fmt.Errorf("tag Test should have been removed after UntagResource")
 		}
-		tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
-			UserPoolId: newPool.UserPool.Id,
-		})
 		return nil
 	}))
 

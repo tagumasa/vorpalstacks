@@ -39,10 +39,7 @@ func (r *TestRunner) kinesisTagTests(ctx context.Context, client *kinesis.Client
 		if err != nil {
 			return fmt.Errorf("list tags after add: %v", err)
 		}
-		tagMap := make(map[string]string)
-		for _, t := range tagResp.Tags {
-			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-		}
+		tagMap := kinesisTagMap(tagResp.Tags)
 		if tagMap["Environment"] != "test" {
 			return fmt.Errorf("tag Environment: got %q, want %q", tagMap["Environment"], "test")
 		}
@@ -62,10 +59,7 @@ func (r *TestRunner) kinesisTagTests(ctx context.Context, client *kinesis.Client
 		if len(resp.Tags) < 2 {
 			return fmt.Errorf("expected >= 2 tags, got %d", len(resp.Tags))
 		}
-		tagMap := make(map[string]string)
-		for _, t := range resp.Tags {
-			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-		}
+		tagMap := kinesisTagMap(resp.Tags)
 		if _, ok := tagMap["Environment"]; !ok {
 			return fmt.Errorf("tag Environment not found")
 		}
@@ -145,10 +139,7 @@ func (r *TestRunner) kinesisARNTagTests(ctx context.Context, client *kinesis.Cli
 			if err != nil {
 				return fmt.Errorf("list tags after TagResource: %v", err)
 			}
-			tagMap := make(map[string]string)
-			for _, t := range tagResp.Tags {
-				tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-			}
+			tagMap := kinesisTagMap(tagResp.Tags)
 			if tagMap["TagTest"] != "value1" {
 				return fmt.Errorf("tag TagTest: got %q, want %q", tagMap["TagTest"], "value1")
 			}
@@ -190,10 +181,7 @@ func (r *TestRunner) kinesisARNTagTests(ctx context.Context, client *kinesis.Cli
 					return fmt.Errorf("TagTest should have been removed")
 				}
 			}
-			tagMap := make(map[string]string)
-			for _, t := range resp.Tags {
-				tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-			}
+			tagMap := kinesisTagMap(resp.Tags)
 			if _, ok := tagMap["TagTest2"]; !ok {
 				return fmt.Errorf("TagTest2 should still be present after untagging TagTest")
 			}
@@ -242,10 +230,7 @@ func (r *TestRunner) kinesisTagVerifyTests(ctx context.Context, client *kinesis.
 		if len(resp.Tags) < 2 {
 			return fmt.Errorf("expected >= 2 tags from stream creation, got %d", len(resp.Tags))
 		}
-		tagMap := make(map[string]string)
-		for _, t := range resp.Tags {
-			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
-		}
+		tagMap := kinesisTagMap(resp.Tags)
 		if tagMap["CreatedBy"] != "sdk-test" {
 			return fmt.Errorf("tag CreatedBy: got %q, want %q", tagMap["CreatedBy"], "sdk-test")
 		}

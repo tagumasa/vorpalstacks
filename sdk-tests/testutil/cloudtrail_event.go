@@ -59,13 +59,10 @@ func (r *TestRunner) runCloudTrailEventTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "LookupEvents_ByEventName", func() error {
-		name := fmt.Sprintf("evtname-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("evtname")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("evtname-bucket"),
-		})
+		_, err := tc.createTrail(name, "evtname-bucket")
 		if err != nil {
 			return fmt.Errorf("create trail: %v", err)
 		}
@@ -118,13 +115,10 @@ func (r *TestRunner) runCloudTrailEventTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "LookupEvents_ByResourceName", func() error {
-		name := fmt.Sprintf("rnsearch-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("rnsearch")
+		defer tc.deleteTrail(name)
 
-		createResp, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("rnsearch-bucket"),
-		})
+		createResp, err := tc.createTrail(name, "rnsearch-bucket")
 		if err != nil {
 			return fmt.Errorf("create trail: %v", err)
 		}
@@ -166,13 +160,10 @@ func (r *TestRunner) runCloudTrailEventTests(tc *cloudTrailTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("cloudtrail", "LookupEvents_ByUsername", func() error {
-		name := fmt.Sprintf("usersearch-%d", time.Now().UnixNano())
-		defer tc.client.DeleteTrail(tc.ctx, &cloudtrail.DeleteTrailInput{Name: aws.String(name)})
+		name := tc.uniqueName("usersearch")
+		defer tc.deleteTrail(name)
 
-		_, err := tc.client.CreateTrail(tc.ctx, &cloudtrail.CreateTrailInput{
-			Name:         aws.String(name),
-			S3BucketName: aws.String("usersearch-bucket"),
-		})
+		_, err := tc.createTrail(name, "usersearch-bucket")
 		if err != nil {
 			return fmt.Errorf("create trail: %v", err)
 		}

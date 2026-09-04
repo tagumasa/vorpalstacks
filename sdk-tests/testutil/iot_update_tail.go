@@ -40,50 +40,48 @@ func (r *TestRunner) runIoTUpdateAndTailTests(tc *iotTestContext) []TestResult {
 	defer tc.client.DeleteFleetMetric(tc.ctx, &iot.DeleteFleetMetricInput{MetricName: aws.String(fmName)})
 	defer tc.client.DeleteScheduledAudit(tc.ctx, &iot.DeleteScheduledAuditInput{ScheduledAuditName: aws.String(saName)})
 	defer tc.client.DeleteStream(tc.ctx, &iot.DeleteStreamInput{StreamId: aws.String(streamID)})
-	defer tc.client.DeleteThingGroup(tc.ctx, &iot.DeleteThingGroupInput{ThingGroupName: aws.String(thingGroup)})
 
 	// Setup: create all resources in one step so updates have real targets; a
 	// prerequisite failure surfaces as a single FAIL row named after the setup
 	// step it replaces.
-	setupFail := func(step string, err error) []TestResult {
-		return []TestResult{{Service: "iot", TestName: "Update_Setup", Status: "FAIL", Error: fmt.Sprintf("%s failed: %v", step, err)}}
-	}
 	if _, err := tc.client.CreateDimension(tc.ctx, &iot.CreateDimensionInput{
 		Name: aws.String(dimName), Type: iottypes.DimensionTypeTopicFilter, StringValues: []string{"x"},
 	}); err != nil {
-		return setupFail("CreateDimension", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateDimension failed: %v", err))
 	}
 	if _, err := tc.client.CreateMitigationAction(tc.ctx, &iot.CreateMitigationActionInput{
 		ActionName: aws.String(mitName), RoleArn: aws.String(tc.iamRoleARN("test")), ActionParams: &iottypes.MitigationActionParams{},
 	}); err != nil {
-		return setupFail("CreateMitigationAction", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateMitigationAction failed: %v", err))
 	}
 	if _, err := tc.client.CreateFleetMetric(tc.ctx, &iot.CreateFleetMetricInput{
 		MetricName: aws.String(fmName), QueryString: aws.String("*"), IndexName: aws.String("AWS_Things"),
 		AggregationField: aws.String("thingName"), Period: aws.Int32(60),
 		AggregationType: &iottypes.AggregationType{Name: iottypes.AggregationTypeNameStatistics},
 	}); err != nil {
-		return setupFail("CreateFleetMetric", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateFleetMetric failed: %v", err))
 	}
 	if _, err := tc.client.CreateScheduledAudit(tc.ctx, &iot.CreateScheduledAuditInput{
 		ScheduledAuditName: aws.String(saName), Frequency: iottypes.AuditFrequencyDaily,
 		TargetCheckNames: []string{"DEVICE_CERTIFICATE_EXPIRING_CHECK"},
 	}); err != nil {
-		return setupFail("CreateScheduledAudit", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateScheduledAudit failed: %v", err))
 	}
 	if _, err := tc.client.CreateStream(tc.ctx, &iot.CreateStreamInput{
 		StreamId: aws.String(streamID), Files: []iottypes.StreamFile{}, RoleArn: aws.String(tc.iamRoleARN("test")),
 	}); err != nil {
-		return setupFail("CreateStream", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateStream failed: %v", err))
 	}
 	cleanupThing, err := tc.createThing(thingName)
 	if err != nil {
-		return setupFail("CreateThing", err)
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateThing failed: %v", err))
 	}
 	defer cleanupThing()
-	if _, err := tc.client.CreateThingGroup(tc.ctx, &iot.CreateThingGroupInput{ThingGroupName: aws.String(thingGroup)}); err != nil {
-		return setupFail("CreateThingGroup", err)
+	cleanupGroup, err := tc.createThingGroup(thingGroup)
+	if err != nil {
+		return iotSetupFail("Update_Setup", fmt.Sprintf("CreateThingGroup failed: %v", err))
 	}
+	defer cleanupGroup()
 
 	results = append(results, r.RunTest("iot", "UpdateDimension", func() error {
 		// The stringValues member is required: an update without it must be

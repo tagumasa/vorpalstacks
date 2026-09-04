@@ -20,20 +20,19 @@ func (r *TestRunner) runKMSImportTests(tc *kmsTestContext) []TestResult {
 	var publicKeyBytes []byte
 
 	results = append(results, r.RunTest("kms", "GetParametersForImport", func() error {
-		resp, err := tc.client.CreateKey(tc.ctx, &kms.CreateKeyInput{
+		meta, err := tc.createKey(&kms.CreateKeyInput{
 			Description: aws.String("Import origin key"),
 			Origin:      types.OriginTypeExternal,
 		})
 		if err != nil {
-			return fmt.Errorf("create external key: %v", err)
+			return err
 		}
-		extKeyID = *resp.KeyMetadata.KeyId
-		tc.addCleanupKey(extKeyID)
+		extKeyID = *meta.KeyId
 
-		if resp.KeyMetadata.KeyState != types.KeyStatePendingImport {
-			return fmt.Errorf("expected KeyState=PendingImport for EXTERNAL origin, got %s", resp.KeyMetadata.KeyState)
+		if meta.KeyState != types.KeyStatePendingImport {
+			return fmt.Errorf("expected KeyState=PendingImport for EXTERNAL origin, got %s", meta.KeyState)
 		}
-		if resp.KeyMetadata.Enabled {
+		if meta.Enabled {
 			return fmt.Errorf("expected Enabled=false for EXTERNAL origin")
 		}
 

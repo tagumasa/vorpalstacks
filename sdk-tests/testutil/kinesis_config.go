@@ -107,7 +107,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err := client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", r.region, r.accountID)),
+			KeyId:          aws.String(r.kinesisKMSKeyARN("12345678-1234-1234-1234-123456789012")),
 		})
 		if err != nil {
 			return err
@@ -128,7 +128,7 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 		_, err := client.StopStreamEncryption(ctx, &kinesis.StopStreamEncryptionInput{
 			StreamName:     aws.String(streamName),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/12345678-1234-1234-1234-123456789012", r.region, r.accountID)),
+			KeyId:          aws.String(r.kinesisKMSKeyARN("12345678-1234-1234-1234-123456789012")),
 		})
 		if err != nil {
 			return err
@@ -147,20 +147,16 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "DescribeStream_VerifyEncryption", func() error {
 		sn := kinesisStream(ts, "enc")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
 			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		_, err = client.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
 			StreamName:     aws.String(sn),
 			EncryptionType: types.EncryptionTypeKms,
-			KeyId:          aws.String(fmt.Sprintf("arn:aws:kms:%s:%s:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", r.region, r.accountID)),
+			KeyId:          aws.String(r.kinesisKMSKeyARN("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")),
 		})
 		if err != nil {
 			return fmt.Errorf("start encryption: %v", err)
@@ -181,15 +177,11 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 
 	results = append(results, r.RunTest("kinesis", "UpdateStreamMode", func() error {
 		sn := kinesisStream(ts, "mode")
-		_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
-			StreamName: aws.String(sn),
-			ShardCount: aws.Int32(1),
-		})
+		cleanup, err := kinesisCreateStream(ctx, client, sn, 1, 500*time.Millisecond)
 		if err != nil {
 			return err
 		}
-		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
+		defer cleanup()
 
 		descResp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(sn)})
 		if err != nil {

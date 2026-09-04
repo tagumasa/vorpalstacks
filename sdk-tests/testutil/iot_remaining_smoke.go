@@ -25,13 +25,6 @@ func (r *TestRunner) runIoTRemainingSmokeTests(tc *iotTestContext) []TestResult 
 	transfer := func(name string, fn func() error) {
 		results = append(results, r.RunTest("iot", name, fn))
 	}
-	transfer("TransferCertificate", func() error {
-		_, err := tc.client.TransferCertificate(tc.ctx, &iot.TransferCertificateInput{
-			CertificateId:    aws.String(fakeCert),
-			TargetAwsAccount: aws.String("000000000001"),
-		})
-		return expectNotFound(err)
-	})
 	transfer("AcceptCertificateTransfer", func() error {
 		_, err := tc.client.AcceptCertificateTransfer(tc.ctx, &iot.AcceptCertificateTransferInput{CertificateId: aws.String(fakeCert)})
 		// Completing a transfer that does not exist returns NotFound.
@@ -127,13 +120,6 @@ func (r *TestRunner) runIoTRemainingSmokeTests(tc *iotTestContext) []TestResult 
 		_, err := tc.client.GetThingConnectivityData(tc.ctx, &iot.GetThingConnectivityDataInput{ThingName: aws.String("nonexistent")})
 		return expectNotFound(err)
 	}))
-	// The platform ships no AWS-copyrighted managed-template catalogue, so
-	// the catalogue is empty and any describe resolves to not-found.
-	results = append(results, r.RunTest("iot", "DescribeManagedJobTemplate", func() error {
-		_, err := tc.client.DescribeManagedJobTemplate(tc.ctx, &iot.DescribeManagedJobTemplateInput{TemplateName: aws.String("AWS-Reset-Accesskey")})
-		return expectNotFound(err)
-	}))
-
 	// Associate targets / update custom metric / start detect mitigation task
 	// (stubs that accept any id).
 	task("AssociateTargetsWithJob_NotFound", func() error {
