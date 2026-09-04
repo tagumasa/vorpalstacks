@@ -16,10 +16,7 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	var hostedZoneID string
 	results = append(results, r.RunTest("route53", "CreateHostedZone", func() error {
-		resp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(domainName),
-			CallerReference: aws.String(tc.callerRef("ref")),
-		})
+		resp, err := tc.createZone(domainName, tc.callerRef("ref"))
 		if err != nil {
 			return err
 		}
@@ -34,6 +31,9 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		}
 		if resp.DelegationSet == nil || len(resp.DelegationSet.NameServers) == 0 {
 			return fmt.Errorf("delegation set or name servers missing")
+		}
+		if resp.ChangeInfo == nil || resp.ChangeInfo.Id == nil {
+			return fmt.Errorf("change info missing in create response")
 		}
 		hostedZoneID = aws.ToString(resp.HostedZone.Id)
 		return nil
@@ -78,9 +78,7 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	if hostedZoneID != "" {
 		results = append(results, r.RunTest("route53", "GetHostedZone", func() error {
-			resp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{
-				Id: aws.String(hostedZoneID),
-			})
+			resp, err := tc.getZone(hostedZoneID)
 			if err != nil {
 				return err
 			}
@@ -116,40 +114,6 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		}))
 	}
 
-	results = append(results, r.RunTest("route53", "CreateHostedZone_ContentVerify", func() error {
-		verifyDomain := tc.domain("verify")
-		verifyRef := fmt.Sprintf("ref-%d", tc.uniq)
-		resp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(verifyDomain),
-			CallerReference: aws.String(verifyRef),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		hzID := aws.ToString(resp.HostedZone.Id)
-
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(hzID)})
-
-		if resp.HostedZone.Name == nil || *resp.HostedZone.Name != verifyDomain {
-			return fmt.Errorf("domain name mismatch: got %q, want %q", aws.ToString(resp.HostedZone.Name), verifyDomain)
-		}
-		if resp.HostedZone.Id == nil || *resp.HostedZone.Id == "" {
-			return fmt.Errorf("hosted zone ID is empty")
-		}
-		if resp.ChangeInfo == nil || resp.ChangeInfo.Id == nil {
-			return fmt.Errorf("change info missing in create response")
-		}
-
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(hzID)})
-		if err != nil {
-			return fmt.Errorf("get: %v", err)
-		}
-		if getResp.HostedZone.Name == nil || *getResp.HostedZone.Name != verifyDomain {
-			return fmt.Errorf("get domain name mismatch")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("route53", "ListHostedZonesByName", func() error {
 		resp, err := tc.client.ListHostedZonesByName(tc.ctx, &route53.ListHostedZonesByNameInput{
 			MaxItems: aws.Int32(100),
@@ -165,10 +129,7 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "ListHostedZonesByName_WithDNSName", func() error {
 		testDomain := tc.domain("sorttest")
-		hzResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(testDomain),
-			CallerReference: aws.String(tc.callerRef("sortref")),
-		})
+		hzResp, err := tc.createZone(testDomain, tc.callerRef("sortref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -193,25 +154,19 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		if !found {
 			return fmt.Errorf("created zone %q not found in ListHostedZonesByName", testDomain)
 		}
-		tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{
-			Id: hzResp.HostedZone.Id,
-		})
+		tc.deleteZone(aws.ToString(hzResp.HostedZone.Id))
 		return nil
 	}))
 
 	results = append(results, r.RunTest("route53", "UpdateHostedZoneComment", func() error {
 		ucDomain := tc.domain("updatecomment")
-		ucRef := fmt.Sprintf("ucref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(ucDomain),
-			CallerReference: aws.String(ucRef),
-		})
+		createResp, err := tc.createZone(ucDomain, tc.callerRef("ucref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		ucID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(ucID)})
+		defer tc.deleteZone(ucID)
 
 		comment := "test comment for zone"
 		updateResp, err := tc.client.UpdateHostedZoneComment(tc.ctx, &route53.UpdateHostedZoneCommentInput{
@@ -225,7 +180,7 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("update response hosted zone is nil")
 		}
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(ucID)})
+		getResp, err := tc.getZone(ucID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -243,27 +198,15 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		defer tc.deleteTestVPC(pvtVPCID)
 
 		pvtDomain := tc.domain("private-comment")
-		pvtRef := fmt.Sprintf("pvtref-%d", tc.uniq)
-		resp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(pvtDomain),
-			CallerReference: aws.String(pvtRef),
-			HostedZoneConfig: &types.HostedZoneConfig{
-				PrivateZone: true,
-				Comment:     aws.String("private zone with comment"),
-			},
-			VPC: &types.VPC{
-				VPCId:     aws.String(pvtVPCID),
-				VPCRegion: types.VPCRegion(r.region),
-			},
-		})
+		resp, err := tc.createPrivateZone(pvtDomain, tc.callerRef("pvtref"), pvtVPCID, "private zone with comment")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		pvtID := aws.ToString(resp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pvtID)})
+		defer tc.deleteZone(pvtID)
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(pvtID)})
+		getResp, err := tc.getZone(pvtID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -287,24 +230,20 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "DelegationSet_Persisted", func() error {
 		dsDomain := tc.domain("ds-persist")
-		dsRef := fmt.Sprintf("dspersist-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(dsDomain),
-			CallerReference: aws.String(dsRef),
-		})
+		createResp, err := tc.createZone(dsDomain, tc.callerRef("dspersist"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		dsZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(dsZoneID)})
+		defer tc.deleteZone(dsZoneID)
 
 		createNS := createResp.DelegationSet.NameServers
 		if len(createNS) == 0 {
 			return fmt.Errorf("name servers empty in create response")
 		}
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(dsZoneID)})
+		getResp, err := tc.getZone(dsZoneID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -333,15 +272,12 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "GetDNSSEC", func() error {
 		domain := tc.domain("dnssectest")
-		cr, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(domain),
-			CallerReference: aws.String(tc.callerRef("dnssec")),
-		})
+		cr, err := tc.createZone(domain, tc.callerRef("dnssec"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		hzID := aws.ToString(cr.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(hzID)})
+		defer tc.deleteZone(hzID)
 
 		resp, err := tc.client.GetDNSSEC(tc.ctx, &route53.GetDNSSECInput{
 			HostedZoneId: aws.String(hzID),
@@ -357,21 +293,15 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "CreateHostedZone_DuplicateCallerRef", func() error {
 		dupDomain := tc.domain("dupref")
-		dupRef := fmt.Sprintf("dupref-%d", tc.uniq)
-		resp1, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(dupDomain),
-			CallerReference: aws.String(dupRef),
-		})
+		dupRef := tc.callerRef("dupref")
+		resp1, err := tc.createZone(dupDomain, dupRef)
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
 		hzID1 := aws.ToString(resp1.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(hzID1)})
+		defer tc.deleteZone(hzID1)
 
-		resp2, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(dupDomain),
-			CallerReference: aws.String(dupRef),
-		})
+		resp2, err := tc.createZone(dupDomain, dupRef)
 		if err != nil {
 			return fmt.Errorf("duplicate caller ref: %v", err)
 		}
@@ -382,24 +312,19 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("route53", "CreateHostedZone_EmptyCallerReferenceRejected", func() error {
-		_, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(tc.domain("emptyref")),
-			CallerReference: aws.String(""),
-		})
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("route53", "CreateHostedZone_CallerReferenceTooLongRejected", func() error {
-		_, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(tc.domain("longref")),
-			CallerReference: aws.String(strings.Repeat("a", 129)),
-		})
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
-			return err
+	results = append(results, r.RunTest("route53", "CreateHostedZone_CallerReferenceRejected", func() error {
+		for _, c := range []struct {
+			name   string
+			domain string
+			ref    string
+		}{
+			{name: "empty caller reference", domain: tc.domain("emptyref"), ref: ""},
+			{name: "caller reference over the 128-character bound", domain: tc.domain("longref"), ref: strings.Repeat("a", 129)},
+		} {
+			_, err := tc.createZone(c.domain, c.ref)
+			if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))
@@ -412,33 +337,20 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 		defer tc.deleteTestVPC(pvtVPCID)
 
 		pvtDomain := tc.domain("pvt-filter")
-		pvtResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(pvtDomain),
-			CallerReference: aws.String(tc.callerRef("pvtfilter")),
-			HostedZoneConfig: &types.HostedZoneConfig{
-				PrivateZone: true,
-			},
-			VPC: &types.VPC{
-				VPCId:     aws.String(pvtVPCID),
-				VPCRegion: types.VPCRegion(r.region),
-			},
-		})
+		pvtResp, err := tc.createPrivateZone(pvtDomain, tc.callerRef("pvtfilter"), pvtVPCID, "")
 		if err != nil {
 			return fmt.Errorf("create private zone: %v", err)
 		}
 		pvtZoneID := aws.ToString(pvtResp.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pvtZoneID)})
+		defer tc.deleteZone(pvtZoneID)
 
 		pubDomain := tc.domain("pub-filter")
-		pubResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(pubDomain),
-			CallerReference: aws.String(tc.callerRef("pubfilter")),
-		})
+		pubResp, err := tc.createZone(pubDomain, tc.callerRef("pubfilter"))
 		if err != nil {
 			return fmt.Errorf("create public zone: %v", err)
 		}
 		pubZoneID := aws.ToString(pubResp.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pubZoneID)})
+		defer tc.deleteZone(pubZoneID)
 
 		var marker *string
 		pvtFound := false
@@ -489,9 +401,9 @@ func (r *TestRunner) runRoute53ZoneTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("create with multibyte comment: %v", err)
 		}
 		hzID := aws.ToString(resp.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(hzID)})
+		defer tc.deleteZone(hzID)
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{Id: aws.String(hzID)})
+		getResp, err := tc.getZone(hzID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}

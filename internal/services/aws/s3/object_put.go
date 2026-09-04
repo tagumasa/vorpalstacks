@@ -8,7 +8,6 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	types "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 )
 
@@ -90,19 +89,7 @@ func (o *ObjectOperations) PutObject(ctx context.Context, reqCtx *request.Reques
 	obj := coreResult.Object
 
 	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedPut)
-	repCtx, repCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	go func() {
-		defer repCancel()
-		defer func() {
-			if r := recover(); r != nil {
-				logs.Error("s3: replication goroutine panic",
-					logs.String("bucket", coreResult.Bucket.Name),
-					logs.String("key", input.Key),
-					logs.Any("panic", r))
-			}
-		}()
-		o.svc.replicateObject(repCtx, reqCtx, stores, coreResult.Bucket, input.Key, obj)
-	}()
+	o.svc.launchObjectReplication(reqCtx, stores, input.Bucket, input.Key, obj)
 
 	return &PutObjectOutput{
 		ETag:                 formatETag(obj.ETag),
@@ -202,6 +189,7 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 	obj := coreResult.Object
 
 	o.svc.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCopy)
+	o.svc.launchObjectReplication(reqCtx, stores, input.Bucket, input.Key, obj)
 
 	return &CopyObjectOutput{
 		CopyObjectResult: &CopyObjectResult{

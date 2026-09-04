@@ -493,8 +493,19 @@ func (s *ObjectStore) ActiveRestores() ([]RestoreIndexEntry, error) {
 	return entries, err
 }
 
+// Replication status values carried by the x-amz-replication-status
+// header: source-side PENDING/COMPLETED/FAILED, destination-side REPLICA.
+const (
+	ReplicationStatusPending   = "PENDING"
+	ReplicationStatusCompleted = "COMPLETED"
+	ReplicationStatusFailed    = "FAILED"
+	ReplicationStatusReplica   = "REPLICA"
+)
+
 // SetReplicationStatus updates the replication status of an object.
-// Valid statuses are "PENDING", "COMPLETED", and "FAILED".
+// On a replication source the valid statuses are "PENDING", "COMPLETED",
+// and "FAILED"; on a replication destination the status is "REPLICA",
+// marking the object as a copy rather than an original upload.
 func (s *ObjectStore) SetReplicationStatus(bucket, key, versionId, status string) error {
 	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
 		isVersioned := s.isVersioningEnabled(bucket)

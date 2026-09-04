@@ -525,6 +525,7 @@ func (s *S3Service) completeMultipartUploadCore(ctx context.Context, reqCtx *req
 	}
 
 	s.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, obj.Size, obj.VersionID, obj.ETag, eventbus.S3ObjectCreatedCompleteMultipartUpload)
+	s.launchObjectReplication(reqCtx, stores, input.Bucket, input.Key, obj)
 
 	output := &CompleteMultipartUploadOutput{
 		Location:  fmt.Sprintf("http://%s.s3.amazonaws.com/%s", input.Bucket, input.Key),

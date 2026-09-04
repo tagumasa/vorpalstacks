@@ -239,6 +239,115 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 		return nil
 	}))
 
+	// The ContentType and user metadata requested at CreateMultipartUpload
+	// are system metadata of the completed object and must survive
+	// completion — on versioned and unversioned buckets alike.
+	results = append(results, r.RunTest("s3", "Multipart_ContentTypeAndMetadata", func() error {
+		for _, versioned := range []bool{false, true} {
+			name := s3Bucket(ts, "mpu-meta")
+			if versioned {
+				name = s3Bucket(ts, "mpu-meta-ver")
+			}
+			if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+				Bucket: aws.String(name),
+			}); err != nil {
+				return fmt.Errorf("CreateBucket (%s) failed: %w", name, err)
+			}
+			defer s3CleanupBucket(ctx, client, name)
+
+			if versioned {
+				if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+					Bucket: aws.String(name),
+					VersioningConfiguration: &types.VersioningConfiguration{
+						Status: types.BucketVersioningStatusEnabled,
+					},
+				}); err != nil {
+					return fmt.Errorf("PutBucketVersioning (%s) failed: %w", name, err)
+				}
+			}
+
+			key := "typed-obj.txt"
+			initResp, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+				Bucket:      aws.String(name),
+				Key:         aws.String(key),
+				ContentType: aws.String("text/plain; charset=utf-8"),
+				Metadata:    map[string]string{"origin": "multipart-upload"},
+			})
+			if err != nil {
+				return fmt.Errorf("CreateMultipartUpload (%s) failed: %w", name, err)
+			}
+
+			part1, err := client.UploadPart(ctx, &s3.UploadPartInput{
+				Bucket:     aws.String(name),
+				Key:        aws.String(key),
+				UploadId:   initResp.UploadId,
+				PartNumber: aws.Int32(1),
+				Body:       bytes.NewReader(bytes.Repeat([]byte("m"), 5*1024*1024)),
+			})
+			if err != nil {
+				return fmt.Errorf("UploadPart 1 (%s) failed: %w", name, err)
+			}
+			part2, err := client.UploadPart(ctx, &s3.UploadPartInput{
+				Bucket:     aws.String(name),
+				Key:        aws.String(key),
+				UploadId:   initResp.UploadId,
+				PartNumber: aws.Int32(2),
+				Body:       strings.NewReader("typed tail"),
+			})
+			if err != nil {
+				return fmt.Errorf("UploadPart 2 (%s) failed: %w", name, err)
+			}
+
+			if _, err := client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
+				Bucket:   aws.String(name),
+				Key:      aws.String(key),
+				UploadId: initResp.UploadId,
+				MultipartUpload: &types.CompletedMultipartUpload{
+					Parts: []types.CompletedPart{
+						{ETag: part1.ETag, PartNumber: aws.Int32(1)},
+						{ETag: part2.ETag, PartNumber: aws.Int32(2)},
+					},
+				},
+			}); err != nil {
+				return fmt.Errorf("CompleteMultipartUpload (%s) failed: %w", name, err)
+			}
+
+			getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
+				Bucket: aws.String(name),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				return fmt.Errorf("GetObject (%s) failed: %w", name, err)
+			}
+			getResp.Body.Close()
+			if getResp.ContentType == nil || *getResp.ContentType != "text/plain; charset=utf-8" {
+				return fmt.Errorf("GetObject ContentType (%s): got %v", name, getResp.ContentType)
+			}
+			if getResp.Metadata["origin"] != "multipart-upload" {
+				return fmt.Errorf("GetObject Metadata (%s): got %v", name, getResp.Metadata)
+			}
+			wantSize := int64(5*1024*1024) + int64(len("typed tail"))
+			if getResp.ContentLength == nil || *getResp.ContentLength != wantSize {
+				return fmt.Errorf("GetObject ContentLength (%s): got %v, want %d", name, getResp.ContentLength, wantSize)
+			}
+
+			headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+				Bucket: aws.String(name),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				return fmt.Errorf("HeadObject (%s) failed: %w", name, err)
+			}
+			if headResp.ContentType == nil || *headResp.ContentType != "text/plain; charset=utf-8" {
+				return fmt.Errorf("HeadObject ContentType (%s): got %v", name, headResp.ContentType)
+			}
+			if headResp.Metadata["origin"] != "multipart-upload" {
+				return fmt.Errorf("HeadObject Metadata (%s): got %v", name, headResp.Metadata)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("s3", "AbortMultipartUpload_Verify", func() error {
 		abortBucket := s3Bucket(ts, "mpu-abort")
 		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{

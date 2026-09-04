@@ -12,6 +12,18 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// applyBlobFacts copies the blob-authoritative fields onto the object
+// record. The blob layer owns only the physical facts of the stored bytes
+// (size, ETag, modification time). ContentType and user metadata are
+// semantic fields of the object record itself: the multipart write path
+// never supplies them to the blob layer, so copying them here would blank
+// the values requested at upload on every read.
+func applyBlobFacts(obj *Object, blobMeta *storage.BlobMetadata) {
+	obj.Size = blobMeta.Size
+	obj.ETag = blobMeta.ETag
+	obj.LastModified = blobMeta.LastModified
+}
+
 // putVersionedObject writes a new object version and updates the _latest pointer.
 // Writes are ordered so that the new versioned key and latest pointer are
 // persisted first, then the previous latest's IsLatest flag is cleared.
@@ -98,11 +110,7 @@ func (s *ObjectStore) GetWithVersion(ctx context.Context, bucket, key, versionId
 		return nil, nil, ErrObjectNotFound
 	}
 
-	obj.Size = blobMeta.Size
-	obj.ETag = blobMeta.ETag
-	obj.LastModified = blobMeta.LastModified
-	obj.ContentType = blobMeta.ContentType
-	obj.Metadata = blobMeta.CustomHeaders
+	applyBlobFacts(obj, blobMeta)
 
 	return reader, obj, nil
 }
@@ -290,11 +298,7 @@ func (s *ObjectStore) HeadWithVersion(ctx context.Context, bucket, key, versionI
 		}
 	}
 
-	obj.Size = blobMeta.Size
-	obj.ETag = blobMeta.ETag
-	obj.LastModified = blobMeta.LastModified
-	obj.ContentType = blobMeta.ContentType
-	obj.Metadata = blobMeta.CustomHeaders
+	applyBlobFacts(obj, blobMeta)
 
 	return obj, nil
 }
@@ -392,11 +396,7 @@ func (s *ObjectStore) GetRangeWithVersion(ctx context.Context, bucket, key, vers
 		return nil, nil, ErrObjectNotFound
 	}
 
-	obj.Size = blobMeta.Size
-	obj.ETag = blobMeta.ETag
-	obj.LastModified = blobMeta.LastModified
-	obj.ContentType = blobMeta.ContentType
-	obj.Metadata = blobMeta.CustomHeaders
+	applyBlobFacts(obj, blobMeta)
 
 	return reader, obj, nil
 }

@@ -242,7 +242,12 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 
 	blobKey := key
 	if versionId != "null" {
-		blobKey = key + keySep + versionId
+		// The blob store keys versioned objects as "key#versionId" (see
+		// PutWithVersion and storageKeyWithVersion). The Pebble keySep
+		// delimiter must not be used here: it embeds a NUL byte into the
+		// file-tier path, which makes os.Create fail with EINVAL and the
+		// complete fail after the parts have already been removed.
+		blobKey = key + "#" + versionId
 	}
 
 	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, blobKey, uploadId, blobParts)

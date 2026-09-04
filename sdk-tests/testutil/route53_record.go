@@ -13,10 +13,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 	var results []TestResult
 
 	domainName := tc.domain("record")
-	zoneResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-		Name:            aws.String(domainName),
-		CallerReference: aws.String(tc.callerRef("recref")),
-	})
+	zoneResp, err := tc.createZone(domainName, tc.callerRef("recref"))
 	if err != nil {
 		return []TestResult{{
 			Service:  "route53",
@@ -26,29 +23,12 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		}}
 	}
 	zoneID := aws.ToString(zoneResp.HostedZone.Id)
-	defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(zoneID)})
+	defer tc.deleteZone(zoneID)
 
 	var changeID string
 	recordName := fmt.Sprintf("test.%s", domainName)
 	results = append(results, r.RunTest("route53", "ChangeResourceRecordSets_Create", func() error {
-		resp, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(zoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(recordName),
-							Type: types.RRTypeA,
-							TTL:  aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("192.0.2.1")},
-							},
-						},
-					},
-				},
-			},
-		})
+		resp, err := tc.changeRecords(zoneID, rrChange(types.ChangeActionCreate, recordName, types.RRTypeA, 300, "192.0.2.1"))
 		if err != nil {
 			return err
 		}
@@ -84,9 +64,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 	}
 
 	results = append(results, r.RunTest("route53", "ListResourceRecordSets", func() error {
-		resp, err := tc.client.ListResourceRecordSets(tc.ctx, &route53.ListResourceRecordSetsInput{
-			HostedZoneId: aws.String(zoneID),
-		})
+		resp, err := tc.listRecords(zoneID)
 		if err != nil {
 			return err
 		}
@@ -113,22 +91,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("route53", "DeleteResourceRecord", func() error {
-		resp, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(zoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionDelete,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name:            aws.String(recordName),
-							Type:            types.RRTypeA,
-							TTL:             aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{{Value: aws.String("192.0.2.1")}},
-						},
-					},
-				},
-			},
-		})
+		resp, err := tc.changeRecords(zoneID, rrChange(types.ChangeActionDelete, recordName, types.RRTypeA, 300, "192.0.2.1"))
 		if err != nil {
 			return err
 		}
@@ -140,66 +103,26 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 
 	results = append(results, r.RunTest("route53", "ChangeResourceRecordSets_Upsert", func() error {
 		upsertDomain := tc.domain("upsert")
-		upsertRef := fmt.Sprintf("upsertref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(upsertDomain),
-			CallerReference: aws.String(upsertRef),
-		})
+		createResp, err := tc.createZone(upsertDomain, tc.callerRef("upsertref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		upsertZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(upsertZoneID)})
+		defer tc.deleteZone(upsertZoneID)
 
 		upRecordName := fmt.Sprintf("upsert.%s", upsertDomain)
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(upsertZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionUpsert,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(upRecordName),
-							Type: types.RRTypeA,
-							TTL:  aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("10.0.0.1")},
-							},
-						},
-					},
-				},
-			},
-		})
+		_, err = tc.changeRecords(upsertZoneID, rrChange(types.ChangeActionUpsert, upRecordName, types.RRTypeA, 300, "10.0.0.1"))
 		if err != nil {
 			return fmt.Errorf("upsert create: %v", err)
 		}
 
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(upsertZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionUpsert,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(upRecordName),
-							Type: types.RRTypeA,
-							TTL:  aws.Int64(600),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("10.0.0.2")},
-							},
-						},
-					},
-				},
-			},
-		})
+		_, err = tc.changeRecords(upsertZoneID, rrChange(types.ChangeActionUpsert, upRecordName, types.RRTypeA, 600, "10.0.0.2"))
 		if err != nil {
 			return fmt.Errorf("upsert update: %v", err)
 		}
 
-		listResp, err := tc.client.ListResourceRecordSets(tc.ctx, &route53.ListResourceRecordSetsInput{
-			HostedZoneId: aws.String(upsertZoneID),
-		})
+		listResp, err := tc.listRecords(upsertZoneID)
 		if err != nil {
 			return fmt.Errorf("list: %v", err)
 		}
@@ -223,90 +146,33 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 			return fmt.Errorf("upserted record not found")
 		}
 
-		tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(upsertZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionDelete,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name:            aws.String(upRecordName),
-							Type:            types.RRTypeA,
-							TTL:             aws.Int64(600),
-							ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.2")}},
-						},
-					},
-				},
-			},
-		})
+		tc.changeRecords(upsertZoneID, rrChange(types.ChangeActionDelete, upRecordName, types.RRTypeA, 600, "10.0.0.2"))
 		return nil
 	}))
 
 	results = append(results, r.RunTest("route53", "ChangeResourceRecordSets_MultipleTypes", func() error {
 		mtDomain := tc.domain("multitype")
-		mtRef := fmt.Sprintf("mtref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(mtDomain),
-			CallerReference: aws.String(mtRef),
-		})
+		createResp, err := tc.createZone(mtDomain, tc.callerRef("mtref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		mtZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(mtZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{Action: types.ChangeActionDelete, ResourceRecordSet: &types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("www.%s", mtDomain)), Type: types.RRTypeCname, TTL: aws.Int64(300),
-						ResourceRecords: []types.ResourceRecord{{Value: aws.String("target.example.com")}},
-					}},
-					{Action: types.ChangeActionDelete, ResourceRecordSet: &types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("txt.%s", mtDomain)), Type: types.RRTypeTxt, TTL: aws.Int64(300),
-						ResourceRecords: []types.ResourceRecord{{Value: aws.String("v=spf1 include:example.com ~all")}},
-					}},
-				},
-			},
-		})
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(mtZoneID)})
+		defer tc.changeRecords(mtZoneID,
+			rrChange(types.ChangeActionDelete, fmt.Sprintf("www.%s", mtDomain), types.RRTypeCname, 300, "target.example.com"),
+			rrChange(types.ChangeActionDelete, fmt.Sprintf("txt.%s", mtDomain), types.RRTypeTxt, 300, "v=spf1 include:example.com ~all"),
+		)
+		defer tc.deleteZone(mtZoneID)
 
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(mtZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(fmt.Sprintf("www.%s", mtDomain)),
-							Type: types.RRTypeCname,
-							TTL:  aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("target.example.com")},
-							},
-						},
-					},
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(fmt.Sprintf("txt.%s", mtDomain)),
-							Type: types.RRTypeTxt,
-							TTL:  aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{
-								{Value: aws.String("v=spf1 include:example.com ~all")},
-							},
-						},
-					},
-				},
-			},
-		})
+		_, err = tc.changeRecords(mtZoneID,
+			rrChange(types.ChangeActionCreate, fmt.Sprintf("www.%s", mtDomain), types.RRTypeCname, 300, "target.example.com"),
+			rrChange(types.ChangeActionCreate, fmt.Sprintf("txt.%s", mtDomain), types.RRTypeTxt, 300, "v=spf1 include:example.com ~all"),
+		)
 		if err != nil {
 			return fmt.Errorf("create records: %v", err)
 		}
 
-		listResp, err := tc.client.ListResourceRecordSets(tc.ctx, &route53.ListResourceRecordSetsInput{
-			HostedZoneId: aws.String(mtZoneID),
-		})
+		listResp, err := tc.listRecords(mtZoneID)
 		if err != nil {
 			return fmt.Errorf("list: %v", err)
 		}
@@ -335,42 +201,16 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 
 	results = append(results, r.RunTest("route53", "DeleteHostedZone_NotEmpty", func() error {
 		neDomain := tc.domain("notempty")
-		neRef := fmt.Sprintf("neref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(neDomain),
-			CallerReference: aws.String(neRef),
-		})
+		createResp, err := tc.createZone(neDomain, tc.callerRef("neref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		neZoneID := aws.ToString(createResp.HostedZone.Id)
 
 		neRecord := fmt.Sprintf("keep.%s", neDomain)
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(neZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{{
-					Action: types.ChangeActionCreate,
-					ResourceRecordSet: &types.ResourceRecordSet{
-						Name: aws.String(neRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
-						ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
-					},
-				}},
-			},
-		})
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(neZoneID)})
-		defer tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(neZoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{{
-					Action: types.ChangeActionDelete,
-					ResourceRecordSet: &types.ResourceRecordSet{
-						Name: aws.String(neRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
-						ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
-					},
-				}},
-			},
-		})
+		_, err = tc.changeRecords(neZoneID, rrChange(types.ChangeActionCreate, neRecord, types.RRTypeA, 300, "10.0.0.1"))
+		defer tc.deleteZone(neZoneID)
+		defer tc.changeRecords(neZoneID, rrChange(types.ChangeActionDelete, neRecord, types.RRTypeA, 300, "10.0.0.1"))
 
 		_, err = tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{
 			Id: aws.String(neZoneID),
@@ -383,11 +223,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 
 	results = append(results, r.RunTest("route53", "ListResourceRecordSets_Pagination", func() error {
 		pgDomain := tc.domain("rrsetpg")
-		pgRef := fmt.Sprintf("rrsetpg-%d", tc.uniq)
-		cr, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(pgDomain),
-			CallerReference: aws.String(pgRef),
-		})
+		cr, err := tc.createZone(pgDomain, tc.callerRef("rrsetpg"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -397,19 +233,10 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		for i := 0; i < 5; i++ {
 			pgRecordNames = append(pgRecordNames, fmt.Sprintf("rec%d.%s", i, pgDomain))
 		}
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pgZoneID)})
+		defer tc.deleteZone(pgZoneID)
 		defer func() {
 			for _, rn := range pgRecordNames {
-				tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(pgZoneID),
-					ChangeBatch: &types.ChangeBatch{Changes: []types.Change{{
-						Action: types.ChangeActionDelete,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(rn), Type: types.RRTypeA, TTL: aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.0")}},
-						},
-					}}},
-				})
+				tc.changeRecords(pgZoneID, rrChange(types.ChangeActionDelete, rn, types.RRTypeA, 300, "10.0.0.0"))
 			}
 		}()
 
@@ -417,18 +244,7 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 		for i := 0; i < 5; i++ {
 			rn := fmt.Sprintf("rec%d.%s", i, pgDomain)
 			recordNames = append(recordNames, rn)
-			_, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-				HostedZoneId: aws.String(pgZoneID),
-				ChangeBatch: &types.ChangeBatch{
-					Changes: []types.Change{{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name: aws.String(rn), Type: types.RRTypeA, TTL: aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{{Value: aws.String(fmt.Sprintf("10.0.0.%d", i))}},
-						},
-					}},
-				},
-			})
+			_, err := tc.changeRecords(pgZoneID, rrChange(types.ChangeActionCreate, rn, types.RRTypeA, 300, fmt.Sprintf("10.0.0.%d", i)))
 			if err != nil {
 				return fmt.Errorf("create record %d: %v", i, err)
 			}
@@ -487,119 +303,62 @@ func (r *TestRunner) runRoute53RecordTests(tc *route53TestContext) []TestResult 
 
 	results = append(results, r.RunTest("route53", "ChangeResourceRecordSets_DuplicateCreate", func() error {
 		ddDomain := tc.domain("duprec")
-		ddRef := fmt.Sprintf("ddref-%d", tc.uniq)
-		cr, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(ddDomain),
-			CallerReference: aws.String(ddRef),
-		})
+		cr, err := tc.createZone(ddDomain, tc.callerRef("ddref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		ddZoneID := aws.ToString(cr.HostedZone.Id)
 
 		ddRecord := fmt.Sprintf("dup.%s", ddDomain)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(ddZoneID)})
-		defer tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(ddZoneID),
-			ChangeBatch: &types.ChangeBatch{Changes: []types.Change{{
-				Action: types.ChangeActionDelete,
-				ResourceRecordSet: &types.ResourceRecordSet{
-					Name: aws.String(ddRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
-					ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
-				},
-			}}},
-		})
+		defer tc.deleteZone(ddZoneID)
+		defer tc.changeRecords(ddZoneID, rrChange(types.ChangeActionDelete, ddRecord, types.RRTypeA, 300, "10.0.0.1"))
 
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(ddZoneID),
-			ChangeBatch: &types.ChangeBatch{Changes: []types.Change{{
-				Action: types.ChangeActionCreate,
-				ResourceRecordSet: &types.ResourceRecordSet{
-					Name: aws.String(ddRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
-					ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.1")}},
-				},
-			}}},
-		})
+		_, err = tc.changeRecords(ddZoneID, rrChange(types.ChangeActionCreate, ddRecord, types.RRTypeA, 300, "10.0.0.1"))
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
 
-		_, err = tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(ddZoneID),
-			ChangeBatch: &types.ChangeBatch{Changes: []types.Change{{
-				Action: types.ChangeActionCreate,
-				ResourceRecordSet: &types.ResourceRecordSet{
-					Name: aws.String(ddRecord), Type: types.RRTypeA, TTL: aws.Int64(300),
-					ResourceRecords: []types.ResourceRecord{{Value: aws.String("10.0.0.2")}},
-				},
-			}}},
-		})
+		_, err = tc.changeRecords(ddZoneID, rrChange(types.ChangeActionCreate, ddRecord, types.RRTypeA, 300, "10.0.0.2"))
 		if err := AssertErrorContains(err, "InvalidChangeBatch"); err != nil {
 			return fmt.Errorf("duplicate CREATE should fail with InvalidChangeBatch: %v", err)
 		}
 		return nil
 	}))
 
-	// ResourceRecords carries @length(min 1) in the API model: a non-alias
-	// record set with a present-but-empty value list must be rejected
-	// instead of creating a record set with zero values.
-	results = append(results, r.RunTest("route53", "Record_EmptyResourceRecordsRejected", func() error {
-		_, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(zoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name:            aws.String(fmt.Sprintf("empty-rr.%s", domainName)),
-							Type:            types.RRTypeA,
-							TTL:             aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{},
-						},
-					},
+	// Record-set changes are validated against the API model bounds before
+	// being applied; both rejections below surface InvalidChangeBatch with
+	// HTTP 400.
+	results = append(results, r.RunTest("route53", "Record_InvalidBatchRejected", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+		}{
+			{
+				// ResourceRecords carries @length(min 1) in the API model: a
+				// non-alias record set with a present-but-empty value list
+				// must be rejected instead of creating a record set with
+				// zero values.
+				name: "empty ResourceRecords list",
+				call: func() error {
+					_, err := tc.changeRecords(zoneID, rrChange(types.ChangeActionCreate, fmt.Sprintf("empty-rr.%s", domainName), types.RRTypeA, 300))
+					return err
 				},
 			},
-		})
-		if err == nil {
-			return fmt.Errorf("expected empty-ResourceRecords rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidChangeBatch"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
-		}
-		return nil
-	}))
-
-	// ResourceRecord.Value is bounded by the RData shape (@length 0..4000,
-	// counted in characters): an over-long value invalidates the change
-	// batch instead of being persisted.
-	results = append(results, r.RunTest("route53", "Record_ValueTooLongRejected", func() error {
-		_, err := tc.client.ChangeResourceRecordSets(tc.ctx, &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(zoneID),
-			ChangeBatch: &types.ChangeBatch{
-				Changes: []types.Change{
-					{
-						Action: types.ChangeActionCreate,
-						ResourceRecordSet: &types.ResourceRecordSet{
-							Name:            aws.String(fmt.Sprintf("longvalue.%s", domainName)),
-							Type:            types.RRTypeTxt,
-							TTL:             aws.Int64(300),
-							ResourceRecords: []types.ResourceRecord{{Value: aws.String(strings.Repeat("a", 4001))}},
-						},
-					},
+			{
+				// ResourceRecord.Value is bounded by the RData shape
+				// (@length 0..4000, counted in characters): an over-long
+				// value invalidates the change batch instead of being
+				// persisted.
+				name: "over-long record value",
+				call: func() error {
+					_, err := tc.changeRecords(zoneID, rrChange(types.ChangeActionCreate, fmt.Sprintf("longvalue.%s", domainName), types.RRTypeTxt, 300, strings.Repeat("a", 4001)))
+					return err
 				},
 			},
-		})
-		if err == nil {
-			return fmt.Errorf("expected 4001-character value rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidChangeBatch"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
+		} {
+			if err := expectRoute53Error(c.call(), "InvalidChangeBatch", 400); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))

@@ -101,19 +101,41 @@ func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
 		}
 	}
 
-	listResp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
-	if err != nil {
-		return
-	}
-	if len(listResp.Contents) > 0 {
-		var objs []types.ObjectIdentifier
-		for _, o := range listResp.Contents {
-			objs = append(objs, types.ObjectIdentifier{Key: o.Key})
-		}
-		client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucket),
-			Delete: &types.Delete{Objects: objs},
+	// Delete every object version and delete marker (the bucket may have
+	// versioning enabled, in which case unversioned deletes would only add
+	// markers and leave the bucket non-empty), walking all pages.
+	var keyMarker *string
+	var versionMarker *string
+	for page := 0; page < 1000; page++ {
+		listResp, err := client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{
+			Bucket:          aws.String(bucket),
+			KeyMarker:       keyMarker,
+			VersionIdMarker: versionMarker,
 		})
+		if err != nil {
+			return
+		}
+		if len(listResp.Versions) == 0 && len(listResp.DeleteMarkers) == 0 {
+			break
+		}
+		var objs []types.ObjectIdentifier
+		for _, v := range listResp.Versions {
+			objs = append(objs, types.ObjectIdentifier{Key: v.Key, VersionId: v.VersionId})
+		}
+		for _, m := range listResp.DeleteMarkers {
+			objs = append(objs, types.ObjectIdentifier{Key: m.Key, VersionId: m.VersionId})
+		}
+		if len(objs) > 0 {
+			client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+				Bucket: aws.String(bucket),
+				Delete: &types.Delete{Objects: objs},
+			})
+		}
+		keyMarker = listResp.NextKeyMarker
+		versionMarker = listResp.NextVersionIdMarker
+		if keyMarker == nil && versionMarker == nil {
+			break
+		}
 	}
 	client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
 }

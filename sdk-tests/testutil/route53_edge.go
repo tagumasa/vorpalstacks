@@ -10,41 +10,50 @@ import (
 func (r *TestRunner) runRoute53EdgeTests(tc *route53TestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("route53", "GetHostedZone_NonExistent", func() error {
-		_, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{
-			Id: aws.String("Z00000000000000000000"),
-		})
-		if err := AssertErrorContains(err, "NoSuchHostedZone"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("route53", "DeleteHostedZone_NonExistent", func() error {
-		_, err := tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{
-			Id: aws.String("Z00000000000000000000"),
-		})
-		if err := AssertErrorContains(err, "NoSuchHostedZone"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("route53", "GetChange_NonExistent", func() error {
-		_, err := tc.client.GetChange(tc.ctx, &route53.GetChangeInput{
-			Id: aws.String("C0000000000000000000000000"),
-		})
-		if err := AssertErrorContains(err, "NoSuchChange"); err != nil {
-			return err
+	results = append(results, r.RunTest("route53", "NonExistentResources", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+			code string
+		}{
+			{
+				name: "GetHostedZone on a non-existent zone ID",
+				call: func() error {
+					_, err := tc.getZone("Z00000000000000000000")
+					return err
+				},
+				code: "NoSuchHostedZone",
+			},
+			{
+				name: "DeleteHostedZone on a non-existent zone ID",
+				call: func() error {
+					_, err := tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{
+						Id: aws.String("Z00000000000000000000"),
+					})
+					return err
+				},
+				code: "NoSuchHostedZone",
+			},
+			{
+				name: "GetChange on a non-existent change ID",
+				call: func() error {
+					_, err := tc.client.GetChange(tc.ctx, &route53.GetChangeInput{
+						Id: aws.String("C0000000000000000000000000"),
+					})
+					return err
+				},
+				code: "NoSuchChange",
+			},
+		} {
+			if err := AssertErrorContains(c.call(), c.code); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("route53", "CreateHostedZone_InvalidName", func() error {
-		_, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String("invalid name with spaces"),
-			CallerReference: aws.String(fmt.Sprintf("badref-%d", tc.uniq)),
-		})
+		_, err := tc.createZone("invalid name with spaces", tc.callerRef("badref"))
 		if err := AssertErrorContains(err, "InvalidDomainName"); err != nil {
 			return err
 		}
@@ -75,7 +84,7 @@ func (r *TestRunner) runRoute53EdgeTests(tc *route53TestContext) []TestResult {
 			})
 			if err != nil {
 				for _, zid := range pgZoneIDs {
-					tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(zid)})
+					tc.deleteZone(zid)
 				}
 				return fmt.Errorf("list hosted zones page: %v", err)
 			}
@@ -89,7 +98,7 @@ func (r *TestRunner) runRoute53EdgeTests(tc *route53TestContext) []TestResult {
 		}
 
 		for _, zid := range pgZoneIDs {
-			tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(zid)})
+			tc.deleteZone(zid)
 		}
 
 		if pageCount < 2 {

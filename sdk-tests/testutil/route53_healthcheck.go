@@ -12,22 +12,19 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	var results []TestResult
 
 	results = append(results, r.RunTest("route53", "CreateHealthCheck", func() error {
-		resp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(fmt.Sprintf("hcref-%d", tc.uniq)),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                         types.HealthCheckTypeHttp,
-				ResourcePath:                 aws.String("/health"),
-				FullyQualifiedDomainName:     aws.String("example.com"),
-				RequestInterval:              aws.Int32(30),
-				FailureThreshold:             aws.Int32(3),
-				MeasureLatency:               aws.Bool(true),
-				Disabled:                     aws.Bool(false),
-				EnableSNI:                    aws.Bool(true),
-				IPAddress:                    aws.String("192.0.2.1"),
-				Port:                         aws.Int32(443),
-				Inverted:                     aws.Bool(false),
-				InsufficientDataHealthStatus: types.InsufficientDataHealthStatusLastKnownStatus,
-			},
+		resp, err := tc.createHealthCheck(tc.callerRef("hcref"), &types.HealthCheckConfig{
+			Type:                         types.HealthCheckTypeHttp,
+			ResourcePath:                 aws.String("/health"),
+			FullyQualifiedDomainName:     aws.String("example.com"),
+			RequestInterval:              aws.Int32(30),
+			FailureThreshold:             aws.Int32(3),
+			MeasureLatency:               aws.Bool(true),
+			Disabled:                     aws.Bool(false),
+			EnableSNI:                    aws.Bool(true),
+			IPAddress:                    aws.String("192.0.2.1"),
+			Port:                         aws.Int32(443),
+			Inverted:                     aws.Bool(false),
+			InsufficientDataHealthStatus: types.InsufficientDataHealthStatusLastKnownStatus,
 		})
 		if err != nil {
 			return err
@@ -41,23 +38,14 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		if resp.HealthCheck.HealthCheckConfig.Type != types.HealthCheckTypeHttp {
 			return fmt.Errorf("type mismatch: got %v", resp.HealthCheck.HealthCheckConfig.Type)
 		}
-		tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{
-			HealthCheckId: resp.HealthCheck.Id,
-		})
+		tc.deleteHealthCheck(aws.ToString(resp.HealthCheck.Id))
 		return nil
 	}))
 
 	var healthCheckID string
 	results = append(results, r.RunTest("route53", "CreateHealthCheck_GetID", func() error {
-		hcRef := fmt.Sprintf("hcref2-%d", tc.uniq)
-		resp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(hcRef),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeTcp,
-				FullyQualifiedDomainName: aws.String("hc.example.com"),
-				Port:                     aws.Int32(8080),
-			},
-		})
+		hcRef := tc.callerRef("hcref2")
+		resp, err := tc.createHealthCheck(hcRef, tcpHealthCheck("hc.example.com", 8080))
 		if err != nil {
 			return err
 		}
@@ -75,26 +63,15 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	// resend with the same reference and the same settings returns the
 	// existing health check instead of creating a duplicate.
 	results = append(results, r.RunTest("route53", "CreateHealthCheck_IdempotentRetry", func() error {
-		ref := fmt.Sprintf("hcref-idem-%d", tc.uniq)
-		config := func() *types.HealthCheckConfig {
-			return &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeTcp,
-				FullyQualifiedDomainName: aws.String("idem.example.com"),
-				Port:                     aws.Int32(8081),
-			}
-		}
-		first, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref), HealthCheckConfig: config(),
-		})
+		ref := tc.callerRef("hcref-idem")
+		first, err := tc.createHealthCheck(ref, tcpHealthCheck("idem.example.com", 8081))
 		if err != nil {
 			return err
 		}
 		hcID := aws.ToString(first.HealthCheck.Id)
-		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+		defer tc.deleteHealthCheck(hcID)
 
-		second, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref), HealthCheckConfig: config(),
-		})
+		second, err := tc.createHealthCheck(ref, tcpHealthCheck("idem.example.com", 8081))
 		if err != nil {
 			return fmt.Errorf("idempotent retry: %v", err)
 		}
@@ -111,28 +88,14 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	// The same CallerReference with different settings is rejected with
 	// HealthCheckAlreadyExists.
 	results = append(results, r.RunTest("route53", "CreateHealthCheck_SameCallerRefDifferentSettings", func() error {
-		ref := fmt.Sprintf("hcref-diff-%d", tc.uniq)
-		first, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeTcp,
-				FullyQualifiedDomainName: aws.String("diff.example.com"),
-				Port:                     aws.Int32(8082),
-			},
-		})
+		ref := tc.callerRef("hcref-diff")
+		first, err := tc.createHealthCheck(ref, tcpHealthCheck("diff.example.com", 8082))
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: first.HealthCheck.Id})
+		defer tc.deleteHealthCheck(aws.ToString(first.HealthCheck.Id))
 
-		_, err = tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeTcp,
-				FullyQualifiedDomainName: aws.String("diff.example.com"),
-				Port:                     aws.Int32(8083),
-			},
-		})
+		_, err = tc.createHealthCheck(ref, tcpHealthCheck("diff.example.com", 8083))
 		if err := AssertErrorContains(err, "HealthCheckAlreadyExists"); err != nil {
 			return err
 		}
@@ -143,15 +106,9 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	// fails with HealthCheckAlreadyExists; the reference is retained for a
 	// limited period after deletion.
 	results = append(results, r.RunTest("route53", "CreateHealthCheck_RetryAfterDelete", func() error {
-		ref := fmt.Sprintf("hcref-del-%d", tc.uniq)
-		config := &types.HealthCheckConfig{
-			Type:                     types.HealthCheckTypeTcp,
-			FullyQualifiedDomainName: aws.String("delref.example.com"),
-			Port:                     aws.Int32(8084),
-		}
-		created, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref), HealthCheckConfig: config,
-		})
+		ref := tc.callerRef("hcref-del")
+		config := tcpHealthCheck("delref.example.com", 8084)
+		created, err := tc.createHealthCheck(ref, config)
 		if err != nil {
 			return err
 		}
@@ -161,9 +118,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 			return fmt.Errorf("delete: %v", err)
 		}
 
-		_, err = tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(ref), HealthCheckConfig: config,
-		})
+		_, err = tc.createHealthCheck(ref, config)
 		if err := AssertErrorContains(err, "HealthCheckAlreadyExists"); err != nil {
 			return err
 		}
@@ -172,9 +127,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 
 	if healthCheckID != "" {
 		results = append(results, r.RunTest("route53", "GetHealthCheck", func() error {
-			resp, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
-				HealthCheckId: aws.String(healthCheckID),
-			})
+			resp, err := tc.getHealthCheck(healthCheckID)
 			if err != nil {
 				return err
 			}
@@ -216,9 +169,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		}))
 
 		results = append(results, r.RunTest("route53", "UpdateHealthCheck_VerifyContent", func() error {
-			resp, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
-				HealthCheckId: aws.String(healthCheckID),
-			})
+			resp, err := tc.getHealthCheck(healthCheckID)
 			if err != nil {
 				return err
 			}
@@ -242,20 +193,13 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		}))
 
 		results = append(results, r.RunTest("route53", "UpdateHealthCheck_VersionMismatch", func() error {
-			createResp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-				CallerReference: aws.String(fmt.Sprintf("hcref-ver-%d", tc.uniq)),
-				HealthCheckConfig: &types.HealthCheckConfig{
-					Type:                     types.HealthCheckTypeTcp,
-					Port:                     aws.Int32(8080),
-					FullyQualifiedDomainName: aws.String("ver.example.com"),
-				},
-			})
+			createResp, err := tc.createHealthCheck(tc.callerRef("hcref-ver"), tcpHealthCheck("ver.example.com", 8080))
 			if err != nil {
 				return fmt.Errorf("create: %v", err)
 			}
 			hcID := aws.ToString(createResp.HealthCheck.Id)
 
-			defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+			defer tc.deleteHealthCheck(hcID)
 
 			// A freshly created health check is at version 1; a stale
 			// version must be rejected with a 409 conflict.
@@ -264,16 +208,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 				HealthCheckVersion: aws.Int64(2),
 				Port:               aws.Int32(9090),
 			})
-			if err == nil {
-				return fmt.Errorf("expected version-mismatch rejection, got nil")
-			}
-			if err := AssertErrorContains(err, "HealthCheckVersionMismatch"); err != nil {
-				return err
-			}
-			if awsHTTPStatus(err) != 409 {
-				return fmt.Errorf("expected HTTP 409, got %d", awsHTTPStatus(err))
-			}
-			return nil
+			return expectRoute53Error(err, "HealthCheckVersionMismatch", 409)
 		}))
 
 		results = append(results, r.RunTest("route53", "DeleteHealthCheck", func() error {
@@ -284,31 +219,38 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		}))
 
 		results = append(results, r.RunTest("route53", "GetHealthCheck_AfterDelete", func() error {
-			_, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
-				HealthCheckId: aws.String(healthCheckID),
-			})
+			_, err := tc.getHealthCheck(healthCheckID)
 			if err := AssertErrorContains(err, "NoSuchHealthCheck"); err != nil {
 				return err
 			}
 			return nil
 		}))
 
-		results = append(results, r.RunTest("route53", "GetHealthCheck_NonExistent", func() error {
-			_, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
-				HealthCheckId: aws.String("00000000-0000-0000-0000-000000000000"),
-			})
-			if err := AssertErrorContains(err, "NoSuchHealthCheck"); err != nil {
-				return err
-			}
-			return nil
-		}))
-
-		results = append(results, r.RunTest("route53", "DeleteHealthCheck_NonExistent", func() error {
-			_, err := tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{
-				HealthCheckId: aws.String("00000000-0000-0000-0000-000000000000"),
-			})
-			if err := AssertErrorContains(err, "NoSuchHealthCheck"); err != nil {
-				return err
+		results = append(results, r.RunTest("route53", "HealthCheck_NonExistent", func() error {
+			for _, c := range []struct {
+				name string
+				call func() error
+			}{
+				{
+					name: "get a non-existent health check ID",
+					call: func() error {
+						_, err := tc.getHealthCheck("00000000-0000-0000-0000-000000000000")
+						return err
+					},
+				},
+				{
+					name: "delete a non-existent health check ID",
+					call: func() error {
+						_, err := tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{
+							HealthCheckId: aws.String("00000000-0000-0000-0000-000000000000"),
+						})
+						return err
+					},
+				},
+			} {
+				if err := AssertErrorContains(c.call(), "NoSuchHealthCheck"); err != nil {
+					return fmt.Errorf("%s: %w", c.name, err)
+				}
 			}
 			return nil
 		}))
@@ -328,23 +270,18 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("route53", "HealthCheckConfig_DefaultPort", func() error {
-		resp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(fmt.Sprintf("hcref-port-%d", tc.uniq)),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeHttp,
-				FullyQualifiedDomainName: aws.String("porttest.example.com"),
-			},
+		resp, err := tc.createHealthCheck(tc.callerRef("hcref-port"), &types.HealthCheckConfig{
+			Type:                     types.HealthCheckTypeHttp,
+			FullyQualifiedDomainName: aws.String("porttest.example.com"),
 		})
 		if err != nil {
 			return err
 		}
 		hcID := aws.ToString(resp.HealthCheck.Id)
 
-		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+		defer tc.deleteHealthCheck(hcID)
 
-		getResp, err := tc.client.GetHealthCheck(tc.ctx, &route53.GetHealthCheckInput{
-			HealthCheckId: aws.String(hcID),
-		})
+		getResp, err := tc.getHealthCheck(hcID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -360,14 +297,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 	results = append(results, r.RunTest("route53", "ListHealthChecks_Pagination", func() error {
 		var hcIDs []string
 		for i := 0; i < 5; i++ {
-			resp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-				CallerReference: aws.String(fmt.Sprintf("hcpagref-%d-%d", tc.uniq, i)),
-				HealthCheckConfig: &types.HealthCheckConfig{
-					Type:                     types.HealthCheckTypeTcp,
-					FullyQualifiedDomainName: aws.String(fmt.Sprintf("hcpag%d.example.com", i)),
-					Port:                     aws.Int32(80),
-				},
-			})
+			resp, err := tc.createHealthCheck(tc.callerRef(fmt.Sprintf("hcpagref-%d", i)), tcpHealthCheck(fmt.Sprintf("hcpag%d.example.com", i), 80))
 			if err != nil {
 				return fmt.Errorf("create health check %d: %v", i, err)
 			}
@@ -394,7 +324,7 @@ func (r *TestRunner) runRoute53HealthCheckTests(tc *route53TestContext) []TestRe
 		}
 
 		for _, id := range hcIDs {
-			tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(id)})
+			tc.deleteHealthCheck(id)
 		}
 
 		if pageCount < 2 {

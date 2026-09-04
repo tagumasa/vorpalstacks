@@ -13,17 +13,13 @@ func (r *TestRunner) runRoute53TagTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "ChangeTagsForResource", func() error {
 		tagDomain := tc.domain("tags")
-		tagRef := fmt.Sprintf("tagref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(tagDomain),
-			CallerReference: aws.String(tagRef),
-		})
+		createResp, err := tc.createZone(tagDomain, tc.callerRef("tagref"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		tagZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(tagZoneID)})
+		defer tc.deleteZone(tagZoneID)
 
 		_, err = tc.client.ChangeTagsForResource(tc.ctx, &route53.ChangeTagsForResourceInput{
 			ResourceType: types.TagResourceTypeHostedzone,
@@ -88,16 +84,12 @@ func (r *TestRunner) runRoute53TagTests(tc *route53TestContext) []TestResult {
 
 	results = append(results, r.RunTest("route53", "ChangeTagsForResource_TooManyTags", func() error {
 		tagDomain := tc.domain("taglimit")
-		tagRef := fmt.Sprintf("taglimit-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(tagDomain),
-			CallerReference: aws.String(tagRef),
-		})
+		createResp, err := tc.createZone(tagDomain, tc.callerRef("taglimit"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		tagZoneID := aws.ToString(createResp.HostedZone.Id)
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(tagZoneID)})
+		defer tc.deleteZone(tagZoneID)
 
 		addTags := make([]types.Tag, 11)
 		for i := range addTags {
@@ -118,20 +110,16 @@ func (r *TestRunner) runRoute53TagTests(tc *route53TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("route53", "ListTagsForResource_HealthCheck", func() error {
-		hcRef := fmt.Sprintf("hctagref-%d", tc.uniq)
-		hcResp, err := tc.client.CreateHealthCheck(tc.ctx, &route53.CreateHealthCheckInput{
-			CallerReference: aws.String(hcRef),
-			HealthCheckConfig: &types.HealthCheckConfig{
-				Type:                     types.HealthCheckTypeTcp,
-				FullyQualifiedDomainName: aws.String("hctag.example.com"),
-			},
+		hcResp, err := tc.createHealthCheck(tc.callerRef("hctagref"), &types.HealthCheckConfig{
+			Type:                     types.HealthCheckTypeTcp,
+			FullyQualifiedDomainName: aws.String("hctag.example.com"),
 		})
 		if err != nil {
 			return fmt.Errorf("create hc: %v", err)
 		}
 		hcID := aws.ToString(hcResp.HealthCheck.Id)
 
-		defer tc.client.DeleteHealthCheck(tc.ctx, &route53.DeleteHealthCheckInput{HealthCheckId: aws.String(hcID)})
+		defer tc.deleteHealthCheck(hcID)
 
 		_, err = tc.client.ChangeTagsForResource(tc.ctx, &route53.ChangeTagsForResourceInput{
 			ResourceType: types.TagResourceTypeHealthcheck,

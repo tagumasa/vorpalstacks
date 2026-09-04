@@ -115,10 +115,6 @@ func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, k
 		partHashes.Write(partHash[:])
 	}
 
-	if err := s.abortMultipartUploadUnlock(uploadID); err != nil {
-		slog.Error("Failed to cleanup multipart upload", "uploadID", uploadID, "error", err)
-	}
-
 	var metadata *BlobMetadata
 	if len(parts) > 0 {
 		combinedHash := md5.Sum(partHashes.Bytes())
@@ -127,7 +123,18 @@ func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, k
 		}
 	}
 
-	return s.putUnlock(ctx, bucket, key, &combined, metadata)
+	result, err := s.putUnlock(ctx, bucket, key, &combined, metadata)
+	if err != nil {
+		// The parts are kept so the client can retry the completion; the
+		// upload is only torn down after the assembled object is stored.
+		return nil, err
+	}
+
+	if err := s.abortMultipartUploadUnlock(uploadID); err != nil {
+		slog.Error("Failed to cleanup multipart upload", "uploadID", uploadID, "error", err)
+	}
+
+	return result, nil
 }
 
 // AbortMultipartUpload aborts a multipart upload, removing all uploaded parts.

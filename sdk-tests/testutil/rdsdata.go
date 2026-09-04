@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata"
 	"github.com/aws/aws-sdk-go-v2/service/rdsdata/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
@@ -37,8 +38,8 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 	// the surrounding dropTestDB logic likewise tolerates prior state.
 	smClient := secretsmanager.NewFromConfig(cfg)
 	if _, err := smClient.CreateSecret(context.Background(), &secretsmanager.CreateSecretInput{
-		Name:         ptrStr("test"),
-		SecretString: ptrStr(`{"username":"admin","password":"admin","engine":"mysql","host":"localhost","port":3306}`),
+		Name:         aws.String("test"),
+		SecretString: aws.String(`{"username":"admin","password":"admin","engine":"mysql","host":"localhost","port":3306}`),
 	}); err != nil {
 		// If the secret already exists, that is fine — the prior run
 		// seeded it. Any other error is fatal because subsequent Data API
@@ -60,21 +61,62 @@ func (r *TestRunner) initRDSData() (*rdsDataTestContext, error) {
 	}, nil
 }
 
-func ptrStr(v string) *string { return &v }
-
 func (tc *rdsDataTestContext) dropTestDB() error {
-	tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
+	tc.exec("DROP TABLE IF EXISTS sdk_test")
+	_, err := tc.execAny("DROP DATABASE IF EXISTS " + tc.database)
+	return err
+}
+
+// execInput builds an ExecuteStatement request against the suite's default
+// database; the exec helpers below send it and the tests that need extra
+// members set them on the returned input.
+func (tc *rdsDataTestContext) execInput(sql string) *rdsdata.ExecuteStatementInput {
+	return &rdsdata.ExecuteStatementInput{
+		ResourceArn: &tc.resourceArn,
+		SecretArn:   &tc.secretArn,
+		Sql:         aws.String(sql),
+		Database:    &tc.database,
+	}
+}
+
+// exec runs one statement against the suite's default database and returns
+// the raw result so field-level assertions can inspect it.
+func (tc *rdsDataTestContext) exec(sql string) (*rdsdata.ExecuteStatementOutput, error) {
+	return tc.client.ExecuteStatement(tc.ctx, tc.execInput(sql))
+}
+
+// execAny runs one statement without a database qualifier, for statements
+// that must execute outside any database such as CREATE DATABASE and
+// DROP DATABASE.
+func (tc *rdsDataTestContext) execAny(sql string) (*rdsdata.ExecuteStatementOutput, error) {
+	in := tc.execInput(sql)
+	in.Database = nil
+	return tc.client.ExecuteStatement(tc.ctx, in)
+}
+
+// execTx runs one statement inside an open transaction.
+func (tc *rdsDataTestContext) execTx(sql string, txID *string) (*rdsdata.ExecuteStatementOutput, error) {
+	in := tc.execInput(sql)
+	in.TransactionId = txID
+	return tc.client.ExecuteStatement(tc.ctx, in)
+}
+
+// beginTx opens a transaction on the suite's default database.
+func (tc *rdsDataTestContext) beginTx() (*rdsdata.BeginTransactionOutput, error) {
+	return tc.client.BeginTransaction(tc.ctx, &rdsdata.BeginTransactionInput{
 		ResourceArn: &tc.resourceArn,
 		SecretArn:   &tc.secretArn,
 		Database:    &tc.database,
-		Sql:         ptrStr("DROP TABLE IF EXISTS sdk_test"),
 	})
-	_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-		ResourceArn: &tc.resourceArn,
-		SecretArn:   &tc.secretArn,
-		Sql:         ptrStr("DROP DATABASE IF EXISTS " + tc.database),
+}
+
+// commitTx commits an open transaction.
+func (tc *rdsDataTestContext) commitTx(id *string) (*rdsdata.CommitTransactionOutput, error) {
+	return tc.client.CommitTransaction(tc.ctx, &rdsdata.CommitTransactionInput{
+		ResourceArn:   &tc.resourceArn,
+		SecretArn:     &tc.secretArn,
+		TransactionId: id,
 	})
-	return err
 }
 
 func (r *TestRunner) RunRDSDataTests() []TestResult {
@@ -95,51 +137,22 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	_ = tc.dropTestDB()
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_CreateDatabase", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("CREATE DATABASE " + tc.database),
-		})
+		_, err := tc.execAny("CREATE DATABASE " + tc.database)
 		return err
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_CreateTable", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("CREATE TABLE sdk_test (id INT PRIMARY KEY, name VARCHAR(50), value DOUBLE)"),
-			Database:    &tc.database,
-		})
+		_, err := tc.exec("CREATE TABLE sdk_test (id INT PRIMARY KEY, name VARCHAR(50), value DOUBLE)")
 		return err
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_Insert", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("INSERT INTO sdk_test VALUES (1, 'alice', 3.14)"),
-			Database:    &tc.database,
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_InsertSecondRow", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("INSERT INTO sdk_test VALUES (2, 'bob', 2.72)"),
-			Database:    &tc.database,
-		})
+		_, err := tc.exec("INSERT INTO sdk_test VALUES (1, 'alice', 3.14), (2, 'bob', 2.72)")
 		return err
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_Select", func() error {
-		resp, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("SELECT id, name, value FROM sdk_test ORDER BY id"),
-			Database:    &tc.database,
-		})
+		resp, err := tc.exec("SELECT id, name, value FROM sdk_test ORDER BY id")
 		if err != nil {
 			return err
 		}
@@ -161,13 +174,9 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_IncludeResultMetadata", func() error {
-		resp, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn:           &tc.resourceArn,
-			SecretArn:             &tc.secretArn,
-			Sql:                   ptrStr("SELECT id, name FROM sdk_test LIMIT 1"),
-			Database:              &tc.database,
-			IncludeResultMetadata: true,
-		})
+		in := tc.execInput("SELECT id, name FROM sdk_test LIMIT 1")
+		in.IncludeResultMetadata = true
+		resp, err := tc.client.ExecuteStatement(tc.ctx, in)
 		if err != nil {
 			return err
 		}
@@ -181,13 +190,9 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_FormatRecordsAsJSON", func() error {
-		resp, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn:     &tc.resourceArn,
-			SecretArn:       &tc.secretArn,
-			Sql:             ptrStr("SELECT id, name FROM sdk_test WHERE id = 1"),
-			Database:        &tc.database,
-			FormatRecordsAs: types.RecordsFormatTypeJson,
-		})
+		in := tc.execInput("SELECT id, name FROM sdk_test WHERE id = 1")
+		in.FormatRecordsAs = types.RecordsFormatTypeJson
+		resp, err := tc.client.ExecuteStatement(tc.ctx, in)
 		if err != nil {
 			return err
 		}
@@ -198,22 +203,12 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_Update", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("UPDATE sdk_test SET name = 'updated' WHERE id = 1"),
-			Database:    &tc.database,
-		})
+		_, err := tc.exec("UPDATE sdk_test SET name = 'updated' WHERE id = 1")
 		return err
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "ExecuteStatement_Delete", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("DELETE FROM sdk_test WHERE id = 2"),
-			Database:    &tc.database,
-		})
+		_, err := tc.exec("DELETE FROM sdk_test WHERE id = 2")
 		return err
 	}))
 
@@ -221,18 +216,18 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 		_, err := tc.client.BatchExecuteStatement(tc.ctx, &rdsdata.BatchExecuteStatementInput{
 			ResourceArn: &tc.resourceArn,
 			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("INSERT INTO sdk_test VALUES (:id, :name, :val)"),
+			Sql:         aws.String("INSERT INTO sdk_test VALUES (:id, :name, :val)"),
 			Database:    &tc.database,
 			ParameterSets: [][]types.SqlParameter{
 				{
-					{Name: ptrStr("id"), Value: &types.FieldMemberLongValue{Value: 10}},
-					{Name: ptrStr("name"), Value: &types.FieldMemberStringValue{Value: "batch1"}},
-					{Name: ptrStr("val"), Value: &types.FieldMemberDoubleValue{Value: 1.1}},
+					{Name: aws.String("id"), Value: &types.FieldMemberLongValue{Value: 10}},
+					{Name: aws.String("name"), Value: &types.FieldMemberStringValue{Value: "batch1"}},
+					{Name: aws.String("val"), Value: &types.FieldMemberDoubleValue{Value: 1.1}},
 				},
 				{
-					{Name: ptrStr("id"), Value: &types.FieldMemberLongValue{Value: 11}},
-					{Name: ptrStr("name"), Value: &types.FieldMemberStringValue{Value: "batch2"}},
-					{Name: ptrStr("val"), Value: &types.FieldMemberDoubleValue{Value: 2.2}},
+					{Name: aws.String("id"), Value: &types.FieldMemberLongValue{Value: 11}},
+					{Name: aws.String("name"), Value: &types.FieldMemberStringValue{Value: "batch2"}},
+					{Name: aws.String("val"), Value: &types.FieldMemberDoubleValue{Value: 2.2}},
 				},
 			},
 		})
@@ -244,7 +239,7 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 			DbClusterOrInstanceArn: &tc.resourceArn,
 			AwsSecretStoreArn:      &tc.secretArn,
 			Database:               &tc.database,
-			SqlStatements:          ptrStr("SELECT COUNT(*) as cnt FROM sdk_test; SELECT 42 as val"),
+			SqlStatements:          aws.String("SELECT COUNT(*) as cnt FROM sdk_test; SELECT 42 as val"),
 		})
 		if err != nil {
 			return err
@@ -256,11 +251,7 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "BeginTransaction_CommitTransaction", func() error {
-		beginResp, err := tc.client.BeginTransaction(tc.ctx, &rdsdata.BeginTransactionInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Database:    &tc.database,
-		})
+		beginResp, err := tc.beginTx()
 		if err != nil {
 			return fmt.Errorf("BeginTransaction failed: %w", err)
 		}
@@ -268,24 +259,13 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 			return fmt.Errorf("expected non-empty transactionId")
 		}
 
-		_, execErr := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn:   &tc.resourceArn,
-			SecretArn:     &tc.secretArn,
-			Sql:           ptrStr("INSERT INTO sdk_test VALUES (100, 'tx_commit', 0.0)"),
-			Database:      &tc.database,
-			TransactionId: beginResp.TransactionId,
-		})
-		if execErr != nil {
-			return fmt.Errorf("ExecuteStatement with transactionId failed: %w", execErr)
+		if _, err := tc.execTx("INSERT INTO sdk_test VALUES (100, 'tx_commit', 0.0)", beginResp.TransactionId); err != nil {
+			return fmt.Errorf("ExecuteStatement with transactionId failed: %w", err)
 		}
 
-		commitResp, commitErr := tc.client.CommitTransaction(tc.ctx, &rdsdata.CommitTransactionInput{
-			ResourceArn:   &tc.resourceArn,
-			SecretArn:     &tc.secretArn,
-			TransactionId: beginResp.TransactionId,
-		})
-		if commitErr != nil {
-			return fmt.Errorf("CommitTransaction failed: %w", commitErr)
+		commitResp, err := tc.commitTx(beginResp.TransactionId)
+		if err != nil {
+			return fmt.Errorf("CommitTransaction failed: %w", err)
 		}
 		if commitResp.TransactionStatus == nil || *commitResp.TransactionStatus != "COMMIT" {
 			return fmt.Errorf("expected COMMIT status, got %v", commitResp.TransactionStatus)
@@ -294,22 +274,18 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "BeginTransaction_RollbackTransaction", func() error {
-		beginResp, err := tc.client.BeginTransaction(tc.ctx, &rdsdata.BeginTransactionInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Database:    &tc.database,
-		})
+		beginResp, err := tc.beginTx()
 		if err != nil {
 			return fmt.Errorf("BeginTransaction failed: %w", err)
 		}
 
-		rbResp, rbErr := tc.client.RollbackTransaction(tc.ctx, &rdsdata.RollbackTransactionInput{
+		rbResp, err := tc.client.RollbackTransaction(tc.ctx, &rdsdata.RollbackTransactionInput{
 			ResourceArn:   &tc.resourceArn,
 			SecretArn:     &tc.secretArn,
 			TransactionId: beginResp.TransactionId,
 		})
-		if rbErr != nil {
-			return fmt.Errorf("RollbackTransaction failed: %w", rbErr)
+		if err != nil {
+			return fmt.Errorf("RollbackTransaction failed: %w", err)
 		}
 		if rbResp.TransactionStatus == nil || *rbResp.TransactionStatus != "ROLLBACK" {
 			return fmt.Errorf("expected ROLLBACK status, got %v", rbResp.TransactionStatus)
@@ -317,23 +293,53 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("rdsdata", "Error_InvalidSQL", func() error {
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("INVALID SQL SYNTAX HERE"),
-			Database:    &tc.database,
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid SQL")
+	results = append(results, r.RunTest("rdsdata", "ErrorCases", func() error {
+		for _, c := range []struct {
+			name string
+			call func() error
+			code string
+		}{
+			{
+				name: "invalid SQL is rejected as DatabaseErrorException",
+				call: func() error {
+					_, err := tc.exec("INVALID SQL SYNTAX HERE")
+					return err
+				},
+				code: "DatabaseErrorException",
+			},
+			{
+				name: "db-type resourceArn with no engine surfaces DatabaseUnavailableException",
+				call: func() error {
+					arn := fmt.Sprintf("arn:aws:rds:%s:%s:db:nonexistent-instance", tc.region, tc.accountID)
+					_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
+						ResourceArn: aws.String(arn),
+						SecretArn:   &tc.secretArn,
+						Sql:         aws.String("SELECT 1"),
+					})
+					return err
+				},
+				// Instance-level ARNs resolve straight to the engine lookup,
+				// and an absent engine is deliberately surfaced as
+				// DatabaseUnavailableException rather than a not-found fault;
+				// the NotFoundException mapping applies to cluster ARNs.
+				code: "DatabaseUnavailableException",
+			},
+		} {
+			if err := expectAWSErrorCode(c.call(), c.code); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("rdsdata", "Error_MissingResourceArn", func() error {
+		// A nil resourceArn never reaches the server: the SDK's generated
+		// OperationInputValidation middleware rejects the required member
+		// client-side with smithy.InvalidParamsError, which is not a
+		// smithy.APIError and therefore carries no AWS error code to pin.
 		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
 			SecretArn: &tc.secretArn,
-			Sql:       ptrStr("SELECT 1"),
+			Sql:       aws.String("SELECT 1"),
 		})
 		if err == nil {
 			return fmt.Errorf("expected error for missing resourceArn")
@@ -341,43 +347,15 @@ func (r *TestRunner) RunRDSDataTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, r.RunTest("rdsdata", "Error_NonexistentInstance", func() error {
-		arn := fmt.Sprintf("arn:aws:rds:%s:%s:db:nonexistent-instance", tc.region, tc.accountID)
-		_, err := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn: &arn,
-			SecretArn:   &tc.secretArn,
-			Sql:         ptrStr("SELECT 1"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for nonexistent instance")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("rdsdata", "Error_ReuseTransactionId", func() error {
-		beginResp, err := tc.client.BeginTransaction(tc.ctx, &rdsdata.BeginTransactionInput{
-			ResourceArn: &tc.resourceArn,
-			SecretArn:   &tc.secretArn,
-			Database:    &tc.database,
-		})
+		beginResp, err := tc.beginTx()
 		if err != nil {
 			return err
 		}
-		_, commitErr := tc.client.CommitTransaction(tc.ctx, &rdsdata.CommitTransactionInput{
-			ResourceArn:   &tc.resourceArn,
-			SecretArn:     &tc.secretArn,
-			TransactionId: beginResp.TransactionId,
-		})
-		if commitErr != nil {
-			return commitErr
+		if _, err := tc.commitTx(beginResp.TransactionId); err != nil {
+			return err
 		}
-		_, reuseErr := tc.client.ExecuteStatement(tc.ctx, &rdsdata.ExecuteStatementInput{
-			ResourceArn:   &tc.resourceArn,
-			SecretArn:     &tc.secretArn,
-			Sql:           ptrStr("SELECT 1"),
-			Database:      &tc.database,
-			TransactionId: beginResp.TransactionId,
-		})
+		_, reuseErr := tc.execTx("SELECT 1", beginResp.TransactionId)
 		if reuseErr == nil {
 			return fmt.Errorf("expected error when reusing committed transactionId")
 		}

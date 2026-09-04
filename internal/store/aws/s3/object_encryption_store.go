@@ -131,11 +131,7 @@ func (s *ObjectStore) GetEncrypted(ctx context.Context, bucket, key, versionId s
 		return nil, nil, fmt.Errorf("failed to read encrypted data: %w", err)
 	}
 
-	obj.Size = blobMeta.Size
-	obj.ETag = blobMeta.ETag
-	obj.LastModified = blobMeta.LastModified
-	obj.ContentType = blobMeta.ContentType
-	obj.Metadata = blobMeta.CustomHeaders
+	applyBlobFacts(obj, blobMeta)
 
 	return data, obj, nil
 }

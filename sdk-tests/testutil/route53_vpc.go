@@ -38,19 +38,7 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("VPC setup failed")
 		}
 		privateDomain := tc.domain("private")
-		privateRef := fmt.Sprintf("privref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(privateDomain),
-			CallerReference: aws.String(privateRef),
-			HostedZoneConfig: &types.HostedZoneConfig{
-				PrivateZone: true,
-				Comment:     aws.String("private zone for VPC test"),
-			},
-			VPC: &types.VPC{
-				VPCId:     aws.String(testVPC1),
-				VPCRegion: types.VPCRegion(r.region),
-			},
-		})
+		createResp, err := tc.createPrivateZone(privateDomain, tc.callerRef("privref"), testVPC1, "private zone for VPC test")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -71,7 +59,7 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 					VPCRegion: types.VPCRegion(r.region),
 				},
 			})
-			tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(privateZoneID)})
+			tc.deleteZone(privateZoneID)
 		}()
 
 		assocResp, err := tc.client.AssociateVPCWithHostedZone(tc.ctx, &route53.AssociateVPCWithHostedZoneInput{
@@ -88,9 +76,7 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("associate response or change info is nil")
 		}
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{
-			Id: aws.String(privateZoneID),
-		})
+		getResp, err := tc.getZone(privateZoneID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -112,24 +98,13 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("VPC setup failed")
 		}
 		dsDomain := tc.domain("disassoc")
-		dsRef := fmt.Sprintf("dsref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(dsDomain),
-			CallerReference: aws.String(dsRef),
-			HostedZoneConfig: &types.HostedZoneConfig{
-				PrivateZone: true,
-			},
-			VPC: &types.VPC{
-				VPCId:     aws.String(testVPC1),
-				VPCRegion: types.VPCRegion(r.region),
-			},
-		})
+		createResp, err := tc.createPrivateZone(dsDomain, tc.callerRef("dsref"), testVPC1, "")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		dsZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(dsZoneID)})
+		defer tc.deleteZone(dsZoneID)
 
 		_, err = tc.client.AssociateVPCWithHostedZone(tc.ctx, &route53.AssociateVPCWithHostedZoneInput{
 			HostedZoneId: aws.String(dsZoneID),
@@ -156,9 +131,7 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("disassociate response or change info is nil")
 		}
 
-		getResp, err := tc.client.GetHostedZone(tc.ctx, &route53.GetHostedZoneInput{
-			Id: aws.String(dsZoneID),
-		})
+		getResp, err := tc.getZone(dsZoneID)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -176,24 +149,13 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 			return fmt.Errorf("VPC setup failed")
 		}
 		naDomain := tc.domain("notassoc")
-		naRef := fmt.Sprintf("naref-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(naDomain),
-			CallerReference: aws.String(naRef),
-			HostedZoneConfig: &types.HostedZoneConfig{
-				PrivateZone: true,
-			},
-			VPC: &types.VPC{
-				VPCId:     aws.String(testVPC1),
-				VPCRegion: types.VPCRegion(r.region),
-			},
-		})
+		createResp, err := tc.createPrivateZone(naDomain, tc.callerRef("naref"), testVPC1, "")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		naZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(naZoneID)})
+		defer tc.deleteZone(naZoneID)
 
 		// testVPC2 was never associated with this zone; the removal is
 		// rejected with a 404 VPCAssociationNotFound.
@@ -204,31 +166,18 @@ func (r *TestRunner) runRoute53VPCTests(tc *route53TestContext) []TestResult {
 				VPCRegion: types.VPCRegion(r.region),
 			},
 		})
-		if err == nil {
-			return fmt.Errorf("expected not-associated rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "VPCAssociationNotFound"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 404 {
-			return fmt.Errorf("expected HTTP 404, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "VPCAssociationNotFound", 404)
 	}))
 
 	results = append(results, r.RunTest("route53", "AssociateVPCWithHostedZone_PublicZone", func() error {
 		pubDomain := tc.domain("pub-vpc-test")
-		pubRef := fmt.Sprintf("pubvpc-%d", tc.uniq)
-		createResp, err := tc.client.CreateHostedZone(tc.ctx, &route53.CreateHostedZoneInput{
-			Name:            aws.String(pubDomain),
-			CallerReference: aws.String(pubRef),
-		})
+		createResp, err := tc.createZone(pubDomain, tc.callerRef("pubvpc"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		pubZoneID := aws.ToString(createResp.HostedZone.Id)
 
-		defer tc.client.DeleteHostedZone(tc.ctx, &route53.DeleteHostedZoneInput{Id: aws.String(pubZoneID)})
+		defer tc.deleteZone(pubZoneID)
 
 		_, err = tc.client.AssociateVPCWithHostedZone(tc.ctx, &route53.AssociateVPCWithHostedZoneInput{
 			HostedZoneId: aws.String(pubZoneID),

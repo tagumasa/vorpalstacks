@@ -14,12 +14,8 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 	var results []TestResult
 
 	results = append(results, r.RunTest("route53", "CidrCollection_Lifecycle", func() error {
-		name := fmt.Sprintf("cidr-life-%d", tc.uniq)
-		callerRef := tc.callerRef("cidrlife")
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(name),
-			CallerReference: aws.String(callerRef),
-		})
+		name := tc.uniqName("cidr-life")
+		createResp, err := tc.createCidrCollection(name, tc.callerRef("cidrlife"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -34,7 +30,7 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		changeResp, err := tc.client.ChangeCidrCollection(tc.ctx, &route53.ChangeCidrCollectionInput{
 			Id:                aws.String(collectionID),
@@ -100,29 +96,17 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 			CollectionId: aws.String(collectionID),
 			LocationName: aws.String("no-such-loc"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected missing-location rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "NoSuchCidrLocationException"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 404 {
-			return fmt.Errorf("expected HTTP 404, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "NoSuchCidrLocationException", 404)
 	}))
 
 	results = append(results, r.RunTest("route53", "CidrCollection_Pagination", func() error {
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(fmt.Sprintf("cidr-page-%d", tc.uniq)),
-			CallerReference: aws.String(tc.callerRef("cidrpage")),
-		})
+		createResp, err := tc.createCidrCollection(tc.uniqName("cidr-page"), tc.callerRef("cidrpage"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		changes := []types.CidrCollectionChange{
 			{LocationName: aws.String("page-a"), Action: types.CidrCollectionChangeActionPut, CidrList: []string{"10.152.1.0/24"}},
@@ -234,16 +218,13 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("route53", "CidrCollection_MalformedToken", func() error {
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(fmt.Sprintf("cidr-token-%d", tc.uniq)),
-			CallerReference: aws.String(tc.callerRef("cidrtoken")),
-		})
+		createResp, err := tc.createCidrCollection(tc.uniqName("cidr-token"), tc.callerRef("cidrtoken"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		if _, err := tc.client.ChangeCidrCollection(tc.ctx, &route53.ChangeCidrCollectionInput{
 			Id:                aws.String(collectionID),
@@ -263,14 +244,8 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 			CollectionId: aws.String(collectionID),
 			NextToken:    aws.String("!!!not-a-valid-token!!!"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected malformed blocks token rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+		if err := expectRoute53Error(err, "InvalidInput", 400); err != nil {
 			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
 		}
 
 		// Valid base64 without the location/cidr cursor split is equally
@@ -280,43 +255,28 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 			CollectionId: aws.String(collectionID),
 			NextToken:    aws.String(sepless),
 		})
-		if err == nil {
-			return fmt.Errorf("expected separator-less blocks token rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+		if err := expectRoute53Error(err, "InvalidInput", 400); err != nil {
 			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
 		}
 
 		_, err = tc.client.ListCidrLocations(tc.ctx, &route53.ListCidrLocationsInput{
 			CollectionId: aws.String(collectionID),
 			NextToken:    aws.String("!!!not-a-valid-token!!!"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected malformed locations token rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
+		if err := expectRoute53Error(err, "InvalidInput", 400); err != nil {
 			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("route53", "ChangeCidrCollection_TooManyChanges", func() error {
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(fmt.Sprintf("cidr-cap-%d", tc.uniq)),
-			CallerReference: aws.String(tc.callerRef("cidrcap")),
-		})
+		createResp, err := tc.createCidrCollection(tc.uniqName("cidr-cap"), tc.callerRef("cidrcap"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		// The Changes list is capped at 1000 entries per request.
 		changes := make([]types.CidrCollectionChange, 1001)
@@ -332,52 +292,28 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 			CollectionVersion: aws.Int64(1),
 			Changes:           changes,
 		})
-		if err == nil {
-			return fmt.Errorf("expected over-limit rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "InvalidInput", 400)
 	}))
 
 	results = append(results, r.RunTest("route53", "CreateCidrCollection_DuplicateName", func() error {
-		name := fmt.Sprintf("cidr-dup-%d", tc.uniq)
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(name),
-			CallerReference: aws.String(tc.callerRef("cidrdup-a")),
-		})
+		name := tc.uniqName("cidr-dup")
+		createResp, err := tc.createCidrCollection(name, tc.callerRef("cidrdup-a"))
 		if err != nil {
 			return fmt.Errorf("create first: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		// The same name with a different client token is rejected.
-		_, err = tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(name),
-			CallerReference: aws.String(tc.callerRef("cidrdup-b")),
-		})
-		if err == nil {
-			return fmt.Errorf("expected duplicate-name rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "CidrCollectionAlreadyExistsException"); err != nil {
+		_, err = tc.createCidrCollection(name, tc.callerRef("cidrdup-b"))
+		if err := expectRoute53Error(err, "CidrCollectionAlreadyExistsException", 400); err != nil {
 			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("expected HTTP 400, got %d", awsHTTPStatus(err))
 		}
 
 		// A retry with the original client token returns the existing
 		// collection instead of creating a second one.
-		retryResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(name),
-			CallerReference: aws.String(tc.callerRef("cidrdup-a")),
-		})
+		retryResp, err := tc.createCidrCollection(name, tc.callerRef("cidrdup-a"))
 		if err != nil {
 			return fmt.Errorf("same-caller-reference retry: %v", err)
 		}
@@ -389,16 +325,13 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 	}))
 
 	results = append(results, r.RunTest("route53", "ChangeCidrCollection_VersionMismatch", func() error {
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(fmt.Sprintf("cidr-ver-%d", tc.uniq)),
-			CallerReference: aws.String(tc.callerRef("cidrver")),
-		})
+		createResp, err := tc.createCidrCollection(tc.uniqName("cidr-ver"), tc.callerRef("cidrver"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		_, err = tc.client.ChangeCidrCollection(tc.ctx, &route53.ChangeCidrCollectionInput{
 			Id:                aws.String(collectionID),
@@ -409,48 +342,27 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 				CidrList:     []string{"10.151.0.0/24"},
 			}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected version-mismatch rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "CidrCollectionVersionMismatchException"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 409 {
-			return fmt.Errorf("expected HTTP 409, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "CidrCollectionVersionMismatchException", 409)
 	}))
 
 	results = append(results, r.RunTest("route53", "ListCidrLocations_NonExistentCollection", func() error {
 		_, err := tc.client.ListCidrLocations(tc.ctx, &route53.ListCidrLocationsInput{
 			CollectionId: aws.String("9999999999999999999"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected not-found rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "NoSuchCidrCollectionException"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 404 {
-			return fmt.Errorf("expected HTTP 404, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "NoSuchCidrCollectionException", 404)
 	}))
 
 	// The change member constraints from the API model: a location name is
 	// 1-16 characters from [0-9A-Za-z_-], a CIDR entry is 1-50 non-blank
 	// characters, and each change's Cidr list holds at most 1000 entries.
 	results = append(results, r.RunTest("route53", "ChangeCidrCollection_MemberLimitsRejected", func() error {
-		createResp, err := tc.client.CreateCidrCollection(tc.ctx, &route53.CreateCidrCollectionInput{
-			Name:            aws.String(fmt.Sprintf("cidr-member-%d", tc.uniq)),
-			CallerReference: aws.String(tc.callerRef("cidrmember")),
-		})
+		createResp, err := tc.createCidrCollection(tc.uniqName("cidr-member"), tc.callerRef("cidrmember"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
 		collectionID := aws.ToString(createResp.Collection.Id)
 
-		defer tc.client.DeleteCidrCollection(tc.ctx, &route53.DeleteCidrCollectionInput{Id: aws.String(collectionID)})
+		defer tc.deleteCidrCollection(collectionID)
 
 		rejections := []types.CidrCollectionChange{
 			{LocationName: aws.String("overlong-location"), Action: types.CidrCollectionChangeActionPut, CidrList: []string{"10.150.0.0/24"}},
@@ -463,14 +375,8 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 				CollectionVersion: aws.Int64(1),
 				Changes:           []types.CidrCollectionChange{change},
 			})
-			if err == nil {
-				return fmt.Errorf("expected rejection for change %d, got nil", i)
-			}
-			if err := AssertErrorContains(err, "InvalidInput"); err != nil {
-				return err
-			}
-			if awsHTTPStatus(err) != 400 {
-				return fmt.Errorf("change %d: expected HTTP 400, got %d", i, awsHTTPStatus(err))
+			if err := expectRoute53Error(err, "InvalidInput", 400); err != nil {
+				return fmt.Errorf("change %d: %w", i, err)
 			}
 		}
 
@@ -487,16 +393,7 @@ func (r *TestRunner) runRoute53CidrCollectionTests(tc *route53TestContext) []Tes
 				CidrList:     overLengthList,
 			}},
 		})
-		if err == nil {
-			return fmt.Errorf("expected over-length CidrList rejection, got nil")
-		}
-		if err := AssertErrorContains(err, "InvalidInput"); err != nil {
-			return err
-		}
-		if awsHTTPStatus(err) != 400 {
-			return fmt.Errorf("over-length CidrList: expected HTTP 400, got %d", awsHTTPStatus(err))
-		}
-		return nil
+		return expectRoute53Error(err, "InvalidInput", 400)
 	}))
 
 	return results

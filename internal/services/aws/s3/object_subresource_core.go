@@ -203,19 +203,9 @@ func (s *S3Service) deleteObjectOpCore(ctx context.Context, reqCtx *request.Requ
 		output.VersionId = coreResult.VersionID
 		s.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
 		if bucket.ReplicationConfiguration != nil {
-			dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
-			go func() {
-				defer dmCancel()
-				defer func() {
-					if r := recover(); r != nil {
-						logs.Error("s3: delete-marker replication goroutine panic",
-							logs.String("bucket", input.Bucket),
-							logs.String("key", input.Key),
-							logs.Any("panic", r))
-					}
-				}()
+			s.goReplicationWorker(input.Bucket, input.Key, "delete-marker", func(dmCtx context.Context) {
 				s.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, input.Key)
-			}()
+			})
 		}
 	} else {
 		s.publishObjectNotification(ctx, reqCtx, input.Bucket, input.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
@@ -270,12 +260,10 @@ func (s *S3Service) deleteObjectsOpCore(ctx context.Context, reqCtx *request.Req
 				deletedObj.VersionId = coreResult.VersionID
 				s.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, coreResult.VersionID, "", eventbus.S3ObjectRemovedDeleteMarkerCreated)
 				if bucket.ReplicationConfiguration != nil {
-					dmCtx, dmCancel := context.WithTimeout(context.Background(), 30*time.Second)
 					keyVal := obj.Key
-					go func() {
-						defer dmCancel()
+					s.goReplicationWorker(input.Bucket, keyVal, "delete-marker", func(dmCtx context.Context) {
 						s.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, keyVal)
-					}()
+					})
 				}
 			} else if obj.VersionId != "" {
 				deletedObj.VersionId = obj.VersionId

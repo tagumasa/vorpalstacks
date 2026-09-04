@@ -1105,6 +1105,18 @@ func (s *S3Service) putBucketVersioningCore(bucketStore s3store.BucketStoreInter
 	if !bucketStore.Exists(in.Bucket) {
 		return ErrNoSuchBucket
 	}
+	// Suspending versioning on a replication source is rejected: the
+	// replication configuration requires Enabled versioning on the bucket
+	// and must be removed before versioning can be suspended.
+	if status == s3store.BucketVersioningSuspended {
+		bucket, err := bucketStore.Get(in.Bucket)
+		if err != nil {
+			return err
+		}
+		if bucket.ReplicationConfiguration != nil {
+			return NewInvalidRequestError("Versioning cannot be suspended on a bucket with a replication configuration; delete the replication configuration first")
+		}
+	}
 	return bucketStore.SetVersioning(in.Bucket, status, in.MFADelete)
 }
 
