@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/store/aws/common"
@@ -96,11 +95,11 @@ func (s *SNSService) createPlatformApplicationCore(store snsstore.SNSStoreInterf
 		return nil, err
 	}
 	if in.Platform == "" {
-		return nil, awserrors.NewInvalidParameterException("Platform is required")
+		return nil, NewInvalidParameter("Platform is required")
 	}
 	normalisedPlatform := strings.ToUpper(in.Platform)
 	if !validPlatforms[normalisedPlatform] {
-		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid Platform: %s. Valid values: APNS, APNS_SANDBOX, GCM, ADM, BAIDU, WNS, MPNS", in.Platform))
+		return nil, NewInvalidParameter(fmt.Sprintf("Invalid Platform: %s. Valid values: APNS, APNS_SANDBOX, GCM, ADM, BAIDU, WNS, MPNS", in.Platform))
 	}
 
 	for attrName, value := range in.Attributes {
@@ -118,7 +117,7 @@ func (s *SNSService) createPlatformApplicationCore(store snsstore.SNSStoreInterf
 	created, err := store.CreatePlatformApplication(app)
 	if err != nil {
 		if err == snsstore.ErrPlatformApplicationAlreadyExists {
-			return nil, awserrors.NewInvalidParameterException("Platform application already exists with the same name")
+			return nil, NewInvalidParameter("Platform application already exists with the same name")
 		}
 		return nil, err
 	}
@@ -132,7 +131,7 @@ func (s *SNSService) createPlatformApplicationCore(store snsstore.SNSStoreInterf
 // for DeletePlatformApplication.
 func (s *SNSService) deletePlatformApplicationCore(store snsstore.SNSStoreInterface, in DeletePlatformApplicationInput) (interface{}, error) {
 	if in.PlatformApplicationArn == "" {
-		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, NewInvalidParameter("PlatformApplicationArn is required")
 	}
 
 	if err := store.DeletePlatformApplication(in.PlatformApplicationArn); err != nil {
@@ -149,7 +148,7 @@ func (s *SNSService) deletePlatformApplicationCore(store snsstore.SNSStoreInterf
 // persistence path for GetPlatformApplicationAttributes.
 func (s *SNSService) getPlatformApplicationAttributesCore(store snsstore.SNSStoreInterface, in GetPlatformApplicationAttributesInput) (interface{}, error) {
 	if in.PlatformApplicationArn == "" {
-		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, NewInvalidParameter("PlatformApplicationArn is required")
 	}
 
 	attrs, err := store.GetPlatformApplicationAttributes(in.PlatformApplicationArn)
@@ -169,11 +168,11 @@ func (s *SNSService) getPlatformApplicationAttributesCore(store snsstore.SNSStor
 // persistence path for SetPlatformApplicationAttributes.
 func (s *SNSService) setPlatformApplicationAttributesCore(store snsstore.SNSStoreInterface, in SetPlatformApplicationAttributesInput) (interface{}, error) {
 	if in.PlatformApplicationArn == "" {
-		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, NewInvalidParameter("PlatformApplicationArn is required")
 	}
 
 	if len(in.Attributes) == 0 {
-		return nil, awserrors.NewInvalidParameterException("Attributes is required")
+		return nil, NewInvalidParameter("Attributes is required")
 	}
 
 	// Enforce value length cap for DoS protection.
@@ -224,13 +223,13 @@ func (s *SNSService) createPlatformEndpointCore(store snsstore.SNSStoreInterface
 		return nil, err
 	}
 	if in.Token == "" {
-		return nil, awserrors.NewInvalidParameterException("Token is required")
+		return nil, NewInvalidParameter("Token is required")
 	}
 	if len(in.Token) > 2048 {
-		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Token too long: %d bytes (maximum 2048)", len(in.Token)))
+		return nil, NewInvalidParameter(fmt.Sprintf("Token too long: %d bytes (maximum 2048)", len(in.Token)))
 	}
 	if len(in.CustomUserData) > 2048 {
-		return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("CustomUserData too long: %d bytes (maximum 2048)", len(in.CustomUserData)))
+		return nil, NewInvalidParameter(fmt.Sprintf("CustomUserData too long: %d bytes (maximum 2048)", len(in.CustomUserData)))
 	}
 
 	for attrName, value := range in.Attributes {
@@ -263,7 +262,7 @@ func (s *SNSService) createPlatformEndpointCore(store snsstore.SNSStoreInterface
 // DeleteEndpoint.
 func (s *SNSService) deleteEndpointCore(store snsstore.SNSStoreInterface, in DeleteEndpointInput) (interface{}, error) {
 	if in.EndpointArn == "" {
-		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
+		return nil, NewInvalidParameter("EndpointArn is required")
 	}
 
 	if err := store.DeleteEndpoint(in.EndpointArn); err != nil {
@@ -280,7 +279,7 @@ func (s *SNSService) deleteEndpointCore(store snsstore.SNSStoreInterface, in Del
 // GetEndpointAttributes.
 func (s *SNSService) getEndpointAttributesCore(store snsstore.SNSStoreInterface, in GetEndpointAttributesInput) (interface{}, error) {
 	if in.EndpointArn == "" {
-		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
+		return nil, NewInvalidParameter("EndpointArn is required")
 	}
 
 	attrs, err := store.GetEndpointAttributes(in.EndpointArn)
@@ -300,11 +299,11 @@ func (s *SNSService) getEndpointAttributesCore(store snsstore.SNSStoreInterface,
 // SetEndpointAttributes.
 func (s *SNSService) setEndpointAttributesCore(store snsstore.SNSStoreInterface, in SetEndpointAttributesInput) (interface{}, error) {
 	if in.EndpointArn == "" {
-		return nil, awserrors.NewInvalidParameterException("EndpointArn is required")
+		return nil, NewInvalidParameter("EndpointArn is required")
 	}
 
 	if len(in.Attributes) == 0 {
-		return nil, awserrors.NewInvalidParameterException("Attributes is required")
+		return nil, NewInvalidParameter("Attributes is required")
 	}
 
 	// Enforce value length cap for DoS protection.
@@ -328,7 +327,7 @@ func (s *SNSService) setEndpointAttributesCore(store snsstore.SNSStoreInterface,
 // persistence path for ListEndpointsByPlatformApplication.
 func (s *SNSService) listEndpointsByPlatformApplicationCore(store snsstore.SNSStoreInterface, in ListEndpointsByPlatformApplicationInput) (interface{}, error) {
 	if in.PlatformApplicationArn == "" {
-		return nil, awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
+		return nil, NewInvalidParameter("PlatformApplicationArn is required")
 	}
 
 	// Verify platform application existence before listing endpoints.

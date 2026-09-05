@@ -49,6 +49,20 @@ func (h *S3Handler) dispatchDeleteBucket(ctx *request.RequestContext, r *http.Re
 		err := h.bucketOps.DeleteBucketReplication(ctx, &DeleteBucketReplicationInput{Bucket: bucket})
 		return nil, http.StatusNoContent, err
 	}
+	if query.Has("inventory") {
+		err := h.bucketOps.DeleteBucketInventoryConfiguration(ctx, &DeleteBucketInventoryConfigurationInput{
+			Bucket: bucket,
+			Id:     query.Get("id"),
+		})
+		return nil, http.StatusNoContent, err
+	}
+	if query.Has("metrics") {
+		err := h.bucketOps.DeleteBucketMetricsConfiguration(ctx, &DeleteBucketMetricsConfigurationInput{
+			Bucket: bucket,
+			Id:     query.Get("id"),
+		})
+		return nil, http.StatusNoContent, err
+	}
 
 	err := h.bucketOps.DeleteBucket(ctx, &DeleteBucketInput{Bucket: bucket})
 	return nil, http.StatusNoContent, err

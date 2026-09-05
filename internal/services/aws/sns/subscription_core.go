@@ -79,14 +79,14 @@ type ListSubscriptionsByTopicInput struct {
 // region used by the confirmation delivery.
 func (s *SNSService) subscribeCore(store snsstore.SNSStoreInterface, reqCtx *request.RequestContext, in SubscribeInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 	// Validate protocol value against the nine AWS-supported protocols.
 	if err := validateProtocol(in.Protocol); err != nil {
 		return nil, err
 	}
 	if in.Endpoint == "" {
-		return nil, awserrors.NewInvalidParameterException("Endpoint is required")
+		return nil, NewInvalidParameter("Endpoint is required")
 	}
 	// Validate endpoint format per protocol to catch grossly invalid
 	// endpoints at Subscribe time rather than silently failing at delivery.
@@ -153,7 +153,7 @@ func (s *SNSService) subscribeCore(store snsstore.SNSStoreInterface, reqCtx *req
 // authorisation checks on AuthenticateOnUnsubscribe subscriptions.
 func (s *SNSService) unsubscribeCore(store snsstore.SNSStoreInterface, reqCtx *request.RequestContext, in UnsubscribeInput) (interface{}, error) {
 	if in.SubscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
+		return nil, NewInvalidParameter("SubscriptionArn is required")
 	}
 
 	subscription, err := store.GetSubscription(in.SubscriptionArn)
@@ -200,10 +200,10 @@ func (s *SNSService) unsubscribeCore(store snsstore.SNSStoreInterface, reqCtx *r
 // ConfirmSubscription.
 func (s *SNSService) confirmSubscriptionCore(store snsstore.SNSStoreInterface, in ConfirmSubscriptionInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 	if in.Token == "" {
-		return nil, awserrors.NewInvalidParameterException("Token is required")
+		return nil, NewInvalidParameter("Token is required")
 	}
 
 	// AuthenticateOnUnsubscribe disallows unauthenticated unsubscribes of
@@ -221,14 +221,14 @@ func (s *SNSService) confirmSubscriptionCore(store snsstore.SNSStoreInterface, i
 			val := false
 			authenticateOnUnsubscribe = &val
 		default:
-			return nil, awserrors.NewInvalidParameterException(
+			return nil, NewInvalidParameter(
 				fmt.Sprintf("Invalid AuthenticateOnUnsubscribe value %q: must be \"true\" or \"false\"", raw))
 		}
 	}
 
 	sub, err := store.FindSubscriptionByToken(in.TopicArn, in.Token)
 	if err != nil {
-		return nil, awserrors.NewInvalidParameterException("Subscription not found for token")
+		return nil, NewInvalidParameter("Subscription not found for token")
 	}
 
 	confirmed, err := store.ConfirmSubscription(sub.SubscriptionArn, in.Token, authenticateOnUnsubscribe)
@@ -245,7 +245,7 @@ func (s *SNSService) confirmSubscriptionCore(store snsstore.SNSStoreInterface, i
 // for GetSubscriptionAttributes.
 func (s *SNSService) getSubscriptionAttributesCore(store snsstore.SNSStoreInterface, in GetSubscriptionAttributesInput) (interface{}, error) {
 	if in.SubscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
+		return nil, NewInvalidParameter("SubscriptionArn is required")
 	}
 
 	attrs, err := store.GetSubscriptionAttributes(in.SubscriptionArn)
@@ -265,10 +265,10 @@ func (s *SNSService) getSubscriptionAttributesCore(store snsstore.SNSStoreInterf
 // for SetSubscriptionAttributes.
 func (s *SNSService) setSubscriptionAttributesCore(store snsstore.SNSStoreInterface, in SetSubscriptionAttributesInput) (interface{}, error) {
 	if in.SubscriptionArn == "" {
-		return nil, awserrors.NewInvalidParameterException("SubscriptionArn is required")
+		return nil, NewInvalidParameter("SubscriptionArn is required")
 	}
 	if in.AttributeName == "" {
-		return nil, awserrors.NewInvalidParameterException("AttributeName is required")
+		return nil, NewInvalidParameter("AttributeName is required")
 	}
 
 	if err := validateSubscriptionAttribute(in.AttributeName, in.AttributeValue); err != nil {
@@ -309,7 +309,7 @@ func (s *SNSService) listSubscriptionsCore(store snsstore.SNSStoreInterface, in 
 // for ListSubscriptionsByTopic.
 func (s *SNSService) listSubscriptionsByTopicCore(store snsstore.SNSStoreInterface, in ListSubscriptionsByTopicInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 
 	if _, err := store.GetTopic(in.TopicArn); err != nil {

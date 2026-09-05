@@ -29,6 +29,7 @@ type S3Service struct {
 	accessController    *AccessController
 	credentialsProvider auth.CredentialsProvider
 	encryptionManager   *EncryptionManager
+	requestMetrics      *requestMetricsAggregator
 	fallbackCache       sync.Map
 	bus                 eventbus.ServiceBus
 	busUnsubscribe      func()
@@ -36,23 +37,27 @@ type S3Service struct {
 
 // NewS3Service creates a new S3Service with the given store and blob store.
 func NewS3Service(s3Store s3store.S3StoreInterface, blobStore storage.BlobStore, accountID string) *S3Service {
-	return &S3Service{
+	svc := &S3Service{
 		s3Store:           s3Store,
 		blobStore:         blobStore,
 		accountID:         accountID,
 		accessController:  NewAccessController(accountID),
 		encryptionManager: NewEncryptionManager(),
 	}
+	svc.requestMetrics = newRequestMetricsAggregator(svc)
+	return svc
 }
 
 // NewS3ServiceWithStorage creates a new S3Service with the given storage.
 func NewS3ServiceWithStorage(blobStore storage.BlobStore, accountID string) *S3Service {
-	return &S3Service{
+	svc := &S3Service{
 		blobStore:         blobStore,
 		accountID:         accountID,
 		accessController:  NewAccessController(accountID),
 		encryptionManager: NewEncryptionManager(),
 	}
+	svc.requestMetrics = newRequestMetricsAggregator(svc)
+	return svc
 }
 
 // SetCredentialsProvider sets the credentials provider for the S3 service.
@@ -224,6 +229,33 @@ func (s *S3Service) publishRestoreNotification(ctx context.Context, reqCtx *requ
 	if err := s.bus.Publish(ctx, evt); err != nil {
 		logs.Warn("s3: event bus publish failed", logs.String("bucket", bucket), logs.String("key", key), logs.Err(err))
 	}
+}
+
+// s3RegionStores invokes fn for every initialised region's stores. In the
+// fallback construction (no S3StoreInterface) it is a no-op.
+func (s *S3Service) s3RegionStores(fn func(region string, buckets *s3store.BucketStore, objects *s3store.ObjectStore)) {
+	if s.s3Store == nil {
+		return
+	}
+	s.s3Store.EachRegion(fn)
+}
+
+// s3FindBucket resolves a bucket across regions, returning the bucket and
+// its region ("" when absent).
+func (s *S3Service) s3FindBucket(name string) (*s3store.Bucket, string) {
+	if s.s3Store == nil {
+		return nil, ""
+	}
+	return s.s3Store.FindBucket(name)
+}
+
+// s3Objects returns the object store for a region, or nil when the region
+// has no initialised store.
+func (s *S3Service) s3Objects(region string) s3store.ObjectStoreInterface {
+	if s.s3Store == nil || region == "" {
+		return nil
+	}
+	return s.s3Store.Objects(region)
 }
 
 func (s *S3Service) store(ctx *request.RequestContext) (*s3Stores, error) {

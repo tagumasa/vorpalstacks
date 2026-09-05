@@ -11,20 +11,6 @@ import (
 func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("sesv2", "GetAccount", func() error {
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
-		if err != nil {
-			return err
-		}
-		if resp == nil {
-			return fmt.Errorf("response is nil")
-		}
-		if !resp.SendingEnabled {
-			return fmt.Errorf("expected SendingEnabled=true")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("sesv2", "PutAccountSendingAttributes", func() error {
 		_, err := tc.client.PutAccountSendingAttributes(tc.ctx, &sesv2.PutAccountSendingAttributesInput{
 			SendingEnabled: true,
@@ -32,7 +18,7 @@ func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+		resp, err := tc.getAccount()
 		if err != nil {
 			return fmt.Errorf("get account after put: %v", err)
 		}
@@ -50,7 +36,7 @@ func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+		resp, err := tc.getAccount()
 		if err != nil {
 			return fmt.Errorf("get account after suppression put: %v", err)
 		}
@@ -85,7 +71,7 @@ func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+		resp, err := tc.getAccount()
 		if err != nil {
 			return fmt.Errorf("get account after PutAccountDetails: %v", err)
 		}
@@ -107,7 +93,7 @@ func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+		resp, err := tc.getAccount()
 		if err != nil {
 			return fmt.Errorf("get account after VDM put: %v", err)
 		}
@@ -127,7 +113,7 @@ func (r *TestRunner) runSESv2AccountTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+		resp, err := tc.getAccount()
 		if err != nil {
 			return fmt.Errorf("get account after warmup put: %v", err)
 		}

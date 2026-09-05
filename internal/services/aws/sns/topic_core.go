@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
@@ -83,7 +82,7 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 		if !hasAttr {
 			in.Attributes["FifoTopic"] = "true"
 		} else if userVal != "true" {
-			return nil, awserrors.NewInvalidParameterException(
+			return nil, NewInvalidParameter(
 				"FifoTopic attribute must be \"true\" when topic name ends with \".fifo\"")
 		}
 
@@ -92,7 +91,7 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 		}
 	} else {
 		if in.Attributes["FifoTopic"] == "true" {
-			return nil, awserrors.NewInvalidParameterException(
+			return nil, NewInvalidParameter(
 				"FIFO Topic names must end with \".fifo\"")
 		}
 	}
@@ -138,7 +137,7 @@ func (s *SNSService) createTopicCore(store snsstore.SNSStoreInterface, in Create
 // HTTP API and the admin gRPC handler.
 func (s *SNSService) deleteTopicCore(store snsstore.SNSStoreInterface, topicArn string) error {
 	if topicArn == "" {
-		return awserrors.NewInvalidParameterException("TopicArn is required")
+		return NewInvalidParameter("TopicArn is required")
 	}
 
 	if err := store.DeleteTopic(topicArn); err != nil {
@@ -191,7 +190,7 @@ type SetTopicAttributesInput struct {
 // AddPermission statement injection that shape the returned Policy attribute.
 func (s *SNSService) getTopicAttributesCore(store snsstore.SNSStoreInterface, in GetTopicAttributesInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 
 	topic, err := store.GetTopic(in.TopicArn)
@@ -246,10 +245,10 @@ func (s *SNSService) getTopicAttributesCore(store snsstore.SNSStoreInterface, in
 // SetTopicAttributes.
 func (s *SNSService) setTopicAttributesCore(store snsstore.SNSStoreInterface, in SetTopicAttributesInput) error {
 	if in.TopicArn == "" {
-		return awserrors.NewInvalidParameterException("TopicArn is required")
+		return NewInvalidParameter("TopicArn is required")
 	}
 	if in.AttributeName == "" {
-		return awserrors.NewInvalidParameterException("AttributeName is required")
+		return NewInvalidParameter("AttributeName is required")
 	}
 
 	if err := validateTopicAttribute(in.AttributeName, in.AttributeValue); err != nil {

@@ -21,15 +21,11 @@ func (r *TestRunner) runSESv2SuppressionTests(tc *sesv2TestContext) []TestResult
 		if err != nil {
 			return err
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetSuppressedDestination", func() error {
 		resp, err := tc.client.GetSuppressedDestination(tc.ctx, &sesv2.GetSuppressedDestinationInput{
 			EmailAddress: aws.String(suppressedEmail),
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("get after put: %v", err)
 		}
 		if resp.SuppressedDestination == nil {
 			return fmt.Errorf("suppressed destination is nil")

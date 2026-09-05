@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
 
@@ -24,7 +23,7 @@ func extractProtocolMessage(msg *snsstore.Message, protocol string) (string, err
 
 	var msgMap map[string]string
 	if err := json.Unmarshal([]byte(msg.Message), &msgMap); err != nil {
-		return "", awserrors.NewInvalidParameterException(fmt.Sprintf("MessageStructure is json but message body is not valid JSON: %s", err.Error()))
+		return "", NewInvalidParameter(fmt.Sprintf("MessageStructure is json but message body is not valid JSON: %s", err.Error()))
 	}
 
 	if protocolMsg, ok := msgMap[protocol]; ok {
@@ -34,7 +33,7 @@ func extractProtocolMessage(msg *snsstore.Message, protocol string) (string, err
 		return defaultMsg, nil
 	}
 
-	return "", awserrors.NewInvalidParameterException("MessageStructure is json but neither protocol-specific key nor 'default' key found in message body")
+	return "", NewInvalidParameter("MessageStructure is json but neither protocol-specific key nor 'default' key found in message body")
 }
 
 // messageAttributeValue returns the serialisable value for an SNS message

@@ -171,6 +171,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	registry.Register("logs:PutLogEvents", func() eventbus.Event { return &eventbus.CloudWatchLogsPutEvent{} })
 	registry.Register("states:startExecution", func() eventbus.Event { return &eventbus.StepFunctionsStartExecutionEvent{} })
 	registry.Register("events:putEvents", func() eventbus.Event { return &eventbus.EventBridgePutEventsEvent{} })
+	registry.Register("s3:request-metrics", func() eventbus.Event { return &eventbus.S3RequestMetricsEvent{} })
 
 	bus := eventbus.NewEventBus(
 		eventbus.WithOutbox(outbox),

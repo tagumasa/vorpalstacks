@@ -3,7 +3,6 @@ package sns
 import (
 	"fmt"
 
-	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/response"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 )
@@ -53,7 +52,7 @@ type RemovePermissionInput struct {
 // for GetDataProtectionPolicy.
 func (s *SNSService) getDataProtectionPolicyCore(store snsstore.SNSStoreInterface, in GetDataProtectionPolicyInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("ResourceArn is required")
+		return nil, NewInvalidParameter("ResourceArn is required")
 	}
 
 	policy, err := store.GetDataProtectionPolicy(in.TopicArn)
@@ -73,11 +72,11 @@ func (s *SNSService) getDataProtectionPolicyCore(store snsstore.SNSStoreInterfac
 // for PutDataProtectionPolicy.
 func (s *SNSService) putDataProtectionPolicyCore(store snsstore.SNSStoreInterface, in PutDataProtectionPolicyInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("ResourceArn is required")
+		return nil, NewInvalidParameter("ResourceArn is required")
 	}
 
 	if in.Policy == "" {
-		return nil, awserrors.NewInvalidParameterException("DataProtectionPolicy is required")
+		return nil, NewInvalidParameter("DataProtectionPolicy is required")
 	}
 
 	if err := validateDataProtectionPolicy(in.Policy); err != nil {
@@ -98,34 +97,34 @@ func (s *SNSService) putDataProtectionPolicyCore(store snsstore.SNSStoreInterfac
 // AddPermission.
 func (s *SNSService) addPermissionCore(store snsstore.SNSStoreInterface, in AddPermissionInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 
 	if in.Label == "" {
-		return nil, awserrors.NewInvalidParameterException("Label is required")
+		return nil, NewInvalidParameter("Label is required")
 	}
 
 	if len(in.AWSAccountIds) == 0 {
-		return nil, awserrors.NewInvalidParameterException("AwsAccountId is required")
+		return nil, NewInvalidParameter("AwsAccountId is required")
 	}
 	if len(in.ActionNames) == 0 {
-		return nil, awserrors.NewInvalidParameterException("ActionName is required")
+		return nil, NewInvalidParameter("ActionName is required")
 	}
 
 	for _, id := range in.AWSAccountIds {
 		if len(id) != 12 {
-			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid AWS account ID %q: must be 12 digits", id))
+			return nil, NewInvalidParameter(fmt.Sprintf("Invalid AWS account ID %q: must be 12 digits", id))
 		}
 		for _, c := range id {
 			if c < '0' || c > '9' {
-				return nil, awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid AWS account ID %q: must be numeric", id))
+				return nil, NewInvalidParameter(fmt.Sprintf("Invalid AWS account ID %q: must be numeric", id))
 			}
 		}
 	}
 
 	for _, action := range in.ActionNames {
 		if !validActionNames[action] {
-			return nil, awserrors.NewInvalidParameterException(fmt.Sprintf(
+			return nil, NewInvalidParameter(fmt.Sprintf(
 				"Invalid action name %q. Valid values: GetTopicAttributes, SetTopicAttributes, AddPermission, RemovePermission, DeleteTopic, Subscribe, ListSubscriptionsByTopic, Publish, Receive",
 				action))
 		}
@@ -151,11 +150,11 @@ func (s *SNSService) addPermissionCore(store snsstore.SNSStoreInterface, in AddP
 // RemovePermission.
 func (s *SNSService) removePermissionCore(store snsstore.SNSStoreInterface, in RemovePermissionInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 
 	if in.Label == "" {
-		return nil, awserrors.NewInvalidParameterException("Label is required")
+		return nil, NewInvalidParameter("Label is required")
 	}
 
 	if err := store.RemovePermission(in.TopicArn, in.Label); err != nil {

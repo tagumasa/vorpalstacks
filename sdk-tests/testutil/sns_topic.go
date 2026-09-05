@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,67 +29,29 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 		if !strings.Contains(topicArn, topicName) {
 			return fmt.Errorf("TopicArn should contain topic name %q, got %q", topicName, topicArn)
 		}
-		return nil
-	}))
 
-	results = append(results, r.RunTest("sns", "ListTopics", func() error {
-		resp, err := tc.client.ListTopics(tc.ctx, &sns.ListTopicsInput{})
+		getResp, err := tc.getTopicAttributes(topicArn)
 		if err != nil {
-			return err
+			return fmt.Errorf("get: %v", err)
 		}
-		if resp.Topics == nil {
-			return fmt.Errorf("Topics is nil")
-		}
-		found := false
-		for _, t := range resp.Topics {
-			if t.TopicArn != nil && *t.TopicArn == topicArn {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("created topic %q not found in ListTopics", topicArn)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "GetTopicAttributes", func() error {
-		resp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: aws.String(topicArn),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Attributes == nil {
+		if getResp.Attributes == nil {
 			return fmt.Errorf("Attributes is nil")
 		}
-		if resp.Attributes["TopicArn"] != topicArn {
-			return fmt.Errorf("TopicArn mismatch: got %q, want %q", resp.Attributes["TopicArn"], topicArn)
+		if getResp.Attributes["TopicArn"] != topicArn {
+			return fmt.Errorf("TopicArn mismatch: got %q, want %q", getResp.Attributes["TopicArn"], topicArn)
 		}
 		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "SetTopicAttributes", func() error {
-		_, err := tc.client.SetTopicAttributes(tc.ctx, &sns.SetTopicAttributesInput{
-			TopicArn:       aws.String(topicArn),
-			AttributeName:  aws.String("DisplayName"),
-			AttributeValue: aws.String("Test Topic"),
-		})
-		return err
 	}))
 
 	results = append(results, r.RunTest("sns", "SetTopicAttributes_GetVerify", func() error {
-		attrTopicName := tc.uniqueName("AttrTopic")
-		resp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(attrTopicName),
-		})
+		attrTopicArn, err := tc.createTopic(tc.uniqueName("AttrTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*resp.TopicArn)
+		defer tc.deleteTopic(attrTopicArn)
 
 		_, err = tc.client.SetTopicAttributes(tc.ctx, &sns.SetTopicAttributesInput{
-			TopicArn:       resp.TopicArn,
+			TopicArn:       aws.String(attrTopicArn),
 			AttributeName:  aws.String("DisplayName"),
 			AttributeValue: aws.String("MyDisplayName"),
 		})
@@ -96,9 +59,7 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("set: %v", err)
 		}
 
-		getResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: resp.TopicArn,
-		})
+		getResp, err := tc.getTopicAttributes(attrTopicArn)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -111,47 +72,35 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 		return nil
 	}))
 
-	var delTopicArn string
 	results = append(results, r.RunTest("sns", "DeleteTopic", func() error {
-		delTopicName := tc.uniqueName("DelTopic")
-		resp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(delTopicName),
-		})
+		delTopicArn, err := tc.createTopic(tc.uniqueName("DelTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		delTopicArn = *resp.TopicArn
 		_, err = tc.client.DeleteTopic(tc.ctx, &sns.DeleteTopicInput{
-			TopicArn: resp.TopicArn,
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("sns", "DeleteTopic_VerifyGone", func() error {
-		_, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
 			TopicArn: aws.String(delTopicArn),
 		})
-		return AssertErrorContains(err, "NotFound")
+		if err != nil {
+			return err
+		}
+		_, err = tc.getTopicAttributes(delTopicArn)
+		return tc.expectNotFound("GetTopicAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "CreateTopic_DuplicateIdempotent", func() error {
 		dupTopicName := tc.uniqueName("DupTopic")
-		resp1, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(dupTopicName),
-		})
+		arn1, err := tc.createTopic(dupTopicName)
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
-		defer tc.deleteTopic(*resp1.TopicArn)
+		defer tc.deleteTopic(arn1)
 
-		resp2, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(dupTopicName),
-		})
+		arn2, err := tc.createTopic(dupTopicName)
 		if err != nil {
 			return fmt.Errorf("duplicate create should be idempotent, got: %v", err)
 		}
-		if *resp1.TopicArn != *resp2.TopicArn {
-			return fmt.Errorf("ARN mismatch: %q vs %q", *resp1.TopicArn, *resp2.TopicArn)
+		if arn1 != arn2 {
+			return fmt.Errorf("ARN mismatch: %q vs %q", arn1, arn2)
 		}
 		return nil
 	}))
@@ -192,9 +141,7 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 		}
 		defer tc.deleteTopic(*tResp.TopicArn)
 
-		getResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: tResp.TopicArn,
-		})
+		getResp, err := tc.getTopicAttributes(*tResp.TopicArn)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -208,18 +155,13 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "GetTopicAttributes_PolicyDefault", func() error {
-		policyTopicName := tc.uniqueName("PolicyTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(policyTopicName),
-		})
+		policyTopicArn, err := tc.createTopic(tc.uniqueName("PolicyTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(policyTopicArn)
 
-		getResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: tResp.TopicArn,
-		})
+		getResp, err := tc.getTopicAttributes(policyTopicArn)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -234,27 +176,20 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListTopics_ContainsCreated", func() error {
-		ltTopicName := tc.uniqueName("LTTopic")
-		resp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(ltTopicName),
-		})
+		ltTopicArn, err := tc.createTopic(tc.uniqueName("LTTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*resp.TopicArn)
+		defer tc.deleteTopic(ltTopicArn)
 
-		listResp, err := tc.client.ListTopics(tc.ctx, &sns.ListTopicsInput{})
+		arns, err := tc.listAllTopics()
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, t := range listResp.Topics {
-			if t.TopicArn != nil && *t.TopicArn == *resp.TopicArn {
-				found = true
-				break
-			}
+		if len(arns) == 0 {
+			return fmt.Errorf("ListTopics returned no topics")
 		}
-		if !found {
+		if !slices.Contains(arns, ltTopicArn) {
 			return fmt.Errorf("created topic not found in ListTopics")
 		}
 		return nil
@@ -265,40 +200,32 @@ func (r *TestRunner) runSNSTopicTests(tc *snsTestContext) []TestResult {
 		var pgTopicARNs []string
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagTopic-%s-%d", pgTs, i)
-			resp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{Name: aws.String(name)})
+			arn, err := tc.createTopic(name)
 			if err != nil {
-				for _, arn := range pgTopicARNs {
-					tc.deleteTopic(arn)
+				for _, created := range pgTopicARNs {
+					tc.deleteTopic(created)
 				}
 				return fmt.Errorf("create topic %s: %v", name, err)
 			}
-			pgTopicARNs = append(pgTopicARNs, *resp.TopicArn)
+			pgTopicARNs = append(pgTopicARNs, arn)
 		}
 
+		allARNs, err := tc.listAllTopics()
+		if err != nil {
+			for _, created := range pgTopicARNs {
+				tc.deleteTopic(created)
+			}
+			return fmt.Errorf("list topics: %v", err)
+		}
 		var allTopics []string
-		var nextToken *string
-		for {
-			resp, err := tc.client.ListTopics(tc.ctx, &sns.ListTopicsInput{NextToken: nextToken})
-			if err != nil {
-				for _, arn := range pgTopicARNs {
-					tc.deleteTopic(arn)
-				}
-				return fmt.Errorf("list topics page: %v", err)
-			}
-			for _, t := range resp.Topics {
-				if strings.Contains(aws.ToString(t.TopicArn), "PagTopic-"+pgTs) {
-					allTopics = append(allTopics, aws.ToString(t.TopicArn))
-				}
-			}
-			if resp.NextToken != nil && *resp.NextToken != "" {
-				nextToken = resp.NextToken
-			} else {
-				break
+		for _, arn := range allARNs {
+			if strings.Contains(arn, "PagTopic-"+pgTs) {
+				allTopics = append(allTopics, arn)
 			}
 		}
 
-		for _, arn := range pgTopicARNs {
-			tc.deleteTopic(arn)
+		for _, created := range pgTopicARNs {
+			tc.deleteTopic(created)
 		}
 		if len(allTopics) != 5 {
 			return fmt.Errorf("expected 5 paginated topics, got %d", len(allTopics))

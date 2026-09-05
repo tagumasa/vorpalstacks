@@ -1,6 +1,8 @@
 package s3
 
 import (
+	"time"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
 )
@@ -33,6 +35,8 @@ func BucketToProto(b *Bucket) *pb.Bucket {
 		RequestPayment:            requestPaymentConfigurationToProto(b.RequestPayment),
 		AccelerateConfiguration:   accelerateConfigurationToProto(b.AccelerateConfiguration),
 		ReplicationConfiguration:  replicationConfigurationToProto(b.ReplicationConfiguration),
+		InventoryConfigurations:   inventoryConfigurationsToProto(b.InventoryConfigurations),
+		MetricsConfigurations:     metricsConfigurationsToProto(b.MetricsConfigurations),
 	}
 }
 
@@ -64,6 +68,278 @@ func ProtoToBucket(p *pb.Bucket) *Bucket {
 		RequestPayment:            protoToRequestPaymentConfiguration(p.RequestPayment),
 		AccelerateConfiguration:   protoToAccelerateConfiguration(p.AccelerateConfiguration),
 		ReplicationConfiguration:  protoToReplicationConfiguration(p.ReplicationConfiguration),
+		InventoryConfigurations:   protoToInventoryConfigurations(p.InventoryConfigurations),
+		MetricsConfigurations:     protoToMetricsConfigurations(p.MetricsConfigurations),
+	}
+}
+
+func inventoryConfigurationsToProto(configs map[string]*InventoryConfiguration) []*pb.InventoryConfiguration {
+	if len(configs) == 0 {
+		return nil
+	}
+	result := make([]*pb.InventoryConfiguration, 0, len(configs))
+	for _, c := range configs {
+		if c == nil {
+			continue
+		}
+		result = append(result, inventoryConfigurationToProto(c))
+	}
+	return result
+}
+
+func protoToInventoryConfigurations(configs []*pb.InventoryConfiguration) map[string]*InventoryConfiguration {
+	if len(configs) == 0 {
+		return nil
+	}
+	result := make(map[string]*InventoryConfiguration, len(configs))
+	for _, c := range configs {
+		if c == nil {
+			continue
+		}
+		stored := protoToInventoryConfiguration(c)
+		result[stored.ID] = stored
+	}
+	return result
+}
+
+func inventoryConfigurationToProto(c *InventoryConfiguration) *pb.InventoryConfiguration {
+	if c == nil {
+		return nil
+	}
+	var lastDelivery *timestamppb.Timestamp
+	if !c.LastDelivery.IsZero() {
+		lastDelivery = timestamppb.New(c.LastDelivery)
+	}
+	return &pb.InventoryConfiguration{
+		Id:                     c.ID,
+		IsEnabled:              c.IsEnabled,
+		Filter:                 inventoryFilterToProto(c.Filter),
+		IncludedObjectVersions: c.IncludedObjectVersions,
+		OptionalFields:         c.OptionalFields,
+		Schedule:               inventoryScheduleToProto(c.Schedule),
+		Destination:            inventoryDestinationToProto(c.Destination),
+		LastDelivery:           lastDelivery,
+	}
+}
+
+func protoToInventoryConfiguration(p *pb.InventoryConfiguration) *InventoryConfiguration {
+	if p == nil {
+		return nil
+	}
+	var lastDelivery time.Time
+	if p.LastDelivery != nil {
+		lastDelivery = p.LastDelivery.AsTime()
+	}
+	return &InventoryConfiguration{
+		ID:                     p.Id,
+		IsEnabled:              p.IsEnabled,
+		Filter:                 protoToInventoryFilter(p.Filter),
+		IncludedObjectVersions: p.IncludedObjectVersions,
+		OptionalFields:         p.OptionalFields,
+		Schedule:               protoToInventorySchedule(p.Schedule),
+		Destination:            protoToInventoryDestination(p.Destination),
+		LastDelivery:           lastDelivery,
+	}
+}
+
+func inventoryFilterToProto(f *InventoryFilter) *pb.InventoryFilter {
+	if f == nil {
+		return nil
+	}
+	return &pb.InventoryFilter{Prefix: f.Prefix}
+}
+
+func protoToInventoryFilter(p *pb.InventoryFilter) *InventoryFilter {
+	if p == nil {
+		return nil
+	}
+	return &InventoryFilter{Prefix: p.Prefix}
+}
+
+func inventoryScheduleToProto(s *InventorySchedule) *pb.InventorySchedule {
+	if s == nil {
+		return nil
+	}
+	return &pb.InventorySchedule{Frequency: s.Frequency}
+}
+
+func protoToInventorySchedule(p *pb.InventorySchedule) *InventorySchedule {
+	if p == nil {
+		return nil
+	}
+	return &InventorySchedule{Frequency: p.Frequency}
+}
+
+func inventoryDestinationToProto(d *InventoryDestination) *pb.InventoryDestination {
+	if d == nil {
+		return nil
+	}
+	return &pb.InventoryDestination{
+		S3BucketDestination: inventoryS3BucketDestinationToProto(d.S3BucketDestination),
+	}
+}
+
+func protoToInventoryDestination(p *pb.InventoryDestination) *InventoryDestination {
+	if p == nil {
+		return nil
+	}
+	return &InventoryDestination{
+		S3BucketDestination: protoToInventoryS3BucketDestination(p.S3BucketDestination),
+	}
+}
+
+func inventoryS3BucketDestinationToProto(d *InventoryS3BucketDestination) *pb.InventoryS3BucketDestination {
+	if d == nil {
+		return nil
+	}
+	return &pb.InventoryS3BucketDestination{
+		AccountId:  d.AccountID,
+		Bucket:     d.Bucket,
+		Format:     d.Format,
+		Prefix:     d.Prefix,
+		Encryption: inventoryEncryptionToProto(d.Encryption),
+	}
+}
+
+func protoToInventoryS3BucketDestination(p *pb.InventoryS3BucketDestination) *InventoryS3BucketDestination {
+	if p == nil {
+		return nil
+	}
+	return &InventoryS3BucketDestination{
+		AccountID:  p.AccountId,
+		Bucket:     p.Bucket,
+		Format:     p.Format,
+		Prefix:     p.Prefix,
+		Encryption: protoToInventoryEncryption(p.Encryption),
+	}
+}
+
+func inventoryEncryptionToProto(e *InventoryEncryption) *pb.InventoryEncryption {
+	if e == nil {
+		return nil
+	}
+	return &pb.InventoryEncryption{
+		SseS3:  e.SSES3,
+		SseKms: inventorySSEKMSToProto(e.SSEKMS),
+	}
+}
+
+func protoToInventoryEncryption(p *pb.InventoryEncryption) *InventoryEncryption {
+	if p == nil {
+		return nil
+	}
+	return &InventoryEncryption{
+		SSES3:  p.SseS3,
+		SSEKMS: protoToInventorySSEKMS(p.SseKms),
+	}
+}
+
+func inventorySSEKMSToProto(k *InventorySSEKMS) *pb.InventorySSEKMS {
+	if k == nil {
+		return nil
+	}
+	return &pb.InventorySSEKMS{KeyId: k.KeyID}
+}
+
+func protoToInventorySSEKMS(p *pb.InventorySSEKMS) *InventorySSEKMS {
+	if p == nil {
+		return nil
+	}
+	return &InventorySSEKMS{KeyID: p.KeyId}
+}
+
+func metricsConfigurationsToProto(configs map[string]*MetricsConfiguration) []*pb.MetricsConfiguration {
+	if len(configs) == 0 {
+		return nil
+	}
+	result := make([]*pb.MetricsConfiguration, 0, len(configs))
+	for _, c := range configs {
+		if c == nil {
+			continue
+		}
+		result = append(result, metricsConfigurationToProto(c))
+	}
+	return result
+}
+
+func protoToMetricsConfigurations(configs []*pb.MetricsConfiguration) map[string]*MetricsConfiguration {
+	if len(configs) == 0 {
+		return nil
+	}
+	result := make(map[string]*MetricsConfiguration, len(configs))
+	for _, c := range configs {
+		if c == nil {
+			continue
+		}
+		stored := protoToMetricsConfiguration(c)
+		result[stored.ID] = stored
+	}
+	return result
+}
+
+func metricsConfigurationToProto(c *MetricsConfiguration) *pb.MetricsConfiguration {
+	if c == nil {
+		return nil
+	}
+	return &pb.MetricsConfiguration{
+		Id:     c.ID,
+		Filter: metricsFilterToProto(c.Filter),
+	}
+}
+
+func protoToMetricsConfiguration(p *pb.MetricsConfiguration) *MetricsConfiguration {
+	if p == nil {
+		return nil
+	}
+	return &MetricsConfiguration{
+		ID:     p.Id,
+		Filter: protoToMetricsFilter(p.Filter),
+	}
+}
+
+func metricsFilterToProto(f *MetricsFilter) *pb.MetricsFilter {
+	if f == nil {
+		return nil
+	}
+	return &pb.MetricsFilter{
+		Prefix:         f.Prefix,
+		Tag:            tagToProtoPtr(f.Tag),
+		AccessPointArn: f.AccessPointArn,
+		And:            metricsAndOperatorToProto(f.And),
+	}
+}
+
+func protoToMetricsFilter(p *pb.MetricsFilter) *MetricsFilter {
+	if p == nil {
+		return nil
+	}
+	return &MetricsFilter{
+		Prefix:         p.Prefix,
+		Tag:            protoToTagPtr(p.Tag),
+		AccessPointArn: p.AccessPointArn,
+		And:            protoToMetricsAndOperator(p.And),
+	}
+}
+
+func metricsAndOperatorToProto(a *MetricsAndOperator) *pb.MetricsAndOperator {
+	if a == nil {
+		return nil
+	}
+	return &pb.MetricsAndOperator{
+		Prefix:         a.Prefix,
+		Tags:           tagsToProto(a.Tags),
+		AccessPointArn: a.AccessPointArn,
+	}
+}
+
+func protoToMetricsAndOperator(p *pb.MetricsAndOperator) *MetricsAndOperator {
+	if p == nil {
+		return nil
+	}
+	return &MetricsAndOperator{
+		Prefix:         p.Prefix,
+		Tags:           protoToTags(p.Tags),
+		AccessPointArn: p.AccessPointArn,
 	}
 }
 

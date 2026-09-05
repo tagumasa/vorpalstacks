@@ -21,15 +21,11 @@ func (r *TestRunner) runSESv2PoolTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetDedicatedIpPool", func() error {
 		resp, err := tc.client.GetDedicatedIpPool(tc.ctx, &sesv2.GetDedicatedIpPoolInput{
 			PoolName: aws.String(poolName),
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("get after create: %v", err)
 		}
 		if resp.DedicatedIpPool == nil {
 			return fmt.Errorf("DedicatedIpPool is nil")
@@ -48,7 +44,7 @@ func (r *TestRunner) runSESv2PoolTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if !containsPoolName(all, poolName) {
+		if !containsString(all, poolName) {
 			return fmt.Errorf("pool %s not found in list", poolName)
 		}
 		return nil

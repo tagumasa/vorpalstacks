@@ -3909,6 +3909,600 @@ func (x *ReplicationDestination) GetAccessControlTranslation() string {
 	return ""
 }
 
+// InventoryConfiguration is one S3 Inventory configuration on a bucket.
+type InventoryConfiguration struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	Id                     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	IsEnabled              bool                   `protobuf:"varint,2,opt,name=is_enabled,json=isEnabled,proto3" json:"is_enabled,omitempty"`
+	Filter                 *InventoryFilter       `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	IncludedObjectVersions string                 `protobuf:"bytes,4,opt,name=included_object_versions,json=includedObjectVersions,proto3" json:"included_object_versions,omitempty"`
+	OptionalFields         []string               `protobuf:"bytes,5,rep,name=optional_fields,json=optionalFields,proto3" json:"optional_fields,omitempty"`
+	Schedule               *InventorySchedule     `protobuf:"bytes,6,opt,name=schedule,proto3" json:"schedule,omitempty"`
+	Destination            *InventoryDestination  `protobuf:"bytes,7,opt,name=destination,proto3" json:"destination,omitempty"`
+	LastDelivery           *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_delivery,json=lastDelivery,proto3" json:"last_delivery,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *InventoryConfiguration) Reset() {
+	*x = InventoryConfiguration{}
+	mi := &file_storage_s3_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryConfiguration) ProtoMessage() {}
+
+func (x *InventoryConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryConfiguration.ProtoReflect.Descriptor instead.
+func (*InventoryConfiguration) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *InventoryConfiguration) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *InventoryConfiguration) GetIsEnabled() bool {
+	if x != nil {
+		return x.IsEnabled
+	}
+	return false
+}
+
+func (x *InventoryConfiguration) GetFilter() *InventoryFilter {
+	if x != nil {
+		return x.Filter
+	}
+	return nil
+}
+
+func (x *InventoryConfiguration) GetIncludedObjectVersions() string {
+	if x != nil {
+		return x.IncludedObjectVersions
+	}
+	return ""
+}
+
+func (x *InventoryConfiguration) GetOptionalFields() []string {
+	if x != nil {
+		return x.OptionalFields
+	}
+	return nil
+}
+
+func (x *InventoryConfiguration) GetSchedule() *InventorySchedule {
+	if x != nil {
+		return x.Schedule
+	}
+	return nil
+}
+
+func (x *InventoryConfiguration) GetDestination() *InventoryDestination {
+	if x != nil {
+		return x.Destination
+	}
+	return nil
+}
+
+func (x *InventoryConfiguration) GetLastDelivery() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastDelivery
+	}
+	return nil
+}
+
+// InventoryFilter restricts an inventory report to one key prefix.
+type InventoryFilter struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Prefix        string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventoryFilter) Reset() {
+	*x = InventoryFilter{}
+	mi := &file_storage_s3_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryFilter) ProtoMessage() {}
+
+func (x *InventoryFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryFilter.ProtoReflect.Descriptor instead.
+func (*InventoryFilter) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *InventoryFilter) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+// InventorySchedule is how often an inventory report is produced.
+type InventorySchedule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Frequency     string                 `protobuf:"bytes,1,opt,name=frequency,proto3" json:"frequency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventorySchedule) Reset() {
+	*x = InventorySchedule{}
+	mi := &file_storage_s3_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventorySchedule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventorySchedule) ProtoMessage() {}
+
+func (x *InventorySchedule) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventorySchedule.ProtoReflect.Descriptor instead.
+func (*InventorySchedule) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *InventorySchedule) GetFrequency() string {
+	if x != nil {
+		return x.Frequency
+	}
+	return ""
+}
+
+// InventoryDestination carries where the inventory report is published.
+type InventoryDestination struct {
+	state               protoimpl.MessageState        `protogen:"open.v1"`
+	S3BucketDestination *InventoryS3BucketDestination `protobuf:"bytes,1,opt,name=s3_bucket_destination,json=s3BucketDestination,proto3" json:"s3_bucket_destination,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *InventoryDestination) Reset() {
+	*x = InventoryDestination{}
+	mi := &file_storage_s3_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryDestination) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryDestination) ProtoMessage() {}
+
+func (x *InventoryDestination) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryDestination.ProtoReflect.Descriptor instead.
+func (*InventoryDestination) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *InventoryDestination) GetS3BucketDestination() *InventoryS3BucketDestination {
+	if x != nil {
+		return x.S3BucketDestination
+	}
+	return nil
+}
+
+// InventoryS3BucketDestination is the S3 destination of an inventory report.
+type InventoryS3BucketDestination struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountId     string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Bucket        string                 `protobuf:"bytes,2,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Format        string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
+	Prefix        string                 `protobuf:"bytes,4,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Encryption    *InventoryEncryption   `protobuf:"bytes,5,opt,name=encryption,proto3" json:"encryption,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventoryS3BucketDestination) Reset() {
+	*x = InventoryS3BucketDestination{}
+	mi := &file_storage_s3_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryS3BucketDestination) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryS3BucketDestination) ProtoMessage() {}
+
+func (x *InventoryS3BucketDestination) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryS3BucketDestination.ProtoReflect.Descriptor instead.
+func (*InventoryS3BucketDestination) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *InventoryS3BucketDestination) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *InventoryS3BucketDestination) GetBucket() string {
+	if x != nil {
+		return x.Bucket
+	}
+	return ""
+}
+
+func (x *InventoryS3BucketDestination) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
+func (x *InventoryS3BucketDestination) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+func (x *InventoryS3BucketDestination) GetEncryption() *InventoryEncryption {
+	if x != nil {
+		return x.Encryption
+	}
+	return nil
+}
+
+// InventoryEncryption selects the encryption applied to report files.
+type InventoryEncryption struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SseS3         bool                   `protobuf:"varint,1,opt,name=sse_s3,json=sseS3,proto3" json:"sse_s3,omitempty"`
+	SseKms        *InventorySSEKMS       `protobuf:"bytes,2,opt,name=sse_kms,json=sseKms,proto3" json:"sse_kms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventoryEncryption) Reset() {
+	*x = InventoryEncryption{}
+	mi := &file_storage_s3_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryEncryption) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryEncryption) ProtoMessage() {}
+
+func (x *InventoryEncryption) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryEncryption.ProtoReflect.Descriptor instead.
+func (*InventoryEncryption) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *InventoryEncryption) GetSseS3() bool {
+	if x != nil {
+		return x.SseS3
+	}
+	return false
+}
+
+func (x *InventoryEncryption) GetSseKms() *InventorySSEKMS {
+	if x != nil {
+		return x.SseKms
+	}
+	return nil
+}
+
+// InventorySSEKMS carries the KMS key protecting report files.
+type InventorySSEKMS struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	KeyId         string                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InventorySSEKMS) Reset() {
+	*x = InventorySSEKMS{}
+	mi := &file_storage_s3_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventorySSEKMS) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventorySSEKMS) ProtoMessage() {}
+
+func (x *InventorySSEKMS) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventorySSEKMS.ProtoReflect.Descriptor instead.
+func (*InventorySSEKMS) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *InventorySSEKMS) GetKeyId() string {
+	if x != nil {
+		return x.KeyId
+	}
+	return ""
+}
+
+// MetricsConfiguration is one CloudWatch request-metrics configuration.
+type MetricsConfiguration struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Filter        *MetricsFilter         `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MetricsConfiguration) Reset() {
+	*x = MetricsConfiguration{}
+	mi := &file_storage_s3_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MetricsConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MetricsConfiguration) ProtoMessage() {}
+
+func (x *MetricsConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MetricsConfiguration.ProtoReflect.Descriptor instead.
+func (*MetricsConfiguration) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *MetricsConfiguration) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MetricsConfiguration) GetFilter() *MetricsFilter {
+	if x != nil {
+		return x.Filter
+	}
+	return nil
+}
+
+// MetricsFilter selects the objects a metrics configuration applies to.
+type MetricsFilter struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Prefix         string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Tag            *Tag                   `protobuf:"bytes,2,opt,name=tag,proto3" json:"tag,omitempty"`
+	AccessPointArn string                 `protobuf:"bytes,3,opt,name=access_point_arn,json=accessPointArn,proto3" json:"access_point_arn,omitempty"`
+	And            *MetricsAndOperator    `protobuf:"bytes,4,opt,name=and,proto3" json:"and,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *MetricsFilter) Reset() {
+	*x = MetricsFilter{}
+	mi := &file_storage_s3_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MetricsFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MetricsFilter) ProtoMessage() {}
+
+func (x *MetricsFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MetricsFilter.ProtoReflect.Descriptor instead.
+func (*MetricsFilter) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *MetricsFilter) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+func (x *MetricsFilter) GetTag() *Tag {
+	if x != nil {
+		return x.Tag
+	}
+	return nil
+}
+
+func (x *MetricsFilter) GetAccessPointArn() string {
+	if x != nil {
+		return x.AccessPointArn
+	}
+	return ""
+}
+
+func (x *MetricsFilter) GetAnd() *MetricsAndOperator {
+	if x != nil {
+		return x.And
+	}
+	return nil
+}
+
+// MetricsAndOperator is the conjunction form of a metrics filter.
+type MetricsAndOperator struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Prefix         string                 `protobuf:"bytes,1,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Tags           []*Tag                 `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty"`
+	AccessPointArn string                 `protobuf:"bytes,3,opt,name=access_point_arn,json=accessPointArn,proto3" json:"access_point_arn,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *MetricsAndOperator) Reset() {
+	*x = MetricsAndOperator{}
+	mi := &file_storage_s3_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MetricsAndOperator) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MetricsAndOperator) ProtoMessage() {}
+
+func (x *MetricsAndOperator) ProtoReflect() protoreflect.Message {
+	mi := &file_storage_s3_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MetricsAndOperator.ProtoReflect.Descriptor instead.
+func (*MetricsAndOperator) Descriptor() ([]byte, []int) {
+	return file_storage_s3_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *MetricsAndOperator) GetPrefix() string {
+	if x != nil {
+		return x.Prefix
+	}
+	return ""
+}
+
+func (x *MetricsAndOperator) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *MetricsAndOperator) GetAccessPointArn() string {
+	if x != nil {
+		return x.AccessPointArn
+	}
+	return ""
+}
+
 // Bucket represents an S3 bucket.
 type Bucket struct {
 	state                     protoimpl.MessageState       `protogen:"open.v1"`
@@ -3933,13 +4527,15 @@ type Bucket struct {
 	AccelerateConfiguration   *AccelerateConfiguration     `protobuf:"bytes,19,opt,name=accelerate_configuration,json=accelerateConfiguration,proto3" json:"accelerate_configuration,omitempty"`
 	ReplicationConfiguration  *ReplicationConfiguration    `protobuf:"bytes,20,opt,name=replication_configuration,json=replicationConfiguration,proto3" json:"replication_configuration,omitempty"`
 	MfaDelete                 string                       `protobuf:"bytes,21,opt,name=mfa_delete,json=mfaDelete,proto3" json:"mfa_delete,omitempty"`
+	InventoryConfigurations   []*InventoryConfiguration    `protobuf:"bytes,22,rep,name=inventory_configurations,json=inventoryConfigurations,proto3" json:"inventory_configurations,omitempty"`
+	MetricsConfigurations     []*MetricsConfiguration      `protobuf:"bytes,23,rep,name=metrics_configurations,json=metricsConfigurations,proto3" json:"metrics_configurations,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *Bucket) Reset() {
 	*x = Bucket{}
-	mi := &file_storage_s3_proto_msgTypes[53]
+	mi := &file_storage_s3_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3951,7 +4547,7 @@ func (x *Bucket) String() string {
 func (*Bucket) ProtoMessage() {}
 
 func (x *Bucket) ProtoReflect() protoreflect.Message {
-	mi := &file_storage_s3_proto_msgTypes[53]
+	mi := &file_storage_s3_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3964,7 +4560,7 @@ func (x *Bucket) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bucket.ProtoReflect.Descriptor instead.
 func (*Bucket) Descriptor() ([]byte, []int) {
-	return file_storage_s3_proto_rawDescGZIP(), []int{53}
+	return file_storage_s3_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *Bucket) GetName() string {
@@ -4112,6 +4708,20 @@ func (x *Bucket) GetMfaDelete() string {
 		return x.MfaDelete
 	}
 	return ""
+}
+
+func (x *Bucket) GetInventoryConfigurations() []*InventoryConfiguration {
+	if x != nil {
+		return x.InventoryConfigurations
+	}
+	return nil
+}
+
+func (x *Bucket) GetMetricsConfigurations() []*MetricsConfiguration {
+	if x != nil {
+		return x.MetricsConfigurations
+	}
+	return nil
 }
 
 var File_storage_s3_proto protoreflect.FileDescriptor
@@ -4390,7 +5000,49 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x06bucket\x18\x01 \x01(\tR\x06bucket\x12#\n" +
 	"\rstorage_class\x18\x02 \x01(\tR\fstorageClass\x12\x18\n" +
 	"\aaccount\x18\x03 \x01(\tR\aaccount\x12<\n" +
-	"\x1aaccess_control_translation\x18\x04 \x01(\tR\x18accessControlTranslation\"\x9a\v\n" +
+	"\x1aaccess_control_translation\x18\x04 \x01(\tR\x18accessControlTranslation\"\x9f\x03\n" +
+	"\x16InventoryConfiguration\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"is_enabled\x18\x02 \x01(\bR\tisEnabled\x123\n" +
+	"\x06filter\x18\x03 \x01(\v2\x1b.storage.s3.InventoryFilterR\x06filter\x128\n" +
+	"\x18included_object_versions\x18\x04 \x01(\tR\x16includedObjectVersions\x12'\n" +
+	"\x0foptional_fields\x18\x05 \x03(\tR\x0eoptionalFields\x129\n" +
+	"\bschedule\x18\x06 \x01(\v2\x1d.storage.s3.InventoryScheduleR\bschedule\x12B\n" +
+	"\vdestination\x18\a \x01(\v2 .storage.s3.InventoryDestinationR\vdestination\x12?\n" +
+	"\rlast_delivery\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\flastDelivery\")\n" +
+	"\x0fInventoryFilter\x12\x16\n" +
+	"\x06prefix\x18\x01 \x01(\tR\x06prefix\"1\n" +
+	"\x11InventorySchedule\x12\x1c\n" +
+	"\tfrequency\x18\x01 \x01(\tR\tfrequency\"t\n" +
+	"\x14InventoryDestination\x12\\\n" +
+	"\x15s3_bucket_destination\x18\x01 \x01(\v2(.storage.s3.InventoryS3BucketDestinationR\x13s3BucketDestination\"\xc6\x01\n" +
+	"\x1cInventoryS3BucketDestination\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\x12\x16\n" +
+	"\x06bucket\x18\x02 \x01(\tR\x06bucket\x12\x16\n" +
+	"\x06format\x18\x03 \x01(\tR\x06format\x12\x16\n" +
+	"\x06prefix\x18\x04 \x01(\tR\x06prefix\x12?\n" +
+	"\n" +
+	"encryption\x18\x05 \x01(\v2\x1f.storage.s3.InventoryEncryptionR\n" +
+	"encryption\"b\n" +
+	"\x13InventoryEncryption\x12\x15\n" +
+	"\x06sse_s3\x18\x01 \x01(\bR\x05sseS3\x124\n" +
+	"\asse_kms\x18\x02 \x01(\v2\x1b.storage.s3.InventorySSEKMSR\x06sseKms\"(\n" +
+	"\x0fInventorySSEKMS\x12\x15\n" +
+	"\x06key_id\x18\x01 \x01(\tR\x05keyId\"Y\n" +
+	"\x14MetricsConfiguration\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
+	"\x06filter\x18\x02 \x01(\v2\x19.storage.s3.MetricsFilterR\x06filter\"\xa6\x01\n" +
+	"\rMetricsFilter\x12\x16\n" +
+	"\x06prefix\x18\x01 \x01(\tR\x06prefix\x12!\n" +
+	"\x03tag\x18\x02 \x01(\v2\x0f.storage.s3.TagR\x03tag\x12(\n" +
+	"\x10access_point_arn\x18\x03 \x01(\tR\x0eaccessPointArn\x120\n" +
+	"\x03and\x18\x04 \x01(\v2\x1e.storage.s3.MetricsAndOperatorR\x03and\"{\n" +
+	"\x12MetricsAndOperator\x12\x16\n" +
+	"\x06prefix\x18\x01 \x01(\tR\x06prefix\x12#\n" +
+	"\x04tags\x18\x02 \x03(\v2\x0f.storage.s3.TagR\x04tags\x12(\n" +
+	"\x10access_point_arn\x18\x03 \x01(\tR\x0eaccessPointArn\"\xd2\f\n" +
 	"\x06Bucket\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06region\x18\x02 \x01(\tR\x06region\x12?\n" +
@@ -4414,7 +5066,9 @@ const file_storage_s3_proto_rawDesc = "" +
 	"\x18accelerate_configuration\x18\x13 \x01(\v2#.storage.s3.AccelerateConfigurationR\x17accelerateConfiguration\x12a\n" +
 	"\x19replication_configuration\x18\x14 \x01(\v2$.storage.s3.ReplicationConfigurationR\x18replicationConfiguration\x12\x1d\n" +
 	"\n" +
-	"mfa_delete\x18\x15 \x01(\tR\tmfaDelete*\xa5\x02\n" +
+	"mfa_delete\x18\x15 \x01(\tR\tmfaDelete\x12]\n" +
+	"\x18inventory_configurations\x18\x16 \x03(\v2\".storage.s3.InventoryConfigurationR\x17inventoryConfigurations\x12W\n" +
+	"\x16metrics_configurations\x18\x17 \x03(\v2 .storage.s3.MetricsConfigurationR\x15metricsConfigurations*\xa5\x02\n" +
 	"\x12ObjectStorageClass\x12$\n" +
 	" OBJECT_STORAGE_CLASS_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dOBJECT_STORAGE_CLASS_STANDARD\x10\x01\x12+\n" +
@@ -4468,7 +5122,7 @@ func file_storage_s3_proto_rawDescGZIP() []byte {
 }
 
 var file_storage_s3_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_storage_s3_proto_msgTypes = make([]protoimpl.MessageInfo, 56)
+var file_storage_s3_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_storage_s3_proto_goTypes = []any{
 	(ObjectStorageClass)(0),                 // 0: storage.s3.ObjectStorageClass
 	(BucketVersioningStatus)(0),             // 1: storage.s3.BucketVersioningStatus
@@ -4530,105 +5184,128 @@ var file_storage_s3_proto_goTypes = []any{
 	(*ReplicationTagFilter)(nil),            // 57: storage.s3.ReplicationTagFilter
 	(*ReplicationAndOperator)(nil),          // 58: storage.s3.ReplicationAndOperator
 	(*ReplicationDestination)(nil),          // 59: storage.s3.ReplicationDestination
-	(*Bucket)(nil),                          // 60: storage.s3.Bucket
-	nil,                                     // 61: storage.s3.Object.MetadataEntry
-	nil,                                     // 62: storage.s3.MultipartUpload.MetadataEntry
-	(*wrapperspb.BoolValue)(nil),            // 63: google.protobuf.BoolValue
-	(*timestamppb.Timestamp)(nil),           // 64: google.protobuf.Timestamp
+	(*InventoryConfiguration)(nil),          // 60: storage.s3.InventoryConfiguration
+	(*InventoryFilter)(nil),                 // 61: storage.s3.InventoryFilter
+	(*InventorySchedule)(nil),               // 62: storage.s3.InventorySchedule
+	(*InventoryDestination)(nil),            // 63: storage.s3.InventoryDestination
+	(*InventoryS3BucketDestination)(nil),    // 64: storage.s3.InventoryS3BucketDestination
+	(*InventoryEncryption)(nil),             // 65: storage.s3.InventoryEncryption
+	(*InventorySSEKMS)(nil),                 // 66: storage.s3.InventorySSEKMS
+	(*MetricsConfiguration)(nil),            // 67: storage.s3.MetricsConfiguration
+	(*MetricsFilter)(nil),                   // 68: storage.s3.MetricsFilter
+	(*MetricsAndOperator)(nil),              // 69: storage.s3.MetricsAndOperator
+	(*Bucket)(nil),                          // 70: storage.s3.Bucket
+	nil,                                     // 71: storage.s3.Object.MetadataEntry
+	nil,                                     // 72: storage.s3.MultipartUpload.MetadataEntry
+	(*wrapperspb.BoolValue)(nil),            // 73: google.protobuf.BoolValue
+	(*timestamppb.Timestamp)(nil),           // 74: google.protobuf.Timestamp
 }
 var file_storage_s3_proto_depIdxs = []int32{
-	5,  // 0: storage.s3.Grantee.type:type_name -> storage.s3.GranteeType
-	9,  // 1: storage.s3.Grant.grantee:type_name -> storage.s3.Grantee
-	6,  // 2: storage.s3.Grant.permission:type_name -> storage.s3.Permission
-	8,  // 3: storage.s3.AccessControlPolicy.owner:type_name -> storage.s3.ACLOwner
-	10, // 4: storage.s3.AccessControlPolicy.grants:type_name -> storage.s3.Grant
-	63, // 5: storage.s3.EncryptionConfig.bucket_key_enabled:type_name -> google.protobuf.BoolValue
-	2,  // 6: storage.s3.SSEObjectMetadata.encryption_type:type_name -> storage.s3.SSEType
-	14, // 7: storage.s3.SSEObjectMetadata.part_encryption_infos:type_name -> storage.s3.PartEncryptionInfo
-	4,  // 8: storage.s3.ObjectLockLegalHold.status:type_name -> storage.s3.ObjectLockLegalHoldStatus
-	3,  // 9: storage.s3.ObjectLockRetention.mode:type_name -> storage.s3.ObjectLockRetentionMode
-	64, // 10: storage.s3.ObjectLockRetention.retain_until_date:type_name -> google.protobuf.Timestamp
-	64, // 11: storage.s3.Object.last_modified:type_name -> google.protobuf.Timestamp
-	64, // 12: storage.s3.Object.expires:type_name -> google.protobuf.Timestamp
-	61, // 13: storage.s3.Object.metadata:type_name -> storage.s3.Object.MetadataEntry
-	0,  // 14: storage.s3.Object.storage_class:type_name -> storage.s3.ObjectStorageClass
-	7,  // 15: storage.s3.Object.tags:type_name -> storage.s3.Tag
-	11, // 16: storage.s3.Object.acl:type_name -> storage.s3.AccessControlPolicy
-	8,  // 17: storage.s3.Object.owner:type_name -> storage.s3.ACLOwner
-	15, // 18: storage.s3.Object.object_lock_legal_hold:type_name -> storage.s3.ObjectLockLegalHold
-	16, // 19: storage.s3.Object.object_lock_retention:type_name -> storage.s3.ObjectLockRetention
-	13, // 20: storage.s3.Object.sse_metadata:type_name -> storage.s3.SSEObjectMetadata
-	18, // 21: storage.s3.Object.parts:type_name -> storage.s3.ObjectPartEntry
-	64, // 22: storage.s3.Object.restore_expiry:type_name -> google.protobuf.Timestamp
-	64, // 23: storage.s3.ObjectPart.last_modified:type_name -> google.protobuf.Timestamp
-	64, // 24: storage.s3.MultipartUpload.initiated:type_name -> google.protobuf.Timestamp
-	0,  // 25: storage.s3.MultipartUpload.storage_class:type_name -> storage.s3.ObjectStorageClass
-	19, // 26: storage.s3.MultipartUpload.parts:type_name -> storage.s3.ObjectPart
-	62, // 27: storage.s3.MultipartUpload.metadata:type_name -> storage.s3.MultipartUpload.MetadataEntry
-	13, // 28: storage.s3.MultipartUpload.sse_metadata:type_name -> storage.s3.SSEObjectMetadata
-	2,  // 29: storage.s3.MultipartUpload.sse_type:type_name -> storage.s3.SSEType
-	11, // 30: storage.s3.MultipartUpload.acl:type_name -> storage.s3.AccessControlPolicy
-	3,  // 31: storage.s3.DefaultRetention.mode:type_name -> storage.s3.ObjectLockRetentionMode
-	21, // 32: storage.s3.ObjectLockRule.default_retention:type_name -> storage.s3.DefaultRetention
-	22, // 33: storage.s3.ObjectLockConfiguration.rule:type_name -> storage.s3.ObjectLockRule
-	64, // 34: storage.s3.LifecycleExpiration.date:type_name -> google.protobuf.Timestamp
-	64, // 35: storage.s3.LifecycleTransition.date:type_name -> google.protobuf.Timestamp
-	0,  // 36: storage.s3.LifecycleTransition.storage_class:type_name -> storage.s3.ObjectStorageClass
-	0,  // 37: storage.s3.NoncurrentVersionTransition.storage_class:type_name -> storage.s3.ObjectStorageClass
-	7,  // 38: storage.s3.LifecycleRuleAndOperator.tags:type_name -> storage.s3.Tag
-	29, // 39: storage.s3.LifecycleRuleFilter.and:type_name -> storage.s3.LifecycleRuleAndOperator
-	7,  // 40: storage.s3.LifecycleRuleFilter.tag:type_name -> storage.s3.Tag
-	30, // 41: storage.s3.LifecycleRule.filter:type_name -> storage.s3.LifecycleRuleFilter
-	24, // 42: storage.s3.LifecycleRule.expiration:type_name -> storage.s3.LifecycleExpiration
-	25, // 43: storage.s3.LifecycleRule.transitions:type_name -> storage.s3.LifecycleTransition
-	26, // 44: storage.s3.LifecycleRule.noncurrent_version_expiration:type_name -> storage.s3.NoncurrentVersionExpiration
-	27, // 45: storage.s3.LifecycleRule.noncurrent_version_transitions:type_name -> storage.s3.NoncurrentVersionTransition
-	28, // 46: storage.s3.LifecycleRule.abort_incomplete_multipart_upload:type_name -> storage.s3.AbortIncompleteUpload
-	31, // 47: storage.s3.LifecycleConfiguration.rules:type_name -> storage.s3.LifecycleRule
-	34, // 48: storage.s3.RoutingRule.condition:type_name -> storage.s3.RoutingRuleCondition
-	35, // 49: storage.s3.RoutingRule.redirect:type_name -> storage.s3.RoutingRuleRedirect
-	33, // 50: storage.s3.WebsiteConfiguration.redirect_all_requests_to:type_name -> storage.s3.RedirectAllRequestsTo
-	36, // 51: storage.s3.WebsiteConfiguration.routing_rules:type_name -> storage.s3.RoutingRule
-	38, // 52: storage.s3.CORSConfiguration.cors_rules:type_name -> storage.s3.CORSRule
-	41, // 53: storage.s3.S3KeyFilter.filter_rules:type_name -> storage.s3.FilterRule
-	42, // 54: storage.s3.NotificationConfigurationFilter.key:type_name -> storage.s3.S3KeyFilter
-	43, // 55: storage.s3.TopicNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
-	43, // 56: storage.s3.QueueNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
-	43, // 57: storage.s3.LambdaNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
-	44, // 58: storage.s3.NotificationConfiguration.topic_configurations:type_name -> storage.s3.TopicNotificationConfiguration
-	45, // 59: storage.s3.NotificationConfiguration.queue_configurations:type_name -> storage.s3.QueueNotificationConfiguration
-	46, // 60: storage.s3.NotificationConfiguration.lambda_configurations:type_name -> storage.s3.LambdaNotificationConfiguration
-	9,  // 61: storage.s3.TargetGrant.grantee:type_name -> storage.s3.Grantee
-	6,  // 62: storage.s3.TargetGrant.permission:type_name -> storage.s3.Permission
-	48, // 63: storage.s3.LoggingConfiguration.target_grants:type_name -> storage.s3.TargetGrant
-	50, // 64: storage.s3.OwnershipControls.rules:type_name -> storage.s3.OwnershipControlsRule
-	55, // 65: storage.s3.ReplicationConfiguration.rules:type_name -> storage.s3.ReplicationRule
-	56, // 66: storage.s3.ReplicationRule.filter:type_name -> storage.s3.ReplicationFilter
-	59, // 67: storage.s3.ReplicationRule.destination:type_name -> storage.s3.ReplicationDestination
-	57, // 68: storage.s3.ReplicationFilter.tag:type_name -> storage.s3.ReplicationTagFilter
-	58, // 69: storage.s3.ReplicationFilter.and_operator:type_name -> storage.s3.ReplicationAndOperator
-	57, // 70: storage.s3.ReplicationAndOperator.tags:type_name -> storage.s3.ReplicationTagFilter
-	64, // 71: storage.s3.Bucket.creation_date:type_name -> google.protobuf.Timestamp
-	11, // 72: storage.s3.Bucket.acl:type_name -> storage.s3.AccessControlPolicy
-	23, // 73: storage.s3.Bucket.object_lock_config:type_name -> storage.s3.ObjectLockConfiguration
-	1,  // 74: storage.s3.Bucket.versioning_status:type_name -> storage.s3.BucketVersioningStatus
-	12, // 75: storage.s3.Bucket.encryption_config:type_name -> storage.s3.EncryptionConfig
-	32, // 76: storage.s3.Bucket.lifecycle_configuration:type_name -> storage.s3.LifecycleConfiguration
-	37, // 77: storage.s3.Bucket.website_configuration:type_name -> storage.s3.WebsiteConfiguration
-	39, // 78: storage.s3.Bucket.cors_configuration:type_name -> storage.s3.CORSConfiguration
-	40, // 79: storage.s3.Bucket.public_access_block:type_name -> storage.s3.PublicAccessBlockConfig
-	7,  // 80: storage.s3.Bucket.tags:type_name -> storage.s3.Tag
-	47, // 81: storage.s3.Bucket.notification_configuration:type_name -> storage.s3.NotificationConfiguration
-	49, // 82: storage.s3.Bucket.logging_configuration:type_name -> storage.s3.LoggingConfiguration
-	51, // 83: storage.s3.Bucket.ownership_controls:type_name -> storage.s3.OwnershipControls
-	52, // 84: storage.s3.Bucket.request_payment:type_name -> storage.s3.RequestPaymentConfiguration
-	53, // 85: storage.s3.Bucket.accelerate_configuration:type_name -> storage.s3.AccelerateConfiguration
-	54, // 86: storage.s3.Bucket.replication_configuration:type_name -> storage.s3.ReplicationConfiguration
-	87, // [87:87] is the sub-list for method output_type
-	87, // [87:87] is the sub-list for method input_type
-	87, // [87:87] is the sub-list for extension type_name
-	87, // [87:87] is the sub-list for extension extendee
-	0,  // [0:87] is the sub-list for field type_name
+	5,   // 0: storage.s3.Grantee.type:type_name -> storage.s3.GranteeType
+	9,   // 1: storage.s3.Grant.grantee:type_name -> storage.s3.Grantee
+	6,   // 2: storage.s3.Grant.permission:type_name -> storage.s3.Permission
+	8,   // 3: storage.s3.AccessControlPolicy.owner:type_name -> storage.s3.ACLOwner
+	10,  // 4: storage.s3.AccessControlPolicy.grants:type_name -> storage.s3.Grant
+	73,  // 5: storage.s3.EncryptionConfig.bucket_key_enabled:type_name -> google.protobuf.BoolValue
+	2,   // 6: storage.s3.SSEObjectMetadata.encryption_type:type_name -> storage.s3.SSEType
+	14,  // 7: storage.s3.SSEObjectMetadata.part_encryption_infos:type_name -> storage.s3.PartEncryptionInfo
+	4,   // 8: storage.s3.ObjectLockLegalHold.status:type_name -> storage.s3.ObjectLockLegalHoldStatus
+	3,   // 9: storage.s3.ObjectLockRetention.mode:type_name -> storage.s3.ObjectLockRetentionMode
+	74,  // 10: storage.s3.ObjectLockRetention.retain_until_date:type_name -> google.protobuf.Timestamp
+	74,  // 11: storage.s3.Object.last_modified:type_name -> google.protobuf.Timestamp
+	74,  // 12: storage.s3.Object.expires:type_name -> google.protobuf.Timestamp
+	71,  // 13: storage.s3.Object.metadata:type_name -> storage.s3.Object.MetadataEntry
+	0,   // 14: storage.s3.Object.storage_class:type_name -> storage.s3.ObjectStorageClass
+	7,   // 15: storage.s3.Object.tags:type_name -> storage.s3.Tag
+	11,  // 16: storage.s3.Object.acl:type_name -> storage.s3.AccessControlPolicy
+	8,   // 17: storage.s3.Object.owner:type_name -> storage.s3.ACLOwner
+	15,  // 18: storage.s3.Object.object_lock_legal_hold:type_name -> storage.s3.ObjectLockLegalHold
+	16,  // 19: storage.s3.Object.object_lock_retention:type_name -> storage.s3.ObjectLockRetention
+	13,  // 20: storage.s3.Object.sse_metadata:type_name -> storage.s3.SSEObjectMetadata
+	18,  // 21: storage.s3.Object.parts:type_name -> storage.s3.ObjectPartEntry
+	74,  // 22: storage.s3.Object.restore_expiry:type_name -> google.protobuf.Timestamp
+	74,  // 23: storage.s3.ObjectPart.last_modified:type_name -> google.protobuf.Timestamp
+	74,  // 24: storage.s3.MultipartUpload.initiated:type_name -> google.protobuf.Timestamp
+	0,   // 25: storage.s3.MultipartUpload.storage_class:type_name -> storage.s3.ObjectStorageClass
+	19,  // 26: storage.s3.MultipartUpload.parts:type_name -> storage.s3.ObjectPart
+	72,  // 27: storage.s3.MultipartUpload.metadata:type_name -> storage.s3.MultipartUpload.MetadataEntry
+	13,  // 28: storage.s3.MultipartUpload.sse_metadata:type_name -> storage.s3.SSEObjectMetadata
+	2,   // 29: storage.s3.MultipartUpload.sse_type:type_name -> storage.s3.SSEType
+	11,  // 30: storage.s3.MultipartUpload.acl:type_name -> storage.s3.AccessControlPolicy
+	3,   // 31: storage.s3.DefaultRetention.mode:type_name -> storage.s3.ObjectLockRetentionMode
+	21,  // 32: storage.s3.ObjectLockRule.default_retention:type_name -> storage.s3.DefaultRetention
+	22,  // 33: storage.s3.ObjectLockConfiguration.rule:type_name -> storage.s3.ObjectLockRule
+	74,  // 34: storage.s3.LifecycleExpiration.date:type_name -> google.protobuf.Timestamp
+	74,  // 35: storage.s3.LifecycleTransition.date:type_name -> google.protobuf.Timestamp
+	0,   // 36: storage.s3.LifecycleTransition.storage_class:type_name -> storage.s3.ObjectStorageClass
+	0,   // 37: storage.s3.NoncurrentVersionTransition.storage_class:type_name -> storage.s3.ObjectStorageClass
+	7,   // 38: storage.s3.LifecycleRuleAndOperator.tags:type_name -> storage.s3.Tag
+	29,  // 39: storage.s3.LifecycleRuleFilter.and:type_name -> storage.s3.LifecycleRuleAndOperator
+	7,   // 40: storage.s3.LifecycleRuleFilter.tag:type_name -> storage.s3.Tag
+	30,  // 41: storage.s3.LifecycleRule.filter:type_name -> storage.s3.LifecycleRuleFilter
+	24,  // 42: storage.s3.LifecycleRule.expiration:type_name -> storage.s3.LifecycleExpiration
+	25,  // 43: storage.s3.LifecycleRule.transitions:type_name -> storage.s3.LifecycleTransition
+	26,  // 44: storage.s3.LifecycleRule.noncurrent_version_expiration:type_name -> storage.s3.NoncurrentVersionExpiration
+	27,  // 45: storage.s3.LifecycleRule.noncurrent_version_transitions:type_name -> storage.s3.NoncurrentVersionTransition
+	28,  // 46: storage.s3.LifecycleRule.abort_incomplete_multipart_upload:type_name -> storage.s3.AbortIncompleteUpload
+	31,  // 47: storage.s3.LifecycleConfiguration.rules:type_name -> storage.s3.LifecycleRule
+	34,  // 48: storage.s3.RoutingRule.condition:type_name -> storage.s3.RoutingRuleCondition
+	35,  // 49: storage.s3.RoutingRule.redirect:type_name -> storage.s3.RoutingRuleRedirect
+	33,  // 50: storage.s3.WebsiteConfiguration.redirect_all_requests_to:type_name -> storage.s3.RedirectAllRequestsTo
+	36,  // 51: storage.s3.WebsiteConfiguration.routing_rules:type_name -> storage.s3.RoutingRule
+	38,  // 52: storage.s3.CORSConfiguration.cors_rules:type_name -> storage.s3.CORSRule
+	41,  // 53: storage.s3.S3KeyFilter.filter_rules:type_name -> storage.s3.FilterRule
+	42,  // 54: storage.s3.NotificationConfigurationFilter.key:type_name -> storage.s3.S3KeyFilter
+	43,  // 55: storage.s3.TopicNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
+	43,  // 56: storage.s3.QueueNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
+	43,  // 57: storage.s3.LambdaNotificationConfiguration.filter:type_name -> storage.s3.NotificationConfigurationFilter
+	44,  // 58: storage.s3.NotificationConfiguration.topic_configurations:type_name -> storage.s3.TopicNotificationConfiguration
+	45,  // 59: storage.s3.NotificationConfiguration.queue_configurations:type_name -> storage.s3.QueueNotificationConfiguration
+	46,  // 60: storage.s3.NotificationConfiguration.lambda_configurations:type_name -> storage.s3.LambdaNotificationConfiguration
+	9,   // 61: storage.s3.TargetGrant.grantee:type_name -> storage.s3.Grantee
+	6,   // 62: storage.s3.TargetGrant.permission:type_name -> storage.s3.Permission
+	48,  // 63: storage.s3.LoggingConfiguration.target_grants:type_name -> storage.s3.TargetGrant
+	50,  // 64: storage.s3.OwnershipControls.rules:type_name -> storage.s3.OwnershipControlsRule
+	55,  // 65: storage.s3.ReplicationConfiguration.rules:type_name -> storage.s3.ReplicationRule
+	56,  // 66: storage.s3.ReplicationRule.filter:type_name -> storage.s3.ReplicationFilter
+	59,  // 67: storage.s3.ReplicationRule.destination:type_name -> storage.s3.ReplicationDestination
+	57,  // 68: storage.s3.ReplicationFilter.tag:type_name -> storage.s3.ReplicationTagFilter
+	58,  // 69: storage.s3.ReplicationFilter.and_operator:type_name -> storage.s3.ReplicationAndOperator
+	57,  // 70: storage.s3.ReplicationAndOperator.tags:type_name -> storage.s3.ReplicationTagFilter
+	61,  // 71: storage.s3.InventoryConfiguration.filter:type_name -> storage.s3.InventoryFilter
+	62,  // 72: storage.s3.InventoryConfiguration.schedule:type_name -> storage.s3.InventorySchedule
+	63,  // 73: storage.s3.InventoryConfiguration.destination:type_name -> storage.s3.InventoryDestination
+	74,  // 74: storage.s3.InventoryConfiguration.last_delivery:type_name -> google.protobuf.Timestamp
+	64,  // 75: storage.s3.InventoryDestination.s3_bucket_destination:type_name -> storage.s3.InventoryS3BucketDestination
+	65,  // 76: storage.s3.InventoryS3BucketDestination.encryption:type_name -> storage.s3.InventoryEncryption
+	66,  // 77: storage.s3.InventoryEncryption.sse_kms:type_name -> storage.s3.InventorySSEKMS
+	68,  // 78: storage.s3.MetricsConfiguration.filter:type_name -> storage.s3.MetricsFilter
+	7,   // 79: storage.s3.MetricsFilter.tag:type_name -> storage.s3.Tag
+	69,  // 80: storage.s3.MetricsFilter.and:type_name -> storage.s3.MetricsAndOperator
+	7,   // 81: storage.s3.MetricsAndOperator.tags:type_name -> storage.s3.Tag
+	74,  // 82: storage.s3.Bucket.creation_date:type_name -> google.protobuf.Timestamp
+	11,  // 83: storage.s3.Bucket.acl:type_name -> storage.s3.AccessControlPolicy
+	23,  // 84: storage.s3.Bucket.object_lock_config:type_name -> storage.s3.ObjectLockConfiguration
+	1,   // 85: storage.s3.Bucket.versioning_status:type_name -> storage.s3.BucketVersioningStatus
+	12,  // 86: storage.s3.Bucket.encryption_config:type_name -> storage.s3.EncryptionConfig
+	32,  // 87: storage.s3.Bucket.lifecycle_configuration:type_name -> storage.s3.LifecycleConfiguration
+	37,  // 88: storage.s3.Bucket.website_configuration:type_name -> storage.s3.WebsiteConfiguration
+	39,  // 89: storage.s3.Bucket.cors_configuration:type_name -> storage.s3.CORSConfiguration
+	40,  // 90: storage.s3.Bucket.public_access_block:type_name -> storage.s3.PublicAccessBlockConfig
+	7,   // 91: storage.s3.Bucket.tags:type_name -> storage.s3.Tag
+	47,  // 92: storage.s3.Bucket.notification_configuration:type_name -> storage.s3.NotificationConfiguration
+	49,  // 93: storage.s3.Bucket.logging_configuration:type_name -> storage.s3.LoggingConfiguration
+	51,  // 94: storage.s3.Bucket.ownership_controls:type_name -> storage.s3.OwnershipControls
+	52,  // 95: storage.s3.Bucket.request_payment:type_name -> storage.s3.RequestPaymentConfiguration
+	53,  // 96: storage.s3.Bucket.accelerate_configuration:type_name -> storage.s3.AccelerateConfiguration
+	54,  // 97: storage.s3.Bucket.replication_configuration:type_name -> storage.s3.ReplicationConfiguration
+	60,  // 98: storage.s3.Bucket.inventory_configurations:type_name -> storage.s3.InventoryConfiguration
+	67,  // 99: storage.s3.Bucket.metrics_configurations:type_name -> storage.s3.MetricsConfiguration
+	100, // [100:100] is the sub-list for method output_type
+	100, // [100:100] is the sub-list for method input_type
+	100, // [100:100] is the sub-list for extension type_name
+	100, // [100:100] is the sub-list for extension extendee
+	0,   // [0:100] is the sub-list for field type_name
 }
 
 func init() { file_storage_s3_proto_init() }
@@ -4642,7 +5319,7 @@ func file_storage_s3_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_storage_s3_proto_rawDesc), len(file_storage_s3_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   56,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

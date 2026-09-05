@@ -358,6 +358,13 @@ func (a *App) initS3(st *serviceState) error {
 		return nil
 	})
 
+	st.inventoryReportWorker = svcs3.NewInventoryReportWorker(st.s3Service)
+	st.inventoryReportWorker.Start()
+	a.addShutdown("s3-inventory", func(ctx context.Context) error {
+		st.inventoryReportWorker.Close()
+		return nil
+	})
+
 	return nil
 }
 

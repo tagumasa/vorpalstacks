@@ -23,6 +23,7 @@ require (
 	github.com/parquet-go/parquet-go v0.28.0
 	github.com/recolabs/gnata v0.1.2
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/scritchley/orc v0.0.0-20210513144143-06dddf1ad665
 	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.32

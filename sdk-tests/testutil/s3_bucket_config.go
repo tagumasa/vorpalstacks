@@ -2,16 +2,25 @@ package testutil
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/md5"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/smithy-go"
+	"github.com/scritchley/orc"
 
 	"vorpalstacks-sdk-tests/config"
 )
@@ -1960,6 +1969,1159 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if !s3HasPublicReadGrant(aclResp.Grants) {
 			return fmt.Errorf("expected an AllUsers READ grant on the copy from the public-read ACL")
+		}
+		return nil
+	}))
+
+	// --- Bucket inventory configurations ---
+
+	destARN, cleanupDest, destErr := s3CreateReplicationDest(ctx, client, s3Bucket(ts, "inv-dest"))
+	if destErr != nil {
+		return append(results, TestResult{Service: "s3", TestName: "PutBucketInventoryConfiguration", Status: "FAIL",
+			Error: fmt.Sprintf("Failed to create inventory destination bucket: %v", destErr)})
+	}
+	defer cleanupDest()
+
+	results = append(results, r.RunTest("s3", "PutBucketInventoryConfiguration", func() error {
+		put := &types.InventoryConfiguration{
+			Id:                     aws.String("report-main"),
+			IsEnabled:              aws.Bool(false),
+			IncludedObjectVersions: types.InventoryIncludedObjectVersionsAll,
+			Filter:                 &types.InventoryFilter{Prefix: aws.String("docs/")},
+			OptionalFields: []types.InventoryOptionalField{
+				types.InventoryOptionalFieldSize,
+				types.InventoryOptionalFieldLastModifiedDate,
+				types.InventoryOptionalFieldETag,
+				types.InventoryOptionalFieldStorageClass,
+			},
+			Schedule: &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
+			Destination: &types.InventoryDestination{
+				S3BucketDestination: &types.InventoryS3BucketDestination{
+					AccountId: aws.String("123456789012"),
+					Bucket:    aws.String(destARN),
+					Format:    types.InventoryFormatCsv,
+					Prefix:    aws.String("inv"),
+					Encryption: &types.InventoryEncryption{
+						SSES3: &types.SSES3{},
+					},
+				},
+			},
+		}
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket:                 aws.String(bucketName),
+			Id:                     aws.String("report-main"),
+			InventoryConfiguration: put,
+		}); err != nil {
+			return fmt.Errorf("PutBucketInventoryConfiguration failed: %w", err)
+		}
+
+		got, err := client.GetBucketInventoryConfiguration(ctx, &s3.GetBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("report-main"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketInventoryConfiguration failed: %w", err)
+		}
+		cfg := got.InventoryConfiguration
+		if cfg == nil || aws.ToString(cfg.Id) != "report-main" {
+			return fmt.Errorf("round-trip lost the configuration id: %+v", cfg)
+		}
+		if cfg.IsEnabled == nil || aws.ToBool(cfg.IsEnabled) {
+			return fmt.Errorf("round-trip lost the disabled IsEnabled flag: %+v", cfg)
+		}
+		if cfg.IncludedObjectVersions != types.InventoryIncludedObjectVersionsAll {
+			return fmt.Errorf("round-trip lost IncludedObjectVersions: %+v", cfg)
+		}
+		if cfg.Filter == nil || aws.ToString(cfg.Filter.Prefix) != "docs/" {
+			return fmt.Errorf("round-trip lost the filter prefix: %+v", cfg.Filter)
+		}
+		if cfg.Schedule == nil || cfg.Schedule.Frequency != types.InventoryFrequencyDaily {
+			return fmt.Errorf("round-trip lost the schedule: %+v", cfg.Schedule)
+		}
+		dest := cfg.Destination
+		if dest == nil || dest.S3BucketDestination == nil {
+			return fmt.Errorf("round-trip lost the destination: %+v", dest)
+		}
+		gotDest := dest.S3BucketDestination
+		if aws.ToString(gotDest.Bucket) != destARN || gotDest.Format != types.InventoryFormatCsv ||
+			aws.ToString(gotDest.Prefix) != "inv" || aws.ToString(gotDest.AccountId) != "123456789012" {
+			return fmt.Errorf("round-trip lost the destination details: %+v", gotDest)
+		}
+		if gotDest.Encryption == nil || gotDest.Encryption.SSES3 == nil {
+			return fmt.Errorf("round-trip lost the SSE-S3 report encryption: %+v", gotDest.Encryption)
+		}
+		if len(cfg.OptionalFields) != 4 {
+			return fmt.Errorf("round-trip lost optional fields: %+v", cfg.OptionalFields)
+		}
+
+		// A second Put under the same id is a full replacement.
+		put.Schedule.Frequency = types.InventoryFrequencyWeekly
+		put.OptionalFields = []types.InventoryOptionalField{types.InventoryOptionalFieldSize}
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket:                 aws.String(bucketName),
+			Id:                     aws.String("report-main"),
+			InventoryConfiguration: put,
+		}); err != nil {
+			return fmt.Errorf("replacement PutBucketInventoryConfiguration failed: %w", err)
+		}
+		replaced, err := client.GetBucketInventoryConfiguration(ctx, &s3.GetBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("report-main"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketInventoryConfiguration after replacement failed: %w", err)
+		}
+		if replaced.InventoryConfiguration.Schedule.Frequency != types.InventoryFrequencyWeekly ||
+			len(replaced.InventoryConfiguration.OptionalFields) != 1 {
+			return fmt.Errorf("replacement was not a full replacement: %+v", replaced.InventoryConfiguration)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetBucketInventoryConfiguration_NotFound", func() error {
+		_, err := client.GetBucketInventoryConfiguration(ctx, &s3.GetBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("no-such-inventory-id"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected NoSuchConfiguration, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "NoSuchConfiguration" {
+			return fmt.Errorf("expected NoSuchConfiguration, got: %v", err)
+		}
+		return nil
+	}))
+
+	// The destination bucket field is documented as a bucket ARN; a value
+	// that does not parse as one, or whose resource part is not a valid
+	// bucket name ("bucket/path" parses as an ARN but names no bucket), can
+	// never receive a delivery, so the Put rejects both.
+	results = append(results, r.RunTest("s3", "PutBucketInventoryConfiguration_DestinationArnValidated", func() error {
+		for _, badDest := range []string{"plain-name", "arn:aws:s3:::bucket/path"} {
+			_, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+				Bucket: aws.String(bucketName),
+				Id:     aws.String("bad-dest"),
+				InventoryConfiguration: &types.InventoryConfiguration{
+					Id:                     aws.String("bad-dest"),
+					IsEnabled:              aws.Bool(true),
+					IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
+					Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
+					Destination: &types.InventoryDestination{
+						S3BucketDestination: &types.InventoryS3BucketDestination{
+							Bucket: aws.String(badDest),
+							Format: types.InventoryFormatCsv,
+						},
+					},
+				},
+			})
+			if err == nil {
+				return fmt.Errorf("expected InvalidArgument for destination %q, got nil", badDest)
+			}
+			var apiErr smithy.APIError
+			if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "InvalidArgument" {
+				return fmt.Errorf("expected InvalidArgument for destination %q, got: %v", badDest, err)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "ListBucketInventoryConfigurations_Pagination", func() error {
+		// AWS pages at 100 configurations; 102 forces a two-page traversal.
+		const total = 102
+		for i := 0; i < total; i++ {
+			id := fmt.Sprintf("pg-i-%03d", i)
+			if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+				Bucket: aws.String(bucketName),
+				Id:     aws.String(id),
+				InventoryConfiguration: &types.InventoryConfiguration{
+					Id:                     aws.String(id),
+					IsEnabled:              aws.Bool(false),
+					IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
+					Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyWeekly},
+					Destination: &types.InventoryDestination{
+						S3BucketDestination: &types.InventoryS3BucketDestination{
+							Bucket: aws.String(destARN),
+							Format: types.InventoryFormatCsv,
+						},
+					},
+				},
+			}); err != nil {
+				return fmt.Errorf("filler Put %d failed: %w", i, err)
+			}
+		}
+		defer func() {
+			for i := 0; i < total; i++ {
+				client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{
+					Bucket: aws.String(bucketName),
+					Id:     aws.String(fmt.Sprintf("pg-i-%03d", i)),
+				})
+			}
+		}()
+
+		seen := make(map[string]bool)
+		pages := 0
+		var token *string
+		for {
+			resp, err := client.ListBucketInventoryConfigurations(ctx, &s3.ListBucketInventoryConfigurationsInput{
+				Bucket:            aws.String(bucketName),
+				ContinuationToken: token,
+			})
+			if err != nil {
+				return fmt.Errorf("ListBucketInventoryConfigurations failed: %w", err)
+			}
+			pages++
+			if len(resp.InventoryConfigurationList) > 100 {
+				return fmt.Errorf("page %d returned %d configurations, over the documented 100 cap", pages, len(resp.InventoryConfigurationList))
+			}
+			for _, cfg := range resp.InventoryConfigurationList {
+				seen[aws.ToString(cfg.Id)] = true
+			}
+			if !aws.ToBool(resp.IsTruncated) {
+				if aws.ToString(token) != "" && aws.ToString(resp.ContinuationToken) != aws.ToString(token) {
+					return fmt.Errorf("ContinuationToken echo mismatch: sent %q, got %q", aws.ToString(token), aws.ToString(resp.ContinuationToken))
+				}
+				break
+			}
+			token = resp.NextContinuationToken
+			if token == nil || *token == "" {
+				return fmt.Errorf("IsTruncated without NextContinuationToken")
+			}
+			if pages > 5 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pages)
+			}
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected at least two pages for %d configurations, got %d", total, pages)
+		}
+		if len(seen) < total {
+			return fmt.Errorf("traversal collected %d configurations, want at least %d (plus the round-trip one)", len(seen), total)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "DeleteBucketInventoryConfiguration", func() error {
+		if _, err := client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("report-main"),
+		}); err != nil {
+			return fmt.Errorf("DeleteBucketInventoryConfiguration failed: %w", err)
+		}
+		_, err := client.GetBucketInventoryConfiguration(ctx, &s3.GetBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("report-main"),
+		})
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "NoSuchConfiguration" {
+			return fmt.Errorf("expected NoSuchConfiguration after delete, got: %v", err)
+		}
+		// Deleting an absent id is idempotent.
+		if _, err := client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("report-main"),
+		}); err != nil {
+			return fmt.Errorf("idempotent re-delete failed: %w", err)
+		}
+		return nil
+	}))
+
+	// --- Bucket metrics configurations ---
+
+	results = append(results, r.RunTest("s3", "PutBucketMetricsConfiguration", func() error {
+		cases := []struct {
+			id     string
+			filter types.MetricsFilter
+		}{
+			{id: "entire-bucket", filter: nil},
+			{id: "docs-prefix", filter: &types.MetricsFilterMemberPrefix{Value: "docs/"}},
+			{id: "classified-docs", filter: &types.MetricsFilterMemberTag{Value: types.Tag{Key: aws.String("class"), Value: aws.String("blue")}}},
+			{id: "and-docs", filter: &types.MetricsFilterMemberAnd{Value: types.MetricsAndOperator{
+				Prefix: aws.String("docs/"),
+				Tags: []types.Tag{
+					{Key: aws.String("priority"), Value: aws.String("high")},
+					{Key: aws.String("class"), Value: aws.String("blue")},
+				},
+			}}},
+		}
+		for _, tc := range cases {
+			put := &types.MetricsConfiguration{Id: aws.String(tc.id), Filter: tc.filter}
+			if _, err := client.PutBucketMetricsConfiguration(ctx, &s3.PutBucketMetricsConfigurationInput{
+				Bucket:               aws.String(bucketName),
+				Id:                   aws.String(tc.id),
+				MetricsConfiguration: put,
+			}); err != nil {
+				return fmt.Errorf("PutBucketMetricsConfiguration(%s) failed: %w", tc.id, err)
+			}
+			got, err := client.GetBucketMetricsConfiguration(ctx, &s3.GetBucketMetricsConfigurationInput{
+				Bucket: aws.String(bucketName),
+				Id:     aws.String(tc.id),
+			})
+			if err != nil {
+				return fmt.Errorf("GetBucketMetricsConfiguration(%s) failed: %w", tc.id, err)
+			}
+			if aws.ToString(got.MetricsConfiguration.Id) != tc.id {
+				return fmt.Errorf("round-trip lost id %s: %+v", tc.id, got.MetricsConfiguration)
+			}
+			if tc.filter == nil {
+				if got.MetricsConfiguration.Filter != nil {
+					return fmt.Errorf("nil filter round-tripped non-nil: %+v", got.MetricsConfiguration.Filter)
+				}
+				continue
+			}
+			f := got.MetricsConfiguration.Filter
+			switch want := tc.filter.(type) {
+			case *types.MetricsFilterMemberPrefix:
+				gotPrefix, ok := f.(*types.MetricsFilterMemberPrefix)
+				if !ok || gotPrefix.Value != want.Value {
+					return fmt.Errorf("prefix filter round-trip mismatch: %+v", f)
+				}
+			case *types.MetricsFilterMemberTag:
+				gotTag, ok := f.(*types.MetricsFilterMemberTag)
+				if !ok || aws.ToString(gotTag.Value.Key) != "class" || aws.ToString(gotTag.Value.Value) != "blue" {
+					return fmt.Errorf("tag filter round-trip mismatch: %+v", f)
+				}
+			case *types.MetricsFilterMemberAnd:
+				gotAnd, ok := f.(*types.MetricsFilterMemberAnd)
+				if !ok || aws.ToString(gotAnd.Value.Prefix) != "docs/" || len(gotAnd.Value.Tags) != 2 {
+					return fmt.Errorf("and filter round-trip mismatch: %+v", f)
+				}
+			}
+		}
+		return nil
+	}))
+
+	// The model pins PutBucketMetricsConfiguration's success status at 200.
+	// The SDK cannot observe it because the operation has no output shape,
+	// so the pin goes through a raw request and then round-trips the stored
+	// configuration through the SDK.
+	results = append(results, r.RunTest("s3", "PutBucketMetricsConfiguration_HttpStatus200", func() error {
+		endpoint := r.endpoint
+		if !strings.HasPrefix(endpoint, "http") {
+			endpoint = "http://" + endpoint
+		}
+		body := "<MetricsConfiguration><Id>status-pin</Id></MetricsConfiguration>"
+		req, err := http.NewRequest("PUT", endpoint+"/"+bucketName+"?metrics&id=status-pin", strings.NewReader(body))
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+		resp, err := testHTTPClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("request failed: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			respBody, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("expected HTTP 200 for PutBucketMetricsConfiguration, got %d: %s", resp.StatusCode, string(respBody))
+		}
+		got, err := client.GetBucketMetricsConfiguration(ctx, &s3.GetBucketMetricsConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("status-pin"),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketMetricsConfiguration(status-pin) failed: %w", err)
+		}
+		if aws.ToString(got.MetricsConfiguration.Id) != "status-pin" {
+			return fmt.Errorf("round-trip lost id status-pin: %+v", got.MetricsConfiguration)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "GetBucketMetricsConfiguration_NotFound", func() error {
+		_, err := client.GetBucketMetricsConfiguration(ctx, &s3.GetBucketMetricsConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("no-such-metrics-id"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected NoSuchConfiguration, got nil")
+		}
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "NoSuchConfiguration" {
+			return fmt.Errorf("expected NoSuchConfiguration, got: %v", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "ListBucketMetricsConfigurations", func() error {
+		seen := make(map[string]bool)
+		var token *string
+		pages := 0
+		for {
+			resp, err := client.ListBucketMetricsConfigurations(ctx, &s3.ListBucketMetricsConfigurationsInput{
+				Bucket:            aws.String(bucketName),
+				ContinuationToken: token,
+			})
+			if err != nil {
+				return fmt.Errorf("ListBucketMetricsConfigurations failed: %w", err)
+			}
+			pages++
+			for _, cfg := range resp.MetricsConfigurationList {
+				seen[aws.ToString(cfg.Id)] = true
+			}
+			if !aws.ToBool(resp.IsTruncated) {
+				break
+			}
+			token = resp.NextContinuationToken
+			if pages > 5 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pages)
+			}
+		}
+		for _, id := range []string{"entire-bucket", "docs-prefix", "classified-docs", "and-docs"} {
+			if !seen[id] {
+				return fmt.Errorf("metrics list is missing configuration %q (seen: %v)", id, seen)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "DeleteBucketMetricsConfiguration", func() error {
+		if _, err := client.DeleteBucketMetricsConfiguration(ctx, &s3.DeleteBucketMetricsConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("docs-prefix"),
+		}); err != nil {
+			return fmt.Errorf("DeleteBucketMetricsConfiguration failed: %w", err)
+		}
+		_, err := client.GetBucketMetricsConfiguration(ctx, &s3.GetBucketMetricsConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("docs-prefix"),
+		})
+		var apiErr smithy.APIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != "NoSuchConfiguration" {
+			return fmt.Errorf("expected NoSuchConfiguration after delete, got: %v", err)
+		}
+		if _, err := client.DeleteBucketMetricsConfiguration(ctx, &s3.DeleteBucketMetricsConfigurationInput{
+			Bucket: aws.String(bucketName),
+			Id:     aws.String("docs-prefix"),
+		}); err != nil {
+			return fmt.Errorf("idempotent re-delete failed: %w", err)
+		}
+		return nil
+	}))
+
+	// Request metrics: a metrics configuration with a prefix filter drives
+	// per-filter CloudWatch metrics in the AWS/S3 namespace under the
+	// BucketName and FilterId dimensions.
+	results = append(results, r.RunTest("s3", "BucketMetricsConfiguration_RequestMetrics", func() error {
+		metricsBucket := s3Bucket(ts, "req-metrics")
+		if err := s3CreateBucket(ctx, client, metricsBucket); err != nil {
+			return fmt.Errorf("failed to create the request-metrics bucket: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, metricsBucket)
+
+		filterID := "data-prefix"
+		if _, err := client.PutBucketMetricsConfiguration(ctx, &s3.PutBucketMetricsConfigurationInput{
+			Bucket: aws.String(metricsBucket),
+			Id:     aws.String(filterID),
+			MetricsConfiguration: &types.MetricsConfiguration{
+				Id:     aws.String(filterID),
+				Filter: &types.MetricsFilterMemberPrefix{Value: "data/"},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketMetricsConfiguration failed: %w", err)
+		}
+
+		body := "request-metrics-body"
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(metricsBucket),
+			Key:    aws.String("data/one.txt"),
+			Body:   strings.NewReader(body),
+		}); err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if _, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: aws.String(metricsBucket),
+			Key:    aws.String("data/one.txt"),
+		}); err != nil {
+			return fmt.Errorf("GetObject failed: %w", err)
+		}
+		// An object outside the filter must not feed the filter's metrics.
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(metricsBucket),
+			Key:    aws.String("other/two.txt"),
+			Body:   strings.NewReader(body),
+		}); err != nil {
+			return fmt.Errorf("outside-filter PutObject failed: %w", err)
+		}
+
+		cwCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load cloudwatch config: %w", err)
+		}
+		cwClient := cloudwatch.NewFromConfig(cwCfg)
+		dimensions := []cwtypes.Dimension{
+			{Name: aws.String("BucketName"), Value: aws.String(metricsBucket)},
+			{Name: aws.String("FilterId"), Value: aws.String(filterID)},
+		}
+
+		// TEST_MODE compresses the aggregation window; poll until the
+		// datapoints land.
+		sums := map[string]float64{}
+		deadline := time.Now().Add(60 * time.Second)
+		for time.Now().Before(deadline) {
+			sums = map[string]float64{}
+			for _, metric := range []string{"AllRequests", "PutRequests", "GetRequests"} {
+				resp, err := cwClient.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
+					StartTime: aws.Time(time.Now().Add(-15 * time.Minute)),
+					EndTime:   aws.Time(time.Now().Add(time.Minute)),
+					ScanBy:    cwtypes.ScanByTimestampAscending,
+					MetricDataQueries: []cwtypes.MetricDataQuery{{
+						Id: aws.String("sum"),
+						MetricStat: &cwtypes.MetricStat{
+							Metric: &cwtypes.Metric{
+								Namespace:  aws.String("AWS/S3"),
+								MetricName: aws.String(metric),
+								Dimensions: dimensions,
+							},
+							Period: aws.Int32(60),
+							Stat:   aws.String("Sum"),
+						},
+					}},
+				})
+				if err != nil {
+					return fmt.Errorf("GetMetricData(%s) failed: %w", metric, err)
+				}
+				for _, result := range resp.MetricDataResults {
+					for _, value := range result.Values {
+						sums[metric] += value
+					}
+				}
+			}
+			if sums["AllRequests"] >= 2 && sums["PutRequests"] >= 1 && sums["GetRequests"] >= 1 {
+				return nil
+			}
+			time.Sleep(2 * time.Second)
+		}
+		return fmt.Errorf("request metrics not populated in time: %v", sums)
+	}))
+
+	// Bucket-plane requests: AllRequests counts every HTTP request made to
+	// the bucket regardless of type, HeadRequests covers bucket heads, and
+	// DeleteObjects requests classify as DeleteRequests.
+	results = append(results, r.RunTest("s3", "BucketMetricsConfiguration_BucketPlaneRequests", func() error {
+		planeBucket := s3Bucket(ts, "req-metrics-plane")
+		if err := s3CreateBucket(ctx, client, planeBucket); err != nil {
+			return fmt.Errorf("failed to create the bucket-plane metrics bucket: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, planeBucket)
+
+		filterID := "whole-bucket"
+		if _, err := client.PutBucketMetricsConfiguration(ctx, &s3.PutBucketMetricsConfigurationInput{
+			Bucket: aws.String(planeBucket),
+			Id:     aws.String(filterID),
+			MetricsConfiguration: &types.MetricsConfiguration{
+				Id: aws.String(filterID),
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketMetricsConfiguration failed: %w", err)
+		}
+
+		if _, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(planeBucket)}); err != nil {
+			return fmt.Errorf("HeadBucket failed: %w", err)
+		}
+		body := "bucket-plane-body"
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(planeBucket),
+			Key:    aws.String("gone/one.txt"),
+			Body:   strings.NewReader(body),
+		}); err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if _, err := client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(planeBucket),
+			Delete: &types.Delete{Objects: []types.ObjectIdentifier{{Key: aws.String("gone/one.txt")}}},
+		}); err != nil {
+			return fmt.Errorf("DeleteObjects failed: %w", err)
+		}
+
+		cwCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load cloudwatch config: %w", err)
+		}
+		cwClient := cloudwatch.NewFromConfig(cwCfg)
+		dimensions := []cwtypes.Dimension{
+			{Name: aws.String("BucketName"), Value: aws.String(planeBucket)},
+			{Name: aws.String("FilterId"), Value: aws.String(filterID)},
+		}
+
+		sums := map[string]float64{}
+		deadline := time.Now().Add(60 * time.Second)
+		for time.Now().Before(deadline) {
+			sums = map[string]float64{}
+			for _, metric := range []string{"AllRequests", "HeadRequests", "DeleteRequests"} {
+				resp, err := cwClient.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
+					StartTime: aws.Time(time.Now().Add(-15 * time.Minute)),
+					EndTime:   aws.Time(time.Now().Add(time.Minute)),
+					ScanBy:    cwtypes.ScanByTimestampAscending,
+					MetricDataQueries: []cwtypes.MetricDataQuery{{
+						Id: aws.String("sum"),
+						MetricStat: &cwtypes.MetricStat{
+							Metric: &cwtypes.Metric{
+								Namespace:  aws.String("AWS/S3"),
+								MetricName: aws.String(metric),
+								Dimensions: dimensions,
+							},
+							Period: aws.Int32(60),
+							Stat:   aws.String("Sum"),
+						},
+					}},
+				})
+				if err != nil {
+					return fmt.Errorf("GetMetricData(%s) failed: %w", metric, err)
+				}
+				for _, result := range resp.MetricDataResults {
+					for _, value := range result.Values {
+						sums[metric] += value
+					}
+				}
+			}
+			if sums["AllRequests"] >= 4 && sums["HeadRequests"] >= 1 && sums["DeleteRequests"] >= 1 {
+				return nil
+			}
+			time.Sleep(2 * time.Second)
+		}
+		return fmt.Errorf("bucket-plane request metrics not populated in time: %v", sums)
+	}))
+
+	// CopyObject: GetRequests is incremented for the source of each copy,
+	// so a copy out of a configured bucket must show up in that bucket's
+	// GetRequests even though the request itself was a PUT to another
+	// bucket.
+	results = append(results, r.RunTest("s3", "CopyObject_SourceGetRequests", func() error {
+		srcBucket := s3Bucket(ts, "copy-metrics-src")
+		dstBucket := s3Bucket(ts, "copy-metrics-dst")
+		for _, b := range []string{srcBucket, dstBucket} {
+			if err := s3CreateBucket(ctx, client, b); err != nil {
+				return fmt.Errorf("failed to create %s: %w", b, err)
+			}
+			defer s3CleanupBucket(ctx, client, b)
+		}
+		filterID := "whole-bucket"
+		if _, err := client.PutBucketMetricsConfiguration(ctx, &s3.PutBucketMetricsConfigurationInput{
+			Bucket:               aws.String(srcBucket),
+			Id:                   aws.String(filterID),
+			MetricsConfiguration: &types.MetricsConfiguration{Id: aws.String(filterID)},
+		}); err != nil {
+			return fmt.Errorf("PutBucketMetricsConfiguration failed: %w", err)
+		}
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(srcBucket),
+			Key:    aws.String("docs/orig.txt"),
+			Body:   strings.NewReader("copy-source-body"),
+		}); err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if _, err := client.CopyObject(ctx, &s3.CopyObjectInput{
+			Bucket:     aws.String(dstBucket),
+			Key:        aws.String("docs/copy.txt"),
+			CopySource: aws.String(srcBucket + "/docs/orig.txt"),
+		}); err != nil {
+			return fmt.Errorf("CopyObject failed: %w", err)
+		}
+
+		cwCfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+			Endpoint: r.endpoint,
+			Region:   r.region,
+		})
+		if err != nil {
+			return fmt.Errorf("load cloudwatch config: %w", err)
+		}
+		cwClient := cloudwatch.NewFromConfig(cwCfg)
+		dimensions := []cwtypes.Dimension{
+			{Name: aws.String("BucketName"), Value: aws.String(srcBucket)},
+			{Name: aws.String("FilterId"), Value: aws.String(filterID)},
+		}
+		deadline := time.Now().Add(60 * time.Second)
+		for time.Now().Before(deadline) {
+			resp, err := cwClient.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
+				StartTime: aws.Time(time.Now().Add(-15 * time.Minute)),
+				EndTime:   aws.Time(time.Now().Add(time.Minute)),
+				ScanBy:    cwtypes.ScanByTimestampAscending,
+				MetricDataQueries: []cwtypes.MetricDataQuery{{
+					Id: aws.String("sum"),
+					MetricStat: &cwtypes.MetricStat{
+						Metric: &cwtypes.Metric{
+							Namespace:  aws.String("AWS/S3"),
+							MetricName: aws.String("GetRequests"),
+							Dimensions: dimensions,
+						},
+						Period: aws.Int32(60),
+						Stat:   aws.String("Sum"),
+					},
+				}},
+			})
+			if err != nil {
+				return fmt.Errorf("GetMetricData failed: %w", err)
+			}
+			sum := 0.0
+			for _, result := range resp.MetricDataResults {
+				for _, value := range result.Values {
+					sum += value
+				}
+			}
+			if sum >= 1 {
+				return nil
+			}
+			time.Sleep(2 * time.Second)
+		}
+		return fmt.Errorf("copy-source GetRequests not populated in time")
+	}))
+
+	// --- Inventory report delivery (CSV, Parquet, and ORC end to end) ---
+
+	results = append(results, r.RunTest("s3", "InventoryReportDelivery_CsvParquetOrc", func() error {
+		srcBucket := s3Bucket(ts, "inv-src")
+		if err := s3CreateBucket(ctx, client, srcBucket); err != nil {
+			return fmt.Errorf("failed to create the report source bucket: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, srcBucket)
+
+		for _, key := range []string{"kept/alpha.txt", "kept/beta.bin", "skipped/gamma.txt"} {
+			if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+				Bucket: aws.String(srcBucket),
+				Key:    aws.String(key),
+				Body:   strings.NewReader("inventory-report-body"),
+			}); err != nil {
+				return fmt.Errorf("PutObject %s failed: %w", key, err)
+			}
+		}
+
+		csvID := "csv-delivery"
+		pqID := "pq-delivery"
+		orcID := "orc-delivery"
+		inventoryCfg := func(id string, prefix string, format types.InventoryFormat) *types.InventoryConfiguration {
+			return &types.InventoryConfiguration{
+				Id:                     aws.String(id),
+				IsEnabled:              aws.Bool(true),
+				IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
+				Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
+				OptionalFields: []types.InventoryOptionalField{
+					types.InventoryOptionalFieldSize,
+					types.InventoryOptionalFieldLastModifiedDate,
+					types.InventoryOptionalFieldStorageClass,
+				},
+				Destination: &types.InventoryDestination{
+					S3BucketDestination: &types.InventoryS3BucketDestination{
+						Bucket: aws.String(destARN),
+						Format: format,
+						Prefix: aws.String(prefix),
+					},
+				},
+			}
+		}
+		// The CSV configuration filters to kept/, the Parquet one covers the
+		// whole bucket through a destination prefix.
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket: aws.String(srcBucket), Id: aws.String(csvID),
+			InventoryConfiguration: &types.InventoryConfiguration{
+				Id:                     aws.String(csvID),
+				IsEnabled:              aws.Bool(true),
+				IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
+				Filter:                 &types.InventoryFilter{Prefix: aws.String("kept/")},
+				Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
+				OptionalFields:         []types.InventoryOptionalField{types.InventoryOptionalFieldSize, types.InventoryOptionalFieldStorageClass},
+				Destination: &types.InventoryDestination{
+					S3BucketDestination: &types.InventoryS3BucketDestination{
+						Bucket: aws.String(destARN),
+						Format: types.InventoryFormatCsv,
+					},
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketInventoryConfiguration(csv) failed: %w", err)
+		}
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket: aws.String(srcBucket), Id: aws.String(pqID),
+			InventoryConfiguration: inventoryCfg(pqID, "reports", types.InventoryFormatParquet),
+		}); err != nil {
+			return fmt.Errorf("PutBucketInventoryConfiguration(parquet) failed: %w", err)
+		}
+		// The ORC configuration covers the whole bucket through a destination
+		// prefix.
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket: aws.String(srcBucket), Id: aws.String(orcID),
+			InventoryConfiguration: inventoryCfg(orcID, "orc", types.InventoryFormatOrc),
+		}); err != nil {
+			return fmt.Errorf("PutBucketInventoryConfiguration(orc) failed: %w", err)
+		}
+		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(csvID)})
+		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(pqID)})
+		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(orcID)})
+
+		destBucket := s3Bucket(ts, "inv-dest")
+		findManifest := func(prefix string) (string, bool) {
+			resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+				Bucket: aws.String(destBucket),
+				Prefix: aws.String(prefix),
+			})
+			if err != nil {
+				return "", false
+			}
+			for _, obj := range resp.Contents {
+				if strings.HasSuffix(aws.ToString(obj.Key), "/manifest.json") {
+					return aws.ToString(obj.Key), true
+				}
+			}
+			return "", false
+		}
+
+		// TEST_MODE compresses the delivery cadence; a minute covers the
+		// compressed period plus the worker tick.
+		deadline := time.Now().Add(120 * time.Second)
+		var csvManifestKey, pqManifestKey, orcManifestKey string
+		for time.Now().Before(deadline) {
+			if csvManifestKey == "" {
+				if key, ok := findManifest(srcBucket + "/" + csvID + "/"); ok {
+					csvManifestKey = key
+				}
+			}
+			if pqManifestKey == "" {
+				if key, ok := findManifest("reports/" + srcBucket + "/" + pqID + "/"); ok {
+					pqManifestKey = key
+				}
+			}
+			if orcManifestKey == "" {
+				if key, ok := findManifest("orc/" + srcBucket + "/" + orcID + "/"); ok {
+					orcManifestKey = key
+				}
+			}
+			if csvManifestKey != "" && pqManifestKey != "" && orcManifestKey != "" {
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if csvManifestKey == "" || pqManifestKey == "" || orcManifestKey == "" {
+			return fmt.Errorf("inventory reports not delivered in time (csv=%q parquet=%q orc=%q)", csvManifestKey, pqManifestKey, orcManifestKey)
+		}
+
+		verifyManifest := func(manifestKey string) (manifest struct {
+			SourceBucket      string `json:"sourceBucket"`
+			DestinationBucket string `json:"destinationBucket"`
+			Version           string `json:"version"`
+			FileFormat        string `json:"fileFormat"`
+			FileSchema        string `json:"fileSchema"`
+			Files             []struct {
+				Key         string `json:"key"`
+				Size        int64  `json:"size"`
+				MD5Checksum string `json:"MD5checksum"`
+			} `json:"files"`
+		}, dataKey string, dataBytes []byte, err error) {
+			mResp, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(destBucket), Key: aws.String(manifestKey)})
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("GetObject manifest failed: %w", err)
+			}
+			manifestBytes, err := io.ReadAll(mResp.Body)
+			mResp.Body.Close()
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("read manifest failed: %w", err)
+			}
+			if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+				return manifest, "", nil, fmt.Errorf("manifest json malformed: %w", err)
+			}
+
+			checksumResp, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(destBucket), Key: aws.String(manifestKey + ".checksum")})
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("GetObject manifest.checksum failed: %w", err)
+			}
+			checksumBytes, err := io.ReadAll(checksumResp.Body)
+			checksumResp.Body.Close()
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("read checksum failed: %w", err)
+			}
+			if strings.TrimSpace(string(checksumBytes)) != fmt.Sprintf("%x", md5.Sum(manifestBytes)) {
+				return manifest, "", nil, fmt.Errorf("manifest.checksum %q does not match the manifest md5", strings.TrimSpace(string(checksumBytes)))
+			}
+
+			if len(manifest.Files) == 0 {
+				return manifest, "", nil, fmt.Errorf("manifest lists no data files")
+			}
+			dataKey = manifest.Files[0].Key
+			dResp, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(destBucket), Key: aws.String(dataKey)})
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("GetObject data file failed: %w", err)
+			}
+			dataBytes, err = io.ReadAll(dResp.Body)
+			dResp.Body.Close()
+			if err != nil {
+				return manifest, "", nil, fmt.Errorf("read data file failed: %w", err)
+			}
+			if manifest.Files[0].Size != int64(len(dataBytes)) {
+				return manifest, "", nil, fmt.Errorf("manifest size %d != actual %d", manifest.Files[0].Size, len(dataBytes))
+			}
+			if manifest.Files[0].MD5Checksum != fmt.Sprintf("%x", md5.Sum(dataBytes)) {
+				return manifest, "", nil, fmt.Errorf("manifest MD5checksum does not match the data file md5")
+			}
+			return manifest, dataKey, dataBytes, nil
+		}
+
+		csvManifest, csvDataKey, csvData, err := verifyManifest(csvManifestKey)
+		if err != nil {
+			return err
+		}
+		if csvManifest.SourceBucket != srcBucket || csvManifest.DestinationBucket != destARN {
+			return fmt.Errorf("csv manifest bucket fields wrong: %+v", csvManifest)
+		}
+		if csvManifest.Version != "2016-11-30" || csvManifest.FileFormat != "CSV" {
+			return fmt.Errorf("csv manifest version/format wrong: %+v", csvManifest)
+		}
+		if csvManifest.FileSchema != "Bucket, Key, Size, StorageClass" {
+			return fmt.Errorf("csv fileSchema = %q, want the selected-column order", csvManifest.FileSchema)
+		}
+		if !strings.HasPrefix(csvDataKey, srcBucket+"/"+csvID+"/data/") || !strings.HasSuffix(csvDataKey, ".csv.gz") {
+			return fmt.Errorf("csv data key = %q, want the documented layout", csvDataKey)
+		}
+		gzipReader, err := gzip.NewReader(bytes.NewReader(csvData))
+		if err != nil {
+			return fmt.Errorf("csv data is not gzip: %w", err)
+		}
+		csvText, err := io.ReadAll(gzipReader)
+		if err != nil {
+			return fmt.Errorf("csv gunzip failed: %w", err)
+		}
+		if !strings.Contains(string(csvText), srcBucket+",kept/alpha.txt,") || !strings.Contains(string(csvText), srcBucket+",kept/beta.bin,") {
+			return fmt.Errorf("csv report lost the kept objects: %s", csvText)
+		}
+		if strings.Contains(string(csvText), "skipped/gamma.txt") {
+			return fmt.Errorf("csv report included an object outside the filter: %s", csvText)
+		}
+
+		pqManifest, pqDataKey, pqData, err := verifyManifest(pqManifestKey)
+		if err != nil {
+			return err
+		}
+		if pqManifest.FileFormat != "Parquet" || !strings.Contains(pqManifest.FileSchema, "required binary bucket (UTF8)") {
+			return fmt.Errorf("parquet manifest wrong: %+v", pqManifest)
+		}
+		if !strings.HasPrefix(pqDataKey, "reports/"+srcBucket+"/"+pqID+"/data/") || !strings.HasSuffix(pqDataKey, ".parquet") {
+			return fmt.Errorf("parquet data key = %q, want the prefixed layout", pqDataKey)
+		}
+		if len(pqData) < 8 || string(pqData[:4]) != "PAR1" || string(pqData[len(pqData)-4:]) != "PAR1" {
+			return fmt.Errorf("parquet data file does not carry the parquet magic bytes")
+		}
+
+		orcManifest, orcDataKey, orcData, err := verifyManifest(orcManifestKey)
+		if err != nil {
+			return err
+		}
+		if orcManifest.FileFormat != "ORC" || !strings.HasPrefix(orcManifest.FileSchema, "struct<bucket:string,key:string") {
+			return fmt.Errorf("orc manifest wrong: %+v", orcManifest)
+		}
+		if !strings.HasPrefix(orcDataKey, "orc/"+srcBucket+"/"+orcID+"/data/") || !strings.HasSuffix(orcDataKey, ".orc") {
+			return fmt.Errorf("orc data key = %q, want the prefixed layout", orcDataKey)
+		}
+		orcReader, err := orc.NewReader(bytes.NewReader(orcData))
+		if err != nil {
+			return fmt.Errorf("orc reader: %w", err)
+		}
+		defer orcReader.Close()
+		cursor := orcReader.Select("bucket", "key", "size")
+		orcRows := map[string]int64{}
+		orcBuckets := map[string]bool{}
+		for cursor.Stripes() {
+			for cursor.Next() {
+				row := cursor.Row()
+				orcRows[row[1].(string)] = row[2].(int64)
+				orcBuckets[row[0].(string)] = true
+			}
+		}
+		if err := cursor.Err(); err != nil {
+			return fmt.Errorf("orc cursor: %w", err)
+		}
+		if len(orcRows) != 3 {
+			return fmt.Errorf("orc report rows = %d (%v), want 3", len(orcRows), orcRows)
+		}
+		if len(orcBuckets) != 1 || !orcBuckets[srcBucket] {
+			return fmt.Errorf("orc report bucket column = %v, want only %q", orcBuckets, srcBucket)
+		}
+		for _, key := range []string{"kept/alpha.txt", "kept/beta.bin", "skipped/gamma.txt"} {
+			if orcRows[key] != 21 {
+				return fmt.Errorf("orc row %s = %d, want 21", key, orcRows[key])
+			}
+		}
+		return nil
+	}))
+
+	// Delivered reports honour the configuration's InventoryEncryption
+	// choice: the SSE-S3 delivery carries AES256 and the SSE-KMS one
+	// aws:kms plus the configured key.
+	results = append(results, r.RunTest("s3", "InventoryReportDelivery_Encrypted", func() error {
+		_, keyID, keyCleanup, keyErr := r.s3CreateTestKMSKey(ctx, "inventory encrypted delivery")
+		if keyErr != nil {
+			return keyErr
+		}
+		defer keyCleanup()
+
+		srcBucket := s3Bucket(ts, "inv-enc-src")
+		if err := s3CreateBucket(ctx, client, srcBucket); err != nil {
+			return fmt.Errorf("failed to create the encrypted-delivery source bucket: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, srcBucket)
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:               aws.String(srcBucket),
+			Key:                  aws.String("kept/one.txt"),
+			Body:                 strings.NewReader("encrypted-delivery-body"),
+			ServerSideEncryption: types.ServerSideEncryptionAwsKms,
+			SSEKMSKeyId:          aws.String(keyID),
+		}); err != nil {
+			return fmt.Errorf("PutObject failed: %w", err)
+		}
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(srcBucket),
+			Key:    aws.String("plain-two.txt"),
+			Body:   strings.NewReader("plain body"),
+		}); err != nil {
+			return fmt.Errorf("plain PutObject failed: %w", err)
+		}
+
+		encDestBucket := s3Bucket(ts, "inv-enc-dest")
+		if err := s3CreateBucket(ctx, client, encDestBucket); err != nil {
+			return fmt.Errorf("failed to create the encrypted-delivery destination bucket: %w", err)
+		}
+		defer s3CleanupBucket(ctx, client, encDestBucket)
+		encDestARN := fmt.Sprintf("arn:aws:s3:::%s", encDestBucket)
+
+		encryptedCfg := func(id string, encryption *types.InventoryEncryption) *types.InventoryConfiguration {
+			return &types.InventoryConfiguration{
+				Id:                     aws.String(id),
+				IsEnabled:              aws.Bool(true),
+				IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
+				OptionalFields:         []types.InventoryOptionalField{types.InventoryOptionalFieldSize, types.InventoryOptionalFieldBucketKeyStatus},
+				Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
+				Destination: &types.InventoryDestination{
+					S3BucketDestination: &types.InventoryS3BucketDestination{
+						Bucket:     aws.String(encDestARN),
+						Format:     types.InventoryFormatCsv,
+						Encryption: encryption,
+					},
+				},
+			}
+		}
+		s3ID, kmsID := "enc-s3", "enc-kms"
+		for id, cfg := range map[string]*types.InventoryConfiguration{
+			s3ID:  encryptedCfg(s3ID, &types.InventoryEncryption{SSES3: &types.SSES3{}}),
+			kmsID: encryptedCfg(kmsID, &types.InventoryEncryption{SSEKMS: &types.SSEKMS{KeyId: aws.String(keyID)}}),
+		} {
+			if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+				Bucket: aws.String(srcBucket), Id: aws.String(id), InventoryConfiguration: cfg,
+			}); err != nil {
+				return fmt.Errorf("PutBucketInventoryConfiguration(%s) failed: %w", id, err)
+			}
+			defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(id)})
+		}
+
+		findManifest := func(prefix string) (string, bool) {
+			resp, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+				Bucket: aws.String(encDestBucket),
+				Prefix: aws.String(prefix),
+			})
+			if err != nil {
+				return "", false
+			}
+			for _, obj := range resp.Contents {
+				if strings.HasSuffix(aws.ToString(obj.Key), "/manifest.json") {
+					return aws.ToString(obj.Key), true
+				}
+			}
+			return "", false
+		}
+
+		// TEST_MODE compresses the delivery cadence; a minute covers the
+		// compressed period plus the worker tick.
+		deadline := time.Now().Add(120 * time.Second)
+		manifests := map[string]string{}
+		for time.Now().Before(deadline) && len(manifests) < 2 {
+			for _, id := range []string{s3ID, kmsID} {
+				if manifests[id] != "" {
+					continue
+				}
+				if key, ok := findManifest(srcBucket + "/" + id + "/"); ok {
+					manifests[id] = key
+				}
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if len(manifests) < 2 {
+			return fmt.Errorf("encrypted inventory reports not delivered in time (seen: %v)", manifests)
+		}
+
+		wantEncryption := map[string]types.ServerSideEncryption{
+			s3ID:  types.ServerSideEncryptionAes256,
+			kmsID: types.ServerSideEncryptionAwsKms,
+		}
+		for id, manifestKey := range manifests {
+			mResp, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(encDestBucket), Key: aws.String(manifestKey)})
+			if err != nil {
+				return fmt.Errorf("GetObject %s manifest failed: %w", id, err)
+			}
+			manifestBytes, err := io.ReadAll(mResp.Body)
+			mResp.Body.Close()
+			if err != nil {
+				return fmt.Errorf("read %s manifest failed: %w", id, err)
+			}
+			if mResp.ServerSideEncryption != wantEncryption[id] {
+				return fmt.Errorf("%s manifest encryption = %s, want %s", id, mResp.ServerSideEncryption, wantEncryption[id])
+			}
+			var manifest struct {
+				Files []struct {
+					Key string `json:"key"`
+				} `json:"files"`
+			}
+			if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+				return fmt.Errorf("%s manifest json malformed: %w", id, err)
+			}
+			if len(manifest.Files) == 0 {
+				return fmt.Errorf("%s manifest lists no data files", id)
+			}
+			dResp, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(encDestBucket), Key: aws.String(manifest.Files[0].Key)})
+			if err != nil {
+				return fmt.Errorf("GetObject %s data file failed: %w", id, err)
+			}
+			dataBytes, err := io.ReadAll(dResp.Body)
+			dResp.Body.Close()
+			if err != nil {
+				return fmt.Errorf("read %s data file failed: %w", id, err)
+			}
+			if dResp.ServerSideEncryption != wantEncryption[id] {
+				return fmt.Errorf("%s data file encryption = %s, want %s", id, dResp.ServerSideEncryption, wantEncryption[id])
+			}
+			if id == kmsID && aws.ToString(dResp.SSEKMSKeyId) != keyID {
+				return fmt.Errorf("%s data file kms key = %q, want %q", id, aws.ToString(dResp.SSEKMSKeyId), keyID)
+			}
+			gz, err := gzip.NewReader(bytes.NewReader(dataBytes))
+			if err != nil {
+				return fmt.Errorf("%s data file is not gzip: %w", id, err)
+			}
+			csvText, err := io.ReadAll(gz)
+			if err != nil {
+				return fmt.Errorf("%s csv gunzip failed: %w", id, err)
+			}
+			if !strings.Contains(string(csvText), srcBucket+",kept/one.txt,") {
+				return fmt.Errorf("%s report lost the object row: %s", id, csvText)
+			}
+			// The optional BucketKeyStatus column describes each listed
+			// object: the SSE-KMS object reports DISABLED (the platform has
+			// no bucket keys) and the unencrypted one carries no status.
+			checkRow := func(fragment, wantSuffix string) error {
+				for _, line := range strings.Split(string(csvText), "\n") {
+					if strings.Contains(line, fragment) {
+						if !strings.HasSuffix(line, wantSuffix) {
+							return fmt.Errorf("%s report row %q does not end with %q", id, line, wantSuffix)
+						}
+						return nil
+					}
+				}
+				return fmt.Errorf("%s report lost the %q row: %s", id, fragment, csvText)
+			}
+			if err := checkRow(",kept/one.txt,", ",DISABLED"); err != nil {
+				return err
+			}
+			if err := checkRow(",plain-two.txt,", ","); err != nil {
+				return err
+			}
 		}
 		return nil
 	}))

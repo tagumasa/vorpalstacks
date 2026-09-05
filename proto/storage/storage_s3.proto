@@ -479,6 +479,74 @@ message ReplicationDestination {
   string access_control_translation = 4;
 }
 
+// InventoryConfiguration is one S3 Inventory configuration on a bucket.
+message InventoryConfiguration {
+  string id = 1;
+  bool is_enabled = 2;
+  InventoryFilter filter = 3;
+  string included_object_versions = 4;
+  repeated string optional_fields = 5;
+  InventorySchedule schedule = 6;
+  InventoryDestination destination = 7;
+  google.protobuf.Timestamp last_delivery = 8;
+}
+
+// InventoryFilter restricts an inventory report to one key prefix.
+message InventoryFilter {
+  string prefix = 1;
+}
+
+// InventorySchedule is how often an inventory report is produced.
+message InventorySchedule {
+  string frequency = 1;
+}
+
+// InventoryDestination carries where the inventory report is published.
+message InventoryDestination {
+  InventoryS3BucketDestination s3_bucket_destination = 1;
+}
+
+// InventoryS3BucketDestination is the S3 destination of an inventory report.
+message InventoryS3BucketDestination {
+  string account_id = 1;
+  string bucket = 2;
+  string format = 3;
+  string prefix = 4;
+  InventoryEncryption encryption = 5;
+}
+
+// InventoryEncryption selects the encryption applied to report files.
+message InventoryEncryption {
+  bool sse_s3 = 1;
+  InventorySSEKMS sse_kms = 2;
+}
+
+// InventorySSEKMS carries the KMS key protecting report files.
+message InventorySSEKMS {
+  string key_id = 1;
+}
+
+// MetricsConfiguration is one CloudWatch request-metrics configuration.
+message MetricsConfiguration {
+  string id = 1;
+  MetricsFilter filter = 2;
+}
+
+// MetricsFilter selects the objects a metrics configuration applies to.
+message MetricsFilter {
+  string prefix = 1;
+  Tag tag = 2;
+  string access_point_arn = 3;
+  MetricsAndOperator and = 4;
+}
+
+// MetricsAndOperator is the conjunction form of a metrics filter.
+message MetricsAndOperator {
+  string prefix = 1;
+  repeated Tag tags = 2;
+  string access_point_arn = 3;
+}
+
 // Bucket represents an S3 bucket.
 message Bucket {
   string name = 1;
@@ -502,4 +570,6 @@ message Bucket {
   AccelerateConfiguration accelerate_configuration = 19;
   ReplicationConfiguration replication_configuration = 20;
   string mfa_delete = 21;
+  repeated InventoryConfiguration inventory_configurations = 22;
+  repeated MetricsConfiguration metrics_configurations = 23;
 }

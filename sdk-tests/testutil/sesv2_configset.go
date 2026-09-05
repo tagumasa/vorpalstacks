@@ -14,33 +14,15 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 	configSetName := fmt.Sprintf("test-cs-%d", tc.uid)
 
 	results = append(results, r.RunTest("sesv2", "CreateConfigurationSet", func() error {
-		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
-		if err != nil {
+		if err := tc.createConfigSet(configSetName); err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after create: %v", err)
 		}
 		if resp.ConfigurationSetName == nil || *resp.ConfigurationSetName != configSetName {
 			return fmt.Errorf("expected name %s, got %v", configSetName, resp.ConfigurationSetName)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetConfigurationSet", func() error {
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.ConfigurationSetName == nil || *resp.ConfigurationSetName != configSetName {
-			return fmt.Errorf("expected %s, got %v", configSetName, resp.ConfigurationSetName)
 		}
 		return nil
 	}))
@@ -64,9 +46,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after put sending options: %v", err)
 		}
@@ -87,9 +67,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after put reputation options: %v", err)
 		}
@@ -110,9 +88,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after put delivery options: %v", err)
 		}
@@ -166,9 +142,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after vdm put: %v", err)
 		}
@@ -193,9 +167,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getConfigSet(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after archiving put: %v", err)
 		}
@@ -222,34 +194,9 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getEventDestinations(configSetName)
 		if err != nil {
 			return fmt.Errorf("get event destinations after create: %v", err)
-		}
-		found := false
-		for _, ed := range resp.EventDestinations {
-			if ed.Name != nil && *ed.Name == eventDestName {
-				found = true
-				if !ed.Enabled {
-					return fmt.Errorf("expected Enabled=true")
-				}
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("event destination %s not found after creation", eventDestName)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetConfigurationSetEventDestinations", func() error {
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
-		if err != nil {
-			return err
 		}
 		if len(resp.EventDestinations) == 0 {
 			return fmt.Errorf("expected at least 1 event destination")
@@ -258,6 +205,9 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		for _, ed := range resp.EventDestinations {
 			if ed.Name != nil && *ed.Name == eventDestName {
 				found = true
+				if !ed.Enabled {
+					return fmt.Errorf("expected Enabled=true")
+				}
 				hasSend := false
 				for _, et := range ed.MatchingEventTypes {
 					if et == types.EventTypeSend {
@@ -271,7 +221,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 			}
 		}
 		if !found {
-			return fmt.Errorf("event destination %s not found", eventDestName)
+			return fmt.Errorf("event destination %s not found after creation", eventDestName)
 		}
 		return nil
 	}))
@@ -288,9 +238,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getEventDestinations(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after update: %v", err)
 		}
@@ -319,9 +267,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		resp, err := tc.getEventDestinations(configSetName)
 		if err != nil {
 			return fmt.Errorf("get after delete: %v", err)
 		}
@@ -347,23 +293,14 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sesv2", "ListTagsForResource_ConfigSet", func() error {
-		resp, err := tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
-			ResourceArn: aws.String(tc.configSetARN(configSetName)),
-		})
+		tags, err := tc.listTags(tc.configSetARN(configSetName))
 		if err != nil {
 			return err
 		}
-		if len(resp.Tags) == 0 {
+		if len(tags) == 0 {
 			return fmt.Errorf("expected at least 1 tag")
 		}
-		found := false
-		for _, t := range resp.Tags {
-			if t.Key != nil && *t.Key == "Environment" && t.Value != nil && *t.Value == "test" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !containsTag(tags, "Environment", "test") {
 			return fmt.Errorf("tag Environment=test not found")
 		}
 		return nil
@@ -377,13 +314,11 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
-			ResourceArn: aws.String(tc.configSetARN(configSetName)),
-		})
+		tags, err := tc.listTags(tc.configSetARN(configSetName))
 		if err != nil {
 			return fmt.Errorf("list tags after untag: %v", err)
 		}
-		for _, t := range resp.Tags {
+		for _, t := range tags {
 			if t.Key != nil && *t.Key == "Environment" {
 				return fmt.Errorf("tag Environment should have been removed")
 			}
@@ -401,23 +336,20 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 				{Key: aws.String("Environment"), Value: aws.String("test")},
 			},
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("TagResource: %v", err)
+		if aerr := tc.expectNotFound("TagResource", err); aerr != nil {
+			return aerr
 		}
 		_, err = tc.client.UntagResource(tc.ctx, &sesv2.UntagResourceInput{
 			ResourceArn: aws.String(arn),
 			TagKeys:     []string{"Environment"},
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("UntagResource: %v", err)
+		if aerr := tc.expectNotFound("UntagResource", err); aerr != nil {
+			return aerr
 		}
 		_, err = tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
 			ResourceArn: aws.String(arn),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("ListTagsForResource: %v", err)
-		}
-		return nil
+		return tc.expectNotFound("ListTagsForResource", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteConfigurationSet", func() error {
@@ -427,9 +359,7 @@ func (r *TestRunner) runSESv2ConfigSetTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String(configSetName),
-		})
+		_, err = tc.getConfigSet(configSetName)
 		if err == nil {
 			return fmt.Errorf("expected error after deleting config set")
 		}

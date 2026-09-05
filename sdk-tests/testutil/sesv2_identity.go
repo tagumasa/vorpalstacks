@@ -62,9 +62,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetEmailIdentity", func() error {
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getEmailIdentity(emailAddress)
 		if err != nil {
 			return err
 		}
@@ -93,20 +91,11 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("tag identity: %v", err)
 		}
-		resp, err = tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err = tc.getEmailIdentity(emailAddress)
 		if err != nil {
 			return fmt.Errorf("get identity after tag: %v", err)
 		}
-		found := false
-		for _, t := range resp.Tags {
-			if t.Key != nil && *t.Key == "Owner" && t.Value != nil && *t.Value == "sdk-test" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !containsTag(resp.Tags, "Owner", "sdk-test") {
 			return fmt.Errorf("GetEmailIdentity did not return Owner=sdk-test tag")
 		}
 		return nil
@@ -134,9 +123,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(domainIdentity),
-		})
+		resp, err := tc.getEmailIdentity(domainIdentity)
 		if err != nil {
 			return fmt.Errorf("get identity after DKIM put: %v", err)
 		}
@@ -176,9 +163,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(domainIdentity),
-		})
+		resp, err := tc.getEmailIdentity(domainIdentity)
 		if err != nil {
 			return fmt.Errorf("get after BYODKIM put: %v", err)
 		}
@@ -200,9 +185,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getEmailIdentity(emailAddress)
 		if err != nil {
 			return fmt.Errorf("get after feedback put: %v", err)
 		}
@@ -222,9 +205,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(domainIdentity),
-		})
+		resp, err := tc.getEmailIdentity(domainIdentity)
 		if err != nil {
 			return fmt.Errorf("get after mail-from put: %v", err)
 		}
@@ -239,9 +220,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "PutEmailIdentityConfigurationSetAttributes", func() error {
 		csName := fmt.Sprintf("test-cs2-%d", tc.uid)
-		_, _ = tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(csName),
-		})
+		_ = tc.createConfigSet(csName)
 		_, err := tc.client.PutEmailIdentityConfigurationSetAttributes(tc.ctx, &sesv2.PutEmailIdentityConfigurationSetAttributesInput{
 			EmailIdentity:        aws.String(emailAddress),
 			ConfigurationSetName: aws.String(csName),
@@ -250,9 +229,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 			tc.deleteConfigSet(csName)
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getEmailIdentity(emailAddress)
 		tc.deleteConfigSet(csName)
 		if err != nil {
 			return fmt.Errorf("get after config set attr put: %v", err)
@@ -274,31 +251,13 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getIdentityPolicies(emailAddress)
 		if err != nil {
 			return fmt.Errorf("get policies after create: %v", err)
 		}
-		if _, ok := resp.Policies[policyName]; !ok {
-			return fmt.Errorf("policy %s not found after creation", policyName)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetEmailIdentityPolicies", func() error {
-		resp, err := tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
-		if err != nil {
-			return err
-		}
-		if len(resp.Policies) == 0 {
-			return fmt.Errorf("expected at least 1 policy")
-		}
 		policy, ok := resp.Policies[policyName]
 		if !ok {
-			return fmt.Errorf("policy %s not found", policyName)
+			return fmt.Errorf("policy %s not found after creation", policyName)
 		}
 		if policy != `{"Version":"2008-10-17","Statement":[]}` {
 			return fmt.Errorf("policy content mismatch: %s", policy)
@@ -316,9 +275,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getIdentityPolicies(emailAddress)
 		if err != nil {
 			return fmt.Errorf("get policies after update: %v", err)
 		}
@@ -336,9 +293,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		resp, err := tc.getIdentityPolicies(emailAddress)
 		if err != nil {
 			return fmt.Errorf("get policies after delete: %v", err)
 		}
@@ -355,9 +310,7 @@ func (r *TestRunner) runSESv2IdentityTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(domainIdentity),
-		})
+		_, err = tc.getEmailIdentity(domainIdentity)
 		if err == nil {
 			return fmt.Errorf("expected error after deleting domain identity")
 		}

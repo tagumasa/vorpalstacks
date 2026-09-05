@@ -1,8 +1,8 @@
 # Implemented Services
 
-**Last Updated**: 2026-09-05
+**Last Updated**: 2026-09-06
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
-**SDK Tests**: 3,478 passed, 0 failed (3,396 SDK + 65 integration + 17 WebSocket)
+**SDK Tests**: 3,473 passed, 0 failed (3,391 SDK + 65 integration + 17 WebSocket)
 
 ---
 
@@ -32,7 +32,7 @@
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, or managed runtime updates. |
-| S3 | Broad | Bucket inventory/metrics configurations not implemented. No analytics/intelligent-tiering configurations (no storage-class tiering), object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, or WriteGetObjectResponse. Object Lock, CORS, lifecycle, SSE encryption fully enforced. |
+| S3 | Broad | Bucket inventory and metrics configurations implemented (CRUD with the 1,000-configuration limit and 100-item pagination); inventory reports deliver on daily/weekly UTC boundaries to the S3 destination as CSV (gzip), Parquet (snappy), and ORC (ZLIB) with manifest.json, manifest.checksum, and the Hive symlink, honouring the configuration's SSE-S3/SSE-KMS encryption choice. Metrics configurations drive per-filter CloudWatch request metrics in the AWS/S3 namespace: requests on both the object and bucket planes count into AllRequests plus their per-operation metric, each minute window publishes CloudWatch statistic sets (sample count, sum, min, max, so Average carries the documented error rate and bytes-per-request semantics), and a filter carrying an access-point ARN generates no datapoints (no access-point substrate). Report columns IntelligentTieringAccessTier, ChecksumAlgorithm, and LifecycleExpirationDate are emitted empty (no single-tier substrate). No analytics/intelligent-tiering configurations (no storage-class tiering), object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, or WriteGetObjectResponse. Object Lock, CORS, lifecycle, SSE encryption fully enforced. |
 | Scheduler | Full | Templated targets limited to platform-implemented services (Lambda, SQS, SNS, Kinesis, Step Functions, EventBridge). ECS and Firehose targets are accepted but fail at delivery until those services exist. SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (services not implemented on this platform). |
 | Secrets Manager | Full | ListTagsForResource is implemented beyond the 2017-10-17 API model (the operation does not exist in the model, so AWS SDKs never generate a client method for it; the platform operation serves raw-HTTP/console consumers). Managed external secret rotation members are configuration storage and echo only — the partner integration itself is external. |
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |

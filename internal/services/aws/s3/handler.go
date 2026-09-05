@@ -129,6 +129,12 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event, _ := classifyS3Request(r, bucket, key)
 
+	// Request-metrics recording is wired at this single dispatch point: only
+	// here can the recorder observe both latency phases — dispatch completion
+	// (the response starting to be returned) and the response body written.
+	// CORS preflight short-circuits above and is never aggregated.
+	started := time.Now()
+
 	switch {
 	case query.Has("delete") && bucket != "" && key == "":
 		result, statusCode, err = h.handleDeleteObjects(reqCtx, r, bucket, r.Body)
@@ -139,10 +145,12 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		result, header, statusCode, err = h.handleObjectRequest(reqCtx, r, bucket, key)
 	}
+	firstByte := time.Since(started)
 
 	if err != nil {
 		h.recordAudit(event, reqCtx, r, nil, err)
 		h.writeError(w, err, bucket, key, requestID)
+		h.svc.recordServedRequest(reqCtx, r, bucket, key, nil, errorStatusCode(err, http.StatusInternalServerError), firstByte, time.Since(started))
 		return
 	}
 
@@ -152,6 +160,7 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	h.recordAudit(event, reqCtx, r, result, nil)
 	h.writeResult(w, result, statusCode, requestID)
+	h.svc.recordServedRequest(reqCtx, r, bucket, key, result, statusCode, firstByte, time.Since(started))
 }
 
 func parseS3Path(urlPath string) (bucket, key string) {

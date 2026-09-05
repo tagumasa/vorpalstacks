@@ -4,6 +4,7 @@ package s3
 // for vorpalstacks.
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -320,4 +321,116 @@ func (s *BucketStore) GetReplication(name string) (*ReplicationConfiguration, er
 		return nil, err
 	}
 	return bucket.ReplicationConfiguration, nil
+}
+
+// SetInventoryConfiguration stores one inventory configuration on a bucket,
+// replacing any configuration already stored under the same id.
+func (s *BucketStore) SetInventoryConfiguration(name, id string, config *InventoryConfiguration) error {
+	return s.atomicUpdate(name, func(b *Bucket) error {
+		if b.InventoryConfigurations == nil {
+			b.InventoryConfigurations = make(map[string]*InventoryConfiguration)
+		}
+		config.ID = id
+		b.InventoryConfigurations[id] = config
+		return nil
+	})
+}
+
+// GetInventoryConfiguration retrieves one inventory configuration. A missing
+// id yields a nil configuration, not an error.
+func (s *BucketStore) GetInventoryConfiguration(name, id string) (*InventoryConfiguration, error) {
+	bucket, err := s.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return bucket.InventoryConfigurations[id], nil
+}
+
+// DeleteInventoryConfiguration removes one inventory configuration; deleting
+// an absent id is a no-op.
+func (s *BucketStore) DeleteInventoryConfiguration(name, id string) error {
+	return s.atomicUpdate(name, func(b *Bucket) error {
+		delete(b.InventoryConfigurations, id)
+		if len(b.InventoryConfigurations) == 0 {
+			b.InventoryConfigurations = nil
+		}
+		return nil
+	})
+}
+
+// ListInventoryConfigurations returns the bucket's inventory configurations
+// ordered by id.
+func (s *BucketStore) ListInventoryConfigurations(name string) ([]*InventoryConfiguration, error) {
+	bucket, err := s.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return sortedInventoryConfigs(bucket.InventoryConfigurations), nil
+}
+
+func sortedInventoryConfigs(configs map[string]*InventoryConfiguration) []*InventoryConfiguration {
+	ids := make([]string, 0, len(configs))
+	for id := range configs {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	result := make([]*InventoryConfiguration, 0, len(ids))
+	for _, id := range ids {
+		result = append(result, configs[id])
+	}
+	return result
+}
+
+// SetMetricsConfiguration stores one metrics configuration on a bucket,
+// replacing any configuration already stored under the same id.
+func (s *BucketStore) SetMetricsConfiguration(name, id string, config *MetricsConfiguration) error {
+	return s.atomicUpdate(name, func(b *Bucket) error {
+		if b.MetricsConfigurations == nil {
+			b.MetricsConfigurations = make(map[string]*MetricsConfiguration)
+		}
+		config.ID = id
+		b.MetricsConfigurations[id] = config
+		return nil
+	})
+}
+
+// GetMetricsConfiguration retrieves one metrics configuration. A missing id
+// yields a nil configuration, not an error.
+func (s *BucketStore) GetMetricsConfiguration(name, id string) (*MetricsConfiguration, error) {
+	bucket, err := s.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return bucket.MetricsConfigurations[id], nil
+}
+
+// DeleteMetricsConfiguration removes one metrics configuration; deleting an
+// absent id is a no-op.
+func (s *BucketStore) DeleteMetricsConfiguration(name, id string) error {
+	return s.atomicUpdate(name, func(b *Bucket) error {
+		delete(b.MetricsConfigurations, id)
+		if len(b.MetricsConfigurations) == 0 {
+			b.MetricsConfigurations = nil
+		}
+		return nil
+	})
+}
+
+// ListMetricsConfigurations returns the bucket's metrics configurations
+// ordered by id.
+func (s *BucketStore) ListMetricsConfigurations(name string) ([]*MetricsConfiguration, error) {
+	bucket, err := s.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(bucket.MetricsConfigurations))
+	for id := range bucket.MetricsConfigurations {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	result := make([]*MetricsConfiguration, 0, len(ids))
+	for _, id := range ids {
+		result = append(result, bucket.MetricsConfigurations[id])
+	}
+	return result, nil
 }

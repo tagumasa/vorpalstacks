@@ -117,27 +117,29 @@ const (
 
 // Bucket represents an S3 bucket.
 type Bucket struct {
-	Name                      string                       `json:"name"`
-	Region                    string                       `json:"region"`
-	CreationDate              time.Time                    `json:"creation_date"`
-	ACL                       *AccessControlPolicy         `json:"acl,omitempty"`
-	ObjectLockEnabled         bool                         `json:"object_lock_enabled,omitempty"`
-	ObjectLockConfig          *ObjectLockConfiguration     `json:"object_lock_config,omitempty"`
-	VersioningStatus          BucketVersioningStatus       `json:"versioning_status,omitempty"`
-	MFADelete                 string                       `json:"mfa_delete,omitempty"`
-	EncryptionConfig          *EncryptionConfig            `json:"encryption_config,omitempty"`
-	LifecycleConfiguration    *LifecycleConfiguration      `json:"lifecycle_configuration,omitempty"`
-	WebsiteConfiguration      *WebsiteConfiguration        `json:"website_configuration,omitempty"`
-	CORSConfiguration         *CORSConfiguration           `json:"cors_configuration,omitempty"`
-	Policy                    string                       `json:"policy,omitempty"`
-	PublicAccessBlock         *PublicAccessBlockConfig     `json:"public_access_block,omitempty"`
-	Tags                      []types.Tag                  `json:"tags,omitempty"`
-	NotificationConfiguration *NotificationConfiguration   `json:"notification_configuration,omitempty"`
-	LoggingConfiguration      *LoggingConfiguration        `json:"logging_configuration,omitempty"`
-	OwnershipControls         *OwnershipControls           `json:"ownership_controls,omitempty"`
-	RequestPayment            *RequestPaymentConfiguration `json:"request_payment,omitempty"`
-	AccelerateConfiguration   *AccelerateConfiguration     `json:"accelerate_configuration,omitempty"`
-	ReplicationConfiguration  *ReplicationConfiguration    `json:"replication_configuration,omitempty"`
+	Name                      string                             `json:"name"`
+	Region                    string                             `json:"region"`
+	CreationDate              time.Time                          `json:"creation_date"`
+	ACL                       *AccessControlPolicy               `json:"acl,omitempty"`
+	ObjectLockEnabled         bool                               `json:"object_lock_enabled,omitempty"`
+	ObjectLockConfig          *ObjectLockConfiguration           `json:"object_lock_config,omitempty"`
+	VersioningStatus          BucketVersioningStatus             `json:"versioning_status,omitempty"`
+	MFADelete                 string                             `json:"mfa_delete,omitempty"`
+	EncryptionConfig          *EncryptionConfig                  `json:"encryption_config,omitempty"`
+	LifecycleConfiguration    *LifecycleConfiguration            `json:"lifecycle_configuration,omitempty"`
+	WebsiteConfiguration      *WebsiteConfiguration              `json:"website_configuration,omitempty"`
+	CORSConfiguration         *CORSConfiguration                 `json:"cors_configuration,omitempty"`
+	Policy                    string                             `json:"policy,omitempty"`
+	PublicAccessBlock         *PublicAccessBlockConfig           `json:"public_access_block,omitempty"`
+	Tags                      []types.Tag                        `json:"tags,omitempty"`
+	NotificationConfiguration *NotificationConfiguration         `json:"notification_configuration,omitempty"`
+	LoggingConfiguration      *LoggingConfiguration              `json:"logging_configuration,omitempty"`
+	OwnershipControls         *OwnershipControls                 `json:"ownership_controls,omitempty"`
+	RequestPayment            *RequestPaymentConfiguration       `json:"request_payment,omitempty"`
+	AccelerateConfiguration   *AccelerateConfiguration           `json:"accelerate_configuration,omitempty"`
+	ReplicationConfiguration  *ReplicationConfiguration          `json:"replication_configuration,omitempty"`
+	InventoryConfigurations   map[string]*InventoryConfiguration `json:"inventory_configurations,omitempty"`
+	MetricsConfigurations     map[string]*MetricsConfiguration   `json:"metrics_configurations,omitempty"`
 }
 
 // EncryptionConfig represents the encryption configuration for an S3 bucket.
@@ -607,4 +609,82 @@ type ReplicationDestination struct {
 	StorageClass             string `json:"storage_class,omitempty"`
 	Account                  string `json:"account,omitempty"`
 	AccessControlTranslation string `json:"access_control_translation,omitempty"`
+}
+
+// MaxBucketConfigurations is the per-bucket limit of inventory and metrics
+// configurations; AWS documents 1,000 for each family.
+const MaxBucketConfigurations = 1000
+
+// InventoryConfiguration is one S3 Inventory configuration as stored on a
+// bucket. LastDelivery is the report worker's bookkeeping of when this
+// configuration last produced a report; it is platform-internal and never
+// serialised onto the S3 wire forms.
+type InventoryConfiguration struct {
+	ID                     string                `json:"id"`
+	IsEnabled              bool                  `json:"is_enabled"`
+	Filter                 *InventoryFilter      `json:"filter,omitempty"`
+	IncludedObjectVersions string                `json:"included_object_versions,omitempty"`
+	OptionalFields         []string              `json:"optional_fields,omitempty"`
+	Schedule               *InventorySchedule    `json:"schedule,omitempty"`
+	Destination            *InventoryDestination `json:"destination,omitempty"`
+	LastDelivery           time.Time             `json:"last_delivery,omitempty"`
+}
+
+// InventoryFilter restricts an inventory report to one key prefix.
+type InventoryFilter struct {
+	Prefix string `json:"prefix"`
+}
+
+// InventorySchedule is how often an inventory report is produced.
+type InventorySchedule struct {
+	Frequency string `json:"frequency"` // Daily | Weekly
+}
+
+// InventoryDestination carries where the inventory report is published.
+type InventoryDestination struct {
+	S3BucketDestination *InventoryS3BucketDestination `json:"s3_bucket_destination,omitempty"`
+}
+
+// InventoryS3BucketDestination is the S3 destination of an inventory report.
+type InventoryS3BucketDestination struct {
+	AccountID  string               `json:"account_id,omitempty"`
+	Bucket     string               `json:"bucket"` // destination bucket ARN as given
+	Format     string               `json:"format"` // CSV | Parquet
+	Prefix     string               `json:"prefix,omitempty"`
+	Encryption *InventoryEncryption `json:"encryption,omitempty"`
+}
+
+// InventoryEncryption selects the server-side encryption applied to the
+// published report files.
+type InventoryEncryption struct {
+	SSES3  bool             `json:"sse_s3,omitempty"`
+	SSEKMS *InventorySSEKMS `json:"sse_kms,omitempty"`
+}
+
+// InventorySSEKMS carries the KMS key protecting the published report files.
+type InventorySSEKMS struct {
+	KeyID string `json:"key_id"`
+}
+
+// MetricsConfiguration is one CloudWatch request-metrics configuration as
+// stored on a bucket.
+type MetricsConfiguration struct {
+	ID     string         `json:"id"`
+	Filter *MetricsFilter `json:"filter,omitempty"`
+}
+
+// MetricsFilter selects the objects a metrics configuration applies to. AWS
+// allows exactly one of Prefix, Tag, AccessPointArn, or And on the wire.
+type MetricsFilter struct {
+	Prefix         string              `json:"prefix,omitempty"`
+	Tag            *types.Tag          `json:"tag,omitempty"`
+	AccessPointArn string              `json:"access_point_arn,omitempty"`
+	And            *MetricsAndOperator `json:"and,omitempty"`
+}
+
+// MetricsAndOperator is the conjunction form of a metrics filter.
+type MetricsAndOperator struct {
+	Prefix         string      `json:"prefix,omitempty"`
+	Tags           []types.Tag `json:"tags,omitempty"`
+	AccessPointArn string      `json:"access_point_arn,omitempty"`
 }

@@ -1,15 +1,13 @@
 package testutil
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
 func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
@@ -45,17 +43,14 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	var sqsSubArn string
 	var sqsSubTopicArn string
 	results = append(results, r.RunTest("sns", "Subscribe_SQS_AutoConfirmed", func() error {
-		sqsTopicName := tc.uniqueName("SqsTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(sqsTopicName),
-		})
+		var err error
+		sqsSubTopicArn, err = tc.createTopic(tc.uniqueName("SqsTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		sqsSubTopicArn = *tResp.TopicArn
 
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
+			TopicArn: aws.String(sqsSubTopicArn),
 			Protocol: aws.String("sqs"),
 			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:auto-confirm-queue", reg, acct)),
 		})
@@ -64,100 +59,44 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		}
 		sqsSubArn = *sResp.SubscriptionArn
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
+		getResp, err := tc.getSubscriptionAttributes(sqsSubArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
 		if getResp.Attributes["PendingConfirmation"] != "false" {
 			return fmt.Errorf("SQS subscription should be auto-confirmed, got PendingConfirmation=%s", getResp.Attributes["PendingConfirmation"])
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "GetSubscriptionAttributes", func() error {
-		resp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(sqsSubArn),
-		})
-		if err != nil {
-			return err
+		if getResp.Attributes["SubscriptionArn"] != sqsSubArn {
+			return fmt.Errorf("SubscriptionArn mismatch: got %q", getResp.Attributes["SubscriptionArn"])
 		}
-		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
-		}
-		if resp.Attributes["SubscriptionArn"] != sqsSubArn {
-			return fmt.Errorf("SubscriptionArn mismatch: got %q", resp.Attributes["SubscriptionArn"])
-		}
-		if resp.Attributes["Protocol"] != "sqs" {
-			return fmt.Errorf("Protocol mismatch: got %q, want %q", resp.Attributes["Protocol"], "sqs")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "SetSubscriptionAttributes", func() error {
-		_, err := tc.client.SetSubscriptionAttributes(tc.ctx, &sns.SetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(sqsSubArn),
-			AttributeName:   aws.String("RawMessageDelivery"),
-			AttributeValue:  aws.String("true"),
-		})
-		if err != nil {
-			return fmt.Errorf("set: %v", err)
-		}
-
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(sqsSubArn),
-		})
-		if err != nil {
-			return fmt.Errorf("get: %v", err)
-		}
-		if getResp.Attributes["RawMessageDelivery"] != "true" {
-			return fmt.Errorf("RawMessageDelivery not set: got %q", getResp.Attributes["RawMessageDelivery"])
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "ListSubscriptions", func() error {
-		resp, err := tc.client.ListSubscriptions(tc.ctx, &sns.ListSubscriptionsInput{})
-		if err != nil {
-			return err
-		}
-		if resp.Subscriptions == nil {
-			return fmt.Errorf("Subscriptions is nil")
+		if getResp.Attributes["Protocol"] != "sqs" {
+			return fmt.Errorf("Protocol mismatch: got %q, want %q", getResp.Attributes["Protocol"], "sqs")
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "ListSubscriptions_ContainsCreated", func() error {
-		lsTopicName := tc.uniqueName("LSTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(lsTopicName),
-		})
+		lsTopicArn, err := tc.createTopic(tc.uniqueName("LSTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(lsTopicArn)
 
-		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
-			Protocol: aws.String("sqs"),
-			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:list-all-sub-queue", reg, acct)),
-		})
+		subArn, err := tc.subscribeSQS(lsTopicArn, "list-all-sub-queue")
 		if err != nil {
-			return fmt.Errorf("subscribe: %v", err)
+			return err
 		}
 
-		listResp, err := tc.client.ListSubscriptions(tc.ctx, &sns.ListSubscriptionsInput{})
+		subs, err := tc.listAllSubscriptions()
 		if err != nil {
 			return fmt.Errorf("list: %v", err)
 		}
-		found := false
-		for _, sub := range listResp.Subscriptions {
-			if sub.SubscriptionArn != nil && *sub.SubscriptionArn == *sResp.SubscriptionArn {
-				found = true
-				break
-			}
+		if len(subs) == 0 {
+			return fmt.Errorf("Subscriptions is empty")
 		}
+		found := slices.ContainsFunc(subs, func(s types.Subscription) bool {
+			return aws.ToString(s.SubscriptionArn) == subArn
+		})
 		if !found {
 			return fmt.Errorf("created subscription not found in ListSubscriptions")
 		}
@@ -165,40 +104,26 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListSubscriptionsByTopic", func() error {
-		lstTopicName := tc.uniqueName("LstSubTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(lstTopicName),
-		})
+		lstTopicArn, err := tc.createTopic(tc.uniqueName("LstSubTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(lstTopicArn)
 
-		_, err = tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
-			Protocol: aws.String("sqs"),
-			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:list-sub-queue", reg, acct)),
-		})
-		if err != nil {
-			return fmt.Errorf("subscribe: %v", err)
+		if _, err := tc.subscribeSQS(lstTopicArn, "list-sub-queue"); err != nil {
+			return err
 		}
 
-		listResp, err := tc.client.ListSubscriptionsByTopic(tc.ctx, &sns.ListSubscriptionsByTopicInput{
-			TopicArn: tResp.TopicArn,
-		})
+		subs, err := tc.listAllSubscriptionsByTopic(lstTopicArn)
 		if err != nil {
 			return fmt.Errorf("list by topic: %v", err)
 		}
-		if len(listResp.Subscriptions) == 0 {
+		if len(subs) == 0 {
 			return fmt.Errorf("expected at least one subscription")
 		}
-		found := false
-		for _, sub := range listResp.Subscriptions {
-			if sub.TopicArn != nil && *sub.TopicArn == *tResp.TopicArn {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(subs, func(s types.Subscription) bool {
+			return aws.ToString(s.TopicArn) == lstTopicArn
+		})
 		if !found {
 			return fmt.Errorf("subscription for topic not found in ListSubscriptionsByTopic")
 		}
@@ -206,73 +131,53 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListSubscriptionsByTopic_Empty", func() error {
-		emptySubTopicName := tc.uniqueName("EmptySubTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(emptySubTopicName),
-		})
+		emptySubTopicArn, err := tc.createTopic(tc.uniqueName("EmptySubTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(emptySubTopicArn)
 
-		listResp, err := tc.client.ListSubscriptionsByTopic(tc.ctx, &sns.ListSubscriptionsByTopicInput{
-			TopicArn: tResp.TopicArn,
-		})
+		subs, err := tc.listAllSubscriptionsByTopic(emptySubTopicArn)
 		if err != nil {
 			return fmt.Errorf("list: %v", err)
 		}
-		if len(listResp.Subscriptions) != 0 {
-			return fmt.Errorf("expected 0 subscriptions for new topic, got %d", len(listResp.Subscriptions))
+		if len(subs) != 0 {
+			return fmt.Errorf("expected 0 subscriptions for new topic, got %d", len(subs))
 		}
 		return nil
 	}))
 
-	var unsubSubArn string
 	results = append(results, r.RunTest("sns", "Unsubscribe", func() error {
-		unsubTopicName := tc.uniqueName("UnsubTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(unsubTopicName),
-		})
+		unsubTopicArn, err := tc.createTopic(tc.uniqueName("UnsubTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(unsubTopicArn)
 
-		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
-			Protocol: aws.String("sqs"),
-			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:fake-queue", reg, acct)),
-		})
+		subArn, err := tc.subscribeSQS(unsubTopicArn, "fake-queue")
 		if err != nil {
-			return fmt.Errorf("subscribe: %v", err)
+			return err
 		}
-		unsubSubArn = *sResp.SubscriptionArn
 
 		_, err = tc.client.Unsubscribe(tc.ctx, &sns.UnsubscribeInput{
-			SubscriptionArn: sResp.SubscriptionArn,
+			SubscriptionArn: aws.String(subArn),
 		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("sns", "Unsubscribe_VerifyGone", func() error {
-		_, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(unsubSubArn),
-		})
-		return AssertErrorContains(err, "NotFound")
+		if err != nil {
+			return err
+		}
+		_, err = tc.getSubscriptionAttributes(subArn)
+		return tc.expectNotFound("GetSubscriptionAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "Subscribe_EmailPendingConfirmation", func() error {
-		emailTopicName := tc.uniqueName("EmailTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(emailTopicName),
-		})
+		emailTopicArn, err := tc.createTopic(tc.uniqueName("EmailTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(emailTopicArn)
 
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn:              aws.String(*tResp.TopicArn),
+			TopicArn:              aws.String(emailTopicArn),
 			Protocol:              aws.String("email"),
 			Endpoint:              aws.String("pending@example.com"),
 			ReturnSubscriptionArn: true,
@@ -281,9 +186,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("subscribe: %v", err)
 		}
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
+		getResp, err := tc.getSubscriptionAttributes(*sResp.SubscriptionArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -294,36 +197,20 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ConfirmSubscription", func() error {
-		confTopicName := tc.uniqueName("ConfTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(confTopicName),
-		})
+		confTopicArn, err := tc.createTopic(tc.uniqueName("ConfTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(confTopicArn)
 
 		// Set up a local HTTP server to capture the confirmation token.
 		// AWS sends the token to the endpoint out-of-band; it is not
 		// exposed through GetSubscriptionAttributes.
-		tokenCh := make(chan string, 1)
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			var payload map[string]interface{}
-			if json.Unmarshal(body, &payload) == nil {
-				if t, ok := payload["Token"].(string); ok {
-					select {
-					case tokenCh <- t:
-					default:
-					}
-				}
-			}
-			w.WriteHeader(http.StatusOK)
-		}))
+		srv, tokenCh := tc.startTokenCaptureServer()
 		defer srv.Close()
 
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn:              aws.String(*tResp.TopicArn),
+			TopicArn:              aws.String(confTopicArn),
 			Protocol:              aws.String("http"),
 			Endpoint:              aws.String(srv.URL),
 			ReturnSubscriptionArn: true,
@@ -344,7 +231,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		}
 
 		confResp, err := tc.client.ConfirmSubscription(tc.ctx, &sns.ConfirmSubscriptionInput{
-			TopicArn: tResp.TopicArn,
+			TopicArn: aws.String(confTopicArn),
 			Token:    aws.String(token),
 		})
 		if err != nil {
@@ -357,9 +244,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("confirmed ARN mismatch: got %q, want %q", *confResp.SubscriptionArn, *sResp.SubscriptionArn)
 		}
 
-		afterResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
+		afterResp, err := tc.getSubscriptionAttributes(*sResp.SubscriptionArn)
 		if err != nil {
 			return fmt.Errorf("get attrs after confirm: %v", err)
 		}
@@ -377,17 +262,14 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "Subscribe_ApplicationPendingConfirmation", func() error {
-		appTopicName := tc.uniqueName("AppTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(appTopicName),
-		})
+		appTopicArn, err := tc.createTopic(tc.uniqueName("AppTopic"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(appTopicArn)
 
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn: aws.String(*tResp.TopicArn),
+			TopicArn: aws.String(appTopicArn),
 			Protocol: aws.String("application"),
 			Endpoint: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:app/FAKE/fake-endpoint", reg, acct)),
 		})
@@ -401,9 +283,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("application protocol should be auto-confirmed, got pending confirmation")
 		}
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
+		getResp, err := tc.getSubscriptionAttributes(*sResp.SubscriptionArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -452,9 +332,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("set FilterPolicy: %v", err)
 		}
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(subArn),
-		})
+		getResp, err := tc.getSubscriptionAttributes(subArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -495,9 +373,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("set RawMessageDelivery: %v", err)
 		}
 
-		getResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: aws.String(subArn),
-		})
+		getResp, err := tc.getSubscriptionAttributes(subArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -522,7 +398,7 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 			AttributeName:   aws.String("AuthenticateOnUnsubscribe"),
 			AttributeValue:  aws.String("true"),
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// Unsubscribe of a subscription confirmed without
@@ -543,32 +419,17 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 	// ConfirmSubscription must reject a non-boolean
 	// AuthenticateOnUnsubscribe value instead of treating it as false.
 	results = append(results, r.RunTest("sns", "ConfirmSubscription_AuthenticateOnUnsubscribe_InvalidValue_Rejected", func() error {
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(tc.uniqueName("BadAuthOnUnsub")),
-		})
+		badAuthTopicArn, err := tc.createTopic(tc.uniqueName("BadAuthOnUnsub"))
 		if err != nil {
 			return fmt.Errorf("create topic: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(badAuthTopicArn)
 
-		tokenCh := make(chan string, 1)
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			var payload map[string]interface{}
-			if json.Unmarshal(body, &payload) == nil {
-				if t, ok := payload["Token"].(string); ok {
-					select {
-					case tokenCh <- t:
-					default:
-					}
-				}
-			}
-			w.WriteHeader(http.StatusOK)
-		}))
+		srv, tokenCh := tc.startTokenCaptureServer()
 		defer srv.Close()
 
 		sResp, err := tc.client.Subscribe(tc.ctx, &sns.SubscribeInput{
-			TopicArn:              tResp.TopicArn,
+			TopicArn:              aws.String(badAuthTopicArn),
 			Protocol:              aws.String("http"),
 			Endpoint:              aws.String(srv.URL),
 			ReturnSubscriptionArn: true,
@@ -585,18 +446,16 @@ func (r *TestRunner) runSNSSubscriptionTests(tc *snsTestContext) []TestResult {
 		}
 
 		_, err = tc.client.ConfirmSubscription(tc.ctx, &sns.ConfirmSubscriptionInput{
-			TopicArn:                  tResp.TopicArn,
+			TopicArn:                  aws.String(badAuthTopicArn),
 			Token:                     aws.String(token),
 			AuthenticateOnUnsubscribe: aws.String("xyz"),
 		})
-		if err := AssertErrorContains(err, "InvalidParameter"); err != nil {
+		if err := expectAWSErrorCode(err, "InvalidParameter"); err != nil {
 			return err
 		}
 
 		// The subscription must remain unconfirmed and carry no flag.
-		afterResp, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
-			SubscriptionArn: sResp.SubscriptionArn,
-		})
+		afterResp, err := tc.getSubscriptionAttributes(*sResp.SubscriptionArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}

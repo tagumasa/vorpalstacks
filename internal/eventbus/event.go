@@ -410,3 +410,35 @@ func SerializeEvent(event Event) ([]byte, error) {
 	}
 	return data, nil
 }
+
+// S3MetricDimension is one CloudWatch dimension of a request-metrics
+// datapoint.
+type S3MetricDimension struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// S3MetricDatapoint is one aggregated metric value for one metrics
+// configuration filter, in the form CloudWatch stores it. Value carries the
+// statistic set's Sum; SampleCount, Minimum, and Maximum complete the set
+// so the ingesting service can store a CloudWatch StatisticValues datapoint.
+type S3MetricDatapoint struct {
+	MetricName  string              `json:"metric_name"`
+	Value       float64             `json:"value"`
+	SampleCount float64             `json:"sampleCount,omitempty"`
+	Minimum     float64             `json:"minimum,omitempty"`
+	Maximum     float64             `json:"maximum,omitempty"`
+	Unit        string              `json:"unit,omitempty"`
+	Timestamp   time.Time           `json:"timestamp"`
+	Dimensions  []S3MetricDimension `json:"dimensions,omitempty"`
+}
+
+// S3RequestMetricsEvent carries aggregated per-filter S3 request metrics
+// from the S3 service to the CloudWatch service.
+type S3RequestMetricsEvent struct {
+	EventBase
+	Datapoints []S3MetricDatapoint `json:"datapoints,omitempty"`
+}
+
+// EventType returns "s3:request-metrics" for this event type.
+func (e *S3RequestMetricsEvent) EventType() string { return "s3:request-metrics" }

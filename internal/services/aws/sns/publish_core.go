@@ -110,7 +110,7 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 
 	// Maximum 10 message attributes per AWS spec.
 	if len(attrs) > maxMessageAttributes {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), maxMessageAttributes))
+		return NewInvalidParameter(fmt.Sprintf("Too many message attributes: %d (maximum %d)", len(attrs), maxMessageAttributes))
 	}
 
 	msg.MessageAttributes = make(map[string]*snsstore.MessageAttribute, len(attrs))
@@ -122,15 +122,15 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 
 		attrMap, ok := v.(map[string]interface{})
 		if !ok {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute %q: value must be a map", k))
+			return NewInvalidParameter(fmt.Sprintf("Invalid message attribute %q: value must be a map", k))
 		}
 
 		dataType := firstString(attrMap, "DataType", "dataType")
 		if dataType == "" {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute %q: DataType is required", k))
+			return NewInvalidParameter(fmt.Sprintf("Invalid message attribute %q: DataType is required", k))
 		}
 		if !validMessageAttributeDataTypes[dataType] {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute %q: DataType %q is not valid (String, Number, String.Array, Binary)", k, dataType))
+			return NewInvalidParameter(fmt.Sprintf("Invalid message attribute %q: DataType %q is not valid (String, Number, String.Array, Binary)", k, dataType))
 		}
 
 		attr := &snsstore.MessageAttribute{
@@ -140,7 +140,7 @@ func parseMessageAttributes(params map[string]interface{}, msg *snsstore.Message
 		if raw := firstString(attrMap, "BinaryValue", "binaryValue"); raw != "" {
 			decoded, err := base64.StdEncoding.DecodeString(raw)
 			if err != nil {
-				return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute %q: BinaryValue is not valid base64", k))
+				return NewInvalidParameter(fmt.Sprintf("Invalid message attribute %q: BinaryValue is not valid base64", k))
 			}
 			attr.BinaryValue = decoded
 		}
@@ -187,13 +187,13 @@ func (s *SNSService) publishCore(store snsstore.SNSStoreInterface, reqCtx *reque
 	}
 
 	if in.TopicArn == "" && in.TargetArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn (or TargetArn) is required")
+		return nil, NewInvalidParameter("TopicArn (or TargetArn) is required")
 	}
 	if in.TopicArn == "" {
 		in.TopicArn = in.TargetArn
 	}
 	if in.Message == "" {
-		return nil, awserrors.NewInvalidParameterException("Message is required")
+		return nil, NewInvalidParameter("Message is required")
 	}
 
 	topic, err := store.GetTopic(in.TopicArn)
@@ -327,7 +327,7 @@ type batchValidatedEntry struct {
 //     results.
 func (s *SNSService) publishBatchCore(store snsstore.SNSStoreInterface, reqCtx *request.RequestContext, in PublishBatchInput) (interface{}, error) {
 	if in.TopicArn == "" {
-		return nil, awserrors.NewInvalidParameterException("TopicArn is required")
+		return nil, NewInvalidParameter("TopicArn is required")
 	}
 
 	topic, err := store.GetTopic(in.TopicArn)

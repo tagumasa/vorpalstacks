@@ -18,14 +18,14 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		_, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
 			TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-topic-xyz", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("GetTopicAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "DeleteTopic_NonExistent", func() error {
 		_, err := tc.client.DeleteTopic(tc.ctx, &sns.DeleteTopicInput{
 			TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-del-topic", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("DeleteTopic", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "Publish_NonExistentTopic", func() error {
@@ -33,7 +33,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			TopicArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-topic-xyz", reg, acct)),
 			Message:  aws.String("test message"),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("Publish", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "Subscribe_NonExistentTopic", func() error {
@@ -42,14 +42,14 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			Protocol: aws.String("sqs"),
 			Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:fake-queue", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("Subscribe", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "Unsubscribe_NonExistent", func() error {
 		_, err := tc.client.Unsubscribe(tc.ctx, &sns.UnsubscribeInput{
 			SubscriptionArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-topic:fake-sub-id", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("Unsubscribe", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "SetSubscriptionAttributes_NonExistent", func() error {
@@ -58,14 +58,14 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			AttributeName:   aws.String("RawMessageDelivery"),
 			AttributeValue:  aws.String("true"),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("SetSubscriptionAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "GetSubscriptionAttributes_NonExistent", func() error {
 		_, err := tc.client.GetSubscriptionAttributes(tc.ctx, &sns.GetSubscriptionAttributesInput{
 			SubscriptionArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-topic:fake-sub-id", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("GetSubscriptionAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "SetTopicAttributes_NonExistent", func() error {
@@ -74,7 +74,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			AttributeName:  aws.String("DisplayName"),
 			AttributeValue: aws.String("test"),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("SetTopicAttributes", err)
 	}))
 
 	// --- New validation edge tests ---
@@ -86,7 +86,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			Protocol: aws.String("foobar"),
 			Endpoint: aws.String("https://example.com/hook"),
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// Endpoint format must be validated per protocol.
@@ -96,7 +96,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			Protocol: aws.String("sqs"),
 			Endpoint: aws.String("not-a-valid-queue-url"),
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// Reserved AWS prefix must be rejected.
@@ -104,7 +104,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 		_, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
 			Name: aws.String("aws-reserved-test-topic"),
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// FifoTopic=true with non-.fifo name must be rejected.
@@ -115,7 +115,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 				"FifoTopic": "true",
 			},
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// More than 10 message attributes must be rejected.
@@ -140,7 +140,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 			Message:           aws.String("test"),
 			MessageAttributes: msgAttrs,
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	// BatchRequestTooLong: two entries whose combined size exceeds the 256 KB
@@ -162,7 +162,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 				{Id: aws.String("e2"), Message: aws.String(bigMsg)},
 			},
 		})
-		return AssertErrorContains(err, "BatchRequestTooLong")
+		return expectAWSErrorCode(err, "BatchRequestTooLong")
 	}))
 
 	// CreatePlatformApplication must enforce the same attribute value length
@@ -175,7 +175,7 @@ func (r *TestRunner) runSNSEdgeTests(tc *snsTestContext) []TestResult {
 				"PlatformCredential": strings.Repeat("x", 8193),
 			},
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	return results

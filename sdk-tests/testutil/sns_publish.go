@@ -191,17 +191,14 @@ func (r *TestRunner) runSNSPublishTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "Publish_WithMessageAttributes", func() error {
-		attrTopicName := tc.uniqueName("AttrPubTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(attrTopicName),
-		})
+		attrTopicArn, err := tc.createTopic(tc.uniqueName("AttrPubTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(attrTopicArn)
 
 		pubResp, err := tc.client.Publish(tc.ctx, &sns.PublishInput{
-			TopicArn: tResp.TopicArn,
+			TopicArn: aws.String(attrTopicArn),
 			Message:  aws.String("message with attrs"),
 			Subject:  aws.String("Test Subject"),
 			MessageAttributes: map[string]types.MessageAttributeValue{
@@ -248,17 +245,14 @@ func (r *TestRunner) runSNSPublishTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "PublishBatch_WithAttributes", func() error {
-		batchAttrTopicName := tc.uniqueName("BatchAttrTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(batchAttrTopicName),
-		})
+		batchAttrTopicArn, err := tc.createTopic(tc.uniqueName("BatchAttrTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(batchAttrTopicArn)
 
 		resp, err := tc.client.PublishBatch(tc.ctx, &sns.PublishBatchInput{
-			TopicArn: tResp.TopicArn,
+			TopicArn: aws.String(batchAttrTopicArn),
 			PublishBatchRequestEntries: []types.PublishBatchRequestEntry{
 				{
 					Id:      aws.String("b1"),
@@ -286,14 +280,11 @@ func (r *TestRunner) runSNSPublishTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "PublishBatch_MaxEntries", func() error {
-		maxBatchTopicName := tc.uniqueName("MaxBatchTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(maxBatchTopicName),
-		})
+		maxBatchTopicArn, err := tc.createTopic(tc.uniqueName("MaxBatchTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(maxBatchTopicArn)
 
 		entries := make([]types.PublishBatchRequestEntry, 10)
 		for i := 0; i < 10; i++ {
@@ -303,7 +294,7 @@ func (r *TestRunner) runSNSPublishTests(tc *snsTestContext) []TestResult {
 			}
 		}
 		resp, err := tc.client.PublishBatch(tc.ctx, &sns.PublishBatchInput{
-			TopicArn:                   tResp.TopicArn,
+			TopicArn:                   aws.String(maxBatchTopicArn),
 			PublishBatchRequestEntries: entries,
 		})
 		if err != nil {

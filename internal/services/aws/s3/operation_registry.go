@@ -73,6 +73,10 @@ func classifyBucketRequest(r *http.Request, bucket string) (string, []s3ActionSp
 			return "PutBucketPublicAccessBlock", bucketAction("s3:PutBucketPublicAccessBlock")
 		case query.Has("replication"):
 			return "PutBucketReplication", bucketAction("s3:PutReplicationConfiguration")
+		case query.Has("inventory"):
+			return "PutBucketInventoryConfiguration", bucketAction("s3:PutInventoryConfiguration")
+		case query.Has("metrics"):
+			return "PutBucketMetricsConfiguration", bucketAction("s3:PutMetricsConfiguration")
 		default:
 			return "CreateBucket", bucketAction("s3:CreateBucket")
 		}
@@ -98,6 +102,19 @@ func classifyBucketRequest(r *http.Request, bucket string) (string, []s3ActionSp
 			return "GetBucketWebsite", bucketAction("s3:GetBucketWebsite")
 		case query.Has("replication"):
 			return "GetBucketReplication", bucketAction("s3:GetReplicationConfiguration")
+		case query.Has("inventory"):
+			// The Delete and List variants of both configuration families
+			// share the Put/Get IAM actions; the List operations are not
+			// CloudTrail-logged and fall back to their API names.
+			if query.Has("id") {
+				return "GetBucketInventoryConfiguration", bucketAction("s3:GetInventoryConfiguration")
+			}
+			return "ListBucketInventoryConfigurations", bucketAction("s3:GetInventoryConfiguration")
+		case query.Has("metrics"):
+			if query.Has("id") {
+				return "GetBucketMetricsConfiguration", bucketAction("s3:GetMetricsConfiguration")
+			}
+			return "ListBucketMetricsConfigurations", bucketAction("s3:GetMetricsConfiguration")
 		case query.Has("object-lock"):
 			return "GetBucketObjectLockConfiguration", bucketAction("s3:GetBucketObjectLockConfiguration")
 		case query.Has("notification"):
@@ -147,6 +164,10 @@ func classifyBucketRequest(r *http.Request, bucket string) (string, []s3ActionSp
 			return "DeleteBucketPublicAccessBlock", bucketAction("s3:PutBucketPublicAccessBlock")
 		case query.Has("replication"):
 			return "DeleteBucketReplication", bucketAction("s3:PutReplicationConfiguration")
+		case query.Has("inventory"):
+			return "DeleteBucketInventoryConfiguration", bucketAction("s3:PutInventoryConfiguration")
+		case query.Has("metrics"):
+			return "DeleteBucketMetricsConfiguration", bucketAction("s3:PutMetricsConfiguration")
 		default:
 			return "DeleteBucket", bucketAction("s3:DeleteBucket")
 		}

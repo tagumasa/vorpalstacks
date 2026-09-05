@@ -25,33 +25,9 @@ func (r *TestRunner) runSESv2TemplateTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
-			TemplateName: aws.String(templateName),
-		})
+		resp, err := tc.getEmailTemplate(templateName)
 		if err != nil {
 			return fmt.Errorf("get after create: %v", err)
-		}
-		if resp.TemplateContent == nil {
-			return fmt.Errorf("template content is nil")
-		}
-		if resp.TemplateContent.Subject == nil || *resp.TemplateContent.Subject != "Hello {{name}}" {
-			return fmt.Errorf("expected subject 'Hello {{name}}', got %v", resp.TemplateContent.Subject)
-		}
-		if resp.TemplateContent.Html == nil || *resp.TemplateContent.Html != "<h1>Hello {{name}}</h1>" {
-			return fmt.Errorf("html content mismatch")
-		}
-		if resp.TemplateContent.Text == nil || *resp.TemplateContent.Text != "Hello {{name}}" {
-			return fmt.Errorf("text content mismatch")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetEmailTemplate", func() error {
-		resp, err := tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
-			TemplateName: aws.String(templateName),
-		})
-		if err != nil {
-			return err
 		}
 		if resp.TemplateContent == nil {
 			return fmt.Errorf("template content is nil")
@@ -91,9 +67,7 @@ func (r *TestRunner) runSESv2TemplateTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
-			TemplateName: aws.String(templateName),
-		})
+		resp, err := tc.getEmailTemplate(templateName)
 		if err != nil {
 			return fmt.Errorf("get after update: %v", err)
 		}
@@ -130,9 +104,7 @@ func (r *TestRunner) runSESv2TemplateTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
-			TemplateName: aws.String(templateName),
-		})
+		_, err = tc.getEmailTemplate(templateName)
 		if err == nil {
 			return fmt.Errorf("expected error after deleting template")
 		}

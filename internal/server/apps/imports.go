@@ -72,6 +72,7 @@ type serviceState struct {
 	route53Service         *svcroute53.Route53Service
 	s3Service              *svcs3.S3Service
 	lifecycleWorker        *svcs3.LifecycleWorker
+	inventoryReportWorker  *svcs3.InventoryReportWorker
 	schedulerService       *svcscheduler.SchedulerService
 	secretsManagerService  *svcsecretsmanager.SecretsManagerService
 	sesv2Service           *svcsesv2.SESv2Service

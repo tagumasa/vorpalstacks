@@ -84,9 +84,7 @@ func (r *TestRunner) runSESv2EmailTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String(emailAddress),
-		})
+		_, err = tc.getEmailIdentity(emailAddress)
 		if err == nil {
 			return fmt.Errorf("expected error getting deleted identity")
 		}

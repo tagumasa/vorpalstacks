@@ -3,7 +3,6 @@ package testutil
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -49,6 +48,118 @@ func (tc *sesv2TestContext) identityARN(name string) string {
 	return fmt.Sprintf("arn:aws:ses:%s:%s:identity/%s", tc.region, tc.accountID, name)
 }
 
+// createConfigSet is the plain (ConfigurationSetName only) form of
+// CreateConfigurationSet used for setup; a creation carrying delivery,
+// tracking or other options is the operation under test and keeps its
+// literal input.
+func (tc *sesv2TestContext) createConfigSet(name string) error {
+	_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
+		ConfigurationSetName: aws.String(name),
+	})
+	return err
+}
+
+// getConfigSet is the plain (ConfigurationSetName only) form of
+// GetConfigurationSet.
+func (tc *sesv2TestContext) getConfigSet(name string) (*sesv2.GetConfigurationSetOutput, error) {
+	return tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
+		ConfigurationSetName: aws.String(name),
+	})
+}
+
+// getEventDestinations is the plain (ConfigurationSetName only) form of
+// GetConfigurationSetEventDestinations.
+func (tc *sesv2TestContext) getEventDestinations(csName string) (*sesv2.GetConfigurationSetEventDestinationsOutput, error) {
+	return tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
+		ConfigurationSetName: aws.String(csName),
+	})
+}
+
+// getEmailIdentity is the plain (EmailIdentity only) form of
+// GetEmailIdentity.
+func (tc *sesv2TestContext) getEmailIdentity(identity string) (*sesv2.GetEmailIdentityOutput, error) {
+	return tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
+		EmailIdentity: aws.String(identity),
+	})
+}
+
+// getIdentityPolicies is the plain (EmailIdentity only) form of
+// GetEmailIdentityPolicies.
+func (tc *sesv2TestContext) getIdentityPolicies(identity string) (*sesv2.GetEmailIdentityPoliciesOutput, error) {
+	return tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
+		EmailIdentity: aws.String(identity),
+	})
+}
+
+// createContactList is the plain (ContactListName only, no topics) form of
+// CreateContactList used for setup; a creation carrying topics is the
+// operation under test and keeps its literal input.
+func (tc *sesv2TestContext) createContactList(name string) error {
+	_, err := tc.client.CreateContactList(tc.ctx, &sesv2.CreateContactListInput{
+		ContactListName: aws.String(name),
+	})
+	return err
+}
+
+// getContactList is the plain (ContactListName only) form of GetContactList.
+func (tc *sesv2TestContext) getContactList(name string) (*sesv2.GetContactListOutput, error) {
+	return tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
+		ContactListName: aws.String(name),
+	})
+}
+
+// getContact is the plain (ContactListName + EmailAddress only) form of
+// GetContact.
+func (tc *sesv2TestContext) getContact(listName, email string) (*sesv2.GetContactOutput, error) {
+	return tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
+		ContactListName: aws.String(listName),
+		EmailAddress:    aws.String(email),
+	})
+}
+
+// getEmailTemplate is the plain (TemplateName only) form of
+// GetEmailTemplate.
+func (tc *sesv2TestContext) getEmailTemplate(name string) (*sesv2.GetEmailTemplateOutput, error) {
+	return tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
+		TemplateName: aws.String(name),
+	})
+}
+
+// getAccount is the empty-input form of GetAccount.
+func (tc *sesv2TestContext) getAccount() (*sesv2.GetAccountOutput, error) {
+	return tc.client.GetAccount(tc.ctx, &sesv2.GetAccountInput{})
+}
+
+// listTags returns the tags carried by a resource ARN.
+func (tc *sesv2TestContext) listTags(arn string) ([]types.Tag, error) {
+	resp, err := tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
+		ResourceArn: aws.String(arn),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Tags, nil
+}
+
+// expectNotFound asserts the typed NotFoundException contract of a failed
+// call, tagging the failure with the operation name.
+func (tc *sesv2TestContext) expectNotFound(op string, err error) error {
+	if aerr := expectAWSErrorCode(err, "NotFoundException"); aerr != nil {
+		return fmt.Errorf("%s: %w", op, aerr)
+	}
+	return nil
+}
+
+// containsTag reports whether the tag list carries key with the given value.
+func containsTag(tags []types.Tag, key, value string) bool {
+	for _, t := range tags {
+		if t.Key != nil && *t.Key == key && t.Value != nil && *t.Value == value {
+			return true
+		}
+	}
+	return false
+}
+
 func (tc *sesv2TestContext) deleteConfigSet(name string) {
 	_, _ = tc.client.DeleteConfigurationSet(tc.ctx, &sesv2.DeleteConfigurationSetInput{
 		ConfigurationSetName: aws.String(name),
@@ -80,123 +191,81 @@ func (tc *sesv2TestContext) deleteEmailTemplate(name string) {
 }
 
 func (tc *sesv2TestContext) listAllConfigSets() ([]string, error) {
-	var all []string
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]string, *string, error) {
 		resp, err := tc.client.ListConfigurationSets(tc.ctx, &sesv2.ListConfigurationSetsInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.ConfigurationSets...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.ConfigurationSets, resp.NextToken, nil
+	})
 }
 
 func (tc *sesv2TestContext) listAllContactLists() ([]types.ContactList, error) {
-	var all []types.ContactList
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]types.ContactList, *string, error) {
 		resp, err := tc.client.ListContactLists(tc.ctx, &sesv2.ListContactListsInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.ContactLists...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.ContactLists, resp.NextToken, nil
+	})
 }
 
 func (tc *sesv2TestContext) listAllEmailIdentities() ([]types.IdentityInfo, error) {
-	var all []types.IdentityInfo
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]types.IdentityInfo, *string, error) {
 		resp, err := tc.client.ListEmailIdentities(tc.ctx, &sesv2.ListEmailIdentitiesInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.EmailIdentities...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.EmailIdentities, resp.NextToken, nil
+	})
 }
 
 func (tc *sesv2TestContext) listAllDedicatedIpPools() ([]string, error) {
-	var all []string
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]string, *string, error) {
 		resp, err := tc.client.ListDedicatedIpPools(tc.ctx, &sesv2.ListDedicatedIpPoolsInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.DedicatedIpPools...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.DedicatedIpPools, resp.NextToken, nil
+	})
 }
 
 func (tc *sesv2TestContext) listAllEmailTemplates() ([]types.EmailTemplateMetadata, error) {
-	var all []types.EmailTemplateMetadata
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]types.EmailTemplateMetadata, *string, error) {
 		resp, err := tc.client.ListEmailTemplates(tc.ctx, &sesv2.ListEmailTemplatesInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.TemplatesMetadata...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.TemplatesMetadata, resp.NextToken, nil
+	})
 }
 
 func (tc *sesv2TestContext) listAllSuppressedDestinations() ([]types.SuppressedDestinationSummary, error) {
-	var all []types.SuppressedDestinationSummary
-	var nextToken *string
-	for {
+	return paginate(func(next *string) ([]types.SuppressedDestinationSummary, *string, error) {
 		resp, err := tc.client.ListSuppressedDestinations(tc.ctx, &sesv2.ListSuppressedDestinationsInput{
 			PageSize:  aws.Int32(100),
-			NextToken: nextToken,
+			NextToken: next,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		all = append(all, resp.SuppressedDestinationSummaries...)
-		if resp.NextToken == nil || *resp.NextToken == "" {
-			break
-		}
-		nextToken = resp.NextToken
-	}
-	return all, nil
+		return resp.SuppressedDestinationSummaries, resp.NextToken, nil
+	})
 }
 
 func containsString(slice []string, s string) bool {
@@ -235,10 +304,6 @@ func containsContactListName(lists []types.ContactList, name string) bool {
 	return false
 }
 
-func containsPoolName(pools []string, name string) bool {
-	return containsString(pools, name)
-}
-
 func containsSuppressedEmail(summaries []types.SuppressedDestinationSummary, email string) bool {
 	for _, s := range summaries {
 		if s.EmailAddress != nil && *s.EmailAddress == email {
@@ -246,14 +311,4 @@ func containsSuppressedEmail(summaries []types.SuppressedDestinationSummary, ema
 		}
 	}
 	return false
-}
-
-func filterConfigSetsByPrefix(all []string, prefix string) []string {
-	var filtered []string
-	for _, cs := range all {
-		if strings.HasPrefix(cs, prefix) {
-			filtered = append(filtered, cs)
-		}
-	}
-	return filtered
 }

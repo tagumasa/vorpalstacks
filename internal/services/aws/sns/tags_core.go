@@ -13,11 +13,11 @@ import (
 func snsMapError(err error) error {
 	switch e := err.(type) {
 	case *tagutil.MissingResourceError:
-		return awserrors.NewInvalidParameterException(e.Param + " is required")
+		return NewInvalidParameter(e.Param + " is required")
 	case *tagutil.MissingTagsError:
-		return awserrors.NewInvalidParameterException(e.Param + " is required")
+		return NewInvalidParameter(e.Param + " is required")
 	case *tagutil.MissingTagKeysError:
-		return awserrors.NewInvalidParameterException(e.Param + " is required")
+		return NewInvalidParameter(e.Param + " is required")
 	}
 	return err
 }
@@ -32,7 +32,7 @@ func snsTagConfig(store snsstore.SNSStoreInterface) tagutil.TagHandlerConfig {
 			// instead of silently persisting tags under an unowned key.
 			if _, err := store.GetTopic(resourceKey); err != nil {
 				if errors.Is(err, snsstore.ErrTopicNotFound) {
-					return awserrors.NewAWSError("ResourceNotFoundException", "Topic does not exist", http.StatusNotFound)
+					return awserrors.NewAWSError("ResourceNotFound", "Topic does not exist", http.StatusNotFound)
 				}
 				return err
 			}

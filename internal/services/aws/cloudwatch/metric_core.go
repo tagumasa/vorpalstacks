@@ -26,6 +26,10 @@ type GetMetricStatisticsInput struct {
 	Dimensions         []cwstore.Dimension
 }
 
+// requestMetricsNamespace is the namespace S3 request metrics publish to;
+// it matches the AWS/S3 namespace the request metrics documentation names.
+const requestMetricsNamespace = "AWS/S3"
+
 // putMetricDataCore validates input and stores metric data points.
 func (s *CloudWatchService) putMetricDataCore(stores *cloudwatchStores, input *PutMetricDataInput) error {
 	if err := validateNamespace(input.Namespace); err != nil {

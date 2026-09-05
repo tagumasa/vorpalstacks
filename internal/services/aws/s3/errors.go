@@ -85,6 +85,10 @@ var (
 	ErrNoSuchAccelerate = awserrors.NewAWSError("NoSuchAccelerateConfiguration", "The specified bucket does not have an accelerate configuration", http.StatusNotFound)
 	// ErrNoSuchObjectLock is returned when the object lock configuration does not exist for the bucket.
 	ErrNoSuchObjectLock = awserrors.NewAWSError("ObjectLockConfigurationNotFoundError", "Object Lock configuration does not exist for this bucket", http.StatusNotFound)
+	// ErrNoSuchConfiguration is returned when the requested inventory or metrics configuration does not exist.
+	ErrNoSuchConfiguration = awserrors.NewAWSError("NoSuchConfiguration", "The specified configuration does not exist", http.StatusNotFound)
+	// ErrTooManyConfigurations is returned when a bucket already carries the maximum number of inventory or metrics configurations.
+	ErrTooManyConfigurations = awserrors.NewAWSError("TooManyConfigurations", "You are attempting to create a new configuration but have already reached the 1,000-configuration limit.", http.StatusBadRequest)
 	// ErrNoSuchNotification is returned when the notification configuration does not exist.
 	ErrNoSuchNotification = awserrors.NewAWSError("NotificationConfigurationNotFoundError", "The notification configuration does not exist", http.StatusNotFound)
 	// ErrInvalidObjectState is returned when the operation is not valid for the object's storage class.

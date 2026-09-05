@@ -283,6 +283,14 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 		h.writeXMLResponse(w, "Tagging", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case *GetBucketVersioningOutput:
 		h.writeXMLResponse(w, "VersioningConfiguration", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetBucketInventoryConfigurationOutput:
+		h.writeXMLResponse(w, "InventoryConfiguration", v.InventoryConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *ListBucketInventoryConfigurationsOutput:
+		h.writeXMLResponse(w, "ListInventoryConfigurationsResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *GetBucketMetricsConfigurationOutput:
+		h.writeXMLResponse(w, "MetricsConfiguration", v.MetricsConfiguration, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
+	case *ListBucketMetricsConfigurationsOutput:
+		h.writeXMLResponse(w, "ListMetricsConfigurationsResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case *GetBucketLifecycleConfigurationOutput:
 		h.writeXMLResponse(w, "LifecycleConfiguration", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case *GetBucketWebsiteOutput:

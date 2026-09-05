@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -27,6 +28,17 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("PlatformApplicationArn is nil")
 		}
 		platformAppArn = *resp.PlatformApplicationArn
+
+		getResp, err := tc.getPlatformApplicationAttributes(platformAppArn)
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		if getResp.Attributes == nil {
+			return fmt.Errorf("Attributes is nil")
+		}
+		if getResp.Attributes["PlatformCredential"] != "fake-credential" {
+			return fmt.Errorf("PlatformCredential mismatch: got %q", getResp.Attributes["PlatformCredential"])
+		}
 		return nil
 	}))
 
@@ -52,38 +64,15 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "ListPlatformApplications", func() error {
-		resp, err := tc.client.ListPlatformApplications(tc.ctx, &sns.ListPlatformApplicationsInput{})
+		arns, err := tc.listAllPlatformApplications()
 		if err != nil {
 			return err
 		}
-		if resp.PlatformApplications == nil {
-			return fmt.Errorf("PlatformApplications is nil")
+		if len(arns) == 0 {
+			return fmt.Errorf("PlatformApplications is empty")
 		}
-		found := false
-		for _, app := range resp.PlatformApplications {
-			if app.PlatformApplicationArn != nil && *app.PlatformApplicationArn == platformAppArn {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(arns, platformAppArn) {
 			return fmt.Errorf("created platform application not found in list")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "GetPlatformApplicationAttributes", func() error {
-		resp, err := tc.client.GetPlatformApplicationAttributes(tc.ctx, &sns.GetPlatformApplicationAttributesInput{
-			PlatformApplicationArn: aws.String(platformAppArn),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
-		}
-		if resp.Attributes["PlatformCredential"] != "fake-credential" {
-			return fmt.Errorf("PlatformCredential mismatch: got %q", resp.Attributes["PlatformCredential"])
 		}
 		return nil
 	}))
@@ -99,9 +88,7 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("set: %v", err)
 		}
 
-		getResp, err := tc.client.GetPlatformApplicationAttributes(tc.ctx, &sns.GetPlatformApplicationAttributesInput{
-			PlatformApplicationArn: aws.String(platformAppArn),
-		})
+		getResp, err := tc.getPlatformApplicationAttributes(platformAppArn)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -125,50 +112,33 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("EndpointArn is nil")
 		}
 		endpointArn = *resp.EndpointArn
+
+		getResp, err := tc.getEndpointAttributes(endpointArn)
+		if err != nil {
+			return fmt.Errorf("get attrs: %v", err)
+		}
+		if getResp.Attributes == nil {
+			return fmt.Errorf("Attributes is nil")
+		}
+		if getResp.Attributes["Token"] != "fake-device-token-12345" {
+			return fmt.Errorf("token mismatch: got %q", getResp.Attributes["Token"])
+		}
+		if getResp.Attributes["Enabled"] != "true" {
+			return fmt.Errorf("enabled should be true by default, got %q", getResp.Attributes["Enabled"])
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("sns", "ListEndpointsByPlatformApplication", func() error {
-		resp, err := tc.client.ListEndpointsByPlatformApplication(tc.ctx, &sns.ListEndpointsByPlatformApplicationInput{
-			PlatformApplicationArn: aws.String(platformAppArn),
-		})
+		arns, err := tc.listAllEndpointsByPlatformApplication(platformAppArn)
 		if err != nil {
 			return err
 		}
-		if resp.Endpoints == nil {
-			return fmt.Errorf("Endpoints is nil")
-		}
-		if len(resp.Endpoints) == 0 {
+		if len(arns) == 0 {
 			return fmt.Errorf("expected at least one endpoint")
 		}
-		found := false
-		for _, ep := range resp.Endpoints {
-			if ep.EndpointArn != nil && *ep.EndpointArn == endpointArn {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(arns, endpointArn) {
 			return fmt.Errorf("created endpoint not found in ListEndpointsByPlatformApplication")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sns", "GetEndpointAttributes", func() error {
-		resp, err := tc.client.GetEndpointAttributes(tc.ctx, &sns.GetEndpointAttributesInput{
-			EndpointArn: aws.String(endpointArn),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.Attributes == nil {
-			return fmt.Errorf("Attributes is nil")
-		}
-		if resp.Attributes["Token"] != "fake-device-token-12345" {
-			return fmt.Errorf("token mismatch: got %q", resp.Attributes["Token"])
-		}
-		if resp.Attributes["Enabled"] != "true" {
-			return fmt.Errorf("enabled should be true by default, got %q", resp.Attributes["Enabled"])
 		}
 		return nil
 	}))
@@ -185,9 +155,7 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("set: %v", err)
 		}
 
-		getResp, err := tc.client.GetEndpointAttributes(tc.ctx, &sns.GetEndpointAttributesInput{
-			EndpointArn: aws.String(endpointArn),
-		})
+		getResp, err := tc.getEndpointAttributes(endpointArn)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -230,10 +198,8 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("delete app: %v", err)
 		}
 
-		_, err = tc.client.GetEndpointAttributes(tc.ctx, &sns.GetEndpointAttributesInput{
-			EndpointArn: aws.String(cascadeEndpointArn),
-		})
-		return AssertErrorContains(err, "NotFound")
+		_, err = tc.getEndpointAttributes(cascadeEndpointArn)
+		return tc.expectNotFound("GetEndpointAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "DeleteEndpoint", func() error {
@@ -267,10 +233,8 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("delete endpoint: %v", err)
 		}
 
-		_, err = tc.client.GetEndpointAttributes(tc.ctx, &sns.GetEndpointAttributesInput{
-			EndpointArn: epResp.EndpointArn,
-		})
-		return AssertErrorContains(err, "NotFound")
+		_, err = tc.getEndpointAttributes(*epResp.EndpointArn)
+		return tc.expectNotFound("GetEndpointAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "DeletePlatformApplication_Standalone", func() error {
@@ -294,10 +258,8 @@ func (r *TestRunner) runSNSPlatformTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("delete app: %v", err)
 		}
 
-		_, err = tc.client.GetPlatformApplicationAttributes(tc.ctx, &sns.GetPlatformApplicationAttributesInput{
-			PlatformApplicationArn: aws.String(appArn),
-		})
-		return AssertErrorContains(err, "NotFound")
+		_, err = tc.getPlatformApplicationAttributes(appArn)
+		return tc.expectNotFound("GetPlatformApplicationAttributes", err)
 	}))
 
 	results = append(results, r.RunTest("sns", "CreatePlatformEndpoint_DuplicateToken", func() error {

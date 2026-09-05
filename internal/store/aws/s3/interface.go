@@ -46,6 +46,14 @@ type BucketStoreInterface interface {
 	GetPublicAccessBlock(name string) (*PublicAccessBlockConfig, error)
 	SetReplication(name string, config *ReplicationConfiguration) error
 	GetReplication(name string) (*ReplicationConfiguration, error)
+	SetInventoryConfiguration(name, id string, config *InventoryConfiguration) error
+	GetInventoryConfiguration(name, id string) (*InventoryConfiguration, error)
+	DeleteInventoryConfiguration(name, id string) error
+	ListInventoryConfigurations(name string) ([]*InventoryConfiguration, error)
+	SetMetricsConfiguration(name, id string, config *MetricsConfiguration) error
+	GetMetricsConfiguration(name, id string) (*MetricsConfiguration, error)
+	DeleteMetricsConfiguration(name, id string) error
+	ListMetricsConfigurations(name string) ([]*MetricsConfiguration, error)
 	ARNBuilder() *svcarn.S3Builder
 }
 
@@ -105,6 +113,9 @@ type S3StoreInterface interface {
 	// FindBucket searches all regions for a bucket with the given name.
 	// Returns the bucket and the region in which it was found.
 	FindBucket(name string) (*Bucket, string)
+	// EachRegion invokes fn for every initialised region's stores, in no
+	// particular order.
+	EachRegion(fn func(region string, buckets *BucketStore, objects *ObjectStore))
 }
 
 type regionStores struct {
@@ -191,6 +202,15 @@ func (s *s3Store) FindBucket(name string) (*Bucket, string) {
 		return found, foundRegion
 	}
 	return nil, ""
+}
+
+// EachRegion invokes fn for every initialised region's stores.
+func (s *s3Store) EachRegion(fn func(region string, buckets *BucketStore, objects *ObjectStore)) {
+	s.stores.Range(func(key, value interface{}) bool {
+		rs := value.(*regionStores)
+		fn(key.(string), rs.buckets, rs.objects)
+		return true
+	})
 }
 
 var (

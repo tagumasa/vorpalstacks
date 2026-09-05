@@ -66,149 +66,94 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetConfigurationSet_NonExistent", func() error {
-		_, err := tc.client.GetConfigurationSet(tc.ctx, &sesv2.GetConfigurationSetInput{
-			ConfigurationSetName: aws.String("nonexistent-cs-xyz"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getConfigSet("nonexistent-cs-xyz")
+		return tc.expectNotFound("GetConfigurationSet", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteConfigurationSet_NonExistent", func() error {
 		_, err := tc.client.DeleteConfigurationSet(tc.ctx, &sesv2.DeleteConfigurationSetInput{
 			ConfigurationSetName: aws.String("nonexistent-cs-xyz"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("DeleteConfigurationSet", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetEmailIdentity_NonExistent", func() error {
-		_, err := tc.client.GetEmailIdentity(tc.ctx, &sesv2.GetEmailIdentityInput{
-			EmailIdentity: aws.String("nonexistent@example.com"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getEmailIdentity("nonexistent@example.com")
+		return tc.expectNotFound("GetEmailIdentity", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteEmailIdentity_NonExistent", func() error {
 		_, err := tc.client.DeleteEmailIdentity(tc.ctx, &sesv2.DeleteEmailIdentityInput{
 			EmailIdentity: aws.String("nonexistent@example.com"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("DeleteEmailIdentity", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetEmailTemplate_NonExistent", func() error {
-		_, err := tc.client.GetEmailTemplate(tc.ctx, &sesv2.GetEmailTemplateInput{
-			TemplateName: aws.String("nonexistent-template-xyz"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getEmailTemplate("nonexistent-template-xyz")
+		return tc.expectNotFound("GetEmailTemplate", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteEmailTemplate_NonExistent", func() error {
 		_, err := tc.client.DeleteEmailTemplate(tc.ctx, &sesv2.DeleteEmailTemplateInput{
 			TemplateName: aws.String("nonexistent-template-xyz"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("DeleteEmailTemplate", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetDedicatedIpPool_NonExistent", func() error {
 		_, err := tc.client.GetDedicatedIpPool(tc.ctx, &sesv2.GetDedicatedIpPoolInput{
 			PoolName: aws.String("nonexistent-pool-xyz"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("GetDedicatedIpPool", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteDedicatedIpPool_NonExistent", func() error {
 		_, err := tc.client.DeleteDedicatedIpPool(tc.ctx, &sesv2.DeleteDedicatedIpPoolInput{
 			PoolName: aws.String("nonexistent-pool-xyz"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("DeleteDedicatedIpPool", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetContactList_NonExistent", func() error {
-		_, err := tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
-			ContactListName: aws.String("nonexistent-cl-xyz"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getContactList("nonexistent-cl-xyz")
+		return tc.expectNotFound("GetContactList", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetContact_NonExistent", func() error {
-		_, err := tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
-			ContactListName: aws.String("nonexistent-cl-xyz"),
-			EmailAddress:    aws.String("nonexistent@example.com"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getContact("nonexistent-cl-xyz", "nonexistent@example.com")
+		return tc.expectNotFound("GetContact", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "DeleteContactList_NonExistent", func() error {
 		_, err := tc.client.DeleteContactList(tc.ctx, &sesv2.DeleteContactListInput{
 			ContactListName: aws.String("nonexistent-cl-xyz"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("DeleteContactList", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetSuppressedDestination_NonExistent", func() error {
 		_, err := tc.client.GetSuppressedDestination(tc.ctx, &sesv2.GetSuppressedDestinationInput{
 			EmailAddress: aws.String("nonexistent@example.com"),
 		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		return tc.expectNotFound("GetSuppressedDestination", err)
 	}))
 
 	results = append(results, r.RunTest("sesv2", "GetEmailIdentityPolicies_NonExistent", func() error {
-		_, err := tc.client.GetEmailIdentityPolicies(tc.ctx, &sesv2.GetEmailIdentityPoliciesInput{
-			EmailIdentity: aws.String("nonexistent@example.com"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
+		_, err := tc.getIdentityPolicies("nonexistent@example.com")
+		return tc.expectNotFound("GetEmailIdentityPolicies", err)
 	}))
 
 	// --- Validation error-case tests ---
 
 	results = append(results, r.RunTest("sesv2", "PutConfigurationSetDeliveryOptions_InvalidMaxDeliverySeconds", func() error {
 		csName := fmt.Sprintf("edge-cs-%d", tc.uid)
-		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(csName),
-		})
-		if err != nil {
+		if err := tc.createConfigSet(csName); err != nil {
 			return fmt.Errorf("setup create config set: %v", err)
 		}
 		defer tc.deleteConfigSet(csName)
 
-		_, err = tc.client.PutConfigurationSetDeliveryOptions(tc.ctx, &sesv2.PutConfigurationSetDeliveryOptionsInput{
+		_, err := tc.client.PutConfigurationSetDeliveryOptions(tc.ctx, &sesv2.PutConfigurationSetDeliveryOptionsInput{
 			ConfigurationSetName: aws.String(csName),
 			MaxDeliverySeconds:   aws.Int64(100),
 		})
@@ -245,15 +190,12 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "CreateConfigurationSetEventDestination_MultipleDestinations", func() error {
 		csName := fmt.Sprintf("edge-ed-%d", tc.uid)
-		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(csName),
-		})
-		if err != nil {
+		if err := tc.createConfigSet(csName); err != nil {
 			return fmt.Errorf("setup create config set: %v", err)
 		}
 		defer tc.deleteConfigSet(csName)
 
-		_, err = tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
+		_, err := tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
 			EventDestinationName: aws.String("multi-dest"),
 			EventDestination: &types.EventDestinationDefinition{
@@ -301,15 +243,12 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "UpdateEventDestination_PreserveDestinationType", func() error {
 		csName := fmt.Sprintf("edge-update-preserve-%d", tc.uid)
-		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(csName),
-		})
-		if err != nil {
+		if err := tc.createConfigSet(csName); err != nil {
 			return fmt.Errorf("setup create config set: %v", err)
 		}
 		defer tc.deleteConfigSet(csName)
 
-		_, err = tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
+		_, err := tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
 			EventDestinationName: aws.String("update-preserve-dest"),
 			EventDestination: &types.EventDestinationDefinition{
@@ -337,9 +276,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 		}
 
 		// Verify SNS destination is still present.
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(csName),
-		})
+		resp, err := tc.getEventDestinations(csName)
 		if err != nil {
 			return fmt.Errorf("get event destinations: %v", err)
 		}
@@ -360,15 +297,12 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "CreateEventDestination_DefaultEnabled", func() error {
 		csName := fmt.Sprintf("edge-default-enabled-%d", tc.uid)
-		_, err := tc.client.CreateConfigurationSet(tc.ctx, &sesv2.CreateConfigurationSetInput{
-			ConfigurationSetName: aws.String(csName),
-		})
-		if err != nil {
+		if err := tc.createConfigSet(csName); err != nil {
 			return fmt.Errorf("setup create config set: %v", err)
 		}
 		defer tc.deleteConfigSet(csName)
 
-		_, err = tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
+		_, err := tc.client.CreateConfigurationSetEventDestination(tc.ctx, &sesv2.CreateConfigurationSetEventDestinationInput{
 			ConfigurationSetName: aws.String(csName),
 			EventDestinationName: aws.String("default-enabled-dest"),
 			EventDestination: &types.EventDestinationDefinition{
@@ -382,9 +316,7 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 			return fmt.Errorf("create event destination: %v", err)
 		}
 
-		resp, err := tc.client.GetConfigurationSetEventDestinations(tc.ctx, &sesv2.GetConfigurationSetEventDestinationsInput{
-			ConfigurationSetName: aws.String(csName),
-		})
+		resp, err := tc.getEventDestinations(csName)
 		if err != nil {
 			return fmt.Errorf("get event destinations: %v", err)
 		}
@@ -454,19 +386,12 @@ func (r *TestRunner) runSESv2EdgeTests(tc *sesv2TestContext) []TestResult {
 
 	results = append(results, r.RunTest("sesv2", "ListContacts_InvalidFilteredStatus", func() error {
 		clName := fmt.Sprintf("filter-status-%d", tc.uid)
-		_, err := tc.client.CreateContactList(tc.ctx, &sesv2.CreateContactListInput{
-			ContactListName: aws.String(clName),
-		})
-		if err != nil {
+		if err := tc.createContactList(clName); err != nil {
 			return fmt.Errorf("setup: %v", err)
 		}
-		defer func() {
-			_, _ = tc.client.DeleteContactList(tc.ctx, &sesv2.DeleteContactListInput{
-				ContactListName: aws.String(clName),
-			})
-		}()
+		defer tc.deleteContactList(clName)
 
-		_, err = tc.client.ListContacts(tc.ctx, &sesv2.ListContactsInput{
+		_, err := tc.client.ListContacts(tc.ctx, &sesv2.ListContactsInput{
 			ContactListName: aws.String(clName),
 			Filter: &types.ListContactsFilter{
 				FilteredStatus: types.SubscriptionStatus("INVALID"),

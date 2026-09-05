@@ -61,10 +61,15 @@ func NewCloudWatchService(accountID, region, dataPath string) *CloudWatchService
 }
 
 // SetEventBus sets the event bus used for publishing alarm state change
-// events. The alarm evaluator is started when both the bus and a logger
-// are available.
+// events and subscribes the S3 request-metrics ingest. The alarm evaluator
+// is started when both the bus and a logger are available.
 func (s *CloudWatchService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
+	if bus != nil {
+		if _, err := eventbus.SubscribeTyped[*eventbus.S3RequestMetricsEvent](bus, s.handleS3RequestMetrics, eventbus.WithAsync()); err != nil {
+			logs.Warn("cloudwatch: subscribe s3 request metrics failed", logs.Err(err))
+		}
+	}
 }
 
 // SetStorageManager injects the region storage manager for multi-region

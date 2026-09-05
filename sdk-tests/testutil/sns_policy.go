@@ -13,8 +13,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 	acct := tc.accountID
 
 	results = append(results, r.RunTest("sns", "AddPermission", func() error {
-		topicName := tc.uniqueName("PermTopic")
-		topicArn, err := tc.createTopic(topicName)
+		topicArn, err := tc.createTopic(tc.uniqueName("PermTopic"))
 		if err != nil {
 			return err
 		}
@@ -30,9 +29,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 			return err
 		}
 
-		getResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: aws.String(topicArn),
-		})
+		getResp, err := tc.getTopicAttributes(topicArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -44,8 +41,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "RemovePermission", func() error {
-		topicName := tc.uniqueName("RemPermTopic")
-		topicArn, err := tc.createTopic(topicName)
+		topicArn, err := tc.createTopic(tc.uniqueName("RemPermTopic"))
 		if err != nil {
 			return err
 		}
@@ -69,36 +65,15 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("sns", "PutDataProtectionPolicy", func() error {
-		dppTopicName := tc.uniqueName("DppTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(dppTopicName),
-		})
+		dppTopicArn, err := tc.createTopic(tc.uniqueName("DppTopic"))
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.deleteTopic(*tResp.TopicArn)
+		defer tc.deleteTopic(dppTopicArn)
 
 		policy := `{"Name":"data-protection-policy","Description":"Test policy","Version":"2021-06-01"}`
 		_, err = tc.client.PutDataProtectionPolicy(tc.ctx, &sns.PutDataProtectionPolicyInput{
-			ResourceArn:          tResp.TopicArn,
-			DataProtectionPolicy: aws.String(policy),
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("sns", "GetDataProtectionPolicy", func() error {
-		dppGetTopicName := tc.uniqueName("DppGetTopic")
-		tResp, err := tc.client.CreateTopic(tc.ctx, &sns.CreateTopicInput{
-			Name: aws.String(dppGetTopicName),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.deleteTopic(*tResp.TopicArn)
-
-		policy := `{"Name":"round-trip-policy","Version":"2021-06-01"}`
-		_, err = tc.client.PutDataProtectionPolicy(tc.ctx, &sns.PutDataProtectionPolicyInput{
-			ResourceArn:          tResp.TopicArn,
+			ResourceArn:          aws.String(dppTopicArn),
 			DataProtectionPolicy: aws.String(policy),
 		})
 		if err != nil {
@@ -106,7 +81,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		}
 
 		getResp, err := tc.client.GetDataProtectionPolicy(tc.ctx, &sns.GetDataProtectionPolicyInput{
-			ResourceArn: tResp.TopicArn,
+			ResourceArn: aws.String(dppTopicArn),
 		})
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
@@ -124,7 +99,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 		_, err := tc.client.GetDataProtectionPolicy(tc.ctx, &sns.GetDataProtectionPolicyInput{
 			ResourceArn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:nonexistent-dpp-topic", reg, acct)),
 		})
-		return AssertErrorContains(err, "NotFound")
+		return tc.expectNotFound("GetDataProtectionPolicy", err)
 	}))
 
 	// CreateTopic accepts the inline DataProtectionPolicy parameter; the
@@ -151,9 +126,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 			return fmt.Errorf("policy mismatch: got %v, want %q", getResp.DataProtectionPolicy, policy)
 		}
 
-		attrsResp, err := tc.client.GetTopicAttributes(tc.ctx, &sns.GetTopicAttributesInput{
-			TopicArn: tResp.TopicArn,
-		})
+		attrsResp, err := tc.getTopicAttributes(*tResp.TopicArn)
 		if err != nil {
 			return fmt.Errorf("get attrs: %v", err)
 		}
@@ -169,7 +142,7 @@ func (r *TestRunner) runSNSPolicyTests(tc *snsTestContext) []TestResult {
 			Name:                 aws.String(tc.uniqueName("BadDppTopic")),
 			DataProtectionPolicy: aws.String("not-json"),
 		})
-		return AssertErrorContains(err, "InvalidParameter")
+		return expectAWSErrorCode(err, "InvalidParameter")
 	}))
 
 	return results

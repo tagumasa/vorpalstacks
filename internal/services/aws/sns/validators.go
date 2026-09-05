@@ -57,13 +57,13 @@ var platformApplicationNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
 // CreatePlatformApplication names, counted in Unicode characters.
 func validatePlatformApplicationName(name string) error {
 	if name == "" {
-		return awserrors.NewInvalidParameterException("Name is required")
+		return NewInvalidParameter("Name is required")
 	}
 	if n := utf8.RuneCountInString(name); n > maxPlatformApplicationNameLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Name too long: %d characters (maximum %d)", n, maxPlatformApplicationNameLength))
+		return NewInvalidParameter(fmt.Sprintf("Name too long: %d characters (maximum %d)", n, maxPlatformApplicationNameLength))
 	}
 	if !platformApplicationNamePattern.MatchString(name) {
-		return awserrors.NewInvalidParameterException("Invalid parameter: Name must contain only letters, numbers, underscores, hyphens, and periods")
+		return NewInvalidParameter("Invalid parameter: Name must contain only letters, numbers, underscores, hyphens, and periods")
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ var validMessageAttributeDataTypes = map[string]bool{
 // AWS-supported values.
 func validateProtocol(protocol string) error {
 	if !validProtocols[protocol] {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf(
+		return NewInvalidParameter(fmt.Sprintf(
 			"Invalid protocol: %s. Valid values: http, https, email, email-json, sms, sqs, application, lambda, firehose",
 			protocol))
 	}
@@ -132,56 +132,56 @@ func validateEndpointForProtocol(protocol, endpoint string) error {
 	switch protocol {
 	case "http":
 		if !strings.HasPrefix(endpoint, "http://") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid HTTP URL starting with http://")
+			return NewInvalidParameter("Endpoint must be a valid HTTP URL starting with http://")
 		}
 		if len(endpoint) > maxEndpointURLLength {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
+			return NewInvalidParameter(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
 		}
 		if _, err := url.Parse(endpoint); err != nil {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
+			return NewInvalidParameter(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
 		}
 
 	case "https":
 		if !strings.HasPrefix(endpoint, "https://") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid HTTPS URL starting with https://")
+			return NewInvalidParameter("Endpoint must be a valid HTTPS URL starting with https://")
 		}
 		if len(endpoint) > maxEndpointURLLength {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
+			return NewInvalidParameter(fmt.Sprintf("Endpoint URL too long: %d characters (maximum %d)", len(endpoint), maxEndpointURLLength))
 		}
 		if _, err := url.Parse(endpoint); err != nil {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
+			return NewInvalidParameter(fmt.Sprintf("Invalid endpoint URL: %s", err.Error()))
 		}
 
 	case "sqs":
 		if !strings.HasPrefix(endpoint, "http") && !strings.HasPrefix(endpoint, "arn:") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid SQS queue URL or ARN for protocol sqs")
+			return NewInvalidParameter("Endpoint must be a valid SQS queue URL or ARN for protocol sqs")
 		}
 
 	case "lambda":
 		if !strings.HasPrefix(endpoint, "arn:") {
 			if endpoint == "" {
-				return awserrors.NewInvalidParameterException("Endpoint must be a valid Lambda function ARN or name")
+				return NewInvalidParameter("Endpoint must be a valid Lambda function ARN or name")
 			}
 			for _, c := range endpoint {
 				if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-					return awserrors.NewInvalidParameterException("Endpoint must be a valid Lambda function ARN or name")
+					return NewInvalidParameter("Endpoint must be a valid Lambda function ARN or name")
 				}
 			}
 		}
 
 	case "email", "email-json":
 		if !strings.Contains(endpoint, "@") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid email address for protocol " + protocol)
+			return NewInvalidParameter("Endpoint must be a valid email address for protocol " + protocol)
 		}
 
 	case "application":
 		if !strings.HasPrefix(endpoint, "arn:") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid platform endpoint ARN for protocol application")
+			return NewInvalidParameter("Endpoint must be a valid platform endpoint ARN for protocol application")
 		}
 
 	case "firehose":
 		if !strings.HasPrefix(endpoint, "arn:") {
-			return awserrors.NewInvalidParameterException("Endpoint must be a valid Firehose delivery stream ARN for protocol firehose")
+			return NewInvalidParameter("Endpoint must be a valid Firehose delivery stream ARN for protocol firehose")
 		}
 	}
 
@@ -197,16 +197,16 @@ func validateEndpointForProtocol(protocol, endpoint string) error {
 // AWS prefixes, .fifo suffix handled for FIFO topics.
 func validateTopicName(name string) error {
 	if name == "" {
-		return awserrors.NewInvalidParameterException("Topic name is required")
+		return NewInvalidParameter("Topic name is required")
 	}
 	if len(name) > 256 {
-		return awserrors.NewInvalidParameterException("Topic name must not exceed 256 characters")
+		return NewInvalidParameter("Topic name must not exceed 256 characters")
 	}
 
 	// Reject AWS-reserved prefixes (case-insensitive).
 	lower := strings.ToLower(name)
 	if strings.HasPrefix(lower, "aws") || strings.HasPrefix(lower, "amazon") {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Topic name %q starts with a reserved prefix (aws/amazon)", name))
+		return NewInvalidParameter(fmt.Sprintf("Topic name %q starts with a reserved prefix (aws/amazon)", name))
 	}
 
 	// Character validation (allow .fifo suffix).
@@ -216,7 +216,7 @@ func validateTopicName(name string) error {
 	}
 	for _, c := range baseName {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-			return awserrors.NewInvalidParameterException("Topic name can only contain alphanumeric characters, hyphens, and underscores")
+			return NewInvalidParameter("Topic name can only contain alphanumeric characters, hyphens, and underscores")
 		}
 	}
 
@@ -228,11 +228,11 @@ func validateTopicName(name string) error {
 // policy at 30,720 bytes and requires a valid JSON document.
 func validateDataProtectionPolicy(policy string) error {
 	if len(policy) > maxTopicAttributeValueLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("DataProtectionPolicy value too long: %d characters (maximum %d)", len(policy), maxTopicAttributeValueLength))
+		return NewInvalidParameter(fmt.Sprintf("DataProtectionPolicy value too long: %d characters (maximum %d)", len(policy), maxTopicAttributeValueLength))
 	}
 	var policyCheck interface{}
 	if err := json.Unmarshal([]byte(policy), &policyCheck); err != nil {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid DataProtectionPolicy: not valid JSON: %s", err.Error()))
+		return NewInvalidParameter(fmt.Sprintf("Invalid DataProtectionPolicy: not valid JSON: %s", err.Error()))
 	}
 	return nil
 }
@@ -248,12 +248,12 @@ func validateTopicAttribute(name, value string) error {
 	// CreateTopic Attributes), matching the documented attribute sets of
 	// those APIs.
 	if name == "DataProtectionPolicy" {
-		return awserrors.NewInvalidParameterException("DataProtectionPolicy cannot be set via topic attributes; use the DataProtectionPolicy parameter of CreateTopic or the PutDataProtectionPolicy API")
+		return NewInvalidParameter("DataProtectionPolicy cannot be set via topic attributes; use the DataProtectionPolicy parameter of CreateTopic or the PutDataProtectionPolicy API")
 	}
 
 	// General DoS cap for all topic attribute values.
 	if len(value) > maxTopicAttributeValueLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxTopicAttributeValueLength))
+		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxTopicAttributeValueLength))
 	}
 
 	switch name {
@@ -263,11 +263,11 @@ func validateTopicAttribute(name, value string) error {
 		return validateJSONAttribute(name, value)
 	case "DisplayName":
 		if len(value) > 100 {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("DisplayName too long: %d characters (maximum 100)", len(value)))
+			return NewInvalidParameter(fmt.Sprintf("DisplayName too long: %d characters (maximum 100)", len(value)))
 		}
 	case "KmsMasterKeyId":
 		if value != "" && !strings.HasPrefix(value, "arn:") && !isValidKmsKeyId(value) {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid KmsMasterKeyId: %s", value))
+			return NewInvalidParameter(fmt.Sprintf("Invalid KmsMasterKeyId: %s", value))
 		}
 	}
 	return nil
@@ -280,7 +280,7 @@ func validateJSONAttribute(name, value string) error {
 	}
 	var v interface{}
 	if err := json.Unmarshal([]byte(value), &v); err != nil {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid %s: not valid JSON: %s", name, err.Error()))
+		return NewInvalidParameter(fmt.Sprintf("Invalid %s: not valid JSON: %s", name, err.Error()))
 	}
 	return nil
 }
@@ -298,7 +298,7 @@ func validateSubscriptionAttribute(name, value string) error {
 	// AuthenticateOnUnsubscribe is set exclusively through the
 	// ConfirmSubscription input parameter; it is not a writable attribute.
 	case "AuthenticateOnUnsubscribe":
-		return awserrors.NewInvalidParameterException("AuthenticateOnUnsubscribe cannot be set via SetSubscriptionAttributes; it is set when confirming the subscription")
+		return NewInvalidParameter("AuthenticateOnUnsubscribe cannot be set via SetSubscriptionAttributes; it is set when confirming the subscription")
 	case "FilterPolicy":
 		return validateFilterPolicy(value)
 	case "FilterPolicyScope":
@@ -318,7 +318,7 @@ func validateFilterPolicy(value string) error {
 
 	var policy map[string]interface{}
 	if err := json.Unmarshal([]byte(value), &policy); err != nil {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid filter policy: %s", err.Error()))
+		return NewInvalidParameter(fmt.Sprintf("Invalid filter policy: %s", err.Error()))
 	}
 
 	if len(policy) > 100 {
@@ -327,7 +327,7 @@ func validateFilterPolicy(value string) error {
 
 	for attrName, raw := range policy {
 		if attrName == "" {
-			return awserrors.NewInvalidParameterException("Invalid filter policy: attribute name must not be empty")
+			return NewInvalidParameter("Invalid filter policy: attribute name must not be empty")
 		}
 		if err := validateFilterPolicyValue(raw); err != nil {
 			return err
@@ -343,7 +343,7 @@ func validateFilterPolicy(value string) error {
 func validateFilterPolicyValue(raw interface{}) error {
 	values, ok := raw.([]interface{})
 	if !ok {
-		return awserrors.NewInvalidParameterException("Invalid filter policy: value must be an array")
+		return NewInvalidParameter("Invalid filter policy: value must be an array")
 	}
 
 	for _, v := range values {
@@ -352,19 +352,19 @@ func validateFilterPolicyValue(raw interface{}) error {
 			continue
 		case map[string]interface{}:
 			if len(cond) != 1 {
-				return awserrors.NewInvalidParameterException(
+				return NewInvalidParameter(
 					"Invalid filter policy: a condition object must have exactly one operator")
 			}
 			for operator := range cond {
 				switch operator {
 				case "prefix", "anything-but", "numeric", "exists":
 				default:
-					return awserrors.NewInvalidParameterException(
+					return NewInvalidParameter(
 						fmt.Sprintf("Invalid filter policy: unknown operator %q", operator))
 				}
 			}
 		default:
-			return awserrors.NewInvalidParameterException("Invalid filter policy: unsupported value type")
+			return NewInvalidParameter("Invalid filter policy: unsupported value type")
 		}
 	}
 
@@ -378,7 +378,7 @@ func validateFilterPolicyScope(value string) error {
 	case "MessageAttributes", "MessageBody":
 		return nil
 	default:
-		return awserrors.NewInvalidParameterException(
+		return NewInvalidParameter(
 			fmt.Sprintf("Invalid FilterPolicyScope: %s. Valid values: MessageAttributes, MessageBody", value))
 	}
 }
@@ -394,11 +394,11 @@ func validateRedrivePolicy(value string) error {
 		DeadLetterTargetArn string `json:"deadLetterTargetArn"`
 	}
 	if err := json.Unmarshal([]byte(value), &rp); err != nil {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid redrive policy: %s", err.Error()))
+		return NewInvalidParameter(fmt.Sprintf("Invalid redrive policy: %s", err.Error()))
 	}
 
 	if strings.TrimSpace(rp.DeadLetterTargetArn) == "" {
-		return awserrors.NewInvalidParameterException("Invalid redrive policy: deadLetterTargetArn is required")
+		return NewInvalidParameter("Invalid redrive policy: deadLetterTargetArn is required")
 	}
 
 	return nil
@@ -419,39 +419,39 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 	// Subject is documented as "UTF-8 text … less than 100 characters
 	// long", so the ceiling counts Unicode characters.
 	if n := utf8.RuneCountInString(subject); n > maxSubjectLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Subject too long: %d characters (maximum %d)", n, maxSubjectLength))
+		return NewInvalidParameter(fmt.Sprintf("Subject too long: %d characters (maximum %d)", n, maxSubjectLength))
 	}
 
 	if messageStructure != "" && messageStructure != "json" {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid MessageStructure: %s. Valid value: json", messageStructure))
+		return NewInvalidParameter(fmt.Sprintf("Invalid MessageStructure: %s. Valid value: json", messageStructure))
 	}
 
 	if messageStructure == "json" {
 		var msgMap map[string]interface{}
 		if err := json.Unmarshal([]byte(message), &msgMap); err != nil {
-			return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid parameter: MessageStructure is json but message body is not valid JSON: %s", err.Error()))
+			return NewInvalidParameter(fmt.Sprintf("Invalid parameter: MessageStructure is json but message body is not valid JSON: %s", err.Error()))
 		}
 		if _, ok := msgMap["default"]; !ok {
-			return awserrors.NewInvalidParameterException("Invalid parameter: MessageStructure is json but message body does not contain a 'default' key")
+			return NewInvalidParameter("Invalid parameter: MessageStructure is json but message body does not contain a 'default' key")
 		}
 	}
 
 	if isFifo {
 		if messageGroupId == "" {
-			return awserrors.NewInvalidParameterException("MessageGroupId is required for FIFO topics")
+			return NewInvalidParameter("MessageGroupId is required for FIFO topics")
 		}
 		// When ContentBasedDeduplication is disabled the publisher must supply
 		// a MessageDeduplicationId. When enabled, the caller auto-generates
 		// one from the message body hash.
 		if !isContentBasedDedup && messageDeduplicationId == "" {
-			return awserrors.NewInvalidParameterException("MessageDeduplicationId is required when ContentBasedDeduplication is false")
+			return NewInvalidParameter("MessageDeduplicationId is required when ContentBasedDeduplication is false")
 		}
 	} else {
 		if messageGroupId != "" {
-			return awserrors.NewInvalidParameterException("MessageGroupId is only valid for FIFO topics")
+			return NewInvalidParameter("MessageGroupId is only valid for FIFO topics")
 		}
 		if messageDeduplicationId != "" {
-			return awserrors.NewInvalidParameterException("MessageDeduplicationId is only valid for FIFO topics")
+			return NewInvalidParameter("MessageDeduplicationId is only valid for FIFO topics")
 		}
 	}
 
@@ -462,7 +462,7 @@ func validatePublishParams(isFifo, isContentBasedDedup bool, message, subject, m
 // AWS docs: alphanumeric, underscore, hyphen, and period; 1-256 characters.
 func validateMessageAttributeName(name string) error {
 	if !messageAttrNamePattern.MatchString(name) {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid message attribute name %q: must match [a-zA-Z0-9_.-] and be 1-256 characters", name))
+		return NewInvalidParameter(fmt.Sprintf("Invalid message attribute name %q: must match [a-zA-Z0-9_.-] and be 1-256 characters", name))
 	}
 	return nil
 }
@@ -472,10 +472,10 @@ func validateMessageAttributeName(name string) error {
 // values up to 256 bytes.
 func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte) error {
 	if len(stringValue) > maxMessageAttrStringValue {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Message attribute %q StringValue too long: %d characters (maximum %d)", name, len(stringValue), maxMessageAttrStringValue))
+		return NewInvalidParameter(fmt.Sprintf("Message attribute %q StringValue too long: %d characters (maximum %d)", name, len(stringValue), maxMessageAttrStringValue))
 	}
 	if len(binaryValue) > maxMessageAttrBinaryValue {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Message attribute %q BinaryValue too long: %d bytes (maximum %d)", name, len(binaryValue), maxMessageAttrBinaryValue))
+		return NewInvalidParameter(fmt.Sprintf("Message attribute %q BinaryValue too long: %d bytes (maximum %d)", name, len(binaryValue), maxMessageAttrBinaryValue))
 	}
 	return nil
 }
@@ -489,17 +489,17 @@ func validateMessageAttributeLimits(name, stringValue string, binaryValue []byte
 // and have at least six colon-separated parts.
 func validatePlatformApplicationArn(arn string) error {
 	if arn == "" {
-		return awserrors.NewInvalidParameterException("PlatformApplicationArn is required")
+		return NewInvalidParameter("PlatformApplicationArn is required")
 	}
 	if !strings.HasPrefix(arn, "arn:") {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid PlatformApplicationArn: %s", arn))
+		return NewInvalidParameter(fmt.Sprintf("Invalid PlatformApplicationArn: %s", arn))
 	}
 	_, service, _, _, _ := svcarn.SplitARN(arn)
 	if service == "" {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("Invalid PlatformApplicationArn format: %s", arn))
+		return NewInvalidParameter(fmt.Sprintf("Invalid PlatformApplicationArn format: %s", arn))
 	}
 	if service != "sns" {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("PlatformApplicationArn must be an SNS ARN: %s", arn))
+		return NewInvalidParameter(fmt.Sprintf("PlatformApplicationArn must be an SNS ARN: %s", arn))
 	}
 	return nil
 }
@@ -508,7 +508,7 @@ func validatePlatformApplicationArn(arn string) error {
 // and endpoint attribute values for DoS protection.
 func validatePlatformAttributeValue(name, value string) error {
 	if len(value) > maxPlatformAttributeValueLength {
-		return awserrors.NewInvalidParameterException(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxPlatformAttributeValueLength))
+		return NewInvalidParameter(fmt.Sprintf("%s value too long: %d characters (maximum %d)", name, len(value), maxPlatformAttributeValueLength))
 	}
 	return nil
 }

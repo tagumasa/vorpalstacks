@@ -144,6 +144,8 @@ func applyResponseHeaderOverrides(header http.Header, query url.Values) {
 
 // HandleRequest processes HTTP requests for object-level operations such as
 // get, put, delete, copy, multipart uploads, tagging, ACL, and legal hold.
+// Request-metrics recording lives at the ServeHTTP dispatch point, which
+// alone can observe the response-body phase of the total latency.
 func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.RequestContext, stores *s3Stores, r *http.Request, bucket, key string) (interface{}, http.Header, int, error) {
 	method := r.Method
 	query := r.URL.Query()

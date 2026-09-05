@@ -46,3 +46,11 @@ var (
 func NewNotFoundException(resource string) *awserrors.AWSError {
 	return awserrors.NewAWSError("NotFound", resource+" not found", 404)
 }
+
+// NewInvalidParameter creates an InvalidParameterException error carrying
+// the wire code the SNS model assigns to that shape: its awsQueryError
+// trait maps the shape to "InvalidParameter", and AWS query responses must
+// report the trait code rather than the shape name.
+func NewInvalidParameter(message string) *awserrors.AWSError {
+	return awserrors.NewInvalidParameterException(message).SetQueryErrorCode("InvalidParameter")
+}

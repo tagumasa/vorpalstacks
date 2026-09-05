@@ -62,4 +62,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.32.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.37.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/golang/snappy v1.0.0 // indirect
+	github.com/scritchley/orc v0.0.0-20210513144143-06dddf1ad665 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )

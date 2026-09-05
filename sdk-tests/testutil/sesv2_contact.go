@@ -28,9 +28,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
-			ContactListName: aws.String(contactListName),
-		})
+		resp, err := tc.getContactList(contactListName)
 		if err != nil {
 			return fmt.Errorf("get after create: %v", err)
 		}
@@ -60,34 +58,12 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		listResp, err := tc.client.ListTagsForResource(tc.ctx, &sesv2.ListTagsForResourceInput{
-			ResourceArn: aws.String(arn),
-		})
+		listTags, err := tc.listTags(arn)
 		if err != nil {
 			return fmt.Errorf("list tags after tag: %v", err)
 		}
-		found := false
-		for _, t := range listResp.Tags {
-			if t.Key != nil && *t.Key == "Environment" && t.Value != nil && *t.Value == "test" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !containsTag(listTags, "Environment", "test") {
 			return fmt.Errorf("tag Environment=test not found after TagResource")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetContactList", func() error {
-		resp, err := tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
-			ContactListName: aws.String(contactListName),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.ContactListName == nil || *resp.ContactListName != contactListName {
-			return fmt.Errorf("expected %s, got %v", contactListName, resp.ContactListName)
 		}
 		return nil
 	}))
@@ -118,9 +94,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
-			ContactListName: aws.String(contactListName),
-		})
+		resp, err := tc.getContactList(contactListName)
 		if err != nil {
 			return fmt.Errorf("get after update: %v", err)
 		}
@@ -146,10 +120,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
-			ContactListName: aws.String(contactListName),
-			EmailAddress:    aws.String(contactEmail),
-		})
+		resp, err := tc.getContact(contactListName, contactEmail)
 		if err != nil {
 			return fmt.Errorf("get after create contact: %v", err)
 		}
@@ -164,20 +135,6 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		}
 		if resp.TopicPreferences[0].SubscriptionStatus != types.SubscriptionStatusOptIn {
 			return fmt.Errorf("expected OptIn, got %s", resp.TopicPreferences[0].SubscriptionStatus)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("sesv2", "GetContact", func() error {
-		resp, err := tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
-			ContactListName: aws.String(contactListName),
-			EmailAddress:    aws.String(contactEmail),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.EmailAddress == nil || *resp.EmailAddress != contactEmail {
-			return fmt.Errorf("expected %s, got %v", contactEmail, resp.EmailAddress)
 		}
 		return nil
 	}))
@@ -218,10 +175,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		resp, err := tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
-			ContactListName: aws.String(contactListName),
-			EmailAddress:    aws.String(contactEmail),
-		})
+		resp, err := tc.getContact(contactListName, contactEmail)
 		if err != nil {
 			return fmt.Errorf("get after update contact: %v", err)
 		}
@@ -242,10 +196,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetContact(tc.ctx, &sesv2.GetContactInput{
-			ContactListName: aws.String(contactListName),
-			EmailAddress:    aws.String(contactEmail),
-		})
+		_, err = tc.getContact(contactListName, contactEmail)
 		if err == nil {
 			return fmt.Errorf("expected error getting deleted contact")
 		}
@@ -259,9 +210,7 @@ func (r *TestRunner) runSESv2ContactTests(tc *sesv2TestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		_, err = tc.client.GetContactList(tc.ctx, &sesv2.GetContactListInput{
-			ContactListName: aws.String(contactListName),
-		})
+		_, err = tc.getContactList(contactListName)
 		if err == nil {
 			return fmt.Errorf("expected error getting deleted contact list")
 		}

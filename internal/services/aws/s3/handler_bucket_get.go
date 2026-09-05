@@ -77,6 +77,34 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 		result, err := h.bucketOps.GetBucketAccelerateConfiguration(ctx, &GetBucketAccelerateConfigurationInput{Bucket: bucket})
 		return result, http.StatusOK, err
 	}
+	if query.Has("inventory") {
+		if query.Has("id") {
+			result, err := h.bucketOps.GetBucketInventoryConfiguration(ctx, &GetBucketInventoryConfigurationInput{
+				Bucket: bucket,
+				Id:     query.Get("id"),
+			})
+			return result, http.StatusOK, err
+		}
+		result, err := h.bucketOps.ListBucketInventoryConfigurations(ctx, &ListBucketInventoryConfigurationsInput{
+			Bucket:            bucket,
+			ContinuationToken: query.Get("continuation-token"),
+		})
+		return result, http.StatusOK, err
+	}
+	if query.Has("metrics") {
+		if query.Has("id") {
+			result, err := h.bucketOps.GetBucketMetricsConfiguration(ctx, &GetBucketMetricsConfigurationInput{
+				Bucket: bucket,
+				Id:     query.Get("id"),
+			})
+			return result, http.StatusOK, err
+		}
+		result, err := h.bucketOps.ListBucketMetricsConfigurations(ctx, &ListBucketMetricsConfigurationsInput{
+			Bucket:            bucket,
+			ContinuationToken: query.Get("continuation-token"),
+		})
+		return result, http.StatusOK, err
+	}
 	if query.Has("location") {
 		result, err := h.bucketOps.GetBucketLocation(ctx, &GetBucketLocationInput{Bucket: bucket})
 		return result, http.StatusOK, err
