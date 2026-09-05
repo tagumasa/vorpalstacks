@@ -19,7 +19,7 @@ import (
 
 // LambdaAuthorizer handles Lambda-based authorizer for API Gateway.
 type LambdaAuthorizer struct {
-	bus         eventbus.Bus
+	bus         eventbus.ServiceBus
 	store       *apigatewaystore.RestApiStore
 	cache       *authCache
 	accountID   string
@@ -28,7 +28,7 @@ type LambdaAuthorizer struct {
 }
 
 // NewLambdaAuthorizer creates a new Lambda authorizer instance.
-func NewLambdaAuthorizer(bus eventbus.Bus, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
+func NewLambdaAuthorizer(bus eventbus.ServiceBus, store *apigatewaystore.RestApiStore) *LambdaAuthorizer {
 	return &LambdaAuthorizer{
 		bus:   bus,
 		store: store,
@@ -49,7 +49,7 @@ func (ac *authCache) Close() {
 }
 
 // NewLambdaAuthorizerWithConfig creates a new Lambda authorizer with account ID and region configuration.
-func NewLambdaAuthorizerWithConfig(bus eventbus.Bus, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
+func NewLambdaAuthorizerWithConfig(bus eventbus.ServiceBus, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
 	return &LambdaAuthorizer{
 		bus:         bus,
 		store:       store,

@@ -15,12 +15,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 	results = append(results, r.RunTest("secretsmanager", "ReplicateSecretToRegions_Basic", func() error {
 		name := tc.uniqueName("ReplicateTest")
 		secretValue := "replicate-test-value"
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String(secretValue),
-		})
+		_, err := tc.createSecret(name, secretValue)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -53,11 +50,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 			return fmt.Errorf("us-west-2 not found in ReplicationStatus")
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if len(descResp.ReplicationStatus) == 0 {
 			return fmt.Errorf("ReplicationStatus missing from DescribeSecret")
@@ -83,12 +78,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 
 	results = append(results, r.RunTest("secretsmanager", "ListSecrets_PrimaryRegionOnReplica", func() error {
 		name := tc.uniqueName("PrimRegion")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("prim-region"),
-		})
+		_, err := tc.createSecret(name, "prim-region")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -139,12 +131,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 
 	results = append(results, r.RunTest("secretsmanager", "RemoveRegionsFromReplication_ErrReplicaNotFound", func() error {
 		name := tc.uniqueName("RmNonExist")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("rm-nonexist"),
-		})
+		_, err := tc.createSecret(name, "rm-nonexist")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -160,12 +149,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 
 	results = append(results, r.RunTest("secretsmanager", "ReplicateSecretToRegions_DuplicateRegion", func() error {
 		name := tc.uniqueName("ReplicateDup")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("dup-repl"),
-		})
+		_, err := tc.createSecret(name, "dup-repl")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -198,12 +184,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 
 	results = append(results, r.RunTest("secretsmanager", "StopReplicationToReplica", func() error {
 		name := tc.uniqueName("StopRepl")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("stop-repl"),
-		})
+		_, err := tc.createSecret(name, "stop-repl")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -227,11 +210,9 @@ func (r *TestRunner) runSecretsManagerReplicationTests(tc *secretsManagerTestCon
 			return fmt.Errorf("ARN is nil")
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if len(descResp.ReplicationStatus) > 0 {
 			return fmt.Errorf("ReplicationStatus should be empty after stop")

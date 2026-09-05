@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	logsstore "vorpalstacks/internal/store/aws/cloudwatchlogs"
 )
 
@@ -32,7 +32,7 @@ func newFakeKMSInvoker(keyIDs ...string) *fakeKMSInvoker {
 	return &fakeKMSInvoker{keys: keys, wrapKey: wrapKey}
 }
 
-func (f *fakeKMSInvoker) GenerateDataKey(_ context.Context, keyID, _ string, _ map[string]string, _ string) (*eventbus.KMSDataKeyResult, error) {
+func (f *fakeKMSInvoker) GenerateDataKey(_ context.Context, keyID, _ string, _ map[string]string, _ string) (*invokers.KMSDataKeyResult, error) {
 	if !f.keys[keyID] {
 		return nil, fmt.Errorf("key %s not found", keyID)
 	}
@@ -44,7 +44,7 @@ func (f *fakeKMSInvoker) GenerateDataKey(_ context.Context, keyID, _ string, _ m
 	for i := range plaintext {
 		wrapped[i] = plaintext[i] ^ f.wrapKey[i]
 	}
-	return &eventbus.KMSDataKeyResult{Plaintext: plaintext, CiphertextBlob: wrapped}, nil
+	return &invokers.KMSDataKeyResult{Plaintext: plaintext, CiphertextBlob: wrapped}, nil
 }
 
 func (f *fakeKMSInvoker) Decrypt(_ context.Context, keyID string, ciphertext []byte, _ map[string]string, _ string) ([]byte, error) {

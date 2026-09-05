@@ -19,13 +19,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 
 	results = append(results, r.RunTest("s3", "RangeGet_VerifyPartialContent", func() error {
 		content := "0123456789ABCDEFGHIJ"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("range-test.txt"),
-			Body:   strings.NewReader(content),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, "range-test.txt", content); err != nil {
+			return err
 		}
 
 		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
@@ -133,23 +128,15 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 
 	results = append(results, r.RunTest("s3", "DeleteObjects_MultiDelete", func() error {
 		multiDelBucket := s3Bucket(ts, "multidel")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(multiDelBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, multiDelBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, multiDelBucket)
 
 		keys := []string{"del-a.txt", "del-b.txt", "del-c.txt"}
 		for _, k := range keys {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(multiDelBucket),
-				Key:    aws.String(k),
-				Body:   strings.NewReader("delete-me"),
-			})
-			if err != nil {
-				return fmt.Errorf("PutObject %s failed: %w", k, err)
+			if _, err := s3PutObject(ctx, client, multiDelBucket, k, "delete-me"); err != nil {
+				return err
 			}
 		}
 
@@ -243,19 +230,13 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected InvalidObjectState for archived object, got nil")
 		}
-		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
-			return err
-		}
 		// The S3 API reference documents InvalidObjectState with HTTP 403.
-		if code := awsHTTPStatus(err); code != http.StatusForbidden {
-			return fmt.Errorf("expected HTTP 403 for InvalidObjectState, got %d", code)
+		if err := expectS3Error(err, "InvalidObjectState", http.StatusForbidden); err != nil {
+			return err
 		}
 
 		// HEAD remains available for archived objects.
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucketName, key)
 		if err != nil {
 			return fmt.Errorf("HeadObject on archived object failed: %w", err)
 		}
@@ -285,13 +266,10 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected ObjectNotInActiveTierError for unrestored source, got nil")
 		}
-		if err := expectAWSErrorCode(err, "ObjectNotInActiveTierError"); err != nil {
-			return err
-		}
 		// The S3 API reference documents ObjectNotInActiveTierError with
 		// HTTP 403.
-		if code := awsHTTPStatus(err); code != http.StatusForbidden {
-			return fmt.Errorf("expected HTTP 403 for ObjectNotInActiveTierError, got %d", code)
+		if err := expectS3Error(err, "ObjectNotInActiveTierError", http.StatusForbidden); err != nil {
+			return err
 		}
 
 		// After restoring the source the copy succeeds.
@@ -318,16 +296,11 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 
 	results = append(results, r.RunTest("s3", "RestoreObject_StandardClass", func() error {
 		key := "restore-standard.txt"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("standard object"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, key, "standard object"); err != nil {
+			return err
 		}
 
-		_, err = client.RestoreObject(ctx, &s3.RestoreObjectInput{
+		_, err := client.RestoreObject(ctx, &s3.RestoreObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(key),
 			RestoreRequest: &types.RestoreRequest{
@@ -340,13 +313,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		// Restoring an object that is not archived is rejected with
 		// InvalidObjectState ("Restore is not allowed for the object's
 		// current storage class"), reported with HTTP 403.
-		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
-			return err
-		}
-		if code := awsHTTPStatus(err); code != http.StatusForbidden {
-			return fmt.Errorf("expected HTTP 403 for InvalidObjectState, got %d", code)
-		}
-		return nil
+		return expectS3Error(err, "InvalidObjectState", http.StatusForbidden)
 	}))
 
 	results = append(results, r.RunTest("s3", "RestoreObject_SpecificVersion", func() error {
@@ -366,12 +333,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err != nil {
 			return fmt.Errorf("PutObject archived version failed: %w", err)
 		}
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("standard version"),
-		})
-		if err != nil {
+		if _, err := s3PutObject(ctx, client, verBucket, key, "standard version"); err != nil {
 			return fmt.Errorf("PutObject standard version failed: %w", err)
 		}
 
@@ -418,10 +380,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("expected x-amz-restore with expiry-date on restored version, got %v", headAfter.Restore)
 		}
 
-		latest, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-		})
+		latest, err := s3HeadObject(ctx, client, verBucket, key)
 		if err != nil {
 			return fmt.Errorf("HeadObject on latest version failed: %w", err)
 		}
@@ -465,10 +424,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("RestoreObject failed: %w", err)
 		}
 
-		get, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-		})
+		get, gotBody, err := s3GetRead(ctx, client, bucketName, key)
 		if err != nil {
 			return fmt.Errorf("GetObject after restore failed: %w", err)
 		}
@@ -537,20 +493,9 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		defer verCleanup()
 
 		key := "versioned-tagging.txt"
-		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("first"),
-		})
+		putV1, err := s3PutTwoVersions(ctx, client, verBucket, key)
 		if err != nil {
-			return fmt.Errorf("PutObject v1 failed: %w", err)
-		}
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("second"),
-		}); err != nil {
-			return fmt.Errorf("PutObject v2 failed: %w", err)
+			return err
 		}
 
 		if _, err := client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
@@ -606,20 +551,9 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		defer verCleanup()
 
 		key := "versioned-tagging-put.txt"
-		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("first"),
-		})
+		putV1, err := s3PutTwoVersions(ctx, client, verBucket, key)
 		if err != nil {
-			return fmt.Errorf("PutObject v1 failed: %w", err)
-		}
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("second"),
-		}); err != nil {
-			return fmt.Errorf("PutObject v2 failed: %w", err)
+			return err
 		}
 
 		if _, err := client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
@@ -654,20 +588,9 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		defer verCleanup()
 
 		key := "versioned-tagging-del.txt"
-		putV1, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("first"),
-		})
+		putV1, err := s3PutTwoVersions(ctx, client, verBucket, key)
 		if err != nil {
-			return fmt.Errorf("PutObject v1 failed: %w", err)
-		}
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("second"),
-		}); err != nil {
-			return fmt.Errorf("PutObject v2 failed: %w", err)
+			return err
 		}
 
 		if _, err := client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
@@ -725,104 +648,72 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 
 	// Addressing a version that does not exist is NoSuchVersion, not
 	// NoSuchKey: the key exists, only the requested version is missing.
-	results = append(results, r.RunTest("s3", "GetObject_NonExistentVersion", func() error {
-		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "get-nover"))
-		if err != nil {
-			return err
-		}
-		defer verCleanup()
+	// HEAD is the exception: its error responses carry no body, so the SDK
+	// surfaces the modelled NotFound error for any 404; the HTTP status is
+	// the observable contract there.
+	results = append(results, r.RunTest("s3", "NonExistentVersion", func() error {
+		for _, c := range []struct {
+			name   string
+			suffix string
+			code   string
+			call   func(client *s3.Client, bucket, key string) error
+		}{
+			{
+				name:   "get a nonexistent version",
+				suffix: "get-nover",
+				code:   "NoSuchVersion",
+				call: func(client *s3.Client, bucket, key string) error {
+					_, err := client.GetObject(ctx, &s3.GetObjectInput{
+						Bucket:    aws.String(bucket),
+						Key:       aws.String(key),
+						VersionId: aws.String("nonexistent-version-id-0000000000000"),
+					})
+					return err
+				},
+			},
+			{
+				name:   "head a nonexistent version",
+				suffix: "head-nover",
+				code:   "NotFound",
+				call: func(client *s3.Client, bucket, key string) error {
+					_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+						Bucket:    aws.String(bucket),
+						Key:       aws.String(key),
+						VersionId: aws.String("nonexistent-version-id-0000000000000"),
+					})
+					return err
+				},
+			},
+			{
+				name:   "get tagging of a nonexistent version",
+				suffix: "tagging-nover",
+				code:   "NoSuchVersion",
+				call: func(client *s3.Client, bucket, key string) error {
+					_, err := client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
+						Bucket:    aws.String(bucket),
+						Key:       aws.String(key),
+						VersionId: aws.String("nonexistent-version-id-0000000000000"),
+					})
+					return err
+				},
+			},
+		} {
+			verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, c.suffix))
+			if err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
+			defer verCleanup()
 
-		key := "nonexistent-version.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("body"),
-		}); err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
+			key := "nonexistent-version.txt"
+			if _, err := s3PutObject(ctx, client, verBucket, key, "body"); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
 
-		_, err = client.GetObject(ctx, &s3.GetObjectInput{
-			Bucket:    aws.String(verBucket),
-			Key:       aws.String(key),
-			VersionId: aws.String("nonexistent-version-id-0000000000000"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected NoSuchVersion for nonexistent version, got nil")
-		}
-		if err := expectAWSErrorCode(err, "NoSuchVersion"); err != nil {
-			return err
-		}
-		if code := awsHTTPStatus(err); code != http.StatusNotFound {
-			return fmt.Errorf("expected HTTP 404 for NoSuchVersion, got %d", code)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "HeadObject_NonExistentVersion", func() error {
-		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "head-nover"))
-		if err != nil {
-			return err
-		}
-		defer verCleanup()
-
-		key := "nonexistent-version.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("body"),
-		}); err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		_, err = client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket:    aws.String(verBucket),
-			Key:       aws.String(key),
-			VersionId: aws.String("nonexistent-version-id-0000000000000"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected an error for nonexistent version, got nil")
-		}
-		// HEAD error responses carry no body, so the SDK surfaces the
-		// modelled NotFound error for any 404; the HTTP status is the
-		// observable contract here.
-		if err := expectAWSErrorCode(err, "NotFound"); err != nil {
-			return err
-		}
-		if code := awsHTTPStatus(err); code != http.StatusNotFound {
-			return fmt.Errorf("expected HTTP 404 for nonexistent version, got %d", code)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "GetObjectTagging_NonExistentVersion", func() error {
-		verBucket, verCleanup, err := s3CreateVersionedBucket(ctx, client, s3Bucket(ts, "tagging-nover"))
-		if err != nil {
-			return err
-		}
-		defer verCleanup()
-
-		key := "nonexistent-version.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(verBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("body"),
-		}); err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		_, err = client.GetObjectTagging(ctx, &s3.GetObjectTaggingInput{
-			Bucket:    aws.String(verBucket),
-			Key:       aws.String(key),
-			VersionId: aws.String("nonexistent-version-id-0000000000000"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected NoSuchVersion for nonexistent version, got nil")
-		}
-		if err := expectAWSErrorCode(err, "NoSuchVersion"); err != nil {
-			return err
-		}
-		if code := awsHTTPStatus(err); code != http.StatusNotFound {
-			return fmt.Errorf("expected HTTP 404 for NoSuchVersion, got %d", code)
+			if err := c.call(client, verBucket, key); err == nil {
+				return fmt.Errorf("%s: expected an error for the nonexistent version, got nil", c.name)
+			} else if expectErr := expectS3Error(err, c.code, http.StatusNotFound); expectErr != nil {
+				return fmt.Errorf("%s: %w", c.name, expectErr)
+			}
 		}
 		return nil
 	}))
@@ -832,13 +723,9 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// matching If-None-Match / unmodified If-Modified-Since give 304.
 	results = append(results, r.RunTest("s3", "HeadObject_ConditionalRequests", func() error {
 		key := "head-conditional.txt"
-		put, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("head conditional body"),
-		})
+		put, err := s3PutObject(ctx, client, bucketName, key, "head conditional body")
 		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+			return err
 		}
 
 		_, err = client.HeadObject(ctx, &s3.HeadObjectInput{
@@ -907,24 +794,16 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// PreconditionFailed.
 	results = append(results, r.RunTest("s3", "CopyObject_CopySourceIfConditions", func() error {
 		srcKey := "copy-if-src.txt"
-		head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(srcKey),
-		})
-		if err == nil && head != nil {
+		if _, err := s3HeadObject(ctx, client, bucketName, srcKey); err == nil {
 			// Source exists from an earlier run; refresh it.
 			_, _ = client.DeleteObject(ctx, &s3.DeleteObjectInput{
 				Bucket: aws.String(bucketName),
 				Key:    aws.String(srcKey),
 			})
 		}
-		put, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(srcKey),
-			Body:   strings.NewReader("copy source body"),
-		})
+		put, err := s3PutObject(ctx, client, bucketName, srcKey, "copy source body")
 		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+			return err
 		}
 		src := bucketName + "/" + srcKey
 
@@ -937,11 +816,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected PreconditionFailed for mismatched copy-source If-Match, got nil")
 		}
-		if err := expectAWSErrorCode(err, "PreconditionFailed"); err != nil {
-			return fmt.Errorf("expected PreconditionFailed: %v", err)
-		}
-		if code := awsHTTPStatus(err); code != http.StatusPreconditionFailed {
-			return fmt.Errorf("expected HTTP 412 for mismatched copy-source If-Match, got %d", code)
+		if err := expectS3Error(err, "PreconditionFailed", http.StatusPreconditionFailed); err != nil {
+			return err
 		}
 
 		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
@@ -973,22 +849,14 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// of an in-progress multipart upload.
 	results = append(results, r.RunTest("s3", "UploadPartCopy_BasicRoundtrip", func() error {
 		upcBucket := s3Bucket(ts, "upcopy")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(upcBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, upcBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, upcBucket)
 
 		srcKey := "upcopy-src.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(upcBucket),
-			Key:    aws.String(srcKey),
-			Body:   strings.NewReader("0123456789"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, upcBucket, srcKey, "0123456789"); err != nil {
+			return err
 		}
 
 		createResp, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
@@ -1028,10 +896,7 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 			return fmt.Errorf("CompleteMultipartUpload failed: %w", err)
 		}
 
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(upcBucket),
-			Key:    aws.String("upcopy-dst.txt"),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, upcBucket, "upcopy-dst.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -1045,16 +910,13 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// the same error the single-request copy reports.
 	results = append(results, r.RunTest("s3", "UploadPartCopy_UnrestoredArchiveSourceRejected", func() error {
 		upcBucket := s3Bucket(ts, "upcopy-arc")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(upcBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, upcBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, upcBucket)
 
 		srcKey := "glacier-src.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+		_, err := client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:       aws.String(upcBucket),
 			Key:          aws.String(srcKey),
 			Body:         strings.NewReader("archived part source"),
@@ -1082,13 +944,10 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected ObjectNotInActiveTierError for unrestored source, got nil")
 		}
-		if err := expectAWSErrorCode(err, "ObjectNotInActiveTierError"); err != nil {
-			return err
-		}
 		// The S3 API reference documents ObjectNotInActiveTierError with
 		// HTTP 403.
-		if code := awsHTTPStatus(err); code != http.StatusForbidden {
-			return fmt.Errorf("expected HTTP 403 for ObjectNotInActiveTierError, got %d", code)
+		if err := expectS3Error(err, "ObjectNotInActiveTierError", http.StatusForbidden); err != nil {
+			return err
 		}
 
 		// After restoring the source the part copy succeeds.
@@ -1119,13 +978,8 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 	// Content-Range, ranged Content-Length) without a body.
 	results = append(results, r.RunTest("s3", "HeadObject_Range", func() error {
 		key := "head-range.txt"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("0123456789"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, key, "0123456789"); err != nil {
+			return err
 		}
 
 		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
@@ -1162,10 +1016,7 @@ func tagSetValue(tagSet []types.Tag, key string) string {
 // restoreExpiryDate reads the expiry-date from the x-amz-restore header of
 // a HEAD response, failing when the header or the date is absent.
 func restoreExpiryDate(ctx context.Context, client *s3.Client, bucket, key string) (time.Time, error) {
-	head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
-	})
+	head, err := s3HeadObject(ctx, client, bucket, key)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("HeadObject failed: %w", err)
 	}

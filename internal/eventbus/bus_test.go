@@ -42,9 +42,9 @@ func TestPublishSyncDepthExceeded(t *testing.T) {
 	}
 	defer bus.Shutdown(context.Background())
 
-	evt := &ServiceInvokeRequest{
+	evt := &SNSDeliveryEvent{
 		EventBase: EventBase{ID: "depth-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1"},
-		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:test",
+		TopicARN:  "arn:aws:sns:us-east-1:123456789012:test",
 	}
 	evt.EventBase.SetEventDepth(1)
 
@@ -70,9 +70,9 @@ func TestPublishSyncBasic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	evt := &ServiceInvokeRequest{
+	evt := &SNSDeliveryEvent{
 		EventBase: EventBase{ID: "basic-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1"},
-		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:test",
+		TopicARN:  "arn:aws:sns:us-east-1:123456789012:test",
 	}
 
 	result, err := bus.PublishSync(context.Background(), evt)
@@ -102,9 +102,9 @@ func TestPublishSyncHandlerError(t *testing.T) {
 		return HandlerResult{Error: context.DeadlineExceeded}
 	})
 
-	evt := &ServiceInvokeRequest{
+	evt := &SNSDeliveryEvent{
 		EventBase: EventBase{ID: "err-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1"},
-		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:test",
+		TopicARN:  "arn:aws:sns:us-east-1:123456789012:test",
 	}
 
 	result, err := bus.PublishSync(context.Background(), evt)
@@ -129,26 +129,6 @@ func TestUnsubscribeNotFound(t *testing.T) {
 	err := bus.Unsubscribe("nonexistent")
 	if err != ErrUnknownSub {
 		t.Fatalf("expected ErrUnknownSub, got %v", err)
-	}
-}
-
-func TestRegisterAndGetInvoker(t *testing.T) {
-	bus := NewEventBus()
-
-	inv := &mockInvoker{serviceType: "test"}
-	bus.RegisterInvoker(inv)
-
-	got, ok := bus.GetInvoker("test")
-	if !ok {
-		t.Fatal("invoker not found")
-	}
-	if got.ServiceType() != "test" {
-		t.Fatalf("expected 'test', got %s", got.ServiceType())
-	}
-
-	_, ok = bus.GetInvoker("nonexistent")
-	if ok {
-		t.Fatal("expected not found for nonexistent invoker")
 	}
 }
 
@@ -215,9 +195,9 @@ func TestMultipleSubscribersPriority(t *testing.T) {
 		return HandlerResult{}
 	}, WithPriority(10))
 
-	evt := &ServiceInvokeRequest{
+	evt := &SNSDeliveryEvent{
 		EventBase: EventBase{ID: "prio-test", Timestamp: time.Now().UTC(), Source: "test", Region: "us-east-1"},
-		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:test",
+		TopicARN:  "arn:aws:sns:us-east-1:123456789012:test",
 	}
 
 	_, err := bus.PublishSync(context.Background(), evt)
@@ -237,14 +217,14 @@ func TestMultipleSubscribersPriority(t *testing.T) {
 
 func TestEventRegistry(t *testing.T) {
 	registry := NewEventRegistry()
-	registry.Register("service:invoke", func() Event { return &ServiceInvokeRequest{} })
+	registry.Register("sns:deliver", func() Event { return &SNSDeliveryEvent{} })
 
-	evt, err := registry.New("service:invoke")
+	evt, err := registry.New("sns:deliver")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := evt.(*ServiceInvokeRequest); !ok {
-		t.Fatal("expected *ServiceInvokeRequest")
+	if _, ok := evt.(*SNSDeliveryEvent); !ok {
+		t.Fatal("expected *SNSDeliveryEvent")
 	}
 
 	_, err = registry.New("nonexistent")
@@ -254,7 +234,7 @@ func TestEventRegistry(t *testing.T) {
 }
 
 func TestEventSerialization(t *testing.T) {
-	evt := &ServiceInvokeRequest{
+	evt := &SNSDeliveryEvent{
 		EventBase: EventBase{
 			ID:        "ser-test",
 			Timestamp: time.Now().UTC(),
@@ -262,9 +242,9 @@ func TestEventSerialization(t *testing.T) {
 			Region:    "us-east-1",
 			Caller:    CallerContext{ServicePrincipal: "test.amazonaws.com"},
 		},
-		TargetARN: "arn:aws:lambda:us-east-1:123456789012:function:fn",
-		Payload:   []byte(`{"key":"value"}`),
-		Headers:   map[string]string{"Content-Type": "application/json"},
+		TopicARN:  "arn:aws:sns:us-east-1:123456789012:my-topic",
+		MessageID: "msg-1",
+		Message:   `{"key":"value"}`,
 	}
 
 	data, err := SerializeEvent(evt)
@@ -273,54 +253,19 @@ func TestEventSerialization(t *testing.T) {
 	}
 
 	registry := NewEventRegistry()
-	registry.Register("service:invoke", func() Event { return &ServiceInvokeRequest{} })
+	registry.Register("sns:deliver", func() Event { return &SNSDeliveryEvent{} })
 
-	restored, err := registry.Deserialize("service:invoke", data)
+	restored, err := registry.Deserialize("sns:deliver", data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	typed := restored.(*ServiceInvokeRequest)
+	typed := restored.(*SNSDeliveryEvent)
 	if typed.EventID() != evt.EventID() {
 		t.Fatalf("expected ID %q, got %q", evt.EventID(), typed.EventID())
 	}
 	if typed.Caller.ServicePrincipal != "test.amazonaws.com" {
 		t.Fatalf("expected caller principal test.amazonaws.com, got %s", typed.Caller.ServicePrincipal)
-	}
-}
-
-func TestARNResolver(t *testing.T) {
-	resolver := NewARNResolver()
-
-	tests := []struct {
-		arn      string
-		wantType string
-		wantErr  bool
-	}{
-		{"arn:aws:lambda:us-east-1:123456789012:function:my-fn", "lambda", false},
-		{"arn:aws:sqs:us-east-1:123456789012:my-queue", "sqs", false},
-		{"arn:aws:sns:us-east-1:123456789012:my-topic", "sns", false},
-		{"arn:aws:kinesis:us-east-1:123456789012:stream/my-stream", "kinesis", false},
-		{"", "", true},
-		{"invalid-arn", "", true},
-		{"arn:aws:ec2:us-east-1:123456789012:instance/i-123", "", true},
-	}
-
-	for _, tt := range tests {
-		action, err := resolver.Resolve(tt.arn)
-		if tt.wantErr {
-			if err == nil {
-				t.Errorf("Resolve(%q): expected error", tt.arn)
-			}
-			continue
-		}
-		if err != nil {
-			t.Errorf("Resolve(%q): unexpected error: %v", tt.arn, err)
-			continue
-		}
-		if action.Type != tt.wantType {
-			t.Errorf("Resolve(%q): expected type %q, got %q", tt.arn, tt.wantType, action.Type)
-		}
 	}
 }
 
@@ -330,16 +275,6 @@ func TestBusPolicyDocument(t *testing.T) {
 		t.Fatalf("expected version 2012-10-17, got %s", doc.Version)
 	}
 }
-
-type mockInvoker struct {
-	serviceType string
-}
-
-func (m *mockInvoker) Invoke(ctx context.Context, action *TargetAction, payload []byte) HandlerResult {
-	return HandlerResult{StatusCode: 200}
-}
-
-func (m *mockInvoker) ServiceType() string { return m.serviceType }
 
 type testEvent struct {
 	EventBase

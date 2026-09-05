@@ -17,22 +17,40 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 	rn, rARN := tc.createIAMRole()
 	defer tc.deleteIAMRole(rn)
 
-	results = append(results, tc.runner.RunTest("scheduler", "GetSchedule_NonExistent", func() error {
-		_, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{
-			Name: aws.String("nonexistent-schedule-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+	// Addressing a schedule that does not exist is
+	// ResourceNotFoundException on every mutating operation.
+	results = append(results, tc.runner.RunTest("scheduler", "Schedule_NonExistent", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{"GetSchedule", func() error {
+				_, err := tc.getSchedule("nonexistent-schedule-xyz")
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"DeleteSchedule", func() error {
+				_, err := tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{
+					Name: aws.String("nonexistent-schedule-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"UpdateSchedule", func() error {
+				_, err := tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
+					Name:               aws.String("nonexistent-schedule-xyz"),
+					ScheduleExpression: aws.String("rate(30 minutes)"),
+					Target: &types.Target{
+						Arn:     aws.String(tc.lambdaARN()),
+						RoleArn: aws.String(rARN),
+					},
+					FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
 		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "DeleteSchedule_NonExistent", func() error {
-		_, err := tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{
-			Name: aws.String("nonexistent-schedule-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -42,40 +60,14 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		dupRN, dupRARN := tc.createIAMRole()
 		defer tc.deleteIAMRole(dupRN)
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(dupName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(dupRARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
+		_, err := tc.createSchedule(dupName, "rate(30 minutes)", tc.defaultTarget(dupRARN))
 		if err != nil {
 			return fmt.Errorf("first create: %v", err)
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(dupName)})
+		defer tc.cleanupSchedule(dupName)
 
-		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(dupName),
-			ScheduleExpression: aws.String("rate(60 minutes)"),
-			Target:             tc.defaultTarget(dupRARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
+		_, err = tc.createSchedule(dupName, "rate(60 minutes)", tc.defaultTarget(dupRARN))
 		if err := AssertErrorContains(err, "ConflictException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "UpdateSchedule_NonExistent", func() error {
-		_, err := tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
-			Name:               aws.String("nonexistent-schedule-xyz"),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return err
 		}
 		return nil
@@ -83,14 +75,9 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_InvalidExpression", func() error {
 		invName := tc.uniqueName("InvExprSched")
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(invName),
-			ScheduleExpression: aws.String("not-a-valid-expression"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		_, err := tc.createSchedule(invName, "not-a-valid-expression", &types.Target{
+			Arn:     aws.String(tc.lambdaARN()),
+			RoleArn: aws.String(rARN),
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
@@ -100,15 +87,10 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_UnsupportedTarget_Rejected", func() error {
 		schedName := tc.uniqueName("UnsupportedTarget")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:codebuild:%s:%s:project/FakeProject", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(fmt.Sprintf("arn:aws:codebuild:%s:%s:project/FakeProject", tc.region, tc.accountID)),
+			RoleArn: aws.String(rARN),
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
@@ -118,18 +100,13 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_DeadLetterConfig_SnsRejected", func() error {
 		schedName := tc.uniqueName("SnsDLQ")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-				DeadLetterConfig: &types.DeadLetterConfig{
-					Arn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:MyTopic", tc.region, tc.accountID)),
-				},
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(tc.lambdaARN()),
+			RoleArn: aws.String(rARN),
+			DeadLetterConfig: &types.DeadLetterConfig{
+				Arn: aws.String(fmt.Sprintf("arn:aws:sns:%s:%s:MyTopic", tc.region, tc.accountID)),
 			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
@@ -137,178 +114,71 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_TaskCountOutOfRange", func() error {
-		schedName := tc.uniqueName("EcsBadCount")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		taskCount := int32(100)
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
-					TaskCount:         &taskCount,
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_SubnetNotFound", func() error {
-		schedName := tc.uniqueName("BadSubnet")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		taskCount := int32(1)
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
-					TaskCount:         &taskCount,
+	// The EcsParameters members carry one shared validation substrate:
+	// every out-of-range, malformed or misplaced member is a
+	// ValidationException at schedule creation.
+	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_Validation", func() error {
+		taskDef := fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)
+		clusterArn := fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)
+		rows := []struct {
+			name   string
+			target string
+			ecs    func() *types.EcsParameters
+		}{
+			{"TaskCountOutOfRange", tc.lambdaARN(), func() *types.EcsParameters {
+				taskCount := int32(100)
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef), TaskCount: &taskCount}
+			}},
+			{"SubnetNotFound", clusterArn, func() *types.EcsParameters {
+				taskCount := int32(1)
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef), TaskCount: &taskCount,
 					NetworkConfiguration: &types.NetworkConfiguration{
-						AwsvpcConfiguration: &types.AwsVpcConfiguration{
-							Subnets: []string{"subnet-nonexistent-xyz"},
-						},
-					},
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_EmptySecurityGroupsRejected", func() error {
-		schedName := tc.uniqueName("EmptySG")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		taskCount := int32(1)
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
-					TaskCount:         &taskCount,
+						AwsvpcConfiguration: &types.AwsVpcConfiguration{Subnets: []string{"subnet-nonexistent-xyz"}},
+					}}
+			}},
+			{"EmptySecurityGroupsRejected", clusterArn, func() *types.EcsParameters {
+				taskCount := int32(1)
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef), TaskCount: &taskCount,
 					NetworkConfiguration: &types.NetworkConfiguration{
 						AwsvpcConfiguration: &types.AwsVpcConfiguration{
 							Subnets:        []string{"subnet-0123456789abcdef0"},
 							SecurityGroups: []string{},
 						},
-					},
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_CapacityProviderWeightOutOfRange", func() error {
-		schedName := tc.uniqueName("EcsBadWeight")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		weight := int32(5000)
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
+					}}
+			}},
+			{"CapacityProviderWeightOutOfRange", clusterArn, func() *types.EcsParameters {
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
 					CapacityProviderStrategy: []types.CapacityProviderStrategyItem{
-						{CapacityProvider: aws.String("FARGATE"), Weight: weight},
-					},
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_PlacementStrategyInvalidType", func() error {
-		schedName := tc.uniqueName("EcsBadStrategy")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
+						{CapacityProvider: aws.String("FARGATE"), Weight: 5000},
+					}}
+			}},
+			{"PlacementStrategyInvalidType", clusterArn, func() *types.EcsParameters {
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
 					PlacementStrategy: []types.PlacementStrategy{
 						{Type: types.PlacementStrategyType("bogus")},
-					},
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_EmptySubnetsRejected", func() error {
-		schedName := tc.uniqueName("EcsNoSubnets")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/ValidationCluster", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
+					}}
+			}},
+			{"EmptySubnetsRejected", clusterArn, func() *types.EcsParameters {
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef),
 					NetworkConfiguration: &types.NetworkConfiguration{
-						AwsvpcConfiguration: &types.AwsVpcConfiguration{
-							Subnets: []string{},
-						},
-					},
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
+						AwsvpcConfiguration: &types.AwsVpcConfiguration{Subnets: []string{}},
+					}}
+			}},
+			{"NonEcsTarget_Rejected", tc.lambdaARN(), func() *types.EcsParameters {
+				return &types.EcsParameters{TaskDefinitionArn: aws.String(taskDef)}
+			}},
 		}
-		return nil
-	}))
-
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EcsParameters_NonEcsTarget_Rejected", func() error {
-		schedName := tc.uniqueName("EcsOnLambda")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-				EcsParameters: &types.EcsParameters{
-					TaskDefinitionArn: aws.String(fmt.Sprintf("arn:aws:ecs:%s:%s:task-definition/FakeTask:1", tc.region, tc.accountID)),
-				},
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
+		for _, row := range rows {
+			schedName := tc.uniqueName("EcsValidation")
+			defer tc.cleanupSchedule(schedName)
+			_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+				Arn:           aws.String(row.target),
+				RoleArn:       aws.String(rARN),
+				EcsParameters: row.ecs(),
+			})
+			if err := AssertErrorContains(err, "ValidationException"); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -330,7 +200,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		}()
 
 		schedName := tc.uniqueName("AsymKms")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(schedName),
 			ScheduleExpression: aws.String("rate(30 minutes)"),
@@ -349,7 +219,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_KmsKeyNotFound", func() error {
 		schedName := tc.uniqueName("BadKms")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(schedName),
 			ScheduleExpression: aws.String("rate(30 minutes)"),
@@ -371,17 +241,12 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_LogsTargetRejected", func() error {
 		schedName := tc.uniqueName("LogsTarget")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				// CloudWatch Logs is not an EventBridge Scheduler
-				// templated target in AWS.
-				Arn:     aws.String(fmt.Sprintf("arn:aws:logs:%s:%s:log-group:/scheduler/delivery", tc.region, tc.accountID)),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			// CloudWatch Logs is not an EventBridge Scheduler
+			// templated target in AWS.
+			Arn:     aws.String(fmt.Sprintf("arn:aws:logs:%s:%s:log-group:/scheduler/delivery", tc.region, tc.accountID)),
+			RoleArn: aws.String(rARN),
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
@@ -391,19 +256,14 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_EventBridgeParameters_Source_InvalidPattern", func() error {
 		schedName := tc.uniqueName("BadSource")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-				EventBridgeParameters: &types.EventBridgeParameters{
-					Source:     aws.String("!@#invalid"),
-					DetailType: aws.String("MyDetailType"),
-				},
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(tc.lambdaARN()),
+			RoleArn: aws.String(rARN),
+			EventBridgeParameters: &types.EventBridgeParameters{
+				Source:     aws.String("!@#invalid"),
+				DetailType: aws.String("MyDetailType"),
 			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return err
@@ -413,7 +273,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_InvalidGroupName", func() error {
 		schedName := tc.uniqueName("BadGroup")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(schedName),
 			GroupName:          aws.String("invalid/group name"),
@@ -430,53 +290,55 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "CreateSchedule_InvalidClientToken", func() error {
-		schedName := tc.uniqueName("BadToken")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			ClientToken:        aws.String("bad token!"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
-		}
-		return nil
-	}))
+	// The ClientToken pattern is enforced on both mutating operations.
+	results = append(results, tc.runner.RunTest("scheduler", "Schedule_InvalidClientTokenRejected", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{"CreateSchedule", func() error {
+				schedName := tc.uniqueName("BadToken")
+				defer tc.cleanupSchedule(schedName)
+				_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
+					Name:               aws.String(schedName),
+					ScheduleExpression: aws.String("rate(30 minutes)"),
+					ClientToken:        aws.String("bad token!"),
+					Target: &types.Target{
+						Arn:     aws.String(tc.lambdaARN()),
+						RoleArn: aws.String(rARN),
+					},
+					FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+				})
+				return AssertErrorContains(err, "ValidationException")
+			}},
+			{"UpdateSchedule", func() error {
+				schedName := tc.uniqueName("UpdBadToken")
+				_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+					Arn:     aws.String(tc.lambdaARN()),
+					RoleArn: aws.String(rARN),
+				})
+				if err != nil {
+					return fmt.Errorf("create: %v", err)
+				}
+				defer tc.cleanupSchedule(schedName)
 
-	results = append(results, tc.runner.RunTest("scheduler", "UpdateSchedule_InvalidClientToken", func() error {
-		schedName := tc.uniqueName("UpdBadToken")
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
+				_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
+					Name:               aws.String(schedName),
+					ScheduleExpression: aws.String("rate(30 minutes)"),
+					ClientToken:        aws.String("bad token!"),
+					Target: &types.Target{
+						Arn:     aws.String(tc.lambdaARN()),
+						RoleArn: aws.String(rARN),
+					},
+					FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+				})
+				return AssertErrorContains(err, "ValidationException")
+			}},
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-
-		_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			ClientToken:        aws.String("bad token!"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err := AssertErrorContains(err, "ValidationException"); err != nil {
-			return err
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -493,15 +355,10 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		}
 		for _, roleArn := range invalidRoleArns {
 			schedName := tc.uniqueName("BadRoleArn")
-			defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-			_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-				Name:               aws.String(schedName),
-				ScheduleExpression: aws.String("rate(30 minutes)"),
-				Target: &types.Target{
-					Arn:     aws.String(tc.lambdaARN()),
-					RoleArn: aws.String(roleArn),
-				},
-				FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+			defer tc.cleanupSchedule(schedName)
+			_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+				Arn:     aws.String(tc.lambdaARN()),
+				RoleArn: aws.String(roleArn),
 			})
 			if err := AssertErrorContains(err, "ValidationException"); err != nil {
 				return fmt.Errorf("RoleArn %q: %v", roleArn, err)
@@ -519,30 +376,20 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		tooLongRole := rolePrefix + strings.Repeat("r", 1601-len(rolePrefix))
 
 		schedName := tc.uniqueName("LongArn")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tooLongArn),
-				RoleArn: aws.String(rARN),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		defer tc.cleanupSchedule(schedName)
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(tooLongArn),
+			RoleArn: aws.String(rARN),
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return fmt.Errorf("over-length Target.Arn: %v", err)
 		}
 
 		schedName2 := tc.uniqueName("LongRoleArn")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName2)})
-		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName2),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target: &types.Target{
-				Arn:     aws.String(tc.lambdaARN()),
-				RoleArn: aws.String(tooLongRole),
-			},
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
+		defer tc.cleanupSchedule(schedName2)
+		_, err = tc.createSchedule(schedName2, "rate(30 minutes)", &types.Target{
+			Arn:     aws.String(tc.lambdaARN()),
+			RoleArn: aws.String(tooLongRole),
 		})
 		if err := AssertErrorContains(err, "ValidationException"); err != nil {
 			return fmt.Errorf("over-length RoleArn: %v", err)
@@ -553,17 +400,9 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 	results = append(results, tc.runner.RunTest("scheduler", "DeleteSchedule_ClientTokenNotSharedWithUpdate", func() error {
 		schedName := tc.uniqueName("TokUpdDel")
 		token := tc.uniqueName("tok")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", tc.defaultTarget(rARN))
 
 		_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
 			Name:               aws.String(schedName),
@@ -585,7 +424,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 			return fmt.Errorf("delete with reused token: %v", err)
 		}
 
-		_, err = tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(schedName)})
+		_, err = tc.getSchedule(schedName)
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return fmt.Errorf("schedule must be deleted after the token-reused delete: %v", err)
 		}
@@ -596,8 +435,8 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		nameA := tc.uniqueName("TokCrateA")
 		nameB := tc.uniqueName("TokCrateB")
 		token := tc.uniqueName("tok")
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(nameA)})
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(nameB)})
+		defer tc.cleanupSchedule(nameA)
+		defer tc.cleanupSchedule(nameB)
 
 		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(nameA),
@@ -610,12 +449,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 			return fmt.Errorf("create A: %v", err)
 		}
 
-		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(nameB),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
+		_, err = tc.createSchedule(nameB, "rate(30 minutes)", tc.defaultTarget(rARN))
 		if err != nil {
 			return fmt.Errorf("create B: %v", err)
 		}
@@ -634,7 +468,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 			return fmt.Errorf("update must report B's ARN %q, got %q", tc.scheduleARN(nameB), aws.ToString(out.ScheduleArn))
 		}
 
-		got, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(nameB)})
+		got, err := tc.getSchedule(nameB)
 		if err != nil {
 			return fmt.Errorf("get B: %v", err)
 		}
@@ -660,7 +494,7 @@ func (tc *schedTestContext) runEdgeTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 
 		// A replayed create reports the first application's ARN instead of a
 		// name conflict.

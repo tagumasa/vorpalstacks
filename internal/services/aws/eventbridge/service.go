@@ -24,7 +24,7 @@ type EventsService struct {
 	storageManager  *storage.RegionStorageManager
 	eventsStores    sync.Map // region → *eventsstore.EventsStore
 	accountID       string
-	bus             eventbus.Bus
+	bus             eventbus.ServiceBus
 	targetSemaphore chan struct{}
 	replayWg        sync.WaitGroup
 	replayCancels   sync.Map // replayName → context.CancelFunc
@@ -71,11 +71,16 @@ func (s *EventsService) SetEventsStore(region string, store *eventsstore.EventsS
 }
 
 // SetEventBus injects the event bus and registers the EventBridge delivery handler.
-func (s *EventsService) SetEventBus(bus eventbus.Bus) {
+func (s *EventsService) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
-	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
-	_, _ = eventbus.SubscribeTyped[*eventbus.EventBridgePutEventsEvent](bus, s.handlePutEventsEvent, eventbus.WithAsync())
+	if _, err := eventbus.SubscribeTyped[*eventbus.EventBridgeDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("events: subscribe EventBridgeDeliveryEvent: %w", err)
+	}
+	if _, err := eventbus.SubscribeTyped[*eventbus.EventBridgePutEventsEvent](bus, s.handlePutEventsEvent, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("events: subscribe EventBridgePutEventsEvent: %w", err)
+	}
 	s.startScheduler()
+	return nil
 }
 
 // GetStoreForRegion returns a cached or newly-created store for the given region.

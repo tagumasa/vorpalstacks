@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 
 	"github.com/klauspost/compress/zstd"
@@ -19,11 +19,11 @@ import (
 )
 
 // itemReaderS3 is the slice of the S3 invoker the ItemReader pipeline
-// consumes. eventbus.S3Invoker satisfies it directly and tests can supply
+// consumes. invokers.S3Invoker satisfies it directly and tests can supply
 // their own stub.
 type itemReaderS3 interface {
 	GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error)
-	ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]eventbus.S3ObjectEntry, error)
+	ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]invokers.S3ObjectEntry, error)
 }
 
 // itemReaderArgs carries the resolved ItemReader argument object.

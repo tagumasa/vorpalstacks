@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/wafv2/inspection"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -133,7 +133,7 @@ func (s *WAFv2Service) challengeInterstitial(kind string) string {
 	if id == "" {
 		return ""
 	}
-	return inspection.ChallengeInterstitialHTML(kind, id, eventbus.ChallengeEndpointPath, inspection.ChallengeSolutionHexZeros)
+	return inspection.ChallengeInterstitialHTML(kind, id, waf.ChallengeEndpointPath, inspection.ChallengeSolutionHexZeros)
 }
 
 // ExchangeWAFToken verifies an interstitial solution and answers with

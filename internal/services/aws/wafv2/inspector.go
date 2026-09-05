@@ -6,8 +6,8 @@ import (
 
 	"strings"
 
+	wafplane "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/wafv2/inspection"
 	"vorpalstacks/internal/store/aws/waf"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -22,13 +22,13 @@ var inspectionRateTracker = newRateTracker()
 
 // InspectWebACLRequest resolves the WebACL associated with the resource
 // ARN and evaluates it against the request. It implements the
-// eventbus.WebACLInspector contract that every protected-resource plane
+// wafplane.WebACLInspector contract that every protected-resource plane
 // calls before serving a request. Resources without an association are
 // allowed through without inspection. CloudFront distribution ARNs use
 // the global-scope association store (mirroring AssociateWebACL);
 // regional resources use the association store of the given region.
-func (s *WAFv2Service) InspectWebACLRequest(ctx context.Context, region, resourceArn string, req eventbus.WebACLInspectionRequest) (eventbus.WebACLInspectionResult, error) {
-	result := eventbus.WebACLInspectionResult{Action: "Allow"}
+func (s *WAFv2Service) InspectWebACLRequest(ctx context.Context, region, resourceArn string, req wafplane.WebACLInspectionRequest) (wafplane.WebACLInspectionResult, error) {
+	result := wafplane.WebACLInspectionResult{Action: "Allow"}
 
 	assocStore, err := s.inspectionAssociationStore(resourceArn, region)
 	if err != nil {
@@ -118,7 +118,7 @@ func (s *WAFv2Service) arnRegion(arnString string) string {
 // evaluateForInspection runs the evaluation engine and converts the
 // outcome to the cross-service result shape. Matched rules with
 // sampling enabled are recorded for GetSampledRequests.
-func (s *WAFv2Service) evaluateForInspection(webACL *waf.WebACL, req eventbus.WebACLInspectionRequest) eventbus.WebACLInspectionResult {
+func (s *WAFv2Service) evaluateForInspection(webACL *waf.WebACL, req wafplane.WebACLInspectionRequest) wafplane.WebACLInspectionResult {
 	inspReq := &inspection.Request{
 		Method:        req.Method,
 		URIPath:       req.URIPath,
@@ -168,16 +168,16 @@ func (s *WAFv2Service) evaluateForInspection(webACL *waf.WebACL, req eventbus.We
 	}
 	s.recordSamples(webACL, req, outcome)
 
-	result := eventbus.WebACLInspectionResult{Action: outcome.Action}
+	result := wafplane.WebACLInspectionResult{Action: outcome.Action}
 	if outcome.CustomResponse != nil {
 		result.ResponseCode = outcome.CustomResponse.StatusCode
 		result.ResponseBody = outcome.CustomResponse.Body
 		for _, h := range outcome.CustomResponse.Headers {
-			result.ResponseHeaders = append(result.ResponseHeaders, eventbus.WebACLHTTPHeader{Name: h.Name, Value: h.Value})
+			result.ResponseHeaders = append(result.ResponseHeaders, wafplane.WebACLHTTPHeader{Name: h.Name, Value: h.Value})
 		}
 	}
 	for _, h := range outcome.InsertHeaders {
-		result.InsertHeaders = append(result.InsertHeaders, eventbus.WebACLHTTPHeader{Name: h.Name, Value: h.Value})
+		result.InsertHeaders = append(result.InsertHeaders, wafplane.WebACLHTTPHeader{Name: h.Name, Value: h.Value})
 	}
 	return result
 }
@@ -208,7 +208,7 @@ func (s *WAFv2Service) inspectionTokenValidator() inspection.TokenValidator {
 // WebACL load uses), so they survive a server restart within the
 // retention window. The terminating action's record is what
 // GetSampledRequests surfaces as the request's disposition.
-func (s *WAFv2Service) recordSamples(webACL *waf.WebACL, req eventbus.WebACLInspectionRequest, outcome *inspection.Result) {
+func (s *WAFv2Service) recordSamples(webACL *waf.WebACL, req wafplane.WebACLInspectionRequest, outcome *inspection.Result) {
 	if !samplingEnabled(webACL.VisibilityConfig) {
 		return
 	}
@@ -268,7 +268,7 @@ func samplingEnabled(vc *waf.VisibilityConfig) bool {
 	return vc != nil && vc.SampledRequestsEnabled
 }
 
-func sampledHeaders(headers []eventbus.WebACLHTTPHeader) []waf.SampledHTTPHeader {
+func sampledHeaders(headers []wafplane.WebACLHTTPHeader) []waf.SampledHTTPHeader {
 	out := make([]waf.SampledHTTPHeader, 0, len(headers))
 	for _, h := range headers {
 		out = append(out, waf.SampledHTTPHeader{Name: h.Name, Value: h.Value})

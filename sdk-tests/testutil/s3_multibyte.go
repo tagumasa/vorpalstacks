@@ -26,18 +26,10 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 			"繁體中文測試正文",
 		}
 		for i, key := range keys {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(key),
-				Body:   strings.NewReader(bodies[i]),
-			})
-			if err != nil {
+			if _, err := s3PutObject(ctx, client, bucketName, key, bodies[i]); err != nil {
 				return fmt.Errorf("PutObject key=%q failed: %w", key, err)
 			}
-			_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(key),
-			})
+			_, gotBody, err := s3GetRead(ctx, client, bucketName, key)
 			if err != nil {
 				return fmt.Errorf("GetObject key=%q failed: %w", key, err)
 			}
@@ -63,10 +55,7 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-		})
+		resp, err := s3HeadObject(ctx, client, bucketName, key)
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -93,12 +82,7 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		}
 		for _, p := range prefixes {
 			for _, key := range p.keys {
-				_, err := client.PutObject(ctx, &s3.PutObjectInput{
-					Bucket: aws.String(bucketName),
-					Key:    aws.String(key),
-					Body:   strings.NewReader("list test"),
-				})
-				if err != nil {
+				if _, err := s3PutObject(ctx, client, bucketName, key, "list test"); err != nil {
 					return fmt.Errorf("PutObject key=%q failed: %w", key, err)
 				}
 			}
@@ -120,15 +104,10 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		srcKey := "コピー/元ファイル.txt"
 		dstKey := "コピー/先ファイル.txt"
 		content := "コピーテスト本文"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(srcKey),
-			Body:   strings.NewReader(content),
-		})
-		if err != nil {
+		if _, err := s3PutObject(ctx, client, bucketName, srcKey, content); err != nil {
 			return fmt.Errorf("PutObject source failed: %w", err)
 		}
-		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
+		_, err := client.CopyObject(ctx, &s3.CopyObjectInput{
 			Bucket:     aws.String(bucketName),
 			Key:        aws.String(dstKey),
 			CopySource: aws.String(bucketName + "/" + srcKey),
@@ -136,10 +115,7 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("CopyObject failed: %w", err)
 		}
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(dstKey),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, bucketName, dstKey)
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
@@ -156,12 +132,7 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 			"削除/ファイル3.txt",
 		}
 		for _, key := range keys {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(key),
-				Body:   strings.NewReader("delete me"),
-			})
-			if err != nil {
+			if _, err := s3PutObject(ctx, client, bucketName, key, "delete me"); err != nil {
 				return fmt.Errorf("PutObject key=%q failed: %w", key, err)
 			}
 		}
@@ -253,20 +224,15 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 
 	results = append(results, r.RunTest("s3", "MultiByte_ObjectTagging", func() error {
 		key := "タグ/テスト.txt"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("tag test"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, key, "tag test"); err != nil {
+			return err
 		}
 		tags := []types.Tag{
 			{Key: aws.String("環境"), Value: aws.String("テスト")},
 			{Key: aws.String("说明"), Value: aws.String("简体标签")},
 			{Key: aws.String("說明"), Value: aws.String("繁體標籤")},
 		}
-		_, err = client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
+		_, err := client.PutObjectTagging(ctx, &s3.PutObjectTaggingInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(key),
 			Tagging: &types.Tagging{
@@ -323,20 +289,14 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 			if err != nil {
 				return fmt.Errorf("PutObject key=%q failed: %w", tc.key, err)
 			}
-			headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(tc.key),
-			})
+			headResp, err := s3HeadObject(ctx, client, bucketName, tc.key)
 			if err != nil {
 				return fmt.Errorf("HeadObject key=%q failed: %w", tc.key, err)
 			}
 			if headResp.ContentType == nil || *headResp.ContentType != tc.contentType {
 				return fmt.Errorf("key=%q: expected ContentType %q, got %v", tc.key, tc.contentType, headResp.ContentType)
 			}
-			_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(tc.key),
-			})
+			_, gotBody, err := s3GetRead(ctx, client, bucketName, tc.key)
 			if err != nil {
 				return fmt.Errorf("GetObject key=%q failed: %w", tc.key, err)
 			}

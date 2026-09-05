@@ -20,7 +20,7 @@ type SecretsManagerService struct {
 	accountID      string
 	region         string
 	storageManager *storage.RegionStorageManager
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	logger         logs.Logger
 	rotChecker     *rotationChecker
 	stores         sync.Map // region → secretsmanagerstore.SecretStoreInterface
@@ -44,7 +44,7 @@ func (s *SecretsManagerService) SetStorageManager(sm *storage.RegionStorageManag
 }
 
 // SetEventBus registers the Secrets Manager rotation handler on the event bus.
-func (s *SecretsManagerService) SetEventBus(bus eventbus.Bus) {
+func (s *SecretsManagerService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 

@@ -29,12 +29,7 @@ func (r *TestRunner) s3ObjectConfigTests(ctx context.Context, client *s3.Client,
 	}
 	defer s3CleanupBucket(ctx, client, lockBucket)
 
-	_, err = client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String("tagged-obj.txt"),
-		Body:   strings.NewReader("tag me"),
-	})
-	if err != nil {
+	if _, err := s3PutObject(ctx, client, bucketName, "tagged-obj.txt", "tag me"); err != nil {
 		return append(results, TestResult{
 			Service:  "s3",
 			TestName: "SetupTaggedObject",
@@ -43,12 +38,7 @@ func (r *TestRunner) s3ObjectConfigTests(ctx context.Context, client *s3.Client,
 		})
 	}
 
-	_, err = client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(lockBucket),
-		Key:    aws.String("legal-hold-obj.txt"),
-		Body:   strings.NewReader("legal hold content"),
-	})
-	if err != nil {
+	if _, err := s3PutObject(ctx, client, lockBucket, "legal-hold-obj.txt", "legal hold content"); err != nil {
 		return append(results, TestResult{
 			Service:  "s3",
 			TestName: "SetupLegalHoldObject",
@@ -57,12 +47,7 @@ func (r *TestRunner) s3ObjectConfigTests(ctx context.Context, client *s3.Client,
 		})
 	}
 
-	_, err = client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(lockBucket),
-		Key:    aws.String("retention-obj.txt"),
-		Body:   strings.NewReader("retention content"),
-	})
-	if err != nil {
+	if _, err := s3PutObject(ctx, client, lockBucket, "retention-obj.txt", "retention content"); err != nil {
 		return append(results, TestResult{
 			Service:  "s3",
 			TestName: "SetupRetentionObject",
@@ -71,12 +56,7 @@ func (r *TestRunner) s3ObjectConfigTests(ctx context.Context, client *s3.Client,
 		})
 	}
 
-	_, err = client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String("attrs-obj.txt"),
-		Body:   strings.NewReader("attributes content"),
-	})
-	if err != nil {
+	if _, err := s3PutObject(ctx, client, bucketName, "attrs-obj.txt", "attributes content"); err != nil {
 		return append(results, TestResult{
 			Service:  "s3",
 			TestName: "SetupAttrsObject",

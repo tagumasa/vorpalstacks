@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	snsstore "vorpalstacks/internal/store/aws/sns"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -163,9 +163,9 @@ func (s *SNSService) deliverToDLQ(msg *snsstore.Message, sub *snsstore.Subscript
 		return fmt.Errorf("marshal DLQ message: %w", err)
 	}
 
-	typedAttrs := make(map[string]eventbus.SQSMessageAttribute, len(msg.MessageAttributes))
+	typedAttrs := make(map[string]invokers.SQSMessageAttribute, len(msg.MessageAttributes))
 	for k, v := range msg.MessageAttributes {
-		ta := eventbus.SQSMessageAttribute{DataType: v.Type}
+		ta := invokers.SQSMessageAttribute{DataType: v.Type}
 		if len(v.BinaryValue) > 0 {
 			ta.BinaryValue = v.BinaryValue
 		} else {
@@ -174,7 +174,7 @@ func (s *SNSService) deliverToDLQ(msg *snsstore.Message, sub *snsstore.Subscript
 		typedAttrs[k] = ta
 	}
 
-	opts := eventbus.SQSSendOptions{
+	opts := invokers.SQSSendOptions{
 		TypedMessageAttributes: typedAttrs,
 		MessageGroupID:         msg.MessageGroupId,
 		MessageDeduplicationID: msg.MessageDeduplicationId,
@@ -261,9 +261,9 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		body = string(jsonData)
 	}
 
-	typedAttrs := make(map[string]eventbus.SQSMessageAttribute, len(msg.MessageAttributes))
+	typedAttrs := make(map[string]invokers.SQSMessageAttribute, len(msg.MessageAttributes))
 	for k, v := range msg.MessageAttributes {
-		ta := eventbus.SQSMessageAttribute{DataType: v.Type}
+		ta := invokers.SQSMessageAttribute{DataType: v.Type}
 		if len(v.BinaryValue) > 0 {
 			ta.BinaryValue = v.BinaryValue
 		} else {
@@ -272,7 +272,7 @@ func (s *SNSService) deliverToSQS(msg *snsstore.Message, sub *snsstore.Subscript
 		typedAttrs[k] = ta
 	}
 
-	opts := eventbus.SQSSendOptions{
+	opts := invokers.SQSSendOptions{
 		TypedMessageAttributes: typedAttrs,
 		MessageGroupID:         msg.MessageGroupId,
 		MessageDeduplicationID: msg.MessageDeduplicationId,

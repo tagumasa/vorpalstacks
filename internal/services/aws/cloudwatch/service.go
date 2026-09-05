@@ -30,7 +30,7 @@ type CloudWatchService struct {
 	accountID      string
 	region         string
 	dataPath       string
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	evaluator      *alarmEvaluator
 	logger         logs.Logger
 	stores         sync.Map // region → *cloudwatchStores
@@ -63,7 +63,7 @@ func NewCloudWatchService(accountID, region, dataPath string) *CloudWatchService
 // SetEventBus sets the event bus used for publishing alarm state change
 // events. The alarm evaluator is started when both the bus and a logger
 // are available.
-func (s *CloudWatchService) SetEventBus(bus eventbus.Bus) {
+func (s *CloudWatchService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 

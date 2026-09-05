@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	awsarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -99,8 +99,8 @@ const lookupAllEventsMaxPages = 20
 // either nextToken is empty or the page cap is reached. The caller passes
 // a username filter ("" for unfiltered). The AWS LookupEvents spec bounds
 // MaxResults to 1-50, so the per-page size is fixed at 50 by the helper.
-func lookupAllEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker, region, username string, startTime, endTime time.Time) ([]eventbus.CloudTrailEventInfo, error) {
-	var all []eventbus.CloudTrailEventInfo
+func lookupAllEvents(ctx context.Context, invoker invokers.CloudTrailInvoker, region, username string, startTime, endTime time.Time) ([]invokers.CloudTrailEventInfo, error) {
+	var all []invokers.CloudTrailEventInfo
 	nextToken := ""
 	for page := 0; page < lookupAllEventsMaxPages; page++ {
 		events, nt, err := invoker.LookupEvents(ctx, region, username, nextToken, startTime, endTime, lookupAllEventsPageSize)

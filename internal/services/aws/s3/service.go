@@ -30,7 +30,7 @@ type S3Service struct {
 	credentialsProvider auth.CredentialsProvider
 	encryptionManager   *EncryptionManager
 	fallbackCache       sync.Map
-	bus                 eventbus.Bus
+	bus                 eventbus.ServiceBus
 	busUnsubscribe      func()
 }
 
@@ -71,7 +71,7 @@ func (s *S3Service) EncryptionManager() *EncryptionManager {
 }
 
 type busKMSClient struct {
-	bus eventbus.Bus
+	bus eventbus.ServiceBus
 }
 
 // GenerateDataKey generates a data key encrypted under an S3-managed KMS key.
@@ -136,19 +136,21 @@ func (s *S3Service) RestoreSSE3Keys() {
 // SetEventBus sets the event bus and registers the S3 notification handler.
 // The handler is subscribed asynchronously so that object operations return
 // immediately without waiting for notification delivery.
-func (s *S3Service) SetEventBus(bus eventbus.Bus) {
+func (s *S3Service) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
 	if bus != nil {
 		if bus.KMSInvoker() != nil {
 			s.encryptionManager = NewEncryptionManagerWithKMS(&busKMSClient{bus: bus})
 		}
 		subID, err := eventbus.SubscribeTyped[*eventbus.S3ObjectEvent](bus, s.handleS3Notification, eventbus.WithAsync())
-		if err == nil {
-			s.busUnsubscribe = func() {
-				_ = bus.Unsubscribe(subID)
-			}
+		if err != nil {
+			return fmt.Errorf("s3: subscribe S3ObjectEvent: %w", err)
+		}
+		s.busUnsubscribe = func() {
+			_ = bus.Unsubscribe(subID)
 		}
 	}
+	return nil
 }
 
 // publishObjectNotification publishes an S3ObjectEvent to the event bus after

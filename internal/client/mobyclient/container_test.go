@@ -214,6 +214,28 @@ func TestConvertUlimits_Nil(t *testing.T) {
 	assert.Nil(t, result)
 }
 
+func TestConvertLogConfig(t *testing.T) {
+	cfg := ContainerLogConfig{
+		Driver: "json-file",
+		Options: map[string]string{
+			"max-size": "10m",
+			"max-file": "3",
+		},
+	}
+
+	result := convertLogConfig(cfg)
+
+	require.NotNil(t, result)
+	assert.Equal(t, "json-file", result.Type)
+	assert.Equal(t, "10m", result.Config["max-size"])
+	assert.Equal(t, "3", result.Config["max-file"])
+}
+
+func TestConvertLogConfig_NoDriver(t *testing.T) {
+	result := convertLogConfig(ContainerLogConfig{Options: map[string]string{"max-size": "10m"}})
+	assert.Nil(t, result, "an unset driver must keep the daemon default")
+}
+
 func TestConvertEvent(t *testing.T) {
 	e := events.Message{
 		Type:   events.ContainerEventType,

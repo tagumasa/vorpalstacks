@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/iot/iotutil"
 )
@@ -63,14 +64,14 @@ type ActionConfig struct {
 // Dispatcher routes evaluated rule payloads to the appropriate action handler
 // using EventBus invokers for cross-service communication.
 type Dispatcher struct {
-	bus         eventbus.Bus
+	bus         eventbus.ServiceBus
 	logger      *slog.Logger
 	RepublishFn func(ctx context.Context, topic string, payload map[string]interface{}) error
 	HTTPPostFn  func(ctx context.Context, url string, payload []byte) error
 }
 
 // NewDispatcher creates a new action dispatcher backed by the given EventBus.
-func NewDispatcher(bus eventbus.Bus, logger *slog.Logger) *Dispatcher {
+func NewDispatcher(bus eventbus.ServiceBus, logger *slog.Logger) *Dispatcher {
 	return &Dispatcher{bus: bus, logger: logger}
 }
 
@@ -237,7 +238,7 @@ func (d *Dispatcher) dispatchSQS(ctx context.Context, config *ActionConfig, p *A
 		return fmt.Errorf("sqs: no queueUrl or queueArn specified")
 	}
 
-	_, _, err = invoker.SendMessage(ctx, sqsRegion, queueURL, p.JSONString, eventbus.SQSSendOptions{})
+	_, _, err = invoker.SendMessage(ctx, sqsRegion, queueURL, p.JSONString, invokers.SQSSendOptions{})
 	if err != nil {
 		return fmt.Errorf("sqs send failed: %w", err)
 	}
@@ -492,11 +493,11 @@ func (d *Dispatcher) dispatchCloudWatchLogs(ctx context.Context, config *ActionC
 // batchMode on the payload must be a JSON array of {timestamp, message}
 // records, each uploaded as its own entry (AWS IoT developer guide,
 // CloudWatch Logs rule action).
-func cloudWatchLogsEntries(config *ActionConfig, p *ActionPayload) ([]eventbus.LogsLogEntry, error) {
+func cloudWatchLogsEntries(config *ActionConfig, p *ActionPayload) ([]invokers.LogsLogEntry, error) {
 	if bm, ok := config.Extra["batchMode"].(bool); ok && bm {
 		return parseBatchLogEntries(p.JSONBytes)
 	}
-	return []eventbus.LogsLogEntry{
+	return []invokers.LogsLogEntry{
 		{Timestamp: time.Now().UnixMilli(), Message: p.JSONString},
 	}, nil
 }
@@ -505,7 +506,7 @@ func cloudWatchLogsEntries(config *ActionConfig, p *ActionPayload) ([]eventbus.L
 // {"timestamp": <milliseconds>, "message": "..."} records. An empty array
 // contains no records and writes nothing; AWS does not specify behaviour
 // for it, so it is treated as a successful no-op.
-func parseBatchLogEntries(raw []byte) ([]eventbus.LogsLogEntry, error) {
+func parseBatchLogEntries(raw []byte) ([]invokers.LogsLogEntry, error) {
 	var records []struct {
 		Timestamp *int64 `json:"timestamp"`
 		Message   string `json:"message"`
@@ -513,12 +514,12 @@ func parseBatchLogEntries(raw []byte) ([]eventbus.LogsLogEntry, error) {
 	if err := json.Unmarshal(raw, &records); err != nil {
 		return nil, fmt.Errorf("cloudwatchLogs: batchMode payload is not a timestamp/message array: %w", err)
 	}
-	entries := make([]eventbus.LogsLogEntry, 0, len(records))
+	entries := make([]invokers.LogsLogEntry, 0, len(records))
 	for _, r := range records {
 		if r.Timestamp == nil {
 			return nil, fmt.Errorf("cloudwatchLogs: batchMode record missing timestamp")
 		}
-		entries = append(entries, eventbus.LogsLogEntry{Timestamp: *r.Timestamp, Message: r.Message})
+		entries = append(entries, invokers.LogsLogEntry{Timestamp: *r.Timestamp, Message: r.Message})
 	}
 	return entries, nil
 }

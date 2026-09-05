@@ -20,7 +20,7 @@ type DynamoDBService struct {
 	stores               sync.Map // region → dynamodbstore.DynamoDBStoreInterface
 	storageManager       *storage.RegionStorageManager
 	busStoreFactory      *dynamodbstore.DynamoDBStoreFactory
-	bus                  eventbus.Bus
+	bus                  eventbus.ServiceBus
 	bgCtx                context.Context
 	bgCancel             context.CancelFunc
 	bgWg                 sync.WaitGroup
@@ -79,7 +79,7 @@ func (s *DynamoDBService) SetStorageManager(sm *storage.RegionStorageManager) {
 
 // SetEventBus sets the EventBus for cross-service invoker access (e.g. S3
 // import/export operations).
-func (s *DynamoDBService) SetEventBus(bus eventbus.Bus) {
+func (s *DynamoDBService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 

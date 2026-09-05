@@ -15,9 +15,9 @@ import (
 	"github.com/google/uuid"
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 	"vorpalstacks/internal/utils/aws/arn"
@@ -43,7 +43,7 @@ type WAFv2Service struct {
 	region           string
 	stores           sync.Map // region → *wafv2Stores
 	storageManager   *storage.RegionStorageManager
-	resourceCheckers []eventbus.WebACLResourceChecker
+	resourceCheckers []waf.WebACLResourceChecker
 	sampleSweepOnce  sync.Once
 	challenges       *challengeRegistry
 }
@@ -61,7 +61,7 @@ func (s *WAFv2Service) SetStorageManager(sm *storage.RegionStorageManager) {
 // RegisterWebACLResourceChecker registers a service that hosts resources
 // eligible for WebACL association. AssociateWebACL rejects ARNs owned by a
 // registered checker that cannot be resolved to an existing resource.
-func (s *WAFv2Service) RegisterWebACLResourceChecker(checker eventbus.WebACLResourceChecker) {
+func (s *WAFv2Service) RegisterWebACLResourceChecker(checker waf.WebACLResourceChecker) {
 	s.resourceCheckers = append(s.resourceCheckers, checker)
 }
 

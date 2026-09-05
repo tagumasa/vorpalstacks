@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -197,7 +197,7 @@ func TestRunOrderedBatches_CancelledWaitFailsTheBatch(t *testing.T) {
 // TestKinesisRecordKeys_CollectsPartitionKeys verifies the key extraction
 // the ordering scheduler depends on.
 func TestKinesisRecordKeys_CollectsPartitionKeys(t *testing.T) {
-	keys := kinesisRecordKeys([]eventbus.KinesisRecord{
+	keys := kinesisRecordKeys([]invokers.KinesisRecord{
 		{PartitionKey: "pk-1"}, {PartitionKey: "pk-2"}, {PartitionKey: "pk-1"},
 	})
 	if len(keys) != 2 {
@@ -211,14 +211,14 @@ func TestKinesisRecordKeys_CollectsPartitionKeys(t *testing.T) {
 // TestDynamoDBRecordKeys_CanonicalisesItemKeys verifies that item keys
 // with identical attribute maps canonicalise to the same scheduler key.
 func TestDynamoDBRecordKeys_CanonicalisesItemKeys(t *testing.T) {
-	record := func(id string) eventbus.DynamoDBStreamRecord {
-		return eventbus.DynamoDBStreamRecord{
+	record := func(id string) invokers.DynamoDBStreamRecord {
+		return invokers.DynamoDBStreamRecord{
 			Dynamodb: map[string]interface{}{
 				"Keys": map[string]interface{}{"Id": map[string]interface{}{"N": id}},
 			},
 		}
 	}
-	keys := dynamoDBRecordKeys([]eventbus.DynamoDBStreamRecord{record("1"), record("1"), record("2")})
+	keys := dynamoDBRecordKeys([]invokers.DynamoDBStreamRecord{record("1"), record("1"), record("2")})
 	if len(keys) != 2 {
 		t.Fatalf("expected 2 distinct item keys, got %d", len(keys))
 	}

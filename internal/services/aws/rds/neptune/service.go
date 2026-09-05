@@ -179,7 +179,7 @@ func (s *NeptuneService) store(reqCtx *request.RequestContext) (neptunestore.Nep
 	return s.GetStoreForRegion(region)
 }
 
-// IsSubnetInUse implements eventbus.SubnetUsageChecker. It returns true if
+// IsSubnetInUse implements invokers.SubnetUsageChecker. It returns true if
 // any DB subnet group in the given region references the specified subnet.
 // EC2 calls this before deleting a subnet to prevent orphaned references.
 func (s *NeptuneService) IsSubnetInUse(ctx context.Context, region, subnetId string) bool {

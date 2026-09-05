@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
@@ -99,7 +99,7 @@ func deliverToSQS(ctx context.Context, s *LambdaService, arn, payload, region st
 		logs.Warn("destination: failed to resolve SQS queue URL", logs.String("arn", arn), logs.Err(err))
 		return
 	}
-	if _, _, err := sqsInvoker.SendMessage(ctx, region, queueURL, payload, eventbus.SQSSendOptions{}); err != nil {
+	if _, _, err := sqsInvoker.SendMessage(ctx, region, queueURL, payload, invokers.SQSSendOptions{}); err != nil {
 		logs.Warn("destination: failed to send to SQS", logs.String("arn", arn), logs.Err(err))
 	}
 }

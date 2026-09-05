@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/scheduleexpr"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
@@ -36,7 +37,7 @@ func init() {
 type Engine struct {
 	storageManager *storage.RegionStorageManager
 	accountID      string
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	stores         sync.Map // region → *schedulerstore.SchedulerStore
 
 	// retryStores holds per-region RetryStores for persisted retry records.
@@ -77,7 +78,7 @@ func NewEngine(
 }
 
 // SetEventBus injects the event bus for publishing scheduler lifecycle events.
-func (e *Engine) SetEventBus(bus eventbus.Bus) {
+func (e *Engine) SetEventBus(bus eventbus.ServiceBus) {
 	e.bus = bus
 }
 
@@ -978,7 +979,7 @@ func (e *Engine) routeToDLQ(ctx context.Context, schedule *schedulerstore.Schedu
 	// destination queue ends with the FIFO suffix, fall back to
 	// the schedule name so the SendMessage call satisfies the
 	// SQS FIFO requirement.
-	sendOpts := eventbus.SQSSendOptions{}
+	sendOpts := invokers.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
 	} else if strings.HasSuffix(queueName, ".fifo") {
@@ -1065,7 +1066,7 @@ func (e *Engine) sendToSQS(ctx context.Context, schedule *schedulerstore.Schedul
 	// Honour SqsParameters.MessageGroupId for FIFO queues. AWS requires
 	// MessageGroupId when the target is a FIFO queue. Fall back to the
 	// schedule name if not explicitly set, matching routeToDLQ behaviour.
-	sendOpts := eventbus.SQSSendOptions{}
+	sendOpts := invokers.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		sendOpts.MessageGroupID = target.SqsParameters.MessageGroupId
 	} else if strings.HasSuffix(queueName, ".fifo") {

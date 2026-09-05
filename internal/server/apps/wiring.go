@@ -36,12 +36,12 @@ func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string,
 	}, nil
 }
 
-func (a *App) wireCrossServiceDeps() {
+func (a *App) wireCrossServiceDeps() error {
 	st := a.state
 	eb := a.server.EventBus()
 
 	if eb == nil {
-		return
+		return nil
 	}
 
 	if st.lambdaService != nil {
@@ -98,7 +98,9 @@ func (a *App) wireCrossServiceDeps() {
 
 	if st.logsService != nil {
 		st.logsService.SetCloudWatchMetricInvoker(eb.CloudWatchMetricInvoker())
-		st.logsService.SetEventBus(eb)
+		if err := st.logsService.SetEventBus(eb); err != nil {
+			return err
+		}
 		eb.SetLogsInvoker(&logsInvokerAdapter{provider: st.logsService})
 	}
 
@@ -118,12 +120,16 @@ func (a *App) wireCrossServiceDeps() {
 	}
 
 	if st.cognitoService != nil {
-		st.cognitoService.SetEventBus(eb)
+		if err := st.cognitoService.SetEventBus(eb); err != nil {
+			return err
+		}
 		eb.SetCognitoTokenValidator(st.cognitoService)
 	}
 
 	if st.eventBridgeService != nil {
-		st.eventBridgeService.SetEventBus(eb)
+		if err := st.eventBridgeService.SetEventBus(eb); err != nil {
+			return err
+		}
 	}
 
 	// DynamoDB needs the bus for its S3 invoker: table exports upload to
@@ -146,12 +152,16 @@ func (a *App) wireCrossServiceDeps() {
 	}
 
 	if st.s3Service != nil {
-		st.s3Service.SetEventBus(eb)
+		if err := st.s3Service.SetEventBus(eb); err != nil {
+			return err
+		}
 	}
 
 	if st.schedulerService != nil {
 		st.schedulerService.BuildEngine()
-		st.schedulerService.SetEventBus(eb)
+		if err := st.schedulerService.SetEventBus(eb); err != nil {
+			return err
+		}
 		if err := st.schedulerService.StartEngine(); err != nil {
 			logs.Warn("failed to start scheduler engine", logs.Err(err))
 		}
@@ -168,11 +178,17 @@ func (a *App) wireCrossServiceDeps() {
 	}
 
 	if st.stepFunctionService != nil {
-		st.stepFunctionService.SetEventBus(eb)
+		if err := st.stepFunctionService.SetEventBus(eb); err != nil {
+			return err
+		}
 		st.stepFunctionService.RecoverRunningExecutions()
 	}
 
 	if st.snsService != nil {
-		st.snsService.SetEventBus(eb)
+		if err := st.snsService.SetEventBus(eb); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }

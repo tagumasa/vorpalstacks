@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
@@ -29,11 +31,11 @@ type APIGatewayService struct {
 	stores         sync.Map // region → *apiGatewayStores
 	storageManager *storage.RegionStorageManager
 	runtimeServer  *svcapigatewayruntime.RuntimeServer
-	acmInvoker     eventbus.ACMInvoker
+	acmInvoker     invokers.ACMInvoker
 	// webACLInspector is held on the service because the WAF wiring
 	// runs before InitRuntimeServer creates the runtime server; the
 	// runtime instance receives the inspector at creation.
-	webACLInspector eventbus.WebACLInspector
+	webACLInspector waf.WebACLInspector
 }
 
 // NewAPIGatewayService creates a new API Gateway service instance.
@@ -52,13 +54,13 @@ func (s *APIGatewayService) SetStorageManager(sm *storage.RegionStorageManager) 
 // SetACMInvoker injects the ACM invoker for cross-service certificate usage
 // tracking. When a custom domain name references an ACM certificate, the
 // invoker records the association so that DeleteCertificate can enforce InUseBy.
-func (s *APIGatewayService) SetACMInvoker(invoker eventbus.ACMInvoker) {
+func (s *APIGatewayService) SetACMInvoker(invoker invokers.ACMInvoker) {
 	s.acmInvoker = invoker
 }
 
 // InitRuntimeServer creates the runtime server using the same stores as the
 // management service.
-func (s *APIGatewayService) InitRuntimeServer(bus eventbus.Bus) {
+func (s *APIGatewayService) InitRuntimeServer(bus eventbus.ServiceBus) {
 	if s.storageManager == nil {
 		return
 	}
@@ -89,7 +91,7 @@ func (s *APIGatewayService) InitRuntimeServer(bus eventbus.Bus) {
 // are enforced on execute-api traffic. The inspector is also held on
 // the service for the case where the runtime server is created after
 // this wiring runs.
-func (s *APIGatewayService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *APIGatewayService) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.webACLInspector = inspector
 	if s.runtimeServer != nil {
 		s.runtimeServer.SetWebACLInspector(inspector)

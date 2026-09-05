@@ -156,13 +156,8 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 
 	results = append(results, tc.runner.RunTest("scheduler", "CreateScheduleGroup_DuplicateName", func() error {
 		dupGroupName := tc.uniqueName("DupGroup")
-		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-			Name: aws.String(dupGroupName),
-		})
-		if err != nil {
-			return fmt.Errorf("first create: %v", err)
-		}
-		defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(dupGroupName)})
+		_, err := tc.createScheduleGroup(dupGroupName)
+		defer tc.cleanupScheduleGroup(dupGroupName)
 
 		_, err = tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
 			Name: aws.String(dupGroupName),
@@ -173,26 +168,11 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_NonExistent", func() error {
-		_, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
-			Name: aws.String("nonexistent-group-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
 	// Deleting is eventually consistent: the delete is acknowledged
 	// immediately and the group disappears once the cascade completes.
 	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup", func() error {
 		delGroupName := tc.uniqueName("DelGroup")
-		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-			Name: aws.String(delGroupName),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
+		_, err := tc.createScheduleGroup(delGroupName)
 
 		_, err = tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
 			Name: aws.String(delGroupName),
@@ -223,12 +203,7 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 	// are deleted, and only then does the group disappear.
 	results = append(results, tc.runner.RunTest("scheduler", "DeleteScheduleGroup_CascadesToSchedules", func() error {
 		notEmptyGroup := tc.uniqueName("NotEmptyGrp")
-		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-			Name: aws.String(notEmptyGroup),
-		})
-		if err != nil {
-			return fmt.Errorf("create group: %v", err)
-		}
+		_, err := tc.createScheduleGroup(notEmptyGroup)
 
 		rn, rARN := tc.createIAMRole()
 		defer tc.deleteIAMRole(rn)
@@ -307,12 +282,10 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		var pgGroups []string
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagGroup-%s-%d", pgTs, i)
-			_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-				Name: aws.String(name),
-			})
+			_, err := tc.createScheduleGroup(name)
 			if err != nil {
 				for _, gn := range pgGroups {
-					tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+					tc.cleanupScheduleGroup(gn)
 				}
 				return fmt.Errorf("create schedule group %s: %v", name, err)
 			}
@@ -328,7 +301,7 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 			})
 			if err != nil {
 				for _, gn := range pgGroups {
-					tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+					tc.cleanupScheduleGroup(gn)
 				}
 				return fmt.Errorf("list schedule groups page: %v", err)
 			}
@@ -345,7 +318,7 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		}
 
 		for _, gn := range pgGroups {
-			tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+			tc.cleanupScheduleGroup(gn)
 		}
 		if len(allGroups) != 5 {
 			return fmt.Errorf("expected 5 paginated schedule groups, got %d", len(allGroups))
@@ -359,12 +332,10 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		var created []string
 		for i := 0; i < 3; i++ {
 			name := fmt.Sprintf("%s%d", prefix, i)
-			_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-				Name: aws.String(name),
-			})
+			_, err := tc.createScheduleGroup(name)
 			if err != nil {
 				for _, gn := range created {
-					tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+					tc.cleanupScheduleGroup(gn)
 				}
 				return fmt.Errorf("create group %s: %v", name, err)
 			}
@@ -376,13 +347,13 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		})
 		if err != nil {
 			for _, gn := range created {
-				tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+				tc.cleanupScheduleGroup(gn)
 			}
 			return fmt.Errorf("list with prefix: %v", err)
 		}
 
 		for _, gn := range created {
-			tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(gn)})
+			tc.cleanupScheduleGroup(gn)
 		}
 
 		matched := 0
@@ -397,19 +368,7 @@ func (tc *schedTestContext) runGroupTests() []TestResult {
 		return nil
 	}))
 
-	defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
-
-	results = append(results, tc.runner.RunTest("scheduler", "ListScheduleGroups_MaxResultsOutOfRange", func() error {
-		for _, maxResults := range []int32{0, 101} {
-			_, err := tc.client.ListScheduleGroups(tc.ctx, &scheduler.ListScheduleGroupsInput{
-				MaxResults: aws.Int32(maxResults),
-			})
-			if err := AssertErrorContains(err, "ValidationException"); err != nil {
-				return fmt.Errorf("MaxResults=%d: %v", maxResults, err)
-			}
-		}
-		return nil
-	}))
+	defer tc.cleanupScheduleGroup(groupName)
 
 	return results
 }

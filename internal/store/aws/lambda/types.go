@@ -67,6 +67,18 @@ const (
 	DefaultFunctionMemorySizeMB   = int32(128)
 )
 
+// Sandbox pool bounds for image-package functions. The idle TTL follows the
+// AWS model of terminating an inactive execution environment after a period
+// (AWS publishes no fixed value; 300 seconds is this platform's policy,
+// reaping every idle sandbox including the last one). The global limit caps
+// concurrent sandboxes across functions without reserved concurrency —
+// functions with reserved concurrency draw against their own reserve
+// instead, mirroring the reserved/unreserved concurrency split.
+const (
+	DefaultSandboxIdleTTL     = 300 * time.Second
+	DefaultGlobalSandboxLimit = 128
+)
+
 // Account-level limits reported by GetAccountSettings. UnreservedConcurrentExecutions
 // is derived per region as the concurrency limit minus the sum of reserved
 // concurrency across the region's functions.

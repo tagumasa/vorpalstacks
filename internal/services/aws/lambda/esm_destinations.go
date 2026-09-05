@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
@@ -134,7 +134,7 @@ func itemArrivalOf(item streamBatchItem) string {
 		}
 		arrival, _ := kinesis["approximateArrivalTimestamp"].(string)
 		return arrival
-	case *eventbus.DynamoDBStreamRecord:
+	case *invokers.DynamoDBStreamRecord:
 		if record == nil {
 			return ""
 		}
@@ -252,7 +252,7 @@ func (p *esmPoller) deliverDiscardedBatch(ctx context.Context, mapping *lambdast
 				"destination", destination, "error", gerr.Error())
 			return
 		}
-		if _, _, serr := p.bus.SQSInvoker().SendMessage(ctx, queueRegion, queueURL, string(body), eventbus.SQSSendOptions{}); serr != nil {
+		if _, _, serr := p.bus.SQSInvoker().SendMessage(ctx, queueRegion, queueURL, string(body), invokers.SQSSendOptions{}); serr != nil {
 			p.log("failed to deliver to on-failure SQS destination",
 				"destination", destination, "error", serr.Error())
 		}
@@ -278,13 +278,13 @@ func (p *esmPoller) deliverDiscardedBatch(ctx context.Context, mapping *lambdast
 // expire, exceed the maximum age ... If the error handling measures
 // fail, Lambda discards the records") to the on-failure destination and
 // returns the fresh remainder. -1, the default, keeps every record.
-func (p *esmPoller) discardExpiredDynamoDBRecords(ctx context.Context, mapping *lambdastore.EventSourceMapping, src streamSource, records []eventbus.DynamoDBStreamRecord) []eventbus.DynamoDBStreamRecord {
+func (p *esmPoller) discardExpiredDynamoDBRecords(ctx context.Context, mapping *lambdastore.EventSourceMapping, src streamSource, records []invokers.DynamoDBStreamRecord) []invokers.DynamoDBStreamRecord {
 	if mapping.MaximumRecordAgeInSeconds <= 0 {
 		return records
 	}
 	cutoff := time.Now().Add(-time.Duration(mapping.MaximumRecordAgeInSeconds) * time.Second)
 	fresh := records[:0]
-	var expired []eventbus.DynamoDBStreamRecord
+	var expired []invokers.DynamoDBStreamRecord
 	for i := range records {
 		if time.Unix(ddbArrivalUnix(&records[i]), 0).After(cutoff) {
 			fresh = append(fresh, records[i])

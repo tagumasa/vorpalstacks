@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"unicode/utf8"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
@@ -123,26 +123,26 @@ func (s *IAMService) getServerCertificateCore(store *iamstore.IAMStore, name str
 	return cert, nil
 }
 
-// ServerCertificateMaterial implements eventbus.IAMServerCertificateProvider.
+// ServerCertificateMaterial implements invokers.IAMServerCertificateProvider.
 // It resolves a server certificate by its unique certificate ID (the ASCA…
 // identifier cross-service consumers such as CloudFront reference) and
 // returns the PEM material so the consumer's listener can terminate TLS.
-func (s *IAMService) ServerCertificateMaterial(ctx context.Context, serverCertificateId string) (eventbus.TLSCertificateMaterial, error) {
+func (s *IAMService) ServerCertificateMaterial(ctx context.Context, serverCertificateId string) (invokers.TLSCertificateMaterial, error) {
 	if serverCertificateId == "" {
-		return eventbus.TLSCertificateMaterial{}, NewValidationError("ServerCertificateId")
+		return invokers.TLSCertificateMaterial{}, NewValidationError("ServerCertificateId")
 	}
 	store, err := s.GetStoreForRegion("")
 	if err != nil {
-		return eventbus.TLSCertificateMaterial{}, err
+		return invokers.TLSCertificateMaterial{}, err
 	}
 	cert, err := store.ServerCertificates().GetByID(serverCertificateId)
 	if err != nil {
-		return eventbus.TLSCertificateMaterial{}, NewNoSuchEntityError("server certificate", serverCertificateId)
+		return invokers.TLSCertificateMaterial{}, NewNoSuchEntityError("server certificate", serverCertificateId)
 	}
 	if cert.CertificateBody == "" || cert.PrivateKey == "" {
-		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("server certificate %s does not have serving material available", serverCertificateId)
+		return invokers.TLSCertificateMaterial{}, fmt.Errorf("server certificate %s does not have serving material available", serverCertificateId)
 	}
-	return eventbus.TLSCertificateMaterial{
+	return invokers.TLSCertificateMaterial{
 		Certificate:      cert.CertificateBody,
 		PrivateKey:       cert.PrivateKey,
 		CertificateChain: cert.CertificateChain,

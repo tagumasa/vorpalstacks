@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	dynamodbsvc "vorpalstacks/internal/services/aws/dynamodb"
 	"vorpalstacks/internal/services/aws/rds/rdsdata"
 	svcwafv2 "vorpalstacks/internal/services/aws/wafv2"
@@ -36,7 +36,7 @@ type sqsStoreProvider interface {
 	GetStoreForRegion(region string) (storesqs.SQSStoreInterface, error)
 }
 
-// sqsInvokerAdapter adapts the SQS service store to the eventbus.SQSInvoker
+// sqsInvokerAdapter adapts the SQS service store to the invokers.SQSInvoker
 // interface. This enables cross-region SQS delivery (e.g. alarm actions
 // targeting queues in a different region than the source service).
 type sqsInvokerAdapter struct {
@@ -77,7 +77,7 @@ func (a *sqsInvokerAdapter) GetQueueARN(_ context.Context, region, queueURL stri
 }
 
 // SendMessage sends a message to the specified queue in the given region.
-func (a *sqsInvokerAdapter) SendMessage(_ context.Context, region, queueURL, body string, opts eventbus.SQSSendOptions) (string, string, error) {
+func (a *sqsInvokerAdapter) SendMessage(_ context.Context, region, queueURL, body string, opts invokers.SQSSendOptions) (string, string, error) {
 	store, err := a.getStore(region)
 	if err != nil {
 		return "", "", err
@@ -99,7 +99,7 @@ func (a *sqsInvokerAdapter) SendMessage(_ context.Context, region, queueURL, bod
 // buildSQSMessageAttributes selects the richer of the two attribute maps
 // from SQSSendOptions. TypedMessageAttributes (with DataType) takes
 // precedence; the legacy string map is used as a fallback.
-func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesqs.MessageAttributeValue {
+func buildSQSMessageAttributes(opts invokers.SQSSendOptions) map[string]*storesqs.MessageAttributeValue {
 	if len(opts.TypedMessageAttributes) > 0 {
 		out := make(map[string]*storesqs.MessageAttributeValue, len(opts.TypedMessageAttributes))
 		for k, v := range opts.TypedMessageAttributes {
@@ -117,7 +117,7 @@ func buildSQSMessageAttributes(opts eventbus.SQSSendOptions) map[string]*storesq
 }
 
 // ReceiveMessage retrieves messages from the specified queue in the given region.
-func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]eventbus.ReceivedSQSMessage, error) {
+func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL string, maxMessages int32, visibilityTimeout *int32, waitTimeSeconds int32) ([]invokers.ReceivedSQSMessage, error) {
 	store, err := a.getStore(region)
 	if err != nil {
 		return nil, err
@@ -126,9 +126,9 @@ func (a *sqsInvokerAdapter) ReceiveMessage(_ context.Context, region, queueURL s
 	if err != nil {
 		return nil, err
 	}
-	out := make([]eventbus.ReceivedSQSMessage, len(msgs))
+	out := make([]invokers.ReceivedSQSMessage, len(msgs))
 	for i, m := range msgs {
-		out[i] = eventbus.ReceivedSQSMessage{
+		out[i] = invokers.ReceivedSQSMessage{
 			MessageID:                        m.ID,
 			ReceiptHandle:                    m.ReceiptHandle,
 			Body:                             m.Body,
@@ -168,7 +168,7 @@ type snsStoreForInvoker interface {
 }
 
 // snsInvokerAdapter adapts the SNS concrete store and publisher to the
-// eventbus.SNSInvoker interface.
+// invokers.SNSInvoker interface.
 type snsInvokerAdapter struct {
 	store     snsStoreForInvoker
 	kvStore   kvDeleter
@@ -196,14 +196,14 @@ func (a *snsInvokerAdapter) GetTopic(_ context.Context, topicARN string) (string
 }
 
 // ListSubscriptionsByTopic returns subscriptions for the given topic ARN.
-func (a *snsInvokerAdapter) ListSubscriptionsByTopic(_ context.Context, topicARN string) ([]eventbus.SubscriptionInfo, error) {
+func (a *snsInvokerAdapter) ListSubscriptionsByTopic(_ context.Context, topicARN string) ([]invokers.SubscriptionInfo, error) {
 	result, err := a.store.ListSubscriptionsByTopic(topicARN, storecommon.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]eventbus.SubscriptionInfo, len(result.Items))
+	out := make([]invokers.SubscriptionInfo, len(result.Items))
 	for i, sub := range result.Items {
-		out[i] = eventbus.SubscriptionInfo{
+		out[i] = invokers.SubscriptionInfo{
 			SubscriptionARN:     sub.SubscriptionArn,
 			Protocol:            sub.Protocol,
 			Endpoint:            sub.Endpoint,
@@ -252,7 +252,7 @@ type kinesisStoreProvider interface {
 }
 
 // kinesisInvokerAdapter adapts the Kinesis service store to the
-// eventbus.KinesisInvoker interface.
+// invokers.KinesisInvoker interface.
 type kinesisInvokerAdapter struct {
 	provider kinesisStoreProvider
 	// defaultRegion is the region for interface methods that do not carry
@@ -304,7 +304,7 @@ func (a *kinesisInvokerAdapter) StreamExists(_ context.Context, region, streamAR
 }
 
 // ListShards lists the shards in the given Kinesis stream.
-func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string) ([]eventbus.ShardInfo, error) {
+func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string) ([]invokers.ShardInfo, error) {
 	store, err := a.defaultStore()
 	if err != nil {
 		return nil, err
@@ -313,13 +313,13 @@ func (a *kinesisInvokerAdapter) ListShards(_ context.Context, streamName string)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]eventbus.ShardInfo, len(shards))
+	out := make([]invokers.ShardInfo, len(shards))
 	for i, s := range shards {
 		endSeq := ""
 		if s.SequenceNumberRange != nil {
 			endSeq = s.SequenceNumberRange.EndingSequenceNumber
 		}
-		out[i] = eventbus.ShardInfo{
+		out[i] = invokers.ShardInfo{
 			ShardID:                s.ShardID,
 			SequenceNumberRangeEnd: endSeq,
 		}
@@ -368,7 +368,7 @@ func (a *kinesisInvokerAdapter) CreateShardIterator(_ context.Context, streamNam
 // every cycle; the public API keeps the same exclusive semantics for
 // every iterator type except AT_SEQUENCE_NUMBER. includeStart re-enables
 // the inclusive read for the poller's initial LATEST anchor.
-func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
+func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
 	store, err := a.defaultStore()
 	if err != nil {
 		return nil, "", err
@@ -377,9 +377,9 @@ func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string,
 	if err != nil {
 		return nil, "", err
 	}
-	out := make([]eventbus.KinesisRecord, len(records))
+	out := make([]invokers.KinesisRecord, len(records))
 	for i, r := range records {
-		out[i] = eventbus.KinesisRecord{
+		out[i] = invokers.KinesisRecord{
 			SequenceNumber:              r.SequenceNumber,
 			PartitionKey:                r.PartitionKey,
 			Data:                        []byte(r.Data),
@@ -390,7 +390,7 @@ func (a *kinesisInvokerAdapter) GetRecords(_ context.Context, streamName string,
 }
 
 // eventsInvokerAdapter adapts the EventBridge store Put function to the
-// eventbus.EventsInvoker interface.
+// invokers.EventsInvoker interface.
 type eventsInvokerAdapter struct {
 	putFn func(key string, data any) error
 }
@@ -448,7 +448,7 @@ type dynamoDBStoreProvider interface {
 	GetStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error)
 }
 
-// dynamoDBInvokerAdapter adapts the DynamoDB store to the eventbus.DynamoDBInvoker
+// dynamoDBInvokerAdapter adapts the DynamoDB store to the invokers.DynamoDBInvoker
 // interface, so that cross-service consumers (e.g. AppSync GraphQL resolvers)
 // perform item operations through the bus instead of holding a direct store reference.
 // Writes go through the store transaction so PITR journaling and
@@ -694,12 +694,12 @@ func (a *dynamoDBInvokerAdapter) QueryWithPagination(ctx context.Context, region
 
 // ContributorRules lists the DynamoDB contributor insights rule names
 // derived from the insights-enabled tables of one region.
-func (a *dynamoDBInvokerAdapter) ContributorRules(ctx context.Context, region string) ([]eventbus.ContributorInsightRule, error) {
+func (a *dynamoDBInvokerAdapter) ContributorRules(ctx context.Context, region string) ([]invokers.ContributorInsightRule, error) {
 	s, err := a.store(ctx, region)
 	if err != nil {
 		return nil, err
 	}
-	var rules []eventbus.ContributorInsightRule
+	var rules []invokers.ContributorInsightRule
 	marker := ""
 	for {
 		tables, next, err := s.Tables().List(marker, 0)
@@ -708,7 +708,7 @@ func (a *dynamoDBInvokerAdapter) ContributorRules(ctx context.Context, region st
 		}
 		for _, t := range tables {
 			for _, name := range dynamodbsvc.ContributorInsightsRuleNames(t) {
-				rules = append(rules, eventbus.ContributorInsightRule{Name: name})
+				rules = append(rules, invokers.ContributorInsightRule{Name: name})
 			}
 		}
 		if next == "" {
@@ -721,7 +721,7 @@ func (a *dynamoDBInvokerAdapter) ContributorRules(ctx context.Context, region st
 
 // ContributorStats returns the most accessed tracked keys of one table
 // inside the half-open time window.
-func (a *dynamoDBInvokerAdapter) ContributorStats(ctx context.Context, region, tableName, layout string, start, end time.Time, max int) ([]eventbus.ContributorKeyStat, error) {
+func (a *dynamoDBInvokerAdapter) ContributorStats(ctx context.Context, region, tableName, layout string, start, end time.Time, max int) ([]invokers.ContributorKeyStat, error) {
 	s, err := a.store(ctx, region)
 	if err != nil {
 		return nil, err
@@ -730,7 +730,7 @@ func (a *dynamoDBInvokerAdapter) ContributorStats(ctx context.Context, region, t
 	if err != nil {
 		return nil, err
 	}
-	out := make([]eventbus.ContributorKeyStat, 0, len(stats))
+	out := make([]invokers.ContributorKeyStat, 0, len(stats))
 	for _, stat := range stats {
 		var keys []string
 		_ = json.Unmarshal([]byte(stat.Key), &keys)
@@ -742,7 +742,7 @@ func (a *dynamoDBInvokerAdapter) ContributorStats(ctx context.Context, region, t
 				keys[i] = rest
 			}
 		}
-		out = append(out, eventbus.ContributorKeyStat{
+		out = append(out, invokers.ContributorKeyStat{
 			Keys:  keys,
 			Count: stat.Count,
 			Units: stat.Units,
@@ -868,7 +868,7 @@ type neptuneGraphInvokerAdapter struct {
 	}
 }
 
-// rdsDataInvokerAdapter adapts the RDS Data API service to the eventbus.RDSDataInvoker
+// rdsDataInvokerAdapter adapts the RDS Data API service to the invokers.RDSDataInvoker
 // interface, so that cross-service consumers (e.g. AppSync GraphQL resolvers)
 // execute SQL through the bus instead of holding a direct service reference.
 type rdsDataInvokerAdapter struct {
@@ -1075,7 +1075,7 @@ func (a *cloudTrailInvokerAdapter) getStore(region string) (cloudtrailstore.Clou
 
 // LookupEvents queries CloudTrail for events matching the given criteria.
 // nextToken supports pagination by forwarding it to EventQuery.NextToken.
-func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]eventbus.CloudTrailEventInfo, string, error) {
+func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, username, nextToken string, startTime, endTime time.Time, maxResults int32) ([]invokers.CloudTrailEventInfo, string, error) {
 	ctStore, err := a.getStore(region)
 	if err != nil {
 		return nil, "", err
@@ -1091,7 +1091,7 @@ func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, usern
 	if err != nil {
 		return nil, "", err
 	}
-	out := make([]eventbus.CloudTrailEventInfo, 0, len(events))
+	out := make([]invokers.CloudTrailEventInfo, 0, len(events))
 	for _, e := range events {
 		if e == nil {
 			continue
@@ -1100,7 +1100,7 @@ func (a *cloudTrailInvokerAdapter) LookupEvents(_ context.Context, region, usern
 		if e.UserIdentity != nil {
 			username = e.UserIdentity.UserName
 		}
-		out = append(out, eventbus.CloudTrailEventInfo{
+		out = append(out, invokers.CloudTrailEventInfo{
 			EventID:     e.EventID,
 			EventName:   e.EventName,
 			EventSource: e.EventSource,
@@ -1159,7 +1159,7 @@ func (a *logsInvokerAdapter) EnsureLogStream(_ context.Context, region, logGroup
 }
 
 // PutLogEvents writes log entries to the specified log stream.
-func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []eventbus.LogsLogEntry) error {
+func (a *logsInvokerAdapter) PutLogEvents(_ context.Context, region, logGroupName, logStreamName string, entries []invokers.LogsLogEntry) error {
 	store, err := a.provider.GetStoreForRegion(region)
 	if err != nil {
 		return err

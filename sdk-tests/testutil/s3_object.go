@@ -14,13 +14,9 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	var results []TestResult
 
 	results = append(results, r.RunTest("s3", "PutObject", func() error {
-		resp, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("test.txt"),
-			Body:   strings.NewReader("Hello, World!"),
-		})
+		resp, err := s3PutObject(ctx, client, bucketName, "test.txt", "Hello, World!")
 		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+			return err
 		}
 		if resp.ETag == nil || *resp.ETag == "" {
 			return fmt.Errorf("ETag is nil or empty")
@@ -29,10 +25,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "GetObject", func() error {
-		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("test.txt"),
-		})
+		resp, gotBody, err := s3GetRead(ctx, client, bucketName, "test.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -52,10 +45,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "HeadObject", func() error {
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("test.txt"),
-		})
+		resp, err := s3HeadObject(ctx, client, bucketName, "test.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -134,16 +124,11 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "CopyObject", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("copy-source.txt"),
-			Body:   strings.NewReader("copy me"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject source failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, "copy-source.txt", "copy me"); err != nil {
+			return err
 		}
 
-		_, err = client.CopyObject(ctx, &s3.CopyObjectInput{
+		_, err := client.CopyObject(ctx, &s3.CopyObjectInput{
 			Bucket:     aws.String(bucketName),
 			Key:        aws.String("copy-dest.txt"),
 			CopySource: aws.String(bucketName + "/copy-source.txt"),
@@ -152,10 +137,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("CopyObject failed: %w", err)
 		}
 
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("copy-dest.txt"),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, bucketName, "copy-dest.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
@@ -187,10 +169,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("CopyObject with REPLACE failed: %w", err)
 		}
 
-		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("metadata-dest.txt"),
-		})
+		resp, gotBody, err := s3GetRead(ctx, client, bucketName, "metadata-dest.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject dest failed: %w", err)
 		}
@@ -219,10 +198,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		resp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("verify.txt"),
-		})
+		resp, gotBody, err := s3GetRead(ctx, client, bucketName, "verify.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -236,28 +212,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "PutObject_Overwrite", func() error {
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("overwrite.txt"),
-			Body:   strings.NewReader("first"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject first failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, "overwrite.txt", "first"); err != nil {
+			return err
 		}
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("overwrite.txt"),
-			Body:   strings.NewReader("second"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject second failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, "overwrite.txt", "second"); err != nil {
+			return err
 		}
 
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("overwrite.txt"),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, bucketName, "overwrite.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -281,10 +244,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("metadata.txt"),
-		})
+		resp, err := s3HeadObject(ctx, client, bucketName, "metadata.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -300,22 +260,14 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 
 	results = append(results, r.RunTest("s3", "ListObjectsV2_MultipleObjects", func() error {
 		listBucket := s3Bucket(ts, "list")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(listBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, listBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, listBucket)
 
 		for i := 0; i < 5; i++ {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(listBucket),
-				Key:    aws.String(fmt.Sprintf("obj-%d.txt", i)),
-				Body:   strings.NewReader(fmt.Sprintf("data-%d", i)),
-			})
-			if err != nil {
-				return fmt.Errorf("PutObject %d failed: %w", i, err)
+			if _, err := s3PutObject(ctx, client, listBucket, fmt.Sprintf("obj-%d.txt", i), fmt.Sprintf("data-%d", i)); err != nil {
+				return err
 			}
 		}
 
@@ -338,22 +290,14 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 
 	results = append(results, r.RunTest("s3", "ListObjectsV2_Pagination", func() error {
 		pagBucket := s3Bucket(ts, "pag")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(pagBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, pagBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, pagBucket)
 
 		for i := 0; i < 5; i++ {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(pagBucket),
-				Key:    aws.String(fmt.Sprintf("pag/obj-%d.txt", i)),
-				Body:   strings.NewReader(fmt.Sprintf("page-data-%d", i)),
-			})
-			if err != nil {
-				return fmt.Errorf("PutObject %d failed: %w", i, err)
+			if _, err := s3PutObject(ctx, client, pagBucket, fmt.Sprintf("pag/obj-%d.txt", i), fmt.Sprintf("page-data-%d", i)); err != nil {
+				return err
 			}
 		}
 
@@ -438,22 +382,14 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	// only if you have the delimiter request parameter specified".
 	results = append(results, r.RunTest("s3", "ListObjects_NextMarkerOnlyWithDelimiter", func() error {
 		v1Bucket := s3Bucket(ts, "v1marker")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(v1Bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, v1Bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, v1Bucket)
 
 		for i := 0; i < 3; i++ {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(v1Bucket),
-				Key:    aws.String(fmt.Sprintf("plain-key-%d.txt", i)),
-				Body:   strings.NewReader(fmt.Sprintf("body-%d", i)),
-			})
-			if err != nil {
-				return fmt.Errorf("PutObject %d failed: %w", i, err)
+			if _, err := s3PutObject(ctx, client, v1Bucket, fmt.Sprintf("plain-key-%d.txt", i), fmt.Sprintf("body-%d", i)); err != nil {
+				return err
 			}
 		}
 
@@ -471,12 +407,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("expected no NextMarker without delimiter, got %q", *noDelimiter.NextMarker)
 		}
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(v1Bucket),
-			Key:    aws.String("folder/nested.txt"),
-			Body:   strings.NewReader("nested"),
-		})
-		if err != nil {
+		if _, err := s3PutObject(ctx, client, v1Bucket, "folder/nested.txt", "nested"); err != nil {
 			return fmt.Errorf("PutObject nested failed: %w", err)
 		}
 
@@ -518,12 +449,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 		defer verCleanup()
 
 		for i := 0; i < 3; i++ {
-			_, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket: aws.String(verBucket),
-				Key:    aws.String("versioned-key.txt"),
-				Body:   strings.NewReader(fmt.Sprintf("version-%d", i)),
-			})
-			if err != nil {
+			if _, err := s3PutObject(ctx, client, verBucket, "versioned-key.txt", fmt.Sprintf("version-%d", i)); err != nil {
 				return fmt.Errorf("PutObject version %d failed: %w", i, err)
 			}
 		}
@@ -608,10 +534,7 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sysmeta.txt"),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucketName, "sysmeta.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -628,14 +551,10 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 			return fmt.Errorf("expected ContentLanguage en-US, got %v", headResp.ContentLanguage)
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("sysmeta.txt"),
-		})
+		getResp, _, err := s3GetRead(ctx, client, bucketName, "sysmeta.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
-		defer getResp.Body.Close()
 		if getResp.ContentEncoding == nil || *getResp.ContentEncoding != "gzip" {
 			return fmt.Errorf("GetObject: expected ContentEncoding gzip, got %v", getResp.ContentEncoding)
 		}
@@ -647,13 +566,8 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 
 	results = append(results, r.RunTest("s3", "SelectObjectContent", func() error {
 		csvData := "name,age\nAlice,30\nBob,25\n"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("select-data.csv"),
-			Body:   strings.NewReader(csvData),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, "select-data.csv", csvData); err != nil {
+			return err
 		}
 
 		resp, err := client.SelectObjectContent(ctx, &s3.SelectObjectContentInput{

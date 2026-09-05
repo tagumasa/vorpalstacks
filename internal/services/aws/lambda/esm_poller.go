@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/core/storage"
@@ -85,7 +86,7 @@ type esmPoller struct {
 	interval       time.Duration
 	workers        int
 	logger         logs.Logger
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	esmStore       *lambdastore.EventSourceStore
 	lambdaSvc      *LambdaService
 	region         string
@@ -425,7 +426,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 
 	// renderRecords builds the wire-format maps for one batch, recording
 	// each record's arrival time for tumbling window boundaries.
-	renderRecords := func(shardID string, records []eventbus.KinesisRecord) ([]map[string]interface{}, map[string]int64) {
+	renderRecords := func(shardID string, records []invokers.KinesisRecord) ([]map[string]interface{}, map[string]int64) {
 		arrivals := make(map[string]int64, len(records))
 		rendered := make([]map[string]interface{}, 0, len(records))
 		for _, rec := range records {
@@ -460,14 +461,14 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 	// reports the expired batch to the on-failure destination: "Lambda
 	// retries until the records expire, exceed the maximum age ... If the
 	// error handling measures fail, Lambda discards the records".
-	dropExpiredKinesis := func(shardID string, records []eventbus.KinesisRecord) []eventbus.KinesisRecord {
+	dropExpiredKinesis := func(shardID string, records []invokers.KinesisRecord) []invokers.KinesisRecord {
 		if mapping.MaximumRecordAgeInSeconds <= 0 {
 			return records
 		}
 		src := streamSource{kind: streamSourceKinesis, streamArn: mapping.EventSourceArn, shardID: shardID}
 		cutoff := time.Now().Add(-time.Duration(mapping.MaximumRecordAgeInSeconds) * time.Second)
 		fresh := records[:0]
-		var expired []eventbus.KinesisRecord
+		var expired []invokers.KinesisRecord
 		for _, rec := range records {
 			if rec.ApproximateArrivalTimestamp.After(cutoff) {
 				fresh = append(fresh, rec)
@@ -489,7 +490,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 
 	// windowedItemsOf renders one batch and pairs the surviving records
 	// with their tumbling window boundaries.
-	windowedItemsOf := func(shardID string, records []eventbus.KinesisRecord) []windowedStreamItem {
+	windowedItemsOf := func(shardID string, records []invokers.KinesisRecord) []windowedStreamItem {
 		records = dropExpiredKinesis(shardID, records)
 		rendered, arrivals := renderRecords(shardID, records)
 		rendered = filterKinesisRecords(rendered, mapping.FilterCriteria)
@@ -510,7 +511,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 	// prepareItems filters and renders one fetched batch into delivery
 	// items, after the age expiry pass, with event filter criteria
 	// dropping non-matching records.
-	prepareItems := func(shardID string, records []eventbus.KinesisRecord) []streamBatchItem {
+	prepareItems := func(shardID string, records []invokers.KinesisRecord) []streamBatchItem {
 		records = dropExpiredKinesis(shardID, records)
 		if len(records) == 0 {
 			return nil
@@ -533,7 +534,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 	// processBatch runs the non-windowed, unbuffered delivery pipeline for
 	// one batch. A batch whose records all expired or were all filtered out
 	// still consumes its position.
-	processBatch := func(src streamSource, records []eventbus.KinesisRecord) batchOutcome {
+	processBatch := func(src streamSource, records []invokers.KinesisRecord) batchOutcome {
 		latestSeqAll := records[len(records)-1].SequenceNumber
 		items := prepareItems(src.shardID, records)
 		if len(items) == 0 {
@@ -630,7 +631,7 @@ func (p *esmPoller) processKinesisMapping(ctx context.Context, mapping *lambdast
 		// delivered, so the anchor record — the stream's latest at first
 		// poll — must be read inclusively.
 		anchorInitialLATEST := readFrom == "" && iteratorType == "LATEST"
-		var batches [][]eventbus.KinesisRecord
+		var batches [][]invokers.KinesisRecord
 		pos := iteratorSeq
 		for i := 0; i < pf; i++ {
 			records, next, gerr := p.bus.KinesisInvoker().GetRecords(ctx, streamName, shard.ShardID, pos, batchSize, i == 0 && anchorInitialLATEST)
@@ -940,7 +941,7 @@ func (p *esmPoller) processDynamoDBStreamsMapping(ctx context.Context, mapping *
 	// with the last record's sequence, which is a valid read position
 	// because reads are exclusive of it.
 	type ddbBatch struct {
-		records []eventbus.DynamoDBStreamRecord
+		records []invokers.DynamoDBStreamRecord
 		nextSeq int64
 	}
 	var batches []ddbBatch
@@ -1196,7 +1197,7 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 		sqsReceiveWaitSeconds = 1
 	}
 
-	var allMessages []eventbus.ReceivedSQSMessage
+	var allMessages []invokers.ReceivedSQSMessage
 	remaining := batchSize
 	for remaining > 0 {
 		fetchCount := perCallMax
@@ -1305,9 +1306,9 @@ func (p *esmPoller) processSQSMapping(ctx context.Context, mapping *lambdastore.
 	}
 }
 
-// receivedSQSMessageToRecord converts an eventbus.ReceivedSQSMessage into an
+// receivedSQSMessageToRecord converts an invokers.ReceivedSQSMessage into an
 // ESM SQS record matching the Lambda event format.
-func receivedSQSMessageToRecord(msg eventbus.ReceivedSQSMessage, eventSourceArn, region string) esmSQSRecord {
+func receivedSQSMessageToRecord(msg invokers.ReceivedSQSMessage, eventSourceArn, region string) esmSQSRecord {
 	record := esmSQSRecord{
 		MessageID:               msg.MessageID,
 		ReceiptHandle:           msg.ReceiptHandle,

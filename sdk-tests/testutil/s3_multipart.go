@@ -204,13 +204,8 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 	// the whole object and any other part number is unsatisfiable.
 	results = append(results, r.RunTest("s3", "GetObject_PartNumber_PlainObject", func() error {
 		key := "partnumber-plain.txt"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(mpuBucket),
-			Key:    aws.String(key),
-			Body:   strings.NewReader("plain body"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, mpuBucket, key, "plain body"); err != nil {
+			return err
 		}
 
 		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
@@ -248,21 +243,14 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 			if versioned {
 				name = s3Bucket(ts, "mpu-meta-ver")
 			}
-			if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-				Bucket: aws.String(name),
-			}); err != nil {
-				return fmt.Errorf("CreateBucket (%s) failed: %w", name, err)
+			if err := s3CreateBucket(ctx, client, name); err != nil {
+				return err
 			}
 			defer s3CleanupBucket(ctx, client, name)
 
 			if versioned {
-				if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-					Bucket: aws.String(name),
-					VersioningConfiguration: &types.VersioningConfiguration{
-						Status: types.BucketVersioningStatusEnabled,
-					},
-				}); err != nil {
-					return fmt.Errorf("PutBucketVersioning (%s) failed: %w", name, err)
+				if err := s3EnableVersioning(ctx, client, name); err != nil {
+					return err
 				}
 			}
 
@@ -312,14 +300,10 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 				return fmt.Errorf("CompleteMultipartUpload (%s) failed: %w", name, err)
 			}
 
-			getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
-				Bucket: aws.String(name),
-				Key:    aws.String(key),
-			})
+			getResp, _, err := s3GetRead(ctx, client, name, key)
 			if err != nil {
 				return fmt.Errorf("GetObject (%s) failed: %w", name, err)
 			}
-			getResp.Body.Close()
 			if getResp.ContentType == nil || *getResp.ContentType != "text/plain; charset=utf-8" {
 				return fmt.Errorf("GetObject ContentType (%s): got %v", name, getResp.ContentType)
 			}
@@ -331,10 +315,7 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 				return fmt.Errorf("GetObject ContentLength (%s): got %v, want %d", name, getResp.ContentLength, wantSize)
 			}
 
-			headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-				Bucket: aws.String(name),
-				Key:    aws.String(key),
-			})
+			headResp, err := s3HeadObject(ctx, client, name, key)
 			if err != nil {
 				return fmt.Errorf("HeadObject (%s) failed: %w", name, err)
 			}
@@ -350,11 +331,8 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 
 	results = append(results, r.RunTest("s3", "AbortMultipartUpload_Verify", func() error {
 		abortBucket := s3Bucket(ts, "mpu-abort")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(abortBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, abortBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, abortBucket)
 
@@ -422,15 +400,12 @@ func (r *TestRunner) s3MultipartTests(ctx context.Context, client *s3.Client, ts
 
 	results = append(results, r.RunTest("s3", "ListMultipartUploads_Verify", func() error {
 		listBucket := s3Bucket(ts, "mpu-list")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(listBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, listBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, listBucket)
 
-		_, err = client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+		_, err := client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 			Bucket: aws.String(listBucket),
 			Key:    aws.String("list-obj.txt"),
 		})

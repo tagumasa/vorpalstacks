@@ -32,8 +32,22 @@ type invocationRecord struct {
 	ClientContextJSON string
 }
 
+// lambdaLogGroupName is the CloudWatch log group of a function's
+// invocations — the documented AWS_LAMBDA_LOG_GROUP_NAME value and the
+// group the platform writes to, defined once.
+func lambdaLogGroupName(functionName string) string {
+	return "/aws/lambda/" + functionName
+}
+
+// lambdaLogStreamName is the CloudWatch Logs stream convention the
+// platform writes: YYYY/MM/DD/[version]id[:8]. The id is the request id
+// for an invocation record and the environment id for a sandbox.
+func lambdaLogStreamName(now time.Time, version, id string) string {
+	return fmt.Sprintf("%d/%02d/%02d/[%s]%s", now.Year(), now.Month(), now.Day(), version, id[:8])
+}
+
 // newInvocationRecord builds the record for one execution. The log stream
-// name follows the CloudWatch Logs convention the platform already writes:
+// name follows the CloudWatch Logs convention the platform writes:
 // YYYY/MM/DD/[version]requestID[:8].
 func newInvocationRecord(functionName, version, invokedARN string, memorySize, timeoutSeconds int32, clientContextJSON string) invocationRecord {
 	// A stored configuration can carry a zero timeout (for example an
@@ -45,10 +59,9 @@ func newInvocationRecord(functionName, version, invokedARN string, memorySize, t
 	now := time.Now().UTC()
 	requestID := uuid.New().String()
 	return invocationRecord{
-		RequestID:    requestID,
-		LogGroupName: fmt.Sprintf("/aws/lambda/%s", functionName),
-		LogStreamName: fmt.Sprintf("%d/%02d/%02d/[%s]%s",
-			now.Year(), now.Month(), now.Day(), version, requestID[:8]),
+		RequestID:         requestID,
+		LogGroupName:      lambdaLogGroupName(functionName),
+		LogStreamName:     lambdaLogStreamName(now, version, requestID),
 		InvokedARN:        invokedARN,
 		FunctionName:      functionName,
 		Version:           version,

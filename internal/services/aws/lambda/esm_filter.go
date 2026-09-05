@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -43,12 +43,12 @@ func filterKinesisRecords(records []map[string]interface{}, criteria *lambdastor
 }
 
 // filterDynamoDBRecords applies FilterCriteria to DynamoDB Streams records.
-func filterDynamoDBRecords(records []eventbus.DynamoDBStreamRecord, criteria *lambdastore.FilterCriteria) []eventbus.DynamoDBStreamRecord {
+func filterDynamoDBRecords(records []invokers.DynamoDBStreamRecord, criteria *lambdastore.FilterCriteria) []invokers.DynamoDBStreamRecord {
 	if criteria == nil || len(criteria.Filters) == 0 {
 		return records
 	}
 
-	var result []eventbus.DynamoDBStreamRecord
+	var result []invokers.DynamoDBStreamRecord
 	for _, rec := range records {
 		// Convert struct to map for filter evaluation.
 		m, err := structToMap(rec)

@@ -14,11 +14,11 @@ import (
 	"github.com/gorilla/websocket"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/core/storage/graphengine"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/listener"
 	"vorpalstacks/internal/server/portalloc"
 	rdssvc "vorpalstacks/internal/services/aws/rds"
@@ -59,7 +59,7 @@ type NeptuneDataService struct {
 	cancelCleanup      context.CancelFunc
 	loaderCancelChs    map[string]chan struct{}
 	loaderMu           sync.Mutex
-	s3Invoker          eventbus.S3Invoker
+	s3Invoker          invokers.S3Invoker
 	portAllocator      *portalloc.Allocator
 	listenerManager    *listener.Manager
 	dispatcherHandler  func() http.Handler
@@ -276,7 +276,7 @@ func (s *NeptuneDataService) SetDispatcherHandler(fn func() http.Handler) {
 
 // SetS3Invoker injects the S3 reader for bulk loader jobs that load data
 // from S3 sources.
-func (s *NeptuneDataService) SetS3Invoker(invoker eventbus.S3Invoker) {
+func (s *NeptuneDataService) SetS3Invoker(invoker invokers.S3Invoker) {
 	s.s3Invoker = invoker
 }
 

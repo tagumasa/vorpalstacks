@@ -15,6 +15,7 @@ import (
 	"github.com/dolthub/go-mysql-server/sql"
 	"vorpalstacks/internal/common/audit"
 	"vorpalstacks/internal/common/auth"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
 	appconfig "vorpalstacks/internal/config"
@@ -228,11 +229,11 @@ func (a *App) initCloudFront(st *serviceState) error {
 	// ACM and IAM material providers; both are always-on services but may
 	// be disabled by configuration, in which case only the synthesised
 	// default certificate serves.
-	var acmCerts eventbus.ACMCertificateProvider
+	var acmCerts invokers.ACMCertificateProvider
 	if st.acmService != nil {
 		acmCerts = st.acmService
 	}
-	var iamCerts eventbus.IAMServerCertificateProvider
+	var iamCerts invokers.IAMServerCertificateProvider
 	if st.iamService != nil {
 		iamCerts = st.iamService
 	}

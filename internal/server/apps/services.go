@@ -217,7 +217,6 @@ func (a *App) initEC2(st *serviceState) error {
 	}
 	st.ec2Service.RegisterHandlers(a.server.Dispatcher())
 	if eb := a.server.EventBus(); eb != nil {
-		eb.RegisterInvoker(&eventbus.EC2InvokerAdapter{Lookup: st.ec2Service})
 		eb.SetEC2Invoker(st.ec2Service)
 	}
 	return nil

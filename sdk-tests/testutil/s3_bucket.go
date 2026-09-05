@@ -68,11 +68,8 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 		for _, n := range sortNames {
 			bn := s3Bucket(ts, n)
 			sortBuckets = append(sortBuckets, bn)
-			_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-				Bucket: aws.String(bn),
-			})
-			if err != nil {
-				return fmt.Errorf("CreateBucket %s failed: %w", bn, err)
+			if err := s3CreateBucket(ctx, client, bn); err != nil {
+				return err
 			}
 		}
 		defer func() {
@@ -223,24 +220,16 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 
 	results = append(results, r.RunTest("s3", "DeleteBucket_NotEmpty", func() error {
 		notEmptyBucket := s3Bucket(ts, "notempty")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(notEmptyBucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, notEmptyBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, notEmptyBucket)
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(notEmptyBucket),
-			Key:    aws.String("blocker-object.txt"),
-			Body:   nil,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, notEmptyBucket, "blocker-object.txt", ""); err != nil {
+			return err
 		}
 
-		_, err = client.DeleteBucket(ctx, &s3.DeleteBucketInput{
+		_, err := client.DeleteBucket(ctx, &s3.DeleteBucketInput{
 			Bucket: aws.String(notEmptyBucket),
 		})
 		if err == nil {

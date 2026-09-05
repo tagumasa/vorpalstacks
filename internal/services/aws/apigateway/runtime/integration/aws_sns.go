@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/apigateway/endpoint"
 	arnutil "vorpalstacks/internal/utils/aws/arn"
@@ -77,7 +78,7 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 		messageBody = req.Headers["MessageBody"]
 	}
 
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, e.region, queueURL, messageBody, eventbus.SQSSendOptions{
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, e.region, queueURL, messageBody, invokers.SQSSendOptions{
 		MessageAttributes: convertToSQSInvokerAttrs(extractSQSMessageAttributes(req.Headers, req.QueryParams, req.Body)),
 	})
 	if err != nil {

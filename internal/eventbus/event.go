@@ -1,7 +1,6 @@
 package eventbus
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -73,24 +72,6 @@ func (e *EventBase) getEventBase() *EventBase { return e }
 
 // EventCaller returns the IAM identity that originated the event.
 func (e *EventBase) EventCaller() CallerContext { return e.Caller }
-
-// ServiceInvokeRequest represents a synchronous service-to-service invocation
-// dispatched through the event bus, carrying a target ARN, payload, and
-// HTTP-style routing metadata.
-type ServiceInvokeRequest struct {
-	EventBase
-	TargetARN         string              `json:"target_arn"`
-	Payload           []byte              `json:"payload,omitempty"`
-	Headers           map[string]string   `json:"headers,omitempty"`
-	MultiValueHeaders map[string][]string `json:"multi_value_headers,omitempty"`
-	QueryParams       map[string]string   `json:"query_params,omitempty"`
-	PathParams        map[string]string   `json:"path_params,omitempty"`
-	StageVariables    map[string]string   `json:"stage_variables,omitempty"`
-	RequestContext    map[string]string   `json:"request_context,omitempty"`
-}
-
-// EventType returns "service:invoke" for this event type.
-func (e *ServiceInvokeRequest) EventType() string { return "service:invoke" }
 
 // SNSDeliveryEvent is published when an SNS message needs to be delivered
 // to topic subscribers. MessageAttributes are serialised as raw JSON to
@@ -428,23 +409,4 @@ func SerializeEvent(event Event) ([]byte, error) {
 		return nil, fmt.Errorf("eventbus: failed to serialize event %q: %w", event.EventType(), err)
 	}
 	return data, nil
-}
-
-// EventMarshaller provides a generic marshal/unmarshal pair for any Event
-// type, satisfying the outbox serialisation contract.
-type EventMarshaller[T Event] struct{}
-
-// MarshalEvent serialises the given event to JSON bytes.
-func (m *EventMarshaller[T]) MarshalEvent(ctx context.Context, event T) ([]byte, error) {
-	return SerializeEvent(event)
-}
-
-// UnmarshalEvent deserialises JSON bytes into a concrete event of type T.
-func (m *EventMarshaller[T]) UnmarshalEvent(ctx context.Context, data []byte) (T, error) {
-	var zero T
-	err := json.Unmarshal(data, &zero)
-	if err != nil {
-		return zero, err
-	}
-	return zero, nil
 }

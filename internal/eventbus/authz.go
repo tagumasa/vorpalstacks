@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -58,24 +59,6 @@ func EmptyBusPolicyDocument() *BusPolicyDocument {
 	}
 }
 
-// iamPolicyEvaluatorAdapter wraps an arbitrary evaluation function to
-// satisfy the BusPolicyEvaluator interface. This avoids importing
-// internal/common/iam/policy from the eventbus package.
-type iamPolicyEvaluatorAdapter struct {
-	evaluateFn func(ctx context.Context, policy *BusPolicyDocument, principal string, action string, resource string) (bool, error)
-}
-
-// NewIAMPolicyEvaluatorAdapter creates a BusPolicyEvaluator from the
-// given evaluation function.
-func NewIAMPolicyEvaluatorAdapter(evaluateFn func(ctx context.Context, policy *BusPolicyDocument, principal string, action string, resource string) (bool, error)) BusPolicyEvaluator {
-	return &iamPolicyEvaluatorAdapter{evaluateFn: evaluateFn}
-}
-
-// Evaluate delegates to the wrapped evaluation function.
-func (a *iamPolicyEvaluatorAdapter) Evaluate(ctx context.Context, policy *BusPolicyDocument, principal string, action string, resource string) (bool, error) {
-	return a.evaluateFn(ctx, policy, principal, action, resource)
-}
-
 // ---------------------------------------------------------------------------
 // RoleResolver
 // ---------------------------------------------------------------------------
@@ -88,30 +71,38 @@ type RoleLookupFunc func(ctx context.Context, roleARN string) (assumeRolePolicyD
 // IAMRoleResolver validates IAM role ARNs by checking role existence
 // and trust policy presence via a RoleLookupFunc backed by the IAM store.
 type IAMRoleResolver struct {
+	mu     sync.RWMutex
 	lookup RoleLookupFunc
 }
 
 // NewIAMRoleResolver creates a new role resolver. The lookup function
-// may be nil initially and set later via SetLookup; until set, all
-// validations pass (backward compatible).
+// may be nil initially and installed later via SetLookup: the bus is
+// constructed before the IAM store, and the IAM initialiser wires the
+// store-backed lookup in once the store exists. Until the lookup is
+// installed, ValidateRole passes every role.
 func NewIAMRoleResolver(lookup RoleLookupFunc) *IAMRoleResolver {
 	return &IAMRoleResolver{lookup: lookup}
 }
 
-// SetLookup updates the role lookup function. This allows deferred wiring
+// SetLookup installs the role lookup function, allowing deferred wiring
 // when the IAM store is not available at resolver creation time.
 func (r *IAMRoleResolver) SetLookup(lookup RoleLookupFunc) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.lookup = lookup
 }
 
 // ValidateRole checks that the specified role ARN refers to a valid role
-// with a non-empty trust policy document. A nil lookup function causes
-// all validations to pass.
+// with a non-empty trust policy document. An uninstalled lookup function
+// causes all validations to pass.
 func (r *IAMRoleResolver) ValidateRole(ctx context.Context, roleARN string) error {
-	if r.lookup == nil {
+	r.mu.RLock()
+	lookup := r.lookup
+	r.mu.RUnlock()
+	if lookup == nil {
 		return nil
 	}
-	policy, err := r.lookup(ctx, roleARN)
+	policy, err := lookup(ctx, roleARN)
 	if err != nil {
 		return fmt.Errorf("eventbus: role validation failed for %q: %w", roleARN, err)
 	}

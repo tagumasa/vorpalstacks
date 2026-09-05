@@ -35,7 +35,7 @@ type IoTServiceDeps struct {
 	StorageManager *storage.RegionStorageManager
 	CAs            map[string]*ca.CertificateAuthority
 	Brokers        map[string]*broker.Broker
-	EventBus       eventbus.Bus
+	EventBus       eventbus.ServiceBus
 	Dispatchers    map[string]*actions.Dispatcher
 }
 

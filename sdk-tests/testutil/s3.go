@@ -2,8 +2,11 @@ package testutil
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -72,19 +75,12 @@ func s3GetAndRead(ctx context.Context, client *s3.Client, in *s3.GetObjectInput)
 // and returns its name together with a cleanup closure that empties and
 // deletes it. On a versioning failure the bucket is cleaned up immediately.
 func s3CreateVersionedBucket(ctx context.Context, client *s3.Client, name string) (string, func(), error) {
-	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(name),
-	}); err != nil {
-		return "", nil, fmt.Errorf("CreateBucket %s: %w", name, err)
+	if err := s3CreateBucket(ctx, client, name); err != nil {
+		return "", nil, err
 	}
-	if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-		Bucket: aws.String(name),
-		VersioningConfiguration: &types.VersioningConfiguration{
-			Status: types.BucketVersioningStatusEnabled,
-		},
-	}); err != nil {
+	if err := s3EnableVersioning(ctx, client, name); err != nil {
 		s3CleanupBucket(ctx, client, name)
-		return "", nil, fmt.Errorf("PutBucketVersioning %s: %w", name, err)
+		return "", nil, err
 	}
 	return name, func() { s3CleanupBucket(ctx, client, name) }, nil
 }
@@ -138,6 +134,159 @@ func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
 		}
 	}
 	client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+}
+
+// s3CreateBucket creates a plain bucket and wraps failures with the bucket
+// name so a setup failure names the test's own resource. Tests whose
+// subject is CreateBucket itself keep their literal inputs.
+func s3CreateBucket(ctx context.Context, client *s3.Client, name string) error {
+	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(name),
+	}); err != nil {
+		return fmt.Errorf("CreateBucket %s: %w", name, err)
+	}
+	return nil
+}
+
+// s3PutObject uploads a plain body (Bucket+Key+Body only). Sites carrying
+// ContentType, Metadata, StorageClass, Tagging, ACL, or SSE members keep
+// their literal PutObjectInput because those members are part of what the
+// test exercises.
+func s3PutObject(ctx context.Context, client *s3.Client, bucket, key, body string) (*s3.PutObjectOutput, error) {
+	resp, err := client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   strings.NewReader(body),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("PutObject %s/%s: %w", bucket, key, err)
+	}
+	return resp, nil
+}
+
+// s3HeadObject reads the plain HEAD metadata (Bucket+Key only); sites
+// addressing a version, a range, or SSE-C keys keep literal inputs.
+func s3HeadObject(ctx context.Context, client *s3.Client, bucket, key string) (*s3.HeadObjectOutput, error) {
+	resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("HeadObject %s/%s: %w", bucket, key, err)
+	}
+	return resp, nil
+}
+
+// s3GetRead is the plain (Bucket+Key only) form of s3GetAndRead; ranged,
+// versioned, and SSE-C reads keep their literal GetObjectInput.
+func s3GetRead(ctx context.Context, client *s3.Client, bucket, key string) (*s3.GetObjectOutput, string, error) {
+	return s3GetAndRead(ctx, client, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+}
+
+// s3EnableVersioning turns versioning on for a bucket. Suspension calls
+// and the versioning tests themselves keep literal inputs.
+func s3EnableVersioning(ctx context.Context, client *s3.Client, bucket string) error {
+	if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+		Bucket: aws.String(bucket),
+		VersioningConfiguration: &types.VersioningConfiguration{
+			Status: types.BucketVersioningStatusEnabled,
+		},
+	}); err != nil {
+		return fmt.Errorf("PutBucketVersioning %s: %w", bucket, err)
+	}
+	return nil
+}
+
+// s3ReplicationRule builds the single prefix-filtered, delete-marker-
+// disabled rule the replication setup tests share; rules with tag filters,
+// storage-class overrides, or delete-marker replication keep literal rules.
+func s3ReplicationRule(id, destArn, prefix string) types.ReplicationRule {
+	return types.ReplicationRule{
+		ID:       aws.String(id),
+		Status:   types.ReplicationRuleStatusEnabled,
+		Priority: aws.Int32(1),
+		Filter:   &types.ReplicationRuleFilter{Prefix: aws.String(prefix)},
+		Destination: &types.Destination{
+			Bucket: aws.String(destArn),
+		},
+		DeleteMarkerReplication: &types.DeleteMarkerReplication{
+			Status: types.DeleteMarkerReplicationStatusDisabled,
+		},
+	}
+}
+
+// s3PutReplication installs a configuration with the shared replication
+// test role; the role ARN shape is fixed by the replication engine's test
+// role naming. Variadic so multi-rule configurations reuse it too.
+func (r *TestRunner) s3PutReplication(ctx context.Context, client *s3.Client, bucket string, rules ...types.ReplicationRule) error {
+	_, err := client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
+		Bucket: aws.String(bucket),
+		ReplicationConfiguration: &types.ReplicationConfiguration{
+			Role:  aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
+			Rules: rules,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("PutBucketReplication %s: %w", bucket, err)
+	}
+	return nil
+}
+
+// expectS3Error asserts the AWS error code together with the HTTP status
+// of the error response; the status is part of the observable contract
+// wherever a test pins it.
+func expectS3Error(err error, code string, status int) error {
+	if err := expectAWSErrorCode(err, code); err != nil {
+		return err
+	}
+	if got := awsHTTPStatus(err); got != status {
+		return fmt.Errorf("expected HTTP %d for %s, got %d: %v", status, code, got, err)
+	}
+	return nil
+}
+
+// ssecTestKey derives the deterministic 32-byte SSE-C key material shared
+// by the SSE-C tests, in its base64 and MD5 encodings.
+func ssecTestKey() (encodedKey, encodedMD5 string) {
+	key := make([]byte, 32)
+	for i := range key {
+		key[i] = byte(i)
+	}
+	encodedKey = base64.StdEncoding.EncodeToString(key)
+	keyMD5 := md5.Sum(key)
+	encodedMD5 = base64.StdEncoding.EncodeToString(keyMD5[:])
+	return encodedKey, encodedMD5
+}
+
+// s3PutTwoVersions writes the "first" and "second" versions of a key into
+// a versioning-enabled bucket and returns the first version's output so
+// tests can address it by VersionId.
+func s3PutTwoVersions(ctx context.Context, client *s3.Client, bucket, key string) (*s3.PutObjectOutput, error) {
+	putV1, err := s3PutObject(ctx, client, bucket, key, "first")
+	if err != nil {
+		return nil, fmt.Errorf("PutObject v1 failed: %w", err)
+	}
+	if _, err := s3PutObject(ctx, client, bucket, key, "second"); err != nil {
+		return nil, fmt.Errorf("PutObject v2 failed: %w", err)
+	}
+	return putV1, nil
+}
+
+// s3HasPublicReadGrant reports whether the ACL grants contain the AllUsers
+// group READ permission, the signature of a public-read canned ACL.
+func s3HasPublicReadGrant(grants []types.Grant) bool {
+	for _, grant := range grants {
+		if grant.Grantee == nil || grant.Grantee.URI == nil {
+			continue
+		}
+		if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *TestRunner) RunS3Tests() []TestResult {

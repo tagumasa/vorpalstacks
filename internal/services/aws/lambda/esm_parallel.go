@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/resilience"
-	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -48,7 +48,7 @@ func parallelizationFactorOf(mapping *lambdastore.EventSourceMapping) int {
 }
 
 // kinesisRecordKeys returns the partition keys of a Kinesis batch.
-func kinesisRecordKeys(records []eventbus.KinesisRecord) map[string]struct{} {
+func kinesisRecordKeys(records []invokers.KinesisRecord) map[string]struct{} {
 	keys := make(map[string]struct{}, len(records))
 	for _, rec := range records {
 		keys[rec.PartitionKey] = struct{}{}
@@ -59,7 +59,7 @@ func kinesisRecordKeys(records []eventbus.KinesisRecord) map[string]struct{} {
 // dynamoDBRecordKeys returns the canonical item keys of a DynamoDB Streams
 // batch; Go renders map keys in sorted order, so fmt.Sprint is a stable
 // canonical form.
-func dynamoDBRecordKeys(records []eventbus.DynamoDBStreamRecord) map[string]struct{} {
+func dynamoDBRecordKeys(records []invokers.DynamoDBStreamRecord) map[string]struct{} {
 	keys := make(map[string]struct{}, len(records))
 	for i := range records {
 		if keyMap, ok := records[i].Dynamodb["Keys"].(map[string]interface{}); ok {

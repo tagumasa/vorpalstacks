@@ -115,9 +115,9 @@ func (s *AppSyncService) graphqlErrorResponse(status int, errType, message strin
 	}
 }
 
-// wrapBus wraps an eventbus.Bus into a BusPublisher for use by the GraphQL engine.
+// wrapBus wraps an eventbus.ServiceBus into a BusPublisher for use by the GraphQL engine.
 // Returns nil-safe adapter that silently drops events when bus is nil.
-func wrapBus(bus eventbus.Bus) BusPublisher {
+func wrapBus(bus eventbus.ServiceBus) BusPublisher {
 	if bus == nil {
 		return nil
 	}

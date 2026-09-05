@@ -10,14 +10,14 @@ import (
 	"fmt"
 	"io"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/eventbus"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // s3invoker returns the S3 invoker from the EventBus, or nil if unavailable.
-func (s *DynamoDBService) s3invoker() eventbus.S3Invoker {
+func (s *DynamoDBService) s3invoker() invokers.S3Invoker {
 	if s.bus == nil {
 		return nil
 	}

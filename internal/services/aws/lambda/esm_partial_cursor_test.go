@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -174,7 +174,7 @@ func TestKinesisParallelFoldClampsAtPartialBatch(t *testing.T) {
 	}
 
 	stream := &scriptedKinesisStream{
-		shards: []eventbus.ShardInfo{{ShardID: "shard-0"}},
+		shards: []invokers.ShardInfo{{ShardID: "shard-0"}},
 		floor:  "0",
 	}
 	for _, seq := range []string{"1", "2", "3", "4"} {

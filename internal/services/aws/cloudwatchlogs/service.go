@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -22,9 +23,9 @@ type LogsService struct {
 	accountID       string
 	dataPath        string
 	logsStores      sync.Map // region → *logsstore.Store
-	cwMetricInvoker eventbus.CloudWatchMetricInvoker
-	bus             eventbus.Bus
-	kms             eventbus.KMSInvoker
+	cwMetricInvoker invokers.CloudWatchMetricInvoker
+	bus             eventbus.ServiceBus
+	kms             invokers.KMSInvoker
 	ctx             context.Context
 	cancel          context.CancelFunc
 	wg              sync.WaitGroup
@@ -51,15 +52,24 @@ func NewLogsService(storageMgr *storage.RegionStorageManager, accountID, dataPat
 // SetEventBus injects the event bus and registers handlers for CloudWatch Logs
 // delivery, Lambda log writes, API Gateway access logs, and direct log event
 // ingestion from EventBridge/Scheduler targets.
-func (s *LogsService) SetEventBus(bus eventbus.Bus) {
+func (s *LogsService) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
 	if bus != nil {
 		s.kms = bus.KMSInvoker()
 	}
-	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
-	_, _ = eventbus.SubscribeTyped[*eventbus.LambdaLogWriteEvent](bus, s.handleLambdaLogWrite, eventbus.WithAsync())
-	_, _ = eventbus.SubscribeTyped[*eventbus.APIGatewayAccessLogEvent](bus, s.handleAPIGatewayAccessLog, eventbus.WithAsync())
-	_, _ = eventbus.SubscribeTyped[*eventbus.CloudWatchLogsPutEvent](bus, s.handleDirectPutLogEvents, eventbus.WithAsync())
+	if _, err := eventbus.SubscribeTyped[*eventbus.CloudWatchLogDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("logs: subscribe CloudWatchLogDeliveryEvent: %w", err)
+	}
+	if _, err := eventbus.SubscribeTyped[*eventbus.LambdaLogWriteEvent](bus, s.handleLambdaLogWrite, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("logs: subscribe LambdaLogWriteEvent: %w", err)
+	}
+	if _, err := eventbus.SubscribeTyped[*eventbus.APIGatewayAccessLogEvent](bus, s.handleAPIGatewayAccessLog, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("logs: subscribe APIGatewayAccessLogEvent: %w", err)
+	}
+	if _, err := eventbus.SubscribeTyped[*eventbus.CloudWatchLogsPutEvent](bus, s.handleDirectPutLogEvents, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("logs: subscribe CloudWatchLogsPutEvent: %w", err)
+	}
+	return nil
 }
 
 func (s *LogsService) store(reqCtx *request.RequestContext) (*logsstore.Store, error) {
@@ -102,7 +112,7 @@ func (s *LogsService) GetStoreForRegion(region string) (*logsstore.Store, error)
 
 // SetCloudWatchMetricInvoker injects the CloudWatch metric invoker for emitting
 // metric data when metric filters match log events.
-func (s *LogsService) SetCloudWatchMetricInvoker(invoker eventbus.CloudWatchMetricInvoker) {
+func (s *LogsService) SetCloudWatchMetricInvoker(invoker invokers.CloudWatchMetricInvoker) {
 	s.cwMetricInvoker = invoker
 }
 

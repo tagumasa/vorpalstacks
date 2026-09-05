@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
@@ -56,14 +57,14 @@ func (s *stubImportS3) DeleteObject(_ context.Context, _, bucket, key string) er
 	return nil
 }
 
-func (s *stubImportS3) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]eventbus.S3ObjectEntry, error) {
+func (s *stubImportS3) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]invokers.S3ObjectEntry, error) {
 	keys, err := s.ListObjects(ctx, region, bucket, prefix, maxKeys)
 	if err != nil {
 		return nil, err
 	}
-	entries := make([]eventbus.S3ObjectEntry, 0, len(keys))
+	entries := make([]invokers.S3ObjectEntry, 0, len(keys))
 	for _, key := range keys {
-		entries = append(entries, eventbus.S3ObjectEntry{
+		entries = append(entries, invokers.S3ObjectEntry{
 			Key:          key,
 			ETag:         "stub-etag",
 			LastModified: 0,

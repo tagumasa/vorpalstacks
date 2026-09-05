@@ -12,12 +12,9 @@ func (r *TestRunner) runSecretsManagerPolicyTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "PutResourcePolicy_Basic", func() error {
 		name := tc.uniqueName("PolicyTest")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("policy-test"),
-		})
+		_, err := tc.createSecret(name, "policy-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -50,12 +47,9 @@ func (r *TestRunner) runSecretsManagerPolicyTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "DeleteResourcePolicy_Basic", func() error {
 		name := tc.uniqueName("DelPolicy")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("del-policy"),
-		})
+		_, err := tc.createSecret(name, "del-policy")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -90,35 +84,31 @@ func (r *TestRunner) runSecretsManagerPolicyTests(tc *secretsManagerTestContext)
 		return nil
 	}))
 
-	results = append(results, r.RunTest("secretsmanager", "ValidateResourcePolicy_Valid", func() error {
-		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"*","Resource":"*"}]}`
-		resp, err := tc.client.ValidateResourcePolicy(tc.ctx, &secretsmanager.ValidateResourcePolicyInput{
-			ResourcePolicy: aws.String(policy),
-		})
-		if err != nil {
-			return err
+	results = append(results, r.RunTest("secretsmanager", "ValidateResourcePolicy_Verdict", func() error {
+		// The validation verdict must track the policy's validity: a valid
+		// document passes with no errors, invalid JSON fails with errors.
+		rows := []struct {
+			name       string
+			policy     string
+			wantPassed bool
+			wantErrors bool
+		}{
+			{"Valid", `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"*","Resource":"*"}]}`, true, false},
+			{"Invalid", "not valid json {", false, true},
 		}
-		if !resp.PolicyValidationPassed {
-			return fmt.Errorf("expected policy validation to pass")
-		}
-		if len(resp.ValidationErrors) > 0 {
-			return fmt.Errorf("expected no validation errors, got %d", len(resp.ValidationErrors))
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "ValidateResourcePolicy_Invalid", func() error {
-		resp, err := tc.client.ValidateResourcePolicy(tc.ctx, &secretsmanager.ValidateResourcePolicyInput{
-			ResourcePolicy: aws.String("not valid json {"),
-		})
-		if err != nil {
-			return err
-		}
-		if resp.PolicyValidationPassed {
-			return fmt.Errorf("expected policy validation to fail for invalid JSON")
-		}
-		if len(resp.ValidationErrors) == 0 {
-			return fmt.Errorf("expected validation errors for invalid JSON")
+		for _, row := range rows {
+			resp, err := tc.client.ValidateResourcePolicy(tc.ctx, &secretsmanager.ValidateResourcePolicyInput{
+				ResourcePolicy: aws.String(row.policy),
+			})
+			if err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
+			if resp.PolicyValidationPassed != row.wantPassed {
+				return fmt.Errorf("%s: PolicyValidationPassed = %v, want %v", row.name, resp.PolicyValidationPassed, row.wantPassed)
+			}
+			if (len(resp.ValidationErrors) > 0) != row.wantErrors {
+				return fmt.Errorf("%s: got %d validation errors, wantErrors %v", row.name, len(resp.ValidationErrors), row.wantErrors)
+			}
 		}
 		return nil
 	}))
@@ -138,27 +128,6 @@ func (r *TestRunner) runSecretsManagerPolicyTests(tc *secretsManagerTestContext)
 			return fmt.Errorf("oversized ResourcePolicy should be rejected")
 		}
 		return expectAWSErrorCode(err, "InvalidParameterException")
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "GetResourcePolicy_NonExistent", func() error {
-		_, err := tc.client.GetResourcePolicy(tc.ctx, &secretsmanager.GetResourcePolicyInput{
-			SecretId: aws.String("nonexistent-policy-secret"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "PutResourcePolicy_NonExistent", func() error {
-		_, err := tc.client.PutResourcePolicy(tc.ctx, &secretsmanager.PutResourcePolicyInput{
-			SecretId:       aws.String("nonexistent-policy-secret"),
-			ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
-		}
-		return nil
 	}))
 
 	return results

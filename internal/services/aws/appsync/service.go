@@ -20,7 +20,7 @@ import (
 type AppSyncService struct {
 	accountID      string
 	stores         sync.Map
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	schemaCache    sync.Map
 	schemaWg       sync.WaitGroup
 	eventServer    *EventServer
@@ -38,7 +38,7 @@ func NewAppSyncService(accountID string) *AppSyncService {
 
 // SetEventBus injects the global event bus for WebSocket pub/sub fan-out
 // and cross-service event delivery.
-func (s *AppSyncService) SetEventBus(bus eventbus.Bus) {
+func (s *AppSyncService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 	s.eventServer.SetEventBus(bus)
 	s.eventServer.SetStoreLookup(s.lookupStoreByApiId)

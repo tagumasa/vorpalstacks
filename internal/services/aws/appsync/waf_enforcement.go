@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/headerorder"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/utils/aws/arn"
 )
 
@@ -18,16 +18,16 @@ import (
 // traffic, which is the state before the cross-service wiring runs.
 type wafEnforcement struct {
 	mu   sync.RWMutex
-	insp eventbus.WebACLInspector
+	insp waf.WebACLInspector
 }
 
-func (w *wafEnforcement) setInspector(inspector eventbus.WebACLInspector) {
+func (w *wafEnforcement) setInspector(inspector waf.WebACLInspector) {
 	w.mu.Lock()
 	w.insp = inspector
 	w.mu.Unlock()
 }
 
-func (w *wafEnforcement) currentInspector() eventbus.WebACLInspector {
+func (w *wafEnforcement) currentInspector() waf.WebACLInspector {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.insp
@@ -36,7 +36,7 @@ func (w *wafEnforcement) currentInspector() eventbus.WebACLInspector {
 // SetWebACLInspector injects the WAF request-inspection entry point so
 // WebACLs associated with GraphQL APIs are enforced on GraphQL
 // execution traffic.
-func (s *AppSyncService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *AppSyncService) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.waf.setInspector(inspector)
 }
 
@@ -64,9 +64,9 @@ func (s *AppSyncService) enforceWebACL(ctx context.Context, reqCtx *request.Requ
 	}
 
 	apiArn := arn.NewARNBuilder(reqCtx.GetAccountID(), reqCtx.GetRegion()).AppSync().GraphQLApi(apiId)
-	inspHeaders := eventbus.RequestHeadersWithHost(headers, host)
+	inspHeaders := waf.RequestHeadersWithHost(headers, host)
 	headerOrder, _ := headerorder.FromContext(ctx, inspHeaders)
-	result, err := inspector.InspectWebACLRequest(ctx, reqCtx.GetRegion(), apiArn, eventbus.BuildWebACLInspectionRequest(
+	result, err := inspector.InspectWebACLRequest(ctx, reqCtx.GetRegion(), apiArn, waf.BuildWebACLInspectionRequest(
 		http.MethodPost, "/v1/apis/"+apiId+"/graphql", "", reqCtx.SourceIP, "",
 		inspHeaders, headerOrder, inspBody, bodyTruncated,
 	))

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"vorpalstacks/internal/core/logs"
 
@@ -29,6 +30,7 @@ type ContainerLifecycle interface {
 	ListContainers(ctx context.Context, all bool) ([]ContainerInfo, error)
 	CreateFileInContainer(ctx context.Context, containerID string, path string, content []byte, mode os.FileMode) error
 	Exec(ctx context.Context, containerID string, cfg ExecConfig) (*ExecResult, error)
+	ReadLogWindow(ctx context.Context, containerID string, since time.Time) (string, time.Time, error)
 	Close() error
 }
 

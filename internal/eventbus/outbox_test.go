@@ -130,7 +130,7 @@ func TestPebbleOutboxListPending(t *testing.T) {
 		}
 	}
 
-	pending, err := store.ListPending(context.Background(), 10)
+	pending, _, err := store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,7 +395,7 @@ func TestCleanupNeverPurgesPending(t *testing.T) {
 	if read == nil {
 		t.Fatal("pending entry was purged by age")
 	}
-	pending, err := store.ListPending(context.Background(), 10)
+	pending, _, err := store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func TestStatusIndexConsistencyAcrossTransitions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pending, err := store.ListPending(context.Background(), 10)
+	pending, _, err := store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil || len(pending) != 1 {
 		t.Fatalf("expected the fresh entry in the pending scan: %d, err=%v", len(pending), err)
 	}
@@ -434,7 +434,7 @@ func TestStatusIndexConsistencyAcrossTransitions(t *testing.T) {
 	if ok, err := store.UpdateStatus(context.Background(), "evt-transition", OutboxPending, OutboxProcessing); err != nil || !ok {
 		t.Fatalf("Pending→Processing failed: ok=%v err=%v", ok, err)
 	}
-	pending, err = store.ListPending(context.Background(), 10)
+	pending, _, err = store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil || len(pending) != 0 {
 		t.Fatalf("processing entry still visible in the pending scan: %d, err=%v", len(pending), err)
 	}
@@ -444,7 +444,7 @@ func TestStatusIndexConsistencyAcrossTransitions(t *testing.T) {
 	if err != nil || reset != 1 {
 		t.Fatalf("ResetStaleProcessing failed: reset=%d err=%v", reset, err)
 	}
-	pending, err = store.ListPending(context.Background(), 10)
+	pending, _, err = store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil || len(pending) != 1 {
 		t.Fatalf("recovered entry missing from the pending scan: %d, err=%v", len(pending), err)
 	}
@@ -455,7 +455,7 @@ func TestStatusIndexConsistencyAcrossTransitions(t *testing.T) {
 	if ok, err := store.UpdateStatus(context.Background(), "evt-transition", OutboxProcessing, OutboxDelivered); err != nil || !ok {
 		t.Fatalf("Processing→Delivered failed: ok=%v err=%v", ok, err)
 	}
-	pending, err = store.ListPending(context.Background(), 10)
+	pending, _, err = store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil || len(pending) != 0 {
 		t.Fatalf("delivered entry still visible in the pending scan: %d, err=%v", len(pending), err)
 	}
@@ -474,7 +474,7 @@ func TestStatusIndexConsistencyAcrossTransitions(t *testing.T) {
 	if err := store.Write(context.Background(), entry); err != nil {
 		t.Fatal(err)
 	}
-	pending, err = store.ListPending(context.Background(), 10)
+	pending, _, err = store.ListPendingFrom(context.Background(), 10, "")
 	if err != nil || len(pending) != 1 {
 		t.Fatalf("re-written entry missing from the pending scan: %d, err=%v", len(pending), err)
 	}
@@ -527,7 +527,7 @@ func TestPebbleOutboxConcurrentWrites(t *testing.T) {
 		t.Fatalf("%d/%d concurrent writes failed", writeErrors, n)
 	}
 
-	pending, err := store.ListPending(context.Background(), n+10)
+	pending, _, err := store.ListPendingFrom(context.Background(), n+10, "")
 	if err != nil {
 		t.Fatal(err)
 	}

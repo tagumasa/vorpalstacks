@@ -3,24 +3,24 @@ package dynamodb
 import (
 	"context"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // ddbStreamsInvoker adapts the DynamoDB service to the
-// eventbus.DynamoDBStreamsInvoker interface. It delegates to the
+// invokers.DynamoDBStreamsInvoker interface. It delegates to the
 // per-region StreamStore.
 type ddbStreamsInvoker struct {
 	svc *DynamoDBService
 }
 
-// NewDynamoDBStreamsInvoker creates an eventbus.DynamoDBStreamsInvoker
+// NewDynamoDBStreamsInvoker creates an invokers.DynamoDBStreamsInvoker
 // backed by the given DynamoDB service.
-func NewDynamoDBStreamsInvoker(svc *DynamoDBService) eventbus.DynamoDBStreamsInvoker {
+func NewDynamoDBStreamsInvoker(svc *DynamoDBService) invokers.DynamoDBStreamsInvoker {
 	return &ddbStreamsInvoker{svc: svc}
 }
 
-func (i *ddbStreamsInvoker) GetRecords(ctx context.Context, region, tableName string, fromSeq int64, limit int) ([]eventbus.DynamoDBStreamRecord, int64, error) {
+func (i *ddbStreamsInvoker) GetRecords(ctx context.Context, region, tableName string, fromSeq int64, limit int) ([]invokers.DynamoDBStreamRecord, int64, error) {
 	store, err := i.svc.GetCachedStoreForRegion(region)
 	if err != nil {
 		return nil, 0, err
@@ -31,7 +31,7 @@ func (i *ddbStreamsInvoker) GetRecords(ctx context.Context, region, tableName st
 		return nil, 0, err
 	}
 
-	result := make([]eventbus.DynamoDBStreamRecord, len(records))
+	result := make([]invokers.DynamoDBStreamRecord, len(records))
 	for idx, rec := range records {
 		dynamodbMap := map[string]interface{}{
 			"Keys":                        rec.Dynamodb.Keys,
@@ -47,7 +47,7 @@ func (i *ddbStreamsInvoker) GetRecords(ctx context.Context, region, tableName st
 			dynamodbMap["OldImage"] = rec.Dynamodb.OldImage
 		}
 
-		result[idx] = eventbus.DynamoDBStreamRecord{
+		result[idx] = invokers.DynamoDBStreamRecord{
 			EventID:        rec.EventID,
 			EventName:      string(rec.EventName),
 			EventVersion:   rec.EventVersion,

@@ -157,7 +157,6 @@ func NewServer(cfg *Config) (*Server, error) {
 	outbox := eventbus.NewPebbleOutboxStore(pebbleDB)
 
 	registry := eventbus.NewEventRegistry()
-	registry.Register("service:invoke", func() eventbus.Event { return &eventbus.ServiceInvokeRequest{} })
 	registry.Register("sns:deliver", func() eventbus.Event { return &eventbus.SNSDeliveryEvent{} })
 	registry.Register("events:deliver", func() eventbus.Event { return &eventbus.EventBridgeDeliveryEvent{} })
 	registry.Register("scheduler:fired", func() eventbus.Event { return &eventbus.ScheduleFiredEvent{} })

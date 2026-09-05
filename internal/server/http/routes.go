@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"vorpalstacks/internal/eventbus"
+	waf "vorpalstacks/internal/common/invokers/waf"
 )
 
 // registerRoutes sets up the HTTP routing table, installing the classify
@@ -35,7 +35,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 			// reachable through this server (AppSync GraphQL, the Cognito
 			// user pools API) direct their CAPTCHA and Challenge
 			// interstitials here.
-			if r.URL.Path == eventbus.ChallengeEndpointPath {
+			if r.URL.Path == waf.ChallengeEndpointPath {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -70,7 +70,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 		})
 	})
 
-	r.HandleFunc(eventbus.ChallengeEndpointPath, s.serveWAFTokenExchange)
+	r.HandleFunc(waf.ChallengeEndpointPath, s.serveWAFTokenExchange)
 
 	services, err := s.dispatcher.ListServices()
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Server) registerRoutes(r chi.Router) {
 func (s *Server) registerChainRoutes(r chi.Router) {
 	// The reserved aws-waf-token exchange path precedes the gateway's
 	// catch-all so the interstitial token exchange stays reachable.
-	r.HandleFunc(eventbus.ChallengeEndpointPath, s.serveWAFTokenExchange)
+	r.HandleFunc(waf.ChallengeEndpointPath, s.serveWAFTokenExchange)
 
 	if apiGatewayRuntime := s.APIGatewayRuntimeHandler(); apiGatewayRuntime != nil {
 		r.HandleFunc("/restapis/{restApiId}/{stageName}/_user_request_/*", func(w http.ResponseWriter, req *http.Request) {
@@ -119,7 +119,7 @@ func (s *Server) registerChainRoutes(r chi.Router) {
 // endpoint: it delegates to the WAFv2 service when the inspector supports
 // the exchange and reports the endpoint unavailable otherwise.
 func (s *Server) serveWAFTokenExchange(w http.ResponseWriter, req *http.Request) {
-	if eventbus.ServeWAFTokenExchange(req.Context(), s.EventBus().WebACLInspector(), w, req) {
+	if waf.ServeWAFTokenExchange(req.Context(), s.EventBus().WebACLInspector(), w, req) {
 		return
 	}
 	http.Error(w, "challenge endpoint unavailable", http.StatusNotFound)

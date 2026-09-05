@@ -26,11 +26,9 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 		}
 		defer tc.forceDeleteSecret(name)
 
-		resp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		resp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		tagMap := make(map[string]string)
 		for _, t := range resp.Tags {
@@ -47,12 +45,9 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 
 	results = append(results, r.RunTest("secretsmanager", "TagResource_ReservedPrefixRejected", func() error {
 		name := tc.uniqueName("TagReserved")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("tag-reserved-test"),
-		})
+		_, err := tc.createSecret(name, "tag-reserved-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -70,12 +65,9 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 
 	results = append(results, r.RunTest("secretsmanager", "TagResource_Basic", func() error {
 		name := tc.uniqueName("TagTest")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("tag-test"),
-		})
+		_, err := tc.createSecret(name, "tag-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -90,11 +82,9 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 			return err
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe after tag: %v", err)
+			return fmt.Errorf("describe after tag: %w", err)
 		}
 		tagMap := make(map[string]string)
 		for _, t := range descResp.Tags {
@@ -131,11 +121,9 @@ func (r *TestRunner) runSecretsManagerTagTests(tc *secretsManagerTestContext) []
 			return fmt.Errorf("untag: %v", err)
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		for _, t := range descResp.Tags {
 			if t.Key != nil && *t.Key == "env" {

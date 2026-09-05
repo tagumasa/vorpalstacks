@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -18,18 +19,18 @@ import (
 // the methods the delivery path calls need implementations.
 
 type fakeDestinationBus struct {
-	eventbus.Bus
+	eventbus.ServiceBus
 	sqs *fakeSQSDestination
 	sns *fakeSNSDestination
 	s3  *fakeS3Destination
 }
 
-func (b *fakeDestinationBus) SQSInvoker() eventbus.SQSInvoker { return b.sqs }
-func (b *fakeDestinationBus) SNSInvoker() eventbus.SNSInvoker { return b.sns }
-func (b *fakeDestinationBus) S3Invoker() eventbus.S3Invoker   { return b.s3 }
+func (b *fakeDestinationBus) SQSInvoker() invokers.SQSInvoker { return b.sqs }
+func (b *fakeDestinationBus) SNSInvoker() invokers.SNSInvoker { return b.sns }
+func (b *fakeDestinationBus) S3Invoker() invokers.S3Invoker   { return b.s3 }
 
 type fakeSQSDestination struct {
-	eventbus.SQSInvoker
+	invokers.SQSInvoker
 	queueURL string
 	bodies   []string
 }
@@ -41,13 +42,13 @@ func (f *fakeSQSDestination) GetQueueByName(ctx context.Context, region, name st
 	return "", fmt.Errorf("queue %s not found", name)
 }
 
-func (f *fakeSQSDestination) SendMessage(ctx context.Context, region, queueURL, body string, opts eventbus.SQSSendOptions) (string, string, error) {
+func (f *fakeSQSDestination) SendMessage(ctx context.Context, region, queueURL, body string, opts invokers.SQSSendOptions) (string, string, error) {
 	f.bodies = append(f.bodies, body)
 	return "id", "md5", nil
 }
 
 type fakeSNSDestination struct {
-	eventbus.SNSInvoker
+	invokers.SNSInvoker
 	messages []string
 }
 
@@ -57,7 +58,7 @@ func (f *fakeSNSDestination) PublishToTopic(ctx context.Context, topicARN, messa
 }
 
 type fakeS3Destination struct {
-	eventbus.S3Invoker
+	invokers.S3Invoker
 	keys    []string
 	bodies  []string
 	regions []string
@@ -70,7 +71,7 @@ func (f *fakeS3Destination) PutObject(ctx context.Context, region, bucket, key s
 	return nil
 }
 
-func destinationTestPoller(bus eventbus.Bus) *esmPoller {
+func destinationTestPoller(bus eventbus.ServiceBus) *esmPoller {
 	return &esmPoller{bus: bus}
 }
 
@@ -261,7 +262,7 @@ func TestDeliverDiscardedBatch_NoDestination(t *testing.T) {
 // DDBStreamBatchInfo member name and second-precision RFC 3339 arrival
 // times.
 func TestStreamFailureBatchInfoOf_DynamoDB(t *testing.T) {
-	record := &eventbus.DynamoDBStreamRecord{
+	record := &invokers.DynamoDBStreamRecord{
 		Dynamodb: map[string]interface{}{
 			"SequenceNumber":              "800000000003126276362",
 			"ApproximateCreationDateTime": float64(1573695200),
@@ -289,11 +290,11 @@ func TestDiscardExpiredDynamoDBRecords(t *testing.T) {
 	p := destinationTestPoller(bus)
 	src := testStreamSource("dynamodb", "shardId-000000000001")
 
-	oldRecord := eventbus.DynamoDBStreamRecord{Dynamodb: map[string]interface{}{
+	oldRecord := invokers.DynamoDBStreamRecord{Dynamodb: map[string]interface{}{
 		"SequenceNumber":              "1",
 		"ApproximateCreationDateTime": float64(time.Now().Add(-2 * time.Hour).Unix()),
 	}}
-	freshRecord := eventbus.DynamoDBStreamRecord{Dynamodb: map[string]interface{}{
+	freshRecord := invokers.DynamoDBStreamRecord{Dynamodb: map[string]interface{}{
 		"SequenceNumber":              "2",
 		"ApproximateCreationDateTime": float64(time.Now().Unix()),
 	}}
@@ -301,7 +302,7 @@ func TestDiscardExpiredDynamoDBRecords(t *testing.T) {
 	mapping := destinationTestMapping("arn:aws:sqs:us-east-1:123456789012:dest-queue")
 	mapping.MaximumRecordAgeInSeconds = 3600
 	fresh := p.discardExpiredDynamoDBRecords(context.Background(), mapping, src,
-		[]eventbus.DynamoDBStreamRecord{oldRecord, freshRecord})
+		[]invokers.DynamoDBStreamRecord{oldRecord, freshRecord})
 	if len(fresh) != 1 || fresh[0].Dynamodb["SequenceNumber"] != "2" {
 		t.Fatalf("fresh remainder = %+v, want only sequence 2", fresh)
 	}
@@ -311,7 +312,7 @@ func TestDiscardExpiredDynamoDBRecords(t *testing.T) {
 
 	mapping.MaximumRecordAgeInSeconds = -1
 	kept := p.discardExpiredDynamoDBRecords(context.Background(), mapping, src,
-		[]eventbus.DynamoDBStreamRecord{oldRecord, freshRecord})
+		[]invokers.DynamoDBStreamRecord{oldRecord, freshRecord})
 	if len(kept) != 2 {
 		t.Fatalf("-1 must keep every record, got %d", len(kept))
 	}

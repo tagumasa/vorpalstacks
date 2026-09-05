@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
-// GetObject implements the eventbus.S3Invoker interface. It retrieves the
+// GetObject implements the invokers.S3Invoker interface. It retrieves the
 // content of an object by region, bucket and key, returning the full byte
 // content.
 func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, maxBytes int64) ([]byte, error) {
@@ -31,7 +31,7 @@ func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, m
 	return data, nil
 }
 
-// GetObjectVersion implements the eventbus.S3Invoker interface. It
+// GetObjectVersion implements the invokers.S3Invoker interface. It
 // retrieves the content of a specific object version; an empty versionID
 // reads the latest version, matching the store's version-aware read.
 func (s *S3Service) GetObjectVersion(ctx context.Context, region, bucket, key, versionID string, maxBytes int64) ([]byte, error) {
@@ -67,14 +67,14 @@ func (s *S3Service) PutObject(ctx context.Context, region, bucket, key string, d
 // under a prefix.
 const maxListAllKeys = 100000
 
-// BucketExists implements the eventbus.S3Invoker interface. It reports
+// BucketExists implements the invokers.S3Invoker interface. It reports
 // whether the bucket exists so cross-service consumers can tell a missing
 // source bucket apart from an empty one.
 func (s *S3Service) BucketExists(ctx context.Context, region, bucket string) (bool, error) {
 	return s.s3Store.Buckets(region).Exists(bucket), nil
 }
 
-// EnsureBucket implements the eventbus.S3Invoker interface. It creates the
+// EnsureBucket implements the invokers.S3Invoker interface. It creates the
 // bucket when it does not exist yet so services that own an internal bucket
 // do not depend on manual provisioning. A concurrent creator winning the
 // race is fine: the bucket exists, which is all this method guarantees.
@@ -92,7 +92,7 @@ func (s *S3Service) EnsureBucket(ctx context.Context, region, bucket string) err
 	return nil
 }
 
-// DeleteObject implements the eventbus.S3Invoker interface. It removes the
+// DeleteObject implements the invokers.S3Invoker interface. It removes the
 // object so transient payloads can be purged after use.
 func (s *S3Service) DeleteObject(ctx context.Context, region, bucket, key string) error {
 	if err := s.s3Store.Objects(region).Delete(ctx, bucket, key); err != nil {
@@ -141,17 +141,17 @@ func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix stri
 	return keys, nil
 }
 
-// ListObjectEntries implements the eventbus.S3Invoker interface. It follows
+// ListObjectEntries implements the invokers.S3Invoker interface. It follows
 // the same pagination and safety-cap rules as ListObjects but returns the
 // full metadata records the ListObjectsV2 item shape exposes (Step Functions
 // Distributed Map ItemReader datasets).
-func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]eventbus.S3ObjectEntry, error) {
+func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefix string, maxKeys int) ([]invokers.S3ObjectEntry, error) {
 	objs := s.s3Store.Objects(region)
 
-	collect := func(listResult *s3store.ObjectListResult) []eventbus.S3ObjectEntry {
-		entries := make([]eventbus.S3ObjectEntry, 0, len(listResult.Objects))
+	collect := func(listResult *s3store.ObjectListResult) []invokers.S3ObjectEntry {
+		entries := make([]invokers.S3ObjectEntry, 0, len(listResult.Objects))
 		for _, o := range listResult.Objects {
-			entries = append(entries, eventbus.S3ObjectEntry{
+			entries = append(entries, invokers.S3ObjectEntry{
 				Key:          o.Key,
 				ETag:         o.ETag,
 				LastModified: o.LastModified.Unix(),
@@ -163,7 +163,7 @@ func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefi
 	}
 
 	if maxKeys <= 0 {
-		var all []eventbus.S3ObjectEntry
+		var all []invokers.S3ObjectEntry
 		marker := ""
 		for {
 			result, err := objs.List(bucket, prefix, "", marker, 1000)
@@ -189,4 +189,4 @@ func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefi
 	return collect(result), nil
 }
 
-var _ eventbus.S3Invoker = (*S3Service)(nil)
+var _ invokers.S3Invoker = (*S3Service)(nil)

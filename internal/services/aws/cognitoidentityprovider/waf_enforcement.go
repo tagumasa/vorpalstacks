@@ -10,10 +10,10 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/headerorder"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -22,16 +22,16 @@ import (
 // traffic, which is the state before the cross-service wiring runs.
 type wafEnforcement struct {
 	mu   sync.RWMutex
-	insp eventbus.WebACLInspector
+	insp waf.WebACLInspector
 }
 
-func (w *wafEnforcement) setInspector(inspector eventbus.WebACLInspector) {
+func (w *wafEnforcement) setInspector(inspector waf.WebACLInspector) {
 	w.mu.Lock()
 	w.insp = inspector
 	w.mu.Unlock()
 }
 
-func (w *wafEnforcement) currentInspector() eventbus.WebACLInspector {
+func (w *wafEnforcement) currentInspector() waf.WebACLInspector {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.insp
@@ -40,7 +40,7 @@ func (w *wafEnforcement) currentInspector() eventbus.WebACLInspector {
 // SetWebACLInspector injects the WAF request-inspection entry point so
 // WebACLs associated with user pools are enforced on the hosted UI and
 // the public user pools API operations.
-func (s *CognitoService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *CognitoService) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.waf.setInspector(inspector)
 }
 
@@ -114,9 +114,9 @@ func (s *CognitoService) enforceWAFOnAPIRequest(ctx context.Context, reqCtx *req
 		truncated = true
 	}
 
-	inspHeaders := eventbus.RequestHeadersWithHost(req.Headers, req.Host)
+	inspHeaders := waf.RequestHeadersWithHost(req.Headers, req.Host)
 	headerOrder, _ := headerorder.FromContext(ctx, inspHeaders)
-	result, err := inspector.InspectWebACLRequest(ctx, reqCtx.GetRegion(), pool.Arn, eventbus.BuildWebACLInspectionRequest(
+	result, err := inspector.InspectWebACLRequest(ctx, reqCtx.GetRegion(), pool.Arn, waf.BuildWebACLInspectionRequest(
 		http.MethodPost, "/", "", reqCtx.SourceIP, "",
 		inspHeaders, headerOrder, body, truncated,
 	))
@@ -239,9 +239,9 @@ func (s *CognitoService) enforceWAFOnHostedUI(w http.ResponseWriter, r *http.Req
 	if inspector == nil || poolARN == "" {
 		return false
 	}
-	inspHeaders := eventbus.RequestHeadersWithHost(r.Header, r.Host)
+	inspHeaders := waf.RequestHeadersWithHost(r.Header, r.Host)
 	headerOrder, _ := headerorder.FromContext(r.Context(), inspHeaders)
-	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, poolARN, eventbus.BuildWebACLInspectionRequest(
+	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, poolARN, waf.BuildWebACLInspectionRequest(
 		r.Method, r.URL.Path, r.URL.RawQuery, remoteAddrHostOf(r.RemoteAddr), r.Proto,
 		inspHeaders, headerOrder, nil, false,
 	))

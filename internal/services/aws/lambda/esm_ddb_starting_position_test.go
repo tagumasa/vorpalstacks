@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -19,13 +20,13 @@ import (
 // GetRecords reads strictly after the requested position.
 type scriptedDynamoDBStream struct {
 	mu      sync.Mutex
-	records []eventbus.DynamoDBStreamRecord
+	records []invokers.DynamoDBStreamRecord
 }
 
 func (s *scriptedDynamoDBStream) publish(seq int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.records = append(s.records, eventbus.DynamoDBStreamRecord{
+	s.records = append(s.records, invokers.DynamoDBStreamRecord{
 		EventID:      fmt.Sprintf("id-%d", seq),
 		EventName:    "INSERT",
 		EventVersion: "1.1",
@@ -41,16 +42,16 @@ func (s *scriptedDynamoDBStream) publish(seq int64) {
 	})
 }
 
-func (s *scriptedDynamoDBStream) recordSeq(r eventbus.DynamoDBStreamRecord) int64 {
+func (s *scriptedDynamoDBStream) recordSeq(r invokers.DynamoDBStreamRecord) int64 {
 	seq, _ := r.Dynamodb["SequenceNumber"].(string)
 	v, _ := strconv.ParseInt(seq, 10, 64)
 	return v
 }
 
-func (s *scriptedDynamoDBStream) GetRecords(_ context.Context, _, _ string, fromSeq int64, limit int) ([]eventbus.DynamoDBStreamRecord, int64, error) {
+func (s *scriptedDynamoDBStream) GetRecords(_ context.Context, _, _ string, fromSeq int64, limit int) ([]invokers.DynamoDBStreamRecord, int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var out []eventbus.DynamoDBStreamRecord
+	var out []invokers.DynamoDBStreamRecord
 	for _, r := range s.records {
 		if s.recordSeq(r) <= fromSeq {
 			continue
@@ -81,11 +82,11 @@ func (s *scriptedDynamoDBStream) ShardIDForStream(string) string { return "shard
 // fakeDDBStreamsBus exposes only the DynamoDB Streams invoker; the poller
 // calls nothing else on the bus for a mapping without failure destinations.
 type fakeDDBStreamsBus struct {
-	eventbus.Bus
+	eventbus.ServiceBus
 	invoker *scriptedDynamoDBStream
 }
 
-func (b *fakeDDBStreamsBus) DynamoDBStreamsInvoker() eventbus.DynamoDBStreamsInvoker {
+func (b *fakeDDBStreamsBus) DynamoDBStreamsInvoker() invokers.DynamoDBStreamsInvoker {
 	return b.invoker
 }
 

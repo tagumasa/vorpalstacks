@@ -200,12 +200,6 @@ func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 
 	allSkipped := true
 	for _, sub := range snapshot {
-		if !sub.authorized {
-			continue
-		}
-		if sub.filter != nil && !sub.filter.Match(event) {
-			continue
-		}
 		allSkipped = false
 
 		result, acquired := b.dispatchWithSemaphores(ctx, sub, event)

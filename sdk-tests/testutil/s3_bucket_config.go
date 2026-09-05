@@ -20,19 +20,12 @@ import (
 // test, enables versioning on it (a replication requirement), and returns
 // its ARN together with a cleanup closure that empties and deletes it.
 func s3CreateReplicationDest(ctx context.Context, client *s3.Client, name string) (string, func(), error) {
-	if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(name),
-	}); err != nil {
-		return "", nil, fmt.Errorf("CreateBucket (replication-dest) failed: %w", err)
+	if err := s3CreateBucket(ctx, client, name); err != nil {
+		return "", nil, err
 	}
-	if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-		Bucket: aws.String(name),
-		VersioningConfiguration: &types.VersioningConfiguration{
-			Status: types.BucketVersioningStatusEnabled,
-		},
-	}); err != nil {
+	if err := s3EnableVersioning(ctx, client, name); err != nil {
 		s3CleanupBucket(ctx, client, name)
-		return "", nil, fmt.Errorf("PutBucketVersioning (replication-dest) failed: %w", err)
+		return "", nil, err
 	}
 	return "arn:aws:s3:::" + name, func() { s3CleanupBucket(ctx, client, name) }, nil
 }
@@ -372,46 +365,35 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		return nil
 	}))
 
-	results = append(results, r.RunTest("s3", "PutBucketVersioning_Enabled", func() error {
-		_, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
-		getResp, err := client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketVersioning failed: %w", err)
-		}
-		if getResp.Status != types.BucketVersioningStatusEnabled {
-			return fmt.Errorf("expected Status Enabled, got %s", getResp.Status)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "PutBucketVersioning_Suspended", func() error {
-		_, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusSuspended,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
-		}
-		getResp, err := client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketVersioning failed: %w", err)
-		}
-		if getResp.Status != types.BucketVersioningStatusSuspended {
-			return fmt.Errorf("expected Status Suspended, got %s", getResp.Status)
+	// Both versioning status transitions round-trip: the requested status
+	// comes back from GetBucketVersioning. Rows run in order, Enabled
+	// first, then Suspended.
+	results = append(results, r.RunTest("s3", "PutBucketVersioning_StatusRoundTrip", func() error {
+		for _, c := range []struct {
+			name   string
+			status types.BucketVersioningStatus
+		}{
+			{name: "enable versioning", status: types.BucketVersioningStatusEnabled},
+			{name: "suspend versioning", status: types.BucketVersioningStatusSuspended},
+		} {
+			_, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+				Bucket: aws.String(bucketName),
+				VersioningConfiguration: &types.VersioningConfiguration{
+					Status: c.status,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("%s: PutBucketVersioning failed: %w", c.name, err)
+			}
+			getResp, err := client.GetBucketVersioning(ctx, &s3.GetBucketVersioningInput{
+				Bucket: aws.String(bucketName),
+			})
+			if err != nil {
+				return fmt.Errorf("%s: GetBucketVersioning failed: %w", c.name, err)
+			}
+			if getResp.Status != c.status {
+				return fmt.Errorf("%s: expected Status %s, got %s", c.name, c.status, getResp.Status)
+			}
 		}
 		return nil
 	}))
@@ -777,39 +759,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer repCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{
-					{
-						ID:       aws.String("rule-1"),
-						Status:   types.ReplicationRuleStatusEnabled,
-						Priority: aws.Int32(1),
-						Filter: &types.ReplicationRuleFilter{
-							Prefix: aws.String(""),
-						},
-						Destination: &types.Destination{
-							Bucket: aws.String(repArn),
-						},
-						DeleteMarkerReplication: &types.DeleteMarkerReplication{
-							Status: types.DeleteMarkerReplicationStatusDisabled,
-						},
-					},
-				},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("rule-1", repArn, "")); err != nil {
+			return err
 		}
 
 		getResp, err := client.GetBucketReplication(ctx, &s3.GetBucketReplicationInput{
@@ -846,59 +801,27 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer repCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("copy-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("copy-rule", repArn, "")); err != nil {
+			return err
 		}
 
 		repKey := "repl-test-object.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(repKey),
-			Body:   strings.NewReader("replicated content"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject to source bucket failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, repKey, "replicated content"); err != nil {
+			return err
 		}
 
 		if !waitForObject(ctx, client, repBucket, repKey, 5*time.Second) {
 			return fmt.Errorf("GetObject from destination bucket failed (replication did not occur)")
 		}
 
-		getResp, err := client.GetObject(ctx, &s3.GetObjectInput{
-			Bucket: aws.String(repBucket),
-			Key:    aws.String(repKey),
-		})
+		getResp, _, err := s3GetRead(ctx, client, repBucket, repKey)
 		if err != nil {
 			return fmt.Errorf("GetObject from destination bucket failed (replication did not occur): %w", err)
 		}
-		defer getResp.Body.Close()
 		if getResp.ContentLength == nil || *getResp.ContentLength != int64(len("replicated content")) {
 			return fmt.Errorf("replicated object size mismatch")
 		}
@@ -914,60 +837,44 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer tagCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("tag-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter: &types.ReplicationRuleFilter{
-						Tag: &types.Tag{Key: aws.String("replicate"), Value: aws.String("true")},
-					},
-					Destination: &types.Destination{
-						Bucket: aws.String(tagArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
+		// The tag-filter rule keeps its literal rule: s3ReplicationRule
+		// covers only the prefix-filter form.
+		if err := r.s3PutReplication(ctx, client, bucketName, types.ReplicationRule{
+			ID:       aws.String("tag-rule"),
+			Status:   types.ReplicationRuleStatusEnabled,
+			Priority: aws.Int32(1),
+			Filter: &types.ReplicationRuleFilter{
+				Tag: &types.Tag{Key: aws.String("replicate"), Value: aws.String("true")},
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (tag-filter) failed: %w", err)
+			Destination: &types.Destination{
+				Bucket: aws.String(tagArn),
+			},
+			DeleteMarkerReplication: &types.DeleteMarkerReplication{
+				Status: types.DeleteMarkerReplicationStatusDisabled,
+			},
+		}); err != nil {
+			return err
 		}
 
 		// Object WITH the matching tag should replicate.
 		matchedKey := "tag-matched.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:  aws.String(bucketName),
 			Key:     aws.String(matchedKey),
 			Body:    strings.NewReader("tagged content"),
 			Tagging: aws.String("replicate=true"),
-		})
-		if err != nil {
+		}); err != nil {
 			return fmt.Errorf("PutObject (tagged) failed: %w", err)
 		}
 
 		// Object WITHOUT the matching tag should NOT replicate.
 		unmatchedKey := "tag-unmatched.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(unmatchedKey),
-			Body:   strings.NewReader("untagged content"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject (untagged) failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, unmatchedKey, "untagged content"); err != nil {
+			return err
 		}
 
 		if !waitForObject(ctx, client, tagBucket, matchedKey, 5*time.Second) {
@@ -987,14 +894,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 	results = append(results, r.RunTest("s3", "Replication_DeleteMarkerPropagated", func() error {
 		// Re-enable versioning on the source bucket (a prior test suspends it).
-		_, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
 		dmBucket := s3Bucket(ts, "repl-dm-dest")
@@ -1005,46 +906,30 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer dmCleanup()
 
 		// Enable versioning on destination so delete markers are supported.
-		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(dmBucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning (dest) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, dmBucket); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("dm-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(dmArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusEnabled,
-					},
-				}},
+		// The delete-marker-enabled rule keeps its literal rule:
+		// s3ReplicationRule covers only the delete-marker-disabled form.
+		if err := r.s3PutReplication(ctx, client, bucketName, types.ReplicationRule{
+			ID:       aws.String("dm-rule"),
+			Status:   types.ReplicationRuleStatusEnabled,
+			Priority: aws.Int32(1),
+			Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
+			Destination: &types.Destination{
+				Bucket: aws.String(dmArn),
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (dm) failed: %w", err)
+			DeleteMarkerReplication: &types.DeleteMarkerReplication{
+				Status: types.DeleteMarkerReplicationStatusEnabled,
+			},
+		}); err != nil {
+			return err
 		}
 
 		dmKey := "dm-test-object.txt"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(dmKey),
-			Body:   strings.NewReader("dm content"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, dmKey, "dm content"); err != nil {
+			return err
 		}
 
 		if !waitForObject(ctx, client, dmBucket, dmKey, 5*time.Second) {
@@ -1090,10 +975,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 	results = append(results, r.RunTest("s3", "PutBucketReplication_SourceVersioningRequired", func() error {
 		srcBucket := s3Bucket(ts, "repl-nover-src")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(srcBucket),
-		}); err != nil {
-			return fmt.Errorf("CreateBucket (source without versioning) failed: %w", err)
+		if err := s3CreateBucket(ctx, client, srcBucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, srcBucket)
 
@@ -1103,24 +986,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		defer repCleanup()
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(srcBucket),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("ver-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
+		err = r.s3PutReplication(ctx, client, srcBucket, s3ReplicationRule("ver-rule", repArn, ""))
 		return expectAWSErrorCode(err, "InvalidRequest")
 	}))
 
@@ -1128,40 +994,18 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		// The shared source bucket has versioning enabled by the earlier
 		// replication tests in this suite.
 		plainDest := s3Bucket(ts, "repl-plain-dest")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(plainDest),
-		}); err != nil {
-			return fmt.Errorf("CreateBucket (dest without versioning) failed: %w", err)
+		if err := s3CreateBucket(ctx, client, plainDest); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, plainDest)
 
-		replicationInput := &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("dest-ver-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String("arn:aws:s3:::" + plainDest),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		}
-		_, err := client.PutBucketReplication(ctx, replicationInput)
+		err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("dest-ver-rule", "arn:aws:s3:::"+plainDest, ""))
 		if err := expectAWSErrorCode(err, "InvalidRequest"); err != nil {
 			return fmt.Errorf("unversioned destination should be rejected with InvalidRequest: %w", err)
 		}
 
 		// A destination bucket that does not exist is rejected the same way.
-		replicationInput.ReplicationConfiguration.Rules[0].Destination.Bucket =
-			aws.String("arn:aws:s3:::" + s3Bucket(ts, "repl-nonexistent"))
-		_, err = client.PutBucketReplication(ctx, replicationInput)
+		err = r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("dest-ver-rule", "arn:aws:s3:::"+s3Bucket(ts, "repl-nonexistent"), ""))
 		return expectAWSErrorCode(err, "InvalidRequest")
 	}))
 
@@ -1174,35 +1018,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer repCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("mpu-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (mpu) failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("mpu-rule", repArn, "")); err != nil {
+			return err
 		}
 
 		mpuKey := "repl-mpu-object.bin"
@@ -1246,10 +1067,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if !waitForReplicationStatus(ctx, client, repBucket, mpuKey, types.ReplicationStatusReplica, 5*time.Second) {
 			return fmt.Errorf("replicated multipart object not marked REPLICA in destination bucket")
 		}
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(repBucket),
-			Key:    aws.String(mpuKey),
-		})
+		headResp, err := s3HeadObject(ctx, client, repBucket, mpuKey)
 		if err != nil {
 			return fmt.Errorf("HeadObject on replicated multipart object failed: %w", err)
 		}
@@ -1271,46 +1089,19 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer repCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("cpo-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (copy) failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("cpo-rule", repArn, "")); err != nil {
+			return err
 		}
 
 		srcKey := "copy-source.txt"
 		copyKey := "copied-via-copy.txt"
 		body := "copy replication content"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(srcKey),
-			Body:   strings.NewReader(body),
-		}); err != nil {
-			return fmt.Errorf("PutObject (copy source) failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, srcKey, body); err != nil {
+			return err
 		}
 		if _, err := client.CopyObject(ctx, &s3.CopyObjectInput{
 			Bucket:     aws.String(bucketName),
@@ -1323,10 +1114,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if !waitForObject(ctx, client, repBucket, copyKey, 5*time.Second) {
 			return fmt.Errorf("copied object not found in destination bucket")
 		}
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(repBucket),
-			Key:    aws.String(copyKey),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, repBucket, copyKey)
 		if err != nil {
 			return fmt.Errorf("GetObject on copied replica failed: %w", err)
 		}
@@ -1345,36 +1133,26 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer repCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("meta-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("meta/")},
-					Destination: &types.Destination{
-						Bucket:       aws.String(repArn),
-						StorageClass: types.StorageClassReducedRedundancy,
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
+		// The storage-class-override rule keeps its literal rule:
+		// s3ReplicationRule covers only the plain destination form.
+		if err := r.s3PutReplication(ctx, client, bucketName, types.ReplicationRule{
+			ID:       aws.String("meta-rule"),
+			Status:   types.ReplicationRuleStatusEnabled,
+			Priority: aws.Int32(1),
+			Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("meta/")},
+			Destination: &types.Destination{
+				Bucket:       aws.String(repArn),
+				StorageClass: types.StorageClassReducedRedundancy,
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (meta) failed: %w", err)
+			DeleteMarkerReplication: &types.DeleteMarkerReplication{
+				Status: types.DeleteMarkerReplicationStatusDisabled,
+			},
+		}); err != nil {
+			return err
 		}
 
 		// Override path: the rule's StorageClass wins and the source tags
@@ -1391,10 +1169,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if !waitForReplicationStatus(ctx, client, repBucket, overrideKey, types.ReplicationStatusReplica, 5*time.Second) {
 			return fmt.Errorf("override replica not marked REPLICA in destination bucket")
 		}
-		overrideHead, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(repBucket),
-			Key:    aws.String(overrideKey),
-		})
+		overrideHead, err := s3HeadObject(ctx, client, repBucket, overrideKey)
 		if err != nil {
 			return fmt.Errorf("HeadObject on override replica failed: %w", err)
 		}
@@ -1423,26 +1198,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		// source object's own storage class. The rule is replaced with a
 		// StorageClass-free one first — a rule's StorageClass applies to
 		// every replica under it, so the override would win otherwise.
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("meta-inherit-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("meta/")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (meta inherit) failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("meta-inherit-rule", repArn, "meta/")); err != nil {
+			return err
 		}
 
 		inheritKey := "meta/inherit.txt"
@@ -1457,10 +1214,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if !waitForReplicationStatus(ctx, client, repBucket, inheritKey, types.ReplicationStatusReplica, 5*time.Second) {
 			return fmt.Errorf("inherit replica not marked REPLICA in destination bucket")
 		}
-		inheritHead, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(repBucket),
-			Key:    aws.String(inheritKey),
-		})
+		inheritHead, err := s3HeadObject(ctx, client, repBucket, inheritKey)
 		if err != nil {
 			return fmt.Errorf("HeadObject on inherit replica failed: %w", err)
 		}
@@ -1488,74 +1242,26 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer finalCleanup()
 
 		// Replication requires versioning on the source bucket.
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("chain-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("chain/")},
-					Destination: &types.Destination{
-						Bucket: aws.String(midArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (chain source) failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("chain-rule", midArn, "chain/")); err != nil {
+			return err
 		}
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(midBucket),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("onwards-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("")},
-					Destination: &types.Destination{
-						Bucket: aws.String(finalArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication (chain mid) failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, midBucket, s3ReplicationRule("onwards-rule", finalArn, "")); err != nil {
+			return err
 		}
 
 		chainKey := "chain/object.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(chainKey),
-			Body:   strings.NewReader("chain content"),
-		}); err != nil {
-			return fmt.Errorf("PutObject (chain) failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, chainKey, "chain content"); err != nil {
+			return err
 		}
 		if !waitForReplicationStatus(ctx, client, midBucket, chainKey, types.ReplicationStatusReplica, 5*time.Second) {
 			return fmt.Errorf("replica not marked REPLICA in mid bucket")
 		}
 
-		midHead, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(midBucket),
-			Key:    aws.String(chainKey),
-		})
+		midHead, err := s3HeadObject(ctx, client, midBucket, chainKey)
 		if err != nil {
 			return fmt.Errorf("HeadObject on mid replica failed: %w", err)
 		}
@@ -1592,35 +1298,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		defer repCleanup()
 
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("pending-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("pending/")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("pending-rule", repArn, "pending/")); err != nil {
+			return err
 		}
 
 		// A large body keeps the async copy in flight long enough that the
@@ -1634,10 +1317,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return fmt.Errorf("PutObject failed: %w", err)
 		}
 
-		head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(pendingKey),
-		})
+		head, err := s3HeadObject(ctx, client, bucketName, pendingKey)
 		if err != nil {
 			return fmt.Errorf("HeadObject immediately after upload failed: %w", err)
 		}
@@ -1665,64 +1345,37 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		// The second destination is managed manually: it is deleted
 		// mid-test so one rule fails while the other still copies.
 		dest2 := s3Bucket(ts, "repl-multi-dest2")
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(dest2),
-		}); err != nil {
-			return fmt.Errorf("CreateBucket (dest2) failed: %w", err)
+		if err := s3CreateBucket(ctx, client, dest2); err != nil {
+			return err
 		}
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(dest2),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (dest2) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, dest2); err != nil {
+			return err
 		}
 		dest2Arn := "arn:aws:s3:::" + dest2
 
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{
-					{
-						ID:       aws.String("multi-rule-1"),
-						Status:   types.ReplicationRuleStatusEnabled,
-						Priority: aws.Int32(1),
-						Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("multi/")},
-						Destination: &types.Destination{
-							Bucket: aws.String(dest1Arn),
-						},
-						DeleteMarkerReplication: &types.DeleteMarkerReplication{
-							Status: types.DeleteMarkerReplicationStatusDisabled,
-						},
-					},
-					{
-						ID:       aws.String("multi-rule-2"),
-						Status:   types.ReplicationRuleStatusEnabled,
-						Priority: aws.Int32(2),
-						Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("multi/")},
-						Destination: &types.Destination{
-							Bucket: aws.String(dest2Arn),
-						},
-						DeleteMarkerReplication: &types.DeleteMarkerReplication{
-							Status: types.DeleteMarkerReplicationStatusDisabled,
-						},
-					},
+		if err := r.s3PutReplication(ctx, client, bucketName,
+			s3ReplicationRule("multi-rule-1", dest1Arn, "multi/"),
+			// The second rule keeps its literal form: rule priorities are
+			// unique per configuration, so it cannot reuse the
+			// priority-1 helper.
+			types.ReplicationRule{
+				ID:       aws.String("multi-rule-2"),
+				Status:   types.ReplicationRuleStatusEnabled,
+				Priority: aws.Int32(2),
+				Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("multi/")},
+				Destination: &types.Destination{
+					Bucket: aws.String(dest2Arn),
+				},
+				DeleteMarkerReplication: &types.DeleteMarkerReplication{
+					Status: types.DeleteMarkerReplicationStatusDisabled,
 				},
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		); err != nil {
+			return err
 		}
 
 		// Remove the second destination so rule 2 fails while rule 1 still
@@ -1734,12 +1387,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 
 		aggKey := "multi/object.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(aggKey),
-			Body:   strings.NewReader("aggregated content"),
-		}); err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, aggKey, "aggregated content"); err != nil {
+			return err
 		}
 
 		if !waitForReplicationStatus(ctx, client, bucketName, aggKey, types.ReplicationStatusFailed, 5*time.Second) {
@@ -1751,28 +1400,17 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 		// With both destinations reachable again the same configuration must
 		// aggregate to COMPLETED.
-		if _, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(dest2),
-		}); err != nil {
-			return fmt.Errorf("CreateBucket (dest2 recreate) failed: %w", err)
+		if err := s3CreateBucket(ctx, client, dest2); err != nil {
+			return err
 		}
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(dest2),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (dest2 recreate) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, dest2); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, dest2)
 
 		aggKey2 := "multi/object2.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(aggKey2),
-			Body:   strings.NewReader("aggregated content 2"),
-		}); err != nil {
-			return fmt.Errorf("PutObject (second) failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, aggKey2, "aggregated content 2"); err != nil {
+			return err
 		}
 		if !waitForReplicationStatus(ctx, client, bucketName, aggKey2, types.ReplicationStatusCompleted, 5*time.Second) {
 			return fmt.Errorf("expected aggregated replication status COMPLETED with both destinations reachable")
@@ -1791,35 +1429,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		defer repCleanup()
 
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("susp-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("susp/")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("susp-rule", repArn, "susp/")); err != nil {
+			return err
 		}
 
 		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
@@ -1832,12 +1447,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 
 		suspKey := "susp/object.txt"
-		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(suspKey),
-			Body:   strings.NewReader("suspended destination content"),
-		}); err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucketName, suspKey, "suspended destination content"); err != nil {
+			return err
 		}
 
 		if !waitForReplicationStatus(ctx, client, bucketName, suspKey, types.ReplicationStatusFailed, 5*time.Second) {
@@ -1862,35 +1473,12 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		defer repCleanup()
 
-		if _, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucketName),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		}); err != nil {
-			return fmt.Errorf("PutBucketVersioning (source) failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucketName); err != nil {
+			return err
 		}
 
-		_, err = client.PutBucketReplication(ctx, &s3.PutBucketReplicationInput{
-			Bucket: aws.String(bucketName),
-			ReplicationConfiguration: &types.ReplicationConfiguration{
-				Role: aws.String(fmt.Sprintf("arn:aws:iam::%s:role/s3-replication", r.accountID)),
-				Rules: []types.ReplicationRule{{
-					ID:       aws.String("vers-rule"),
-					Status:   types.ReplicationRuleStatusEnabled,
-					Priority: aws.Int32(1),
-					Filter:   &types.ReplicationRuleFilter{Prefix: aws.String("vers/")},
-					Destination: &types.Destination{
-						Bucket: aws.String(repArn),
-					},
-					DeleteMarkerReplication: &types.DeleteMarkerReplication{
-						Status: types.DeleteMarkerReplicationStatusDisabled,
-					},
-				}},
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketReplication failed: %w", err)
+		if err := r.s3PutReplication(ctx, client, bucketName, s3ReplicationRule("vers-rule", repArn, "vers/")); err != nil {
+			return err
 		}
 
 		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
@@ -2066,96 +1654,67 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		return nil
 	}))
 
-	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_NoPolicy", func() error {
-		bucket := s3Bucket(ts, "polstat-none")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
-		}
-		defer s3CleanupBucket(ctx, client, bucket)
+	// GetBucketPolicyStatus classifies the bucket's effective policy: a
+	// bucket without a policy is not public, a Principal-"*" policy is
+	// public, and a policy bound to the account root principal is not.
+	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus", func() error {
+		for _, c := range []struct {
+			name       string
+			suffix     string
+			policy     func(bucket string) string // nil places no policy
+			wantPublic bool
+		}{
+			{
+				name:       "bucket without a policy",
+				suffix:     "polstat-none",
+				policy:     nil,
+				wantPublic: false,
+			},
+			{
+				name:   "public policy with wildcard principal",
+				suffix: "polstat-public",
+				policy: func(bucket string) string {
+					return `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
+				},
+				wantPublic: true,
+			},
+			{
+				name:   "non-public policy with fixed principal",
+				suffix: "polstat-fixed",
+				policy: func(bucket string) string {
+					principalARN := fmt.Sprintf("arn:aws:iam::%s:root", r.accountID)
+					return `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"` + principalARN + `"},"Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
+				},
+				wantPublic: false,
+			},
+		} {
+			bucket := s3Bucket(ts, c.suffix)
+			if err := s3CreateBucket(ctx, client, bucket); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
+			defer s3CleanupBucket(ctx, client, bucket)
 
-		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
-		}
-		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
-			return fmt.Errorf("PolicyStatus or IsPublic is nil")
-		}
-		if *resp.PolicyStatus.IsPublic {
-			return fmt.Errorf("expected IsPublic false for bucket without policy, got true")
-		}
-		return nil
-	}))
+			if c.policy != nil {
+				if _, err := client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+					Bucket: aws.String(bucket),
+					Policy: aws.String(c.policy(bucket)),
+				}); err != nil {
+					return fmt.Errorf("%s: PutBucketPolicy failed: %w", c.name, err)
+				}
+			}
 
-	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_PublicPolicy", func() error {
-		bucket := s3Bucket(ts, "polstat-public")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
-		}
-		defer s3CleanupBucket(ctx, client, bucket)
-
-		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
-		_, err = client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
-			Bucket: aws.String(bucket),
-			Policy: aws.String(policy),
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketPolicy failed: %w", err)
-		}
-
-		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
-		}
-		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
-			return fmt.Errorf("PolicyStatus or IsPublic is nil")
-		}
-		if !*resp.PolicyStatus.IsPublic {
-			return fmt.Errorf("expected IsPublic true for Principal * policy, got false")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "GetBucketPolicyStatus_NonPublicPolicy", func() error {
-		bucket := s3Bucket(ts, "polstat-fixed")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
-		}
-		defer s3CleanupBucket(ctx, client, bucket)
-
-		principalARN := fmt.Sprintf("arn:aws:iam::%s:root", r.accountID)
-		policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"` + principalARN + `"},"Action":"s3:GetObject","Resource":"arn:aws:s3:::` + bucket + `/*"}]}`
-		_, err = client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
-			Bucket: aws.String(bucket),
-			Policy: aws.String(policy),
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketPolicy failed: %w", err)
-		}
-
-		resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketPolicyStatus failed: %w", err)
-		}
-		if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
-			return fmt.Errorf("PolicyStatus or IsPublic is nil")
-		}
-		if *resp.PolicyStatus.IsPublic {
-			return fmt.Errorf("expected IsPublic false for fixed-principal policy, got true")
+			resp, err := client.GetBucketPolicyStatus(ctx, &s3.GetBucketPolicyStatusInput{
+				Bucket: aws.String(bucket),
+			})
+			if err != nil {
+				return fmt.Errorf("%s: GetBucketPolicyStatus failed: %w", c.name, err)
+			}
+			if resp.PolicyStatus == nil || resp.PolicyStatus.IsPublic == nil {
+				return fmt.Errorf("%s: PolicyStatus or IsPublic is nil", c.name)
+			}
+			if *resp.PolicyStatus.IsPublic != c.wantPublic {
+				return fmt.Errorf("%s: expected IsPublic %v, got %v", c.name, c.wantPublic, *resp.PolicyStatus.IsPublic)
+			}
 		}
 		return nil
 	}))
@@ -2179,16 +1738,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err != nil {
 			return fmt.Errorf("GetBucketAcl failed: %w", err)
 		}
-		foundPublicRead := false
-		for _, grant := range aclResp.Grants {
-			if grant.Grantee == nil || grant.Grantee.URI == nil {
-				continue
-			}
-			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
-				foundPublicRead = true
-			}
-		}
-		if !foundPublicRead {
+		if !s3HasPublicReadGrant(aclResp.Grants) {
 			return fmt.Errorf("expected an AllUsers READ grant from the public-read ACL header")
 		}
 		return nil
@@ -2234,11 +1784,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read ACL with enforced ownership, got nil")
 		}
-		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
-			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
-		}
-		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
-			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
+		if err := expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest); err != nil {
+			return err
 		}
 
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
@@ -2264,13 +1811,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return fmt.Errorf("expected AccessControlListNotSupported from PutBucketAcl: %v", err)
 		}
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(s3Bucket(ts, "own-enf-ok")),
-			Key:    aws.String("acl-key.txt"),
-			Body:   strings.NewReader("data"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, s3Bucket(ts, "own-enf-ok"), "acl-key.txt", "data"); err != nil {
+			return err
 		}
 		_, err = client.PutObjectAcl(ctx, &s3.PutObjectAclInput{
 			Bucket: aws.String(s3Bucket(ts, "own-enf-ok")),
@@ -2309,11 +1851,8 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read upload ACL, got nil")
 		}
-		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
-			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
-		}
-		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
-			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
+		if err := expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest); err != nil {
+			return err
 		}
 
 		if _, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -2355,16 +1894,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err != nil {
 			return fmt.Errorf("GetObjectAcl failed: %w", err)
 		}
-		foundPublicRead := false
-		for _, grant := range aclResp.Grants {
-			if grant.Grantee == nil || grant.Grantee.URI == nil {
-				continue
-			}
-			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
-				foundPublicRead = true
-			}
-		}
-		if !foundPublicRead {
+		if !s3HasPublicReadGrant(aclResp.Grants) {
 			return fmt.Errorf("expected an AllUsers READ grant from the public-read upload ACL")
 		}
 		return nil
@@ -2390,13 +1920,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read multipart ACL, got nil")
 		}
-		if err := expectAWSErrorCode(err, "AccessControlListNotSupported"); err != nil {
-			return fmt.Errorf("expected AccessControlListNotSupported: %v", err)
-		}
-		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
-			return fmt.Errorf("expected HTTP 400 for AccessControlListNotSupported, got %d", code)
-		}
-		return nil
+		return expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest)
 	}))
 
 	// CopyObject carries the ACL headers of a direct upload to the created
@@ -2434,16 +1958,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if err != nil {
 			return fmt.Errorf("GetObjectAcl failed: %w", err)
 		}
-		foundPublicRead := false
-		for _, grant := range aclResp.Grants {
-			if grant.Grantee == nil || grant.Grantee.URI == nil {
-				continue
-			}
-			if *grant.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && grant.Permission == types.PermissionRead {
-				foundPublicRead = true
-			}
-		}
-		if !foundPublicRead {
+		if !s3HasPublicReadGrant(aclResp.Grants) {
 			return fmt.Errorf("expected an AllUsers READ grant on the copy from the public-read ACL")
 		}
 		return nil

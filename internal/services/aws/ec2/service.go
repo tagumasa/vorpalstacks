@@ -21,7 +21,7 @@ type EC2Service struct {
 	region         string
 	storageManager *storage.RegionStorageManager
 	stores         sync.Map
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 }
 
 // NewEC2Service creates a new EC2Service for the specified account and region.
@@ -37,7 +37,7 @@ func (s *EC2Service) SetStorageManager(sm *storage.RegionStorageManager) {
 // SetEventBus injects the event bus for cross-service dependency checks
 // (e.g. checking whether Lambda or Neptune reference a subnet/SG before
 // deletion).
-func (s *EC2Service) SetEventBus(bus eventbus.Bus) {
+func (s *EC2Service) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 

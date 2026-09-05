@@ -14,12 +14,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 
 	results = append(results, r.RunTest("secretsmanager", "RotateSecret_Basic", func() error {
 		name := tc.uniqueName("RotateTest")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("rotate-me"),
-		})
+		_, err := tc.createSecret(name, "rotate-me")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -39,11 +36,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 			return fmt.Errorf("name mismatch")
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if descResp.LastRotatedDate == nil {
 			return fmt.Errorf("LastRotatedDate should be set after rotation")
@@ -53,12 +48,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 
 	results = append(results, r.RunTest("secretsmanager", "CancelRotateSecret_Basic", func() error {
 		name := tc.uniqueName("CancelRot")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("cancel-rotate"),
-		})
+		_, err := tc.createSecret(name, "cancel-rotate")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -82,11 +74,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 			return fmt.Errorf("name mismatch")
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if descResp.RotationEnabled != nil && *descResp.RotationEnabled {
 			return fmt.Errorf("rotation should be disabled after cancel")
@@ -96,12 +86,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 
 	results = append(results, r.RunTest("secretsmanager", "RotateSecret_ScheduleExpression_SetsNextRotationDate", func() error {
 		name := tc.uniqueName("RotSched")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("rotate-me"),
-		})
+		_, err := tc.createSecret(name, "rotate-me")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -117,11 +104,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 			return fmt.Errorf("rotate: %v", err)
 		}
 
-		desc, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		desc, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if desc.NextRotationDate == nil {
 			return fmt.Errorf("NextRotationDate not set from ScheduleExpression")
@@ -145,12 +130,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 
 	results = append(results, r.RunTest("secretsmanager", "RotateSecret_ExternalSecretRotationMembers", func() error {
 		name := tc.uniqueName("RotExt")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("rotate-me"),
-		})
+		_, err := tc.createSecret(name, "rotate-me")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -165,11 +147,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 			return fmt.Errorf("rotate: %v", err)
 		}
 
-		desc, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		desc, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if len(desc.ExternalSecretRotationMetadata) != 1 {
 			return fmt.Errorf("ExternalSecretRotationMetadata not echoed, got %d items", len(desc.ExternalSecretRotationMetadata))
@@ -197,12 +177,9 @@ func (r *TestRunner) runSecretsManagerRotationTests(tc *secretsManagerTestContex
 
 	results = append(results, r.RunTest("secretsmanager", "RotateSecret_RotationRules_BothScheduleFields_Rejected", func() error {
 		name := tc.uniqueName("RotBoth")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("rotate-me"),
-		})
+		_, err := tc.createSecret(name, "rotate-me")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 

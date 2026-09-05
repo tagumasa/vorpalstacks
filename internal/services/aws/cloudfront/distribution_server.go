@@ -13,11 +13,12 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/headerorder"
+	"vorpalstacks/internal/common/invokers"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/fqdnrouter"
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
 )
@@ -36,10 +37,10 @@ type DistributionServer struct {
 	deploymentPolicies *cfstore.ContinuousDeploymentPolicyStore
 	cache              *responseCache
 	inspectorMu        sync.RWMutex
-	inspector          eventbus.WebACLInspector
+	inspector          waf.WebACLInspector
 	providerMu         sync.RWMutex
-	acmCertificates    eventbus.ACMCertificateProvider
-	iamCertificates    eventbus.IAMServerCertificateProvider
+	acmCertificates    invokers.ACMCertificateProvider
+	iamCertificates    invokers.IAMServerCertificateProvider
 	certCache          *tlsCertificateCache
 }
 
@@ -71,13 +72,13 @@ func (s *DistributionServer) SetDistributionStore(store *cfstore.DistributionSto
 // SetWebACLInspector injects the WAF request-inspection entry point. The
 // wiring runs after the WAFv2 service initialises and before listeners
 // start serving traffic.
-func (s *DistributionServer) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *DistributionServer) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.inspectorMu.Lock()
 	s.inspector = inspector
 	s.inspectorMu.Unlock()
 }
 
-func (s *DistributionServer) webACLInspector() eventbus.WebACLInspector {
+func (s *DistributionServer) webACLInspector() waf.WebACLInspector {
 	s.inspectorMu.RLock()
 	defer s.inspectorMu.RUnlock()
 	return s.inspector
@@ -119,9 +120,9 @@ func (s *DistributionServer) enforceWebACL(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	inspHeaders := eventbus.RequestHeadersWithHost(r.Header, r.Host)
+	inspHeaders := waf.RequestHeadersWithHost(r.Header, r.Host)
 	headerOrder, _ := headerorder.FromContext(r.Context(), inspHeaders)
-	result, err := inspector.InspectWebACLRequest(r.Context(), "", distributionARN, eventbus.BuildWebACLInspectionRequest(
+	result, err := inspector.InspectWebACLRequest(r.Context(), "", distributionARN, waf.BuildWebACLInspectionRequest(
 		r.Method, r.URL.Path, r.URL.RawQuery, remoteAddrHost(r.RemoteAddr), r.Proto,
 		inspHeaders, headerOrder, body, bodyTruncated,
 	))
@@ -164,7 +165,7 @@ func remoteAddrHost(remoteAddr string) string {
 // edge cache; misses populate it per the behaviour TTL settings and the
 // origin Cache-Control/Expires directives.
 func (s *DistributionServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	if eventbus.ServeWAFTokenExchange(r.Context(), s.webACLInspector(), w, r) {
+	if waf.ServeWAFTokenExchange(r.Context(), s.webACLInspector(), w, r) {
 		return
 	}
 

@@ -3,8 +3,11 @@ package mobyclient
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	"vorpalstacks/internal/core/logs"
 
@@ -192,4 +195,103 @@ func (c *Client) LogsUntil(ctx context.Context, containerID string, until string
 	}
 
 	return string(logs), nil
+}
+
+// ReadLogWindow returns the stdout and stderr written after `since` with
+// the per-line docker timestamps stripped, plus the newest line's
+// timestamp — the exact cursor for the next window. A zero `since` reads
+// the whole log; an empty window leaves `since` unchanged. Docker's since
+// filter is inclusive — a record whose timestamp equals `since` is
+// delivered again — so the window re-filters client-side and the net
+// contract is strictly-after. Consecutive windows therefore partition the
+// log by record timestamp; the only loss a timestamp cursor can suffer is
+// a record stamped at or below the cursor by a wall-clock step backwards
+// between two reads, which the docker logs API offers no handle to
+// distinguish from re-delivered output.
+func (c *Client) ReadLogWindow(ctx context.Context, containerID string, since time.Time) (string, time.Time, error) {
+	sinceStr := ""
+	if !since.IsZero() {
+		sinceStr = since.Format(time.RFC3339Nano)
+	}
+	opts := client.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Timestamps: true,
+		Follow:     false,
+		Since:      sinceStr,
+	}
+
+	reader, err := c.cli.ContainerLogs(ctx, containerID, opts)
+	if err != nil {
+		return "", since, fmt.Errorf("failed to read log window: %w", err)
+	}
+	defer reader.Close()
+
+	raw, err := io.ReadAll(reader)
+	if err != nil {
+		return "", since, fmt.Errorf("failed to read log window body: %w", err)
+	}
+	return parseLogWindow(demuxLogStream(raw), since)
+}
+
+// demuxLogStream strips docker's non-TTY stream framing: each frame is an
+// 8-byte header (stream byte, 3 padding bytes, big-endian payload length)
+// followed by its payload, and stdout with stderr frames interleave in
+// write order — the log window consumes them as one merged text, the
+// shape CloudWatch interleaves console output in.
+func demuxLogStream(raw []byte) string {
+	var b strings.Builder
+	for len(raw) >= 8 {
+		length := binary.BigEndian.Uint32(raw[4:8])
+		if uint64(length) > uint64(len(raw)-8) {
+			// A truncated trailing frame means the read ended mid-write;
+			// nothing further can be decoded.
+			break
+		}
+		b.Write(raw[8 : 8+length])
+		raw = raw[8+length:]
+	}
+	return b.String()
+}
+
+// parseLogWindow strips the RFC3339Nano timestamp prefix docker prepends
+// to every log line when timestamps are requested and tracks the newest
+// one as the next window's cursor. Every record at or before `since` is
+// dropped, wherever it appears: the cursor is the newest timestamp of the
+// previous window's read, a record delivered between two reads is stamped
+// at its flush time and so lands above the cursor, and docker's inclusive
+// filter re-delivers the boundary record — only records stamped strictly
+// after the cursor can be new output.
+func parseLogWindow(raw string, since time.Time) (string, time.Time, error) {
+	if raw == "" {
+		return "", since, nil
+	}
+	var out strings.Builder
+	cursor := since
+	for len(raw) > 0 {
+		var line string
+		if idx := strings.IndexByte(raw, '\n'); idx >= 0 {
+			line, raw = raw[:idx], raw[idx+1:]
+		} else {
+			line, raw = raw, ""
+		}
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" {
+			continue
+		}
+		ts, text, ok := strings.Cut(line, " ")
+		t, err := time.Parse(time.RFC3339Nano, ts)
+		if !ok || err != nil {
+			return "", since, fmt.Errorf("unexpected log line without a docker timestamp: %q", line)
+		}
+		if !t.After(since) {
+			continue
+		}
+		if t.After(cursor) {
+			cursor = t
+		}
+		out.WriteString(text)
+		out.WriteByte('\n')
+	}
+	return out.String(), cursor, nil
 }

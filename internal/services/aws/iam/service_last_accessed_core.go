@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	awsarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -311,7 +311,7 @@ func (s *IAMService) generateLastAccessedReport(store *iamstore.IAMStore, arn, g
 
 	type principalEvent struct {
 		principal reportPrincipal
-		event     eventbus.CloudTrailEventInfo
+		event     invokers.CloudTrailEventInfo
 	}
 	var filteredEvents []principalEvent
 	if s.cloudTrailInvoker != nil {

@@ -221,6 +221,7 @@ func (r *TestRunner) RunLambdaTests() []TestResult {
 	results = append(results, runLambdaConfigTests(tc)...)
 	results = append(results, runLambdaPermissionTests(tc)...)
 	results = append(results, runLambdaReferenceTests(tc)...)
+	results = append(results, runLambdaImageTests(tc)...)
 
 	return results
 }

@@ -8,9 +8,9 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -100,7 +100,7 @@ func (s *ACMService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("acm", "SearchCertificates", s.SearchCertificates)
 }
 
-// RegisterCertificateUsage implements eventbus.ACMInvoker. It records that
+// RegisterCertificateUsage implements invokers.ACMInvoker. It records that
 // the resource identified by resourceArn is now using the ACM certificate
 // identified by certArn, in the specified region.
 func (s *ACMService) RegisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error {
@@ -111,7 +111,7 @@ func (s *ACMService) RegisterCertificateUsage(ctx context.Context, region, certA
 	return stores.certificates.AddInUseBy(certArn, resourceArn)
 }
 
-// UnregisterCertificateUsage implements eventbus.ACMInvoker. It removes the
+// UnregisterCertificateUsage implements invokers.ACMInvoker. It removes the
 // resource identified by resourceArn from the certificate's InUseBy list,
 // indicating the resource no longer references the certificate.
 func (s *ACMService) UnregisterCertificateUsage(ctx context.Context, region, certArn, resourceArn string) error {
@@ -122,7 +122,7 @@ func (s *ACMService) UnregisterCertificateUsage(ctx context.Context, region, cer
 	return stores.certificates.RemoveInUseBy(certArn, resourceArn)
 }
 
-// CertificateExists implements eventbus.ACMInvoker. It performs a
+// CertificateExists implements invokers.ACMInvoker. It performs a
 // pre-validation check before a cross-service consumer saves a resource that
 // references an ACM certificate. This eliminates the most common failure mode
 // (invalid cert ARN) before the resource is created, reducing the compensating
@@ -135,28 +135,28 @@ func (s *ACMService) CertificateExists(ctx context.Context, region, certArn stri
 	return stores.certificates.Exists(certArn)
 }
 
-// CertificateMaterial implements eventbus.ACMCertificateProvider. It returns
+// CertificateMaterial implements invokers.ACMCertificateProvider. It returns
 // the PEM material of an issued certificate so a cross-service listener
 // (e.g. the CloudFront distribution plane) can terminate TLS with it. Only
 // issued certificates with a retained key pair resolve; anything else is an
 // error so the caller fails the handshake instead of serving a mismatched
 // certificate.
-func (s *ACMService) CertificateMaterial(ctx context.Context, region, certArn string) (eventbus.TLSCertificateMaterial, error) {
+func (s *ACMService) CertificateMaterial(ctx context.Context, region, certArn string) (invokers.TLSCertificateMaterial, error) {
 	stores, err := s.GetStoreForRegion(region)
 	if err != nil {
-		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("acm: failed to get store for region %s: %w", region, err)
+		return invokers.TLSCertificateMaterial{}, fmt.Errorf("acm: failed to get store for region %s: %w", region, err)
 	}
 	cert, err := stores.certificates.Get(certArn)
 	if err != nil {
-		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("acm: certificate %s not found: %w", certArn, err)
+		return invokers.TLSCertificateMaterial{}, fmt.Errorf("acm: certificate %s not found: %w", certArn, err)
 	}
 	if cert.Status != "ISSUED" {
-		return eventbus.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate is not in the ISSUED state: " + certArn)
+		return invokers.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate is not in the ISSUED state: " + certArn)
 	}
 	if cert.Certificate == "" || cert.PrivateKey == "" {
-		return eventbus.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate does not have serving material available: " + certArn)
+		return invokers.TLSCertificateMaterial{}, awserrors.NewValidationException("Certificate does not have serving material available: " + certArn)
 	}
-	return eventbus.TLSCertificateMaterial{
+	return invokers.TLSCertificateMaterial{
 		Certificate:      cert.Certificate,
 		PrivateKey:       cert.PrivateKey,
 		CertificateChain: cert.CertificateChain,

@@ -43,11 +43,14 @@ func (s *SchedulerService) BuildEngine() {
 // SetEventBus injects the event bus into the scheduler engine and registers
 // the ScheduleFiredEvent handler. When the bus is set, schedule execution
 // routes through the bus instead of direct store/invoker calls.
-func (s *SchedulerService) SetEventBus(bus eventbus.Bus) {
+func (s *SchedulerService) SetEventBus(bus eventbus.ServiceBus) error {
 	if s.engine != nil {
 		s.engine.SetEventBus(bus)
-		_, _ = eventbus.SubscribeTyped[*eventbus.ScheduleFiredEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+		if _, err := eventbus.SubscribeTyped[*eventbus.ScheduleFiredEvent](bus, s.handleBusDelivery, eventbus.WithAsync()); err != nil {
+			return fmt.Errorf("scheduler: subscribe ScheduleFiredEvent: %w", err)
+		}
 	}
+	return nil
 }
 
 func (s *SchedulerService) handleBusDelivery(ctx context.Context, evt *eventbus.ScheduleFiredEvent) eventbus.HandlerResult {

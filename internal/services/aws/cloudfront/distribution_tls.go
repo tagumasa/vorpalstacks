@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/config"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/utils/aws/arn"
 	vcrypto "vorpalstacks/internal/utils/crypto"
 )
@@ -73,14 +73,14 @@ func (c *tlsCertificateCache) purge() {
 // TLS plane resolves viewer certificates through. Either may be nil, in
 // which case the corresponding certificate source falls back to the
 // synthesised default certificate.
-func (s *DistributionServer) SetTLSCertificateProviders(acm eventbus.ACMCertificateProvider, iam eventbus.IAMServerCertificateProvider) {
+func (s *DistributionServer) SetTLSCertificateProviders(acm invokers.ACMCertificateProvider, iam invokers.IAMServerCertificateProvider) {
 	s.providerMu.Lock()
 	s.acmCertificates = acm
 	s.iamCertificates = iam
 	s.providerMu.Unlock()
 }
 
-func (s *DistributionServer) certificateProviders() (eventbus.ACMCertificateProvider, eventbus.IAMServerCertificateProvider) {
+func (s *DistributionServer) certificateProviders() (invokers.ACMCertificateProvider, invokers.IAMServerCertificateProvider) {
 	s.providerMu.RLock()
 	defer s.providerMu.RUnlock()
 	return s.acmCertificates, s.iamCertificates
@@ -128,7 +128,7 @@ func (s *DistributionServer) TLSCertificate(info *tls.ClientHelloInfo) (*tls.Cer
 // cachedACMCertificate resolves an ACM certificate by ARN through the
 // provider, deriving the region from the ARN itself, and caches the parsed
 // result.
-func (s *DistributionServer) cachedACMCertificate(provider eventbus.ACMCertificateProvider, certArn string) (*tls.Certificate, error) {
+func (s *DistributionServer) cachedACMCertificate(provider invokers.ACMCertificateProvider, certArn string) (*tls.Certificate, error) {
 	key := "acm:" + certArn
 	if cert := s.certCache.get(key); cert != nil {
 		return cert, nil
@@ -151,7 +151,7 @@ func (s *DistributionServer) cachedACMCertificate(provider eventbus.ACMCertifica
 
 // cachedIAMCertificate resolves an IAM server certificate by its unique
 // certificate ID through the provider and caches the parsed result.
-func (s *DistributionServer) cachedIAMCertificate(provider eventbus.IAMServerCertificateProvider, certID string) (*tls.Certificate, error) {
+func (s *DistributionServer) cachedIAMCertificate(provider invokers.IAMServerCertificateProvider, certID string) (*tls.Certificate, error) {
 	key := "iam:" + certID
 	if cert := s.certCache.get(key); cert != nil {
 		return cert, nil
@@ -223,7 +223,7 @@ func synthesiseViewerCertificate(name string, key *rsa.PrivateKey) (*tls.Certifi
 // parseTLSCertificateMaterial turns PEM certificate material into a
 // serveable tls.Certificate: the certificate blocks of the leaf material
 // lead (the first is the leaf), followed by any chain blocks.
-func parseTLSCertificateMaterial(material eventbus.TLSCertificateMaterial) (*tls.Certificate, error) {
+func parseTLSCertificateMaterial(material invokers.TLSCertificateMaterial) (*tls.Certificate, error) {
 	if material.PrivateKey == "" {
 		return nil, fmt.Errorf("private key is missing")
 	}

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
 )
 
@@ -199,7 +199,7 @@ func (s *CloudWatchService) GetInsightRuleReport(ctx context.Context, reqCtx *re
 
 	keyLabels := []string{contributorKeyField}
 
-	var events []eventbus.CloudTrailEventInfo
+	var events []invokers.CloudTrailEventInfo
 	if s.bus != nil && s.bus.CloudTrailInvoker() != nil {
 		events = fetchInsightEvents(ctx, s.bus.CloudTrailInvoker(), reqCtx.Region, startTime, endTime)
 	}
@@ -513,11 +513,11 @@ func parseInsightRuleDefinition(definition string) insightRuleDefinition {
 
 const insightEventMaxPages = 20
 
-func fetchInsightEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker, region string, startTime, endTime time.Time) []eventbus.CloudTrailEventInfo {
+func fetchInsightEvents(ctx context.Context, invoker invokers.CloudTrailInvoker, region string, startTime, endTime time.Time) []invokers.CloudTrailEventInfo {
 	if startTime.IsZero() || endTime.IsZero() {
 		return nil
 	}
-	var all []eventbus.CloudTrailEventInfo
+	var all []invokers.CloudTrailEventInfo
 	nextToken := ""
 	for page := 0; page < insightEventMaxPages; page++ {
 		events, nt, err := invoker.LookupEvents(ctx, region, "", nextToken, startTime, endTime, 50)
@@ -535,7 +535,7 @@ func fetchInsightEvents(ctx context.Context, invoker eventbus.CloudTrailInvoker,
 
 // buildInsightMetricDatapointsFromEvents aggregates CloudTrail events
 // into time buckets for the GetInsightRuleReport response.
-func buildInsightMetricDatapointsFromEvents(events []eventbus.CloudTrailEventInfo, startTime, endTime time.Time, period int, periodDuration time.Duration, contributorKeyField string) []map[string]interface{} {
+func buildInsightMetricDatapointsFromEvents(events []invokers.CloudTrailEventInfo, startTime, endTime time.Time, period int, periodDuration time.Duration, contributorKeyField string) []map[string]interface{} {
 	if startTime.IsZero() || endTime.IsZero() || period <= 0 {
 		return []map[string]interface{}{}
 	}

@@ -234,7 +234,7 @@ type EventServer struct {
 	connections map[string]*wsConnection
 	connMu      sync.RWMutex
 	channels    *channelManager
-	bus         eventbus.Bus
+	bus         eventbus.ServiceBus
 	storeLookup StoreLookupFunc
 	sigVerifier *auth.SignatureV4Verifier
 }
@@ -253,7 +253,7 @@ func NewEventServer() *EventServer {
 // SetEventBus injects the global event bus for cross-service event publishing.
 // Events published via WebSocket or HTTP are forwarded to the bus so that
 // other services (Lambda, EventBridge rules, etc.) can react to them.
-func (s *EventServer) SetEventBus(bus eventbus.Bus) {
+func (s *EventServer) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 

@@ -1,4 +1,4 @@
-package eventbus
+package waf
 
 import (
 	"net/http"

@@ -7,64 +7,12 @@ import (
 	"time"
 )
 
-// PublishSync publishes an event and dispatches it synchronously to all
-// matching subscribers, returning the first handler result or error.
-func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult, error) {
-	if !b.started.Load() {
-		return HandlerResult{}, ErrBusShutdown
-	}
-	if event == nil {
-		return HandlerResult{}, ErrNilEvent
-	}
-	eventType := event.EventType()
-	if eventType == "" {
-		return HandlerResult{}, ErrEmptyType
-	}
-
-	base := getEventBase(event)
-	if base != nil {
-		base.depth.Add(1)
-	} else {
-		event.SetEventDepth(event.EventDepth() + 1)
-	}
-	depth := event.EventDepth()
-	if depth >= b.maxEventDepth {
-		b.logWarn("dropping event: max depth exceeded", "event_type", eventType, "depth", depth)
-		return HandlerResult{}, ErrMaxDepth
-	}
-
-	snapshot := b.snapshotSubscriptions(eventType)
-	sort.Slice(snapshot, func(i, j int) bool {
-		return snapshot[i].priority > snapshot[j].priority
-	})
-
-	var lastResult HandlerResult
-
-	for _, sub := range snapshot {
-		if !sub.authorized {
-			continue
-		}
-		if sub.filter != nil && !sub.filter.Match(event) {
-			continue
-		}
-
-		result, ok := b.dispatchWithSemaphores(ctx, sub, event)
-		if !ok {
-			return HandlerResult{}, fmt.Errorf("eventbus: semaphore acquisition failed")
-		}
-
-		if result.Error != nil {
-			return result, nil
-		}
-		lastResult = result
-	}
-
-	return lastResult, nil
-}
-
-// Publish enqueues an event for asynchronous delivery, persisting it to the
-// outbox store if one is configured.
-func (b *EventBus) Publish(ctx context.Context, event Event) error {
+// preparePublish enforces the preconditions shared by Publish and
+// PublishSync — the bus must be started, the event non-nil with a
+// non-empty type — and increments the event's dispatch depth, rejecting
+// events at or beyond the cycle-prevention bound. Handlers publishing
+// derived events inherit the incremented depth.
+func (b *EventBus) preparePublish(event Event) error {
 	if !b.started.Load() {
 		return ErrBusShutdown
 	}
@@ -87,6 +35,45 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 		b.logWarn("dropping event: max depth exceeded", "event_type", eventType, "depth", depth)
 		return ErrMaxDepth
 	}
+	return nil
+}
+
+// PublishSync publishes an event and dispatches it synchronously to all
+// matching subscribers, returning the first handler result or error.
+func (b *EventBus) PublishSync(ctx context.Context, event Event) (HandlerResult, error) {
+	if err := b.preparePublish(event); err != nil {
+		return HandlerResult{}, err
+	}
+
+	snapshot := b.snapshotSubscriptions(event.EventType())
+	sort.Slice(snapshot, func(i, j int) bool {
+		return snapshot[i].priority > snapshot[j].priority
+	})
+
+	var lastResult HandlerResult
+
+	for _, sub := range snapshot {
+		result, ok := b.dispatchWithSemaphores(ctx, sub, event)
+		if !ok {
+			return HandlerResult{}, fmt.Errorf("eventbus: semaphore acquisition failed")
+		}
+
+		if result.Error != nil {
+			return result, nil
+		}
+		lastResult = result
+	}
+
+	return lastResult, nil
+}
+
+// Publish enqueues an event for asynchronous delivery, persisting it to the
+// outbox store if one is configured.
+func (b *EventBus) Publish(ctx context.Context, event Event) error {
+	if err := b.preparePublish(event); err != nil {
+		return err
+	}
+	eventType := event.EventType()
 
 	if b.outbox == nil {
 		return b.dispatchAsyncDirect(ctx, event)
@@ -107,7 +94,7 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 	eventID := event.EventID()
 	if eventID == "" {
 		eventID = generateEventID(eventType)
-		if base != nil {
+		if base := getEventBase(event); base != nil {
 			base.ID = eventID
 		}
 	}
@@ -123,6 +110,10 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 		HandlerResults:  make(map[string]string),
 	}
 
+	// The outbox write deliberately uses a background context: the
+	// at-least-once contract requires the event to be persisted even when
+	// the publishing caller's context is cancelled right after Publish
+	// returns.
 	if err := b.outbox.Write(context.Background(), entry); err != nil {
 		return fmt.Errorf("eventbus: failed to write to outbox: %w", err)
 	}
@@ -145,7 +136,7 @@ func (b *EventBus) dispatchAsyncDirect(ctx context.Context, event Event) error {
 	})
 
 	for _, sub := range snapshot {
-		if !sub.authorized || !sub.async {
+		if !sub.async {
 			continue
 		}
 		select {
@@ -159,17 +150,7 @@ func (b *EventBus) dispatchAsyncDirect(ctx context.Context, event Event) error {
 }
 
 func (b *EventBus) dispatchHandler(ctx context.Context, sub *subscriptionEntry, event Event) HandlerResult {
-	switch h := sub.handler.(type) {
-	case func(context.Context, Event) HandlerResult:
-		return h(ctx, event)
-	case func(context.Context, *ServiceInvokeRequest) HandlerResult:
-		if typed, ok := event.(*ServiceInvokeRequest); ok {
-			return h(ctx, typed)
-		}
-		return HandlerResult{Error: fmt.Errorf("eventbus: type assertion failed for *ServiceInvokeRequest")}
-	default:
-		return HandlerResult{Error: fmt.Errorf("eventbus: unsupported handler type %T", sub.handler)}
-	}
+	return sub.handler(ctx, event)
 }
 
 // dispatchWithSemaphores acquires the subscription and global concurrency

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
@@ -100,7 +101,7 @@ func (e *Executor) executeSQSSendMessage(ctx context.Context, execCtx *Execution
 		}
 	}
 
-	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, messageBody, eventbus.SQSSendOptions{
+	messageID, md5OfBody, err := e.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, messageBody, invokers.SQSSendOptions{
 		DelaySeconds:           getInt64FromInput(inputData, "DelaySeconds"),
 		MessageGroupID:         getStr(inputData, "MessageGroupId"),
 		MessageDeduplicationID: getStr(inputData, "MessageDeduplicationId"),

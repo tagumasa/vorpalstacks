@@ -17,43 +17,56 @@ func pgTimestamp() int64 {
 func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("secretsmanager", "GetSecretValue_NonExistent", func() error {
-		_, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String("nonexistent-secret-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+	results = append(results, r.RunTest("secretsmanager", "Secret_NonExistent", func() error {
+		// Every secret-scoped operation rejects an unknown SecretId with
+		// ResourceNotFoundException.
+		probes := []struct {
+			name  string
+			probe func() error
+		}{
+			{"GetSecretValue", func() error {
+				_, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
+					SecretId: aws.String("nonexistent-secret-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"DescribeSecret", func() error {
+				_, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
+					SecretId: aws.String("nonexistent-secret-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"DeleteSecret", func() error {
+				_, err := tc.client.DeleteSecret(tc.ctx, &secretsmanager.DeleteSecretInput{
+					SecretId:                   aws.String("nonexistent-delete-xyz"),
+					ForceDeleteWithoutRecovery: aws.Bool(true),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"RestoreSecret", func() error {
+				_, err := tc.client.RestoreSecret(tc.ctx, &secretsmanager.RestoreSecretInput{
+					SecretId: aws.String("nonexistent-restore-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"GetResourcePolicy", func() error {
+				_, err := tc.client.GetResourcePolicy(tc.ctx, &secretsmanager.GetResourcePolicyInput{
+					SecretId: aws.String("nonexistent-policy-secret"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"PutResourcePolicy", func() error {
+				_, err := tc.client.PutResourcePolicy(tc.ctx, &secretsmanager.PutResourcePolicyInput{
+					SecretId:       aws.String("nonexistent-policy-secret"),
+					ResourcePolicy: aws.String(`{"Version":"2012-10-17"}`),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "DescribeSecret_NonExistent", func() error {
-		_, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String("nonexistent-secret-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "DeleteSecret_NonExistent", func() error {
-		_, err := tc.client.DeleteSecret(tc.ctx, &secretsmanager.DeleteSecretInput{
-			SecretId:                   aws.String("nonexistent-delete-xyz"),
-			ForceDeleteWithoutRecovery: aws.Bool(true),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "RestoreSecret_NonExistent", func() error {
-		_, err := tc.client.RestoreSecret(tc.ctx, &secretsmanager.RestoreSecretInput{
-			SecretId: aws.String("nonexistent-restore-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+		for _, p := range probes {
+			if err := p.probe(); err != nil {
+				return fmt.Errorf("%s: %w", p.name, err)
+			}
 		}
 		return nil
 	}))
@@ -61,12 +74,9 @@ func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) [
 	results = append(results, r.RunTest("secretsmanager", "ListSecrets_Filters", func() error {
 		prefix := tc.uniqueName("FilterTest")
 		for _, suffix := range []string{"alpha", "beta"} {
-			_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-				Name:         aws.String(prefix + "-" + suffix),
-				SecretString: aws.String(suffix),
-			})
+			_, err := tc.createSecret(prefix+"-"+suffix, suffix)
 			if err != nil {
-				return fmt.Errorf("create %s: %v", suffix, err)
+				return err
 			}
 			defer tc.forceDeleteSecret(prefix + "-" + suffix)
 		}
@@ -93,12 +103,9 @@ func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) [
 		older := base + "-zzz" // created first, sorts last by name
 		newer := base + "-aaa"
 		for _, n := range []string{older, newer} {
-			_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-				Name:         aws.String(n),
-				SecretString: aws.String("sort-default"),
-			})
+			_, err := tc.createSecret(n, "sort-default")
 			if err != nil {
-				return fmt.Errorf("create %s: %v", n, err)
+				return err
 			}
 			defer tc.forceDeleteSecret(n)
 		}
@@ -138,41 +145,154 @@ func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) [
 		return nil
 	}))
 
-	results = append(results, r.RunTest("secretsmanager", "ListSecrets_MaxResultsRejected", func() error {
-		for _, bad := range []int32{0, 101} {
-			_, err := tc.client.ListSecrets(tc.ctx, &secretsmanager.ListSecretsInput{
-				MaxResults: aws.Int32(bad),
-			})
-			if err == nil {
-				return fmt.Errorf("MaxResults=%d should be rejected", bad)
-			}
-			if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
-				return fmt.Errorf("MaxResults=%d: %v", bad, e)
+	results = append(results, r.RunTest("secretsmanager", "List_MaxResultsOutOfRange", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{"ListSecrets", func() error {
+				for _, bad := range []int32{0, 101} {
+					_, err := tc.client.ListSecrets(tc.ctx, &secretsmanager.ListSecretsInput{
+						MaxResults: aws.Int32(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("MaxResults=%d should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+						return fmt.Errorf("MaxResults=%d: %w", bad, e)
+					}
+				}
+				return nil
+			}},
+			{"ListSecretVersionIds", func() error {
+				name := tc.uniqueName("VerListRange")
+				if _, err := tc.createSecret(name, "range"); err != nil {
+					return err
+				}
+				defer tc.forceDeleteSecret(name)
+				for _, bad := range []int32{0, 101} {
+					_, err := tc.client.ListSecretVersionIds(tc.ctx, &secretsmanager.ListSecretVersionIdsInput{
+						SecretId:   aws.String(name),
+						MaxResults: aws.Int32(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("MaxResults=%d should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+						return fmt.Errorf("MaxResults=%d: %w", bad, e)
+					}
+				}
+				return nil
+			}},
+			{"BatchGetSecretValue", func() error {
+				prefix := tc.uniqueName("BatchRange")
+				if _, err := tc.createSecret(prefix, "range"); err != nil {
+					return err
+				}
+				defer tc.forceDeleteSecret(prefix)
+				for _, bad := range []int32{0, 21} {
+					_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+						Filters:    []types.Filter{{Key: types.FilterNameStringTypeName, Values: []string{prefix}}},
+						MaxResults: aws.Int32(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("MaxResults=%d should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+						return fmt.Errorf("MaxResults=%d: %w", bad, e)
+					}
+				}
+				// MaxResults is documented as requiring Filters; pairing it with
+				// SecretIdList is rejected rather than silently ignored.
+				_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+					SecretIdList: []string{prefix},
+					MaxResults:   aws.Int32(5),
+				})
+				if err == nil {
+					return fmt.Errorf("MaxResults with SecretIdList should be rejected")
+				}
+				if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
+					return fmt.Errorf("MaxResults with SecretIdList: %w", e)
+				}
+				return nil
+			}},
+		}
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
 			}
 		}
 		return nil
 	}))
 
-	results = append(results, r.RunTest("secretsmanager", "ListSecrets_InvalidNextTokenRejected", func() error {
-		name := tc.uniqueName("BadToken")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("bad-token"),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
+	results = append(results, r.RunTest("secretsmanager", "List_InvalidNextTokenRejected", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{"ListSecrets", func() error {
+				name := tc.uniqueName("BadToken")
+				if _, err := tc.createSecret(name, "bad-token"); err != nil {
+					return err
+				}
+				defer tc.forceDeleteSecret(name)
+				for _, bad := range []string{"9999", "-1", "abc", "1x"} {
+					_, err := tc.client.ListSecrets(tc.ctx, &secretsmanager.ListSecretsInput{
+						NextToken: aws.String(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("NextToken=%q should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
+						return fmt.Errorf("NextToken=%q: %w", bad, e)
+					}
+				}
+				return nil
+			}},
+			{"ListSecretVersionIds", func() error {
+				name := tc.uniqueName("VerListBadToken")
+				if _, err := tc.createSecret(name, "bad-token"); err != nil {
+					return err
+				}
+				defer tc.forceDeleteSecret(name)
+				for _, bad := range []string{"9999", "-1", "abc", "1x"} {
+					_, err := tc.client.ListSecretVersionIds(tc.ctx, &secretsmanager.ListSecretVersionIdsInput{
+						SecretId:  aws.String(name),
+						NextToken: aws.String(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("NextToken=%q should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
+						return fmt.Errorf("NextToken=%q: %w", bad, e)
+					}
+				}
+				return nil
+			}},
+			{"BatchGetSecretValue", func() error {
+				prefix := tc.uniqueName("BatchBadToken")
+				if _, err := tc.createSecret(prefix, "bad-token"); err != nil {
+					return err
+				}
+				defer tc.forceDeleteSecret(prefix)
+				for _, bad := range []string{"9999", "-1", "abc", "1x"} {
+					_, err := tc.client.BatchGetSecretValue(tc.ctx, &secretsmanager.BatchGetSecretValueInput{
+						Filters:   []types.Filter{{Key: types.FilterNameStringTypeName, Values: []string{prefix}}},
+						NextToken: aws.String(bad),
+					})
+					if err == nil {
+						return fmt.Errorf("NextToken=%q should be rejected", bad)
+					}
+					if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
+						return fmt.Errorf("NextToken=%q: %w", bad, e)
+					}
+				}
+				return nil
+			}},
 		}
-		defer tc.forceDeleteSecret(name)
-
-		for _, bad := range []string{"9999", "-1", "abc", "1x"} {
-			_, err := tc.client.ListSecrets(tc.ctx, &secretsmanager.ListSecretsInput{
-				NextToken: aws.String(bad),
-			})
-			if err == nil {
-				return fmt.Errorf("NextToken=%q should be rejected", bad)
-			}
-			if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
-				return fmt.Errorf("NextToken=%q: %v", bad, e)
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
 			}
 		}
 		return nil
@@ -248,12 +368,9 @@ func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) [
 	results = append(results, r.RunTest("secretsmanager", "ListSecrets_FilterNegationAndUnknownKeyRejected", func() error {
 		base := tc.uniqueName("Neg")
 		for _, suffix := range []string{"keep", "drop"} {
-			_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-				Name:         aws.String(base + "-" + suffix),
-				SecretString: aws.String(suffix),
-			})
+			_, err := tc.createSecret(base+"-"+suffix, suffix)
 			if err != nil {
-				return fmt.Errorf("create %s: %v", suffix, err)
+				return err
 			}
 			defer tc.forceDeleteSecret(base + "-" + suffix)
 		}
@@ -299,15 +416,12 @@ func (r *TestRunner) runSecretsManagerEdgeTests(tc *secretsManagerTestContext) [
 		var pgSecrets []string
 		for i := 0; i < 5; i++ {
 			name := fmt.Sprintf("PagSecret-%s-%d", pgTs, i)
-			_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-				Name:         aws.String(name),
-				SecretString: aws.String("pagval"),
-			})
+			_, err := tc.createSecret(name, "pagval")
 			if err != nil {
 				for _, sn := range pgSecrets {
 					tc.forceDeleteSecret(sn)
 				}
-				return fmt.Errorf("create secret %s: %v", name, err)
+				return err
 			}
 			pgSecrets = append(pgSecrets, name)
 		}

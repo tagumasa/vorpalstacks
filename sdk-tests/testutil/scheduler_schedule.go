@@ -104,9 +104,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 	}))
 
 	results = append(results, tc.runner.RunTest("scheduler", "GetSchedule_AfterUpdate", func() error {
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{
-			Name: aws.String(scheduleName),
-		})
+		resp, err := tc.getSchedule(scheduleName)
 		if err != nil {
 			return err
 		}
@@ -141,9 +139,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("delete failed: %v", err)
 		}
-		_, err = tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{
-			Name: aws.String(scheduleName),
-		})
+		_, err = tc.getSchedule(scheduleName)
 		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
 			return fmt.Errorf("schedule not deleted: %v", err)
 		}
@@ -166,9 +162,9 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		defer tc.cleanupSchedule(name)
 
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		resp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -194,9 +190,9 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		defer tc.cleanupSchedule(name)
 
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		resp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -223,9 +219,9 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		defer tc.cleanupSchedule(name)
 
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		resp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -256,9 +252,9 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return err
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		defer tc.cleanupSchedule(name)
 
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		resp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -274,18 +270,10 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		defer tc.deleteIAMRole(rn)
 		cronExpr := "cron(0 12 * * ? *)"
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(name),
-			ScheduleExpression: aws.String(cronExpr),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return err
-		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		_, err := tc.createSchedule(name, cronExpr, tc.defaultTarget(rARN))
+		defer tc.cleanupSchedule(name)
 
-		resp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		resp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -300,16 +288,8 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		rn, rARN := tc.createIAMRole()
 		defer tc.deleteIAMRole(rn)
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(name),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		_, err := tc.createSchedule(name, "rate(30 minutes)", tc.defaultTarget(rARN))
+		defer tc.cleanupSchedule(name)
 
 		_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
 			Name:               aws.String(name),
@@ -322,7 +302,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 			return fmt.Errorf("update: %v", err)
 		}
 
-		getResp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		getResp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -347,7 +327,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		defer tc.cleanupSchedule(name)
 
 		newDesc := "updated description"
 		_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
@@ -361,7 +341,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 			return fmt.Errorf("update: %v", err)
 		}
 
-		getResp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		getResp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}
@@ -376,16 +356,8 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 		rn, rARN := tc.createIAMRole()
 		defer tc.deleteIAMRole(rn)
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(name),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(name)})
+		_, err := tc.createSchedule(name, "rate(30 minutes)", tc.defaultTarget(rARN))
+		defer tc.cleanupSchedule(name)
 
 		newExpr := "rate(60 minutes)"
 		_, err = tc.client.UpdateSchedule(tc.ctx, &scheduler.UpdateScheduleInput{
@@ -398,7 +370,7 @@ func (tc *schedTestContext) runScheduleTests() []TestResult {
 			return fmt.Errorf("update: %v", err)
 		}
 
-		getResp, err := tc.client.GetSchedule(tc.ctx, &scheduler.GetScheduleInput{Name: aws.String(name)})
+		getResp, err := tc.getSchedule(name)
 		if err != nil {
 			return fmt.Errorf("get: %v", err)
 		}

@@ -58,7 +58,6 @@ type OutboxStore interface {
 	Read(ctx context.Context, eventID string) (*OutboxEntry, error)
 	UpdateStatus(ctx context.Context, eventID string, from, to OutboxStatus) (bool, error)
 	UpdateEntry(ctx context.Context, entry *OutboxEntry) error
-	ListPending(ctx context.Context, limit int) ([]*OutboxEntry, error)
 	// ListPendingFrom returns up to 'limit' pending entries together with
 	// the opaque cursor of the last returned entry. Passing that cursor
 	// back resumes strictly after it; an empty cursor starts from the

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	svclogs "vorpalstacks/internal/services/aws/cloudwatchlogs"
 )
 
@@ -34,7 +34,7 @@ func TestLogsInvokerWritesVisibleToServingStore(t *testing.T) {
 	if err := adapter.EnsureLogStream(ctx, "us-east-1", "group", "stream"); err != nil {
 		t.Fatalf("EnsureLogStream: %v", err)
 	}
-	if err := adapter.PutLogEvents(ctx, "us-east-1", "group", "stream", []eventbus.LogsLogEntry{
+	if err := adapter.PutLogEvents(ctx, "us-east-1", "group", "stream", []invokers.LogsLogEntry{
 		{Timestamp: 1000, Message: "first"},
 		{Timestamp: 2000, Message: "second"},
 	}); err != nil {

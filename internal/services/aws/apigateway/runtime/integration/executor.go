@@ -60,20 +60,20 @@ type Executor interface {
 
 // ExecutorFactory creates integration executors.
 type ExecutorFactory struct {
-	bus       eventbus.Bus
+	bus       eventbus.ServiceBus
 	accountID string
 	region    string
 }
 
 // NewExecutorFactory creates a new executor factory.
-func NewExecutorFactory(bus eventbus.Bus) *ExecutorFactory {
+func NewExecutorFactory(bus eventbus.ServiceBus) *ExecutorFactory {
 	return &ExecutorFactory{
 		bus: bus,
 	}
 }
 
 // SetEventBus sets the event bus for cross-service delivery.
-func (f *ExecutorFactory) SetEventBus(bus eventbus.Bus) {
+func (f *ExecutorFactory) SetEventBus(bus eventbus.ServiceBus) {
 	f.bus = bus
 }
 

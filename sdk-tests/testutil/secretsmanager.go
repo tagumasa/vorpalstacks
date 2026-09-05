@@ -36,15 +36,42 @@ func (tc *secretsManagerTestContext) uniqueName(prefix string) string {
 	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
 }
 
-func (tc *secretsManagerTestContext) createAndDeleteSecret(name, value string) (string, error) {
+// createSecret creates a secret carrying only Name and SecretString. Tests
+// that pass additional input members (Description, SecretBinary, Tags) or
+// exercise CreateSecret itself keep their literal CreateSecretInput.
+func (tc *secretsManagerTestContext) createSecret(name, value string) (*secretsmanager.CreateSecretOutput, error) {
 	resp, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
 		Name:         &name,
 		SecretString: &value,
 	})
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("create %s: %w", name, err)
 	}
-	return *resp.ARN, nil
+	return resp, nil
+}
+
+// describeSecret reads a secret by plain SecretId; decorated Describe calls
+// and the DescribeSecret operation test keep their literals.
+func (tc *secretsManagerTestContext) describeSecret(name string) (*secretsmanager.DescribeSecretOutput, error) {
+	resp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
+		SecretId: &name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describe %s: %w", name, err)
+	}
+	return resp, nil
+}
+
+// getSecretValue reads the current secret value by plain SecretId; the
+// GetSecretValue operation test keeps its literal.
+func (tc *secretsManagerTestContext) getSecretValue(name string) (*secretsmanager.GetSecretValueOutput, error) {
+	resp, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
+		SecretId: &name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get %s: %w", name, err)
+	}
+	return resp, nil
 }
 
 func (tc *secretsManagerTestContext) forceDeleteSecret(name string) {
@@ -56,10 +83,6 @@ func (tc *secretsManagerTestContext) forceDeleteSecret(name string) {
 
 func boolPtr(b bool) *bool {
 	return &b
-}
-
-func int64Ptr(v int64) *int64 {
-	return &v
 }
 
 func (r *TestRunner) RunSecretsManagerTests() []TestResult {

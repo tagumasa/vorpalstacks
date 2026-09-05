@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -141,9 +142,9 @@ func (s *memStorage) ListBuckets() []string        { return nil }
 // inclusively only when includeStart is set.
 type scriptedKinesisStream struct {
 	mu      sync.Mutex
-	shards  []eventbus.ShardInfo
+	shards  []invokers.ShardInfo
 	floor   string
-	records []eventbus.KinesisRecord
+	records []invokers.KinesisRecord
 	invokes int
 	reads   int
 	anchors []string
@@ -152,7 +153,7 @@ type scriptedKinesisStream struct {
 func (s *scriptedKinesisStream) publish(seq string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.records = append(s.records, eventbus.KinesisRecord{
+	s.records = append(s.records, invokers.KinesisRecord{
 		SequenceNumber:              seq,
 		PartitionKey:                "pk-" + seq,
 		Data:                        []byte("data-" + seq),
@@ -160,7 +161,7 @@ func (s *scriptedKinesisStream) publish(seq string) {
 	})
 }
 
-func (s *scriptedKinesisStream) ListShards(context.Context, string) ([]eventbus.ShardInfo, error) {
+func (s *scriptedKinesisStream) ListShards(context.Context, string) ([]invokers.ShardInfo, error) {
 	return s.shards, nil
 }
 
@@ -189,11 +190,11 @@ func (s *scriptedKinesisStream) CreateShardIterator(_ context.Context, _ string,
 	}
 }
 
-func (s *scriptedKinesisStream) GetRecords(_ context.Context, _ string, _ string, from string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
+func (s *scriptedKinesisStream) GetRecords(_ context.Context, _ string, _ string, from string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reads++
-	var out []eventbus.KinesisRecord
+	var out []invokers.KinesisRecord
 	for _, r := range s.records {
 		if from != "" && ((includeStart && r.SequenceNumber < from) || (!includeStart && r.SequenceNumber <= from)) {
 			continue
@@ -217,11 +218,11 @@ func (s *scriptedKinesisStream) StreamExists(context.Context, string, string) (b
 // fakeKinesisBus exposes only the Kinesis invoker; the poller calls nothing
 // else on the bus for a mapping without failure destinations.
 type fakeKinesisBus struct {
-	eventbus.Bus
+	eventbus.ServiceBus
 	invoker *scriptedKinesisStream
 }
 
-func (b *fakeKinesisBus) KinesisInvoker() eventbus.KinesisInvoker { return b.invoker }
+func (b *fakeKinesisBus) KinesisInvoker() invokers.KinesisInvoker { return b.invoker }
 
 // TestKinesisLatestAnchorPersistedForBufferedMapping pins the anchoring of a
 // LATEST mapping: the first empty poll must durably record the anchor so a
@@ -247,7 +248,7 @@ func TestKinesisLatestAnchorPersistedForBufferedMapping(t *testing.T) {
 	}
 
 	stream := &scriptedKinesisStream{
-		shards: []eventbus.ShardInfo{{ShardID: "shard-0"}},
+		shards: []invokers.ShardInfo{{ShardID: "shard-0"}},
 		floor:  "0",
 	}
 	invoke := &capturePayloads{}

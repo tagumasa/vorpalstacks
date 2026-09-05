@@ -266,12 +266,6 @@ func (s *PebbleOutboxStore) UpdateEntry(ctx context.Context, entry *OutboxEntry)
 	return nil
 }
 
-// ListPending returns up to 'limit' outbox entries with status OutboxPending.
-func (s *PebbleOutboxStore) ListPending(ctx context.Context, limit int) ([]*OutboxEntry, error) {
-	entries, _, err := s.ListPendingFrom(ctx, limit, "")
-	return entries, err
-}
-
 // ListPendingFrom returns up to 'limit' pending entries plus the opaque
 // cursor of the last returned entry. Passing the cursor back resumes
 // strictly after it; an empty cursor starts from the head of the pending
@@ -538,11 +532,7 @@ func (s *PebbleOutboxStore) Close() error {
 
 func (s *PebbleOutboxStore) logWarn(msg string, keyvals ...interface{}) {
 	if s.log != nil {
-		fields := make([]logs.Field, 0, len(keyvals)/2)
-		for i := 0; i+1 < len(keyvals); i += 2 {
-			fields = append(fields, logs.Field{Key: fmt.Sprint(keyvals[i]), Value: keyvals[i+1]})
-		}
-		s.log.Warn(msg, fields...)
+		s.log.Warn(msg, logFields(keyvals...)...)
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/headerorder"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
@@ -36,16 +37,16 @@ type RuntimeServer struct {
 	validator        *validator.Validator
 	authenticator    *auth.APIKeyAuthenticator
 	lambdaAuthorizer *auth.LambdaAuthorizer
-	bus              eventbus.Bus
+	bus              eventbus.ServiceBus
 	accountID        string
 	region           string
 	stageThrottlers  sync.Map
 	inspectorMu      sync.RWMutex
-	webACLInspector  eventbus.WebACLInspector
+	webACLInspector  waf.WebACLInspector
 }
 
 // NewRuntimeServer creates a new API Gateway runtime server.
-func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, bus eventbus.Bus) *RuntimeServer {
+func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewaystore.UsageStore, bus eventbus.ServiceBus) *RuntimeServer {
 	return &RuntimeServer{
 		store:            store,
 		usageStore:       usageStore,
@@ -58,7 +59,7 @@ func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewa
 }
 
 // SetEventBus injects the event bus for cross-service delivery.
-func (s *RuntimeServer) SetEventBus(bus eventbus.Bus) {
+func (s *RuntimeServer) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 	s.executorFactory.SetEventBus(bus)
 }
@@ -76,7 +77,7 @@ func (s *RuntimeServer) SetRegion(region string) {
 
 // SetWebACLInspector injects the WAF request-inspection entry point so
 // WebACLs associated with the served stages are enforced on requests.
-func (s *RuntimeServer) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *RuntimeServer) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.inspectorMu.Lock()
 	s.webACLInspector = inspector
 	s.inspectorMu.Unlock()
@@ -119,9 +120,9 @@ func (s *RuntimeServer) enforceWebACL(w http.ResponseWriter, r *http.Request, st
 		}
 	}
 
-	inspHeaders := eventbus.RequestHeadersWithHost(r.Header, r.Host)
+	inspHeaders := waf.RequestHeadersWithHost(r.Header, r.Host)
 	headerOrder, _ := headerorder.FromContext(r.Context(), inspHeaders)
-	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, stageARN, eventbus.BuildWebACLInspectionRequest(
+	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, stageARN, waf.BuildWebACLInspectionRequest(
 		r.Method, r.URL.Path, r.URL.RawQuery, remoteAddrHost(r.RemoteAddr), r.Proto,
 		inspHeaders, headerOrder, body, bodyTruncated,
 	))
@@ -191,7 +192,7 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	s.inspectorMu.RLock()
 	inspector := s.webACLInspector
 	s.inspectorMu.RUnlock()
-	if eventbus.ServeWAFTokenExchange(r.Context(), inspector, w, r) {
+	if waf.ServeWAFTokenExchange(r.Context(), inspector, w, r) {
 		return
 	}
 

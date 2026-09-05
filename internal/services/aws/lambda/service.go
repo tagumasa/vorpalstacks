@@ -19,6 +19,7 @@ import (
 
 	"vorpalstacks/internal/client/mobyclient"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
@@ -39,10 +40,10 @@ type lambdaStore struct {
 // LambdaService provides Lambda operations.
 type LambdaService struct {
 	storageManager *storage.RegionStorageManager
-	s3Invoker      eventbus.S3Invoker
-	logsInvoker    eventbus.LogsInvoker
+	s3Invoker      invokers.S3Invoker
+	logsInvoker    invokers.LogsInvoker
 	dockerClient   mobyclient.ContainerLifecycle
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	storeCache     sync.Map // region → *lambdaStore
 	accountID      string
 	region         string
@@ -60,6 +61,11 @@ type LambdaService struct {
 	// its batch is re-delivered on the next poll.
 	containerEnsureMu sync.Map // container name → *sync.Mutex
 	containerIDs      sync.Map // container name → container ID
+
+	// sandboxes owns the persistent execution environments of
+	// image-package functions; zip-package functions stay on the
+	// long-lived-container exec model above.
+	sandboxes *sandboxPool
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
@@ -99,7 +105,9 @@ func NewLambdaService(dockerClient mobyclient.ContainerLifecycle, accountID, reg
 		accountID:    accountID,
 		region:       region,
 		dataDir:      dataDir,
+		sandboxes:    newSandboxPool(dockerClient),
 	}
+	svc.sandboxes.start()
 	// Remove orphaned Lambda containers from previous server instances that
 	// were killed (SIGKILL) before Shutdown() could clean them up.
 	svc.cleanupOrphanedContainers()
@@ -142,12 +150,12 @@ func (s *LambdaService) cleanupOrphanedContainers() {
 }
 
 // SetS3Invoker injects the S3 invoker for reading deployment packages.
-func (s *LambdaService) SetS3Invoker(invoker eventbus.S3Invoker) {
+func (s *LambdaService) SetS3Invoker(invoker invokers.S3Invoker) {
 	s.s3Invoker = invoker
 }
 
 // SetLogsInvoker injects the Logs invoker for writing Lambda execution logs.
-func (s *LambdaService) SetLogsInvoker(invoker eventbus.LogsInvoker) {
+func (s *LambdaService) SetLogsInvoker(invoker invokers.LogsInvoker) {
 	s.logsInvoker = invoker
 }
 
@@ -166,7 +174,7 @@ func (s *LambdaService) SetHostEndpoint(endpoint string) {
 // writeLambdaLogs publishes a LambdaLogWriteEvent instead of calling
 // the logsStore directly, enabling metric filter and subscription filter
 // evaluation on Lambda-produced logs.
-func (s *LambdaService) SetEventBus(bus eventbus.Bus) {
+func (s *LambdaService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 
@@ -431,13 +439,31 @@ func (s *LambdaService) copyCodeToContainer(containerID string, code []byte, run
 	return nil
 }
 
+// executionOutcome is the strategy-neutral result of one execution: both
+// the zip exec model and the image sandbox model settle into this shape,
+// and the shared tail (log events, classification, result assembly)
+// consumes it — the invoke pipeline is decomposed so the two models can
+// never drift apart.
+type executionOutcome struct {
+	payload     string
+	logOut      string
+	stderr      string
+	duration    time.Duration
+	timedOut    bool
+	apiAnswered bool
+	apiKind     string
+	exitCode    int
+}
+
 func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.InvocationResult, error) {
 	function, ver, store, region := req.Function, req.Version, req.Store, req.Region
 	payload, logType := req.Payload, req.LogType
 	// Enforce reserved concurrency limit if configured.
 	// ReservedConcurrency=0 means the function is effectively paused
 	// (zero concurrent executions allowed); any non-nil value must be
-	// enforced.
+	// enforced. For image-package functions the sandbox pool enforces the
+	// same value structurally (its cap is the sandbox count), so the two
+	// planes reject at the same threshold.
 	if function.ReservedConcurrency != nil {
 		if *function.ReservedConcurrency == 0 {
 			return nil, ErrTooManyRequests
@@ -455,47 +481,12 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 		defer counter.Add(-1)
 	}
 
-	ctx := context.Background()
-
-	containerID, err := s.ensureFunctionContainer(function, ver, store, region)
-	if err != nil {
-		return nil, err
-	}
-
 	version := "$LATEST"
 	if ver != nil {
 		version = ver.Version
 	}
 
 	execCfg := executionConfigFor(function, ver)
-
-	code, err := s.loadCode(function.FunctionName, version, region)
-	if err != nil {
-		// A zip-packaged function must have its code on disk; executing an
-		// empty container would silently run stale or no code. Container
-		// image packages carry no zip archive.
-		if execCfg.ImageUri == "" && function.PackageType != "Image" {
-			logs.Error("Function code unavailable for invocation",
-				logs.String("function", function.FunctionName),
-				logs.String("version", version),
-				logs.Err(err))
-			return nil, NewLambdaError("ServiceException",
-				fmt.Sprintf("The code of function %s version %s is not available.", function.FunctionName, version),
-				http.StatusInternalServerError)
-		}
-	}
-	if len(code) > 0 {
-		if err := s.copyCodeToContainer(containerID, code, execCfg.Runtime); err != nil {
-			return nil, fmt.Errorf("failed to copy code to container: %w", err)
-		}
-	}
-
-	handlerParts := strings.Split(execCfg.Handler, ".")
-	moduleFile := handlerParts[0]
-	handlerFunc := "handler"
-	if len(handlerParts) > 1 {
-		handlerFunc = handlerParts[1]
-	}
 
 	eventJSON := "{}"
 	if len(payload) > 0 {
@@ -516,6 +507,92 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 
 	rec := newInvocationRecord(function.FunctionName, version, req.InvokedARN, execCfg.MemorySize, execCfg.Timeout, clientContextJSON)
 
+	// The execution strategy: image-package functions run on the sandbox
+	// pool (the image's own ENTRYPOINT as PID1 speaking the Runtime API);
+	// zip-package functions stay on the container exec model. Everything
+	// past this point is shared.
+	var outcome executionOutcome
+	var err error
+	if execCfg.ImageUri != "" {
+		outcome, err = s.runImageExecution(function, ver, execCfg, region, version, rec, eventJSON)
+	} else {
+		outcome, err = s.runZipExecution(function, ver, store, region, version, execCfg, rec, eventJSON)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	payloadOut := outcome.payload
+	if outcome.timedOut {
+		payloadOut = timeoutEnvelope(rec.TimeoutSeconds)
+	}
+
+	logEvents := invocationLogEvents(rec, outcome.logOut, outcome.stderr, outcome.duration, outcome.timedOut)
+	s.writeLambdaLogs(rec, region, logEvents)
+
+	functionError := classifyFunctionError(outcome.exitCode)
+	if outcome.apiAnswered {
+		if outcome.apiKind != runtimeAPIResponseKind {
+			// The runtime reported the failure through an error endpoint;
+			// the contract marks such invocations Unhandled.
+			functionError = "Unhandled"
+		} else {
+			// A delivered response is a success whatever the payload
+			// contains and whatever the process did after answering — the
+			// header may only be present when an error actually occurred.
+			functionError = ""
+		}
+	}
+
+	return &lambdastore.InvocationResult{
+		StatusCode:      http.StatusOK,
+		ExecutedVersion: version,
+		Payload:         []byte(payloadOut),
+		FunctionError:   functionError,
+		LogResult:       captureLogResult(logType, logEvents),
+	}, nil
+}
+
+// runZipExecution is the zip-package execution strategy: one long-lived
+// container per function version, one exec per invoke (the runtime wrapper
+// for the managed runtimes, /var/runtime/bootstrap for the provided
+// runtimes with a per-invocation host-side Runtime API server).
+func (s *LambdaService) runZipExecution(function *lambdastore.Function, ver *lambdastore.Version, store *lambdastore.FunctionStore, region, version string, execCfg executionConfig, rec invocationRecord, eventJSON string) (executionOutcome, error) {
+	ctx := context.Background()
+
+	containerID, err := s.ensureFunctionContainer(function, ver, store, region)
+	if err != nil {
+		return executionOutcome{}, err
+	}
+
+	code, err := s.loadCode(function.FunctionName, version, region)
+	if err != nil {
+		// A zip-packaged function must have its code on disk; executing an
+		// empty container would silently run stale or no code. Container
+		// image packages carry no zip archive.
+		if execCfg.ImageUri == "" && function.PackageType != "Image" {
+			logs.Error("Function code unavailable for invocation",
+				logs.String("function", function.FunctionName),
+				logs.String("version", version),
+				logs.Err(err))
+			return executionOutcome{}, NewLambdaError("ServiceException",
+				fmt.Sprintf("The code of function %s version %s is not available.", function.FunctionName, version),
+				http.StatusInternalServerError)
+		}
+	}
+	if len(code) > 0 {
+		if err := s.copyCodeToContainer(containerID, code, execCfg.Runtime); err != nil {
+			return executionOutcome{}, fmt.Errorf("failed to copy code to container: %w", err)
+		}
+	}
+
+	handlerParts := strings.Split(execCfg.Handler, ".")
+	moduleFile := handlerParts[0]
+	handlerFunc := "handler"
+	if len(handlerParts) > 1 {
+		handlerFunc = handlerParts[1]
+	}
+
 	invokeCmd, resultMarker := s.buildInvokeCommand(execCfg.Runtime, moduleFile, handlerFunc, eventJSON, rec)
 
 	// Bootstrap runtimes (the provided.* custom runtimes and the RIC-based
@@ -530,7 +607,7 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 	if !usesRuntimeWrapper(execCfg.Runtime) {
 		apiServer, err = startRuntimeAPI(rec, []byte(eventJSON))
 		if err != nil {
-			return nil, fmt.Errorf("failed to start the runtime API: %w", err)
+			return executionOutcome{}, fmt.Errorf("failed to start the runtime API: %w", err)
 		}
 		defer apiServer.Close()
 		execEnv = append(execEnv, "AWS_LAMBDA_RUNTIME_API="+apiServer.Addr())
@@ -561,7 +638,7 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 	}
 	execDuration := time.Since(execStart)
 	if err != nil {
-		return nil, fmt.Errorf("failed to exec in container: %w", err)
+		return executionOutcome{}, fmt.Errorf("failed to exec in container: %w", err)
 	}
 
 	// The framed region between the markers is exactly the return value and
@@ -575,8 +652,15 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 		payloadOut, logOut = splitResultPayload(execResult.Stdout, resultMarker)
 	}
 
-	apiAnswered := false
-	var apiKind string
+	outcome := executionOutcome{
+		payload:  payloadOut,
+		logOut:   logOut,
+		stderr:   execResult.Stderr,
+		duration: execDuration,
+		timedOut: timedOut,
+		exitCode: execResult.ExitCode,
+	}
+
 	if apiServer != nil {
 		// The bootstrap answers over the Runtime API, not stdout: its
 		// stdout is console output only. A captured answer outranks the
@@ -584,44 +668,17 @@ func (s *LambdaService) invokeFunction(req invokeRequest) (*lambdastore.Invocati
 		// answering sits idle until the timeout reaps it, which is the
 		// platform ending the execution, not a function failure.
 		apiBody, kind, captured := apiServer.Captured()
-		apiAnswered, apiKind = captured, kind
+		outcome.apiAnswered, outcome.apiKind = captured, kind
 		if captured {
-			payloadOut = string(apiBody)
-			timedOut = false
+			outcome.payload = string(apiBody)
+			outcome.timedOut = false
 		} else {
-			payloadOut = ""
-			logOut = strings.TrimSpace(execResult.Stdout)
+			outcome.payload = ""
+			outcome.logOut = strings.TrimSpace(execResult.Stdout)
 		}
 	}
 
-	if timedOut {
-		payloadOut = timeoutEnvelope(rec.TimeoutSeconds)
-	}
-
-	logEvents := invocationLogEvents(rec, logOut, execResult.Stderr, execDuration, timedOut)
-	s.writeLambdaLogs(rec, region, logEvents)
-
-	functionError := classifyFunctionError(execResult.ExitCode)
-	if apiAnswered {
-		if apiKind != runtimeAPIResponseKind {
-			// The bootstrap reported the failure through an error endpoint;
-			// the contract marks such invocations Unhandled.
-			functionError = "Unhandled"
-		} else {
-			// A delivered response is a success whatever the payload
-			// contains and whatever the process did after answering — the
-			// header may only be present when an error actually occurred.
-			functionError = ""
-		}
-	}
-
-	return &lambdastore.InvocationResult{
-		StatusCode:      http.StatusOK,
-		ExecutedVersion: version,
-		Payload:         []byte(payloadOut),
-		FunctionError:   functionError,
-		LogResult:       captureLogResult(logType, logEvents),
-	}, nil
+	return outcome, nil
 }
 
 // finalJSONDocument returns the JSON document the runtime wrapper appended
@@ -799,9 +856,9 @@ func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string
 		return
 	}
 
-	entries := make([]eventbus.LogsLogEntry, len(events))
+	entries := make([]invokers.LogsLogEntry, len(events))
 	for i, e := range events {
-		entries[i] = eventbus.LogsLogEntry(e)
+		entries[i] = invokers.LogsLogEntry(e)
 	}
 
 	if err := s.logsInvoker.PutLogEvents(ctx, region, logGroupName, logStreamName, entries); err != nil {
@@ -847,15 +904,15 @@ func (s *LambdaService) InvokeForGateway(ctx context.Context, functionRef string
 // consumers that must distinguish a failed function execution
 // (LambdaInvocation.FunctionError) from an invocation-transport failure
 // (the returned error).
-func (s *LambdaService) InvokeForTrigger(ctx context.Context, functionRef string, payload []byte) (eventbus.LambdaInvocation, error) {
+func (s *LambdaService) InvokeForTrigger(ctx context.Context, functionRef string, payload []byte) (invokers.LambdaInvocation, error) {
 	result, err := s.InvokeForEventSource(ctx, functionRef, payload)
 	if err != nil {
-		return eventbus.LambdaInvocation{}, err
+		return invokers.LambdaInvocation{}, err
 	}
 	if result == nil {
-		return eventbus.LambdaInvocation{}, fmt.Errorf("invocation returned nil result")
+		return invokers.LambdaInvocation{}, fmt.Errorf("invocation returned nil result")
 	}
-	return eventbus.LambdaInvocation{
+	return invokers.LambdaInvocation{
 		StatusCode:    result.StatusCode,
 		Payload:       result.Payload,
 		FunctionError: result.FunctionError,
@@ -905,7 +962,7 @@ func (s *LambdaService) GetFunctionStoreForRegion(region string) *lambdastore.Fu
 	return s.getOrCreateFunctionStore(region)
 }
 
-// IsSubnetInUse implements eventbus.SubnetUsageChecker. It scans all Lambda
+// IsSubnetInUse implements invokers.SubnetUsageChecker. It scans all Lambda
 // functions in the given region and returns true if any function's
 // VpcConfig references the specified subnet ID.
 func (s *LambdaService) IsSubnetInUse(ctx context.Context, region, subnetId string) bool {
@@ -926,7 +983,7 @@ func (s *LambdaService) IsSubnetInUse(ctx context.Context, region, subnetId stri
 	return false
 }
 
-// IsSecurityGroupInUse implements eventbus.SecurityGroupUsageChecker. It
+// IsSecurityGroupInUse implements invokers.SecurityGroupUsageChecker. It
 // scans all Lambda functions in the given region and returns true if any
 // function's VpcConfig references the specified security group ID.
 func (s *LambdaService) IsSecurityGroupInUse(ctx context.Context, region, sgId string) bool {
@@ -967,10 +1024,11 @@ func (s *LambdaService) GetAccountSettings(ctx context.Context, reqCtx *request.
 }
 
 // Shutdown gracefully shuts down the Lambda service by stopping the ESM
-// poller, removing all running Docker containers, and waiting for all
-// asynchronous operations to complete.
+// poller, draining the sandbox pool and removing all running Docker
+// containers, and waiting for all asynchronous operations to complete.
 func (s *LambdaService) Shutdown() {
 	s.StopESMPoller()
+	s.sandboxes.shutdown()
 	s.cleanupAllContainers()
 	s.asyncWg.Wait()
 }

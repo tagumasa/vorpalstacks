@@ -3,6 +3,7 @@ package sfn
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"vorpalstacks/internal/common/defaults"
@@ -25,7 +26,7 @@ type StepFunctionService struct {
 	executor       ExecutorInterface
 	accountID      string
 	storageManager *storage.RegionStorageManager
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	stores         sync.Map
 	asyncWg        sync.WaitGroup
 }
@@ -44,9 +45,12 @@ func NewStepFunctionService(storageMgr *storage.RegionStorageManager, accountID 
 
 // SetEventBus injects the event bus and subscribes to cross-service start
 // execution events from EventBridge, Scheduler, and CloudWatch Alarms.
-func (s *StepFunctionService) SetEventBus(bus eventbus.Bus) {
+func (s *StepFunctionService) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
-	_, _ = eventbus.SubscribeTyped[*eventbus.StepFunctionsStartExecutionEvent](bus, s.handleStartExecutionEvent, eventbus.WithAsync())
+	if _, err := eventbus.SubscribeTyped[*eventbus.StepFunctionsStartExecutionEvent](bus, s.handleStartExecutionEvent, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("sfn: subscribe StepFunctionsStartExecutionEvent: %w", err)
+	}
+	return nil
 }
 
 func (s *StepFunctionService) handleStartExecutionEvent(ctx context.Context, evt *eventbus.StepFunctionsStartExecutionEvent) eventbus.HandlerResult {

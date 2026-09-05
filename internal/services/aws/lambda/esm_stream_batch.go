@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -114,7 +114,7 @@ func kinesisRecordSeq(record map[string]interface{}) string {
 
 // dynamoDBRecordSeq reads the sequence number out of the DynamoDB Streams
 // wire record form.
-func dynamoDBRecordSeq(record *eventbus.DynamoDBStreamRecord) string {
+func dynamoDBRecordSeq(record *invokers.DynamoDBStreamRecord) string {
 	if record == nil {
 		return ""
 	}

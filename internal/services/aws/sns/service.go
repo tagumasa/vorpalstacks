@@ -31,7 +31,7 @@ type SNSService struct {
 	accountID      string
 	defaultRegion  string
 	httpClient     *http.Client
-	bus            eventbus.Bus
+	bus            eventbus.ServiceBus
 	stores         sync.Map
 	deliveryWg     sync.WaitGroup
 
@@ -72,9 +72,12 @@ func (s *SNSService) SetSNSStore(region string, snsStore *snsstore.SNSStore) {
 // SetEventBus injects the event bus and registers the SNS delivery handler.
 // When the bus is set, Publish() routes delivery through the bus instead of
 // spawning goroutines directly.
-func (s *SNSService) SetEventBus(bus eventbus.Bus) {
+func (s *SNSService) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
-	_, _ = eventbus.SubscribeTyped[*eventbus.SNSDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync())
+	if _, err := eventbus.SubscribeTyped[*eventbus.SNSDeliveryEvent](bus, s.handleBusDelivery, eventbus.WithAsync()); err != nil {
+		return fmt.Errorf("sns: subscribe SNSDeliveryEvent: %w", err)
+	}
+	return nil
 }
 
 // Close waits for all in-flight delivery goroutines to complete.

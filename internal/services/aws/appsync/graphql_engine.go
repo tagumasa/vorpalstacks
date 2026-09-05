@@ -87,9 +87,9 @@ type BusPublisher interface {
 	Publish(ctx context.Context, event interface{}) error
 }
 
-// busPublisherAdapter wraps an eventbus.Bus to satisfy the BusPublisher interface.
+// busPublisherAdapter wraps an eventbus.ServiceBus to satisfy the BusPublisher interface.
 type busPublisherAdapter struct {
-	bus eventbus.Bus
+	bus eventbus.ServiceBus
 }
 
 // Publish dispatches an event through the underlying event bus if it satisfies the Event interface.

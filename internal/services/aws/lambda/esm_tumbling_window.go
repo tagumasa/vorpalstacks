@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/eventbus"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
@@ -120,7 +120,7 @@ func splitByWindow(items []windowedStreamItem) [][]windowedStreamItem {
 
 // ddbArrivalUnix returns the record insertion time a DynamoDB Streams
 // record uses for tumbling window boundary determination.
-func ddbArrivalUnix(rec *eventbus.DynamoDBStreamRecord) int64 {
+func ddbArrivalUnix(rec *invokers.DynamoDBStreamRecord) int64 {
 	if ts, ok := rec.Dynamodb["ApproximateCreationDateTime"].(float64); ok {
 		return int64(ts)
 	}

@@ -35,12 +35,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "DescribeSecret", func() error {
 		name := tc.uniqueName("DescSecret")
-		createResp, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("describe-test"),
-		})
+		createResp, err := tc.createSecret(name, "describe-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -65,12 +62,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 	results = append(results, r.RunTest("secretsmanager", "GetSecretValue", func() error {
 		name := tc.uniqueName("GetSecret")
 		value := "my-secret-value"
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String(value),
-		})
+		_, err := tc.createSecret(name, value)
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -97,12 +91,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecret", func() error {
 		name := tc.uniqueName("UpdateSecret")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("original"),
-		})
+		_, err := tc.createSecret(name, "original")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -121,11 +112,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 			return fmt.Errorf("name mismatch")
 		}
 
-		getResp, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(name),
-		})
+		getResp, err := tc.getSecretValue(name)
 		if err != nil {
-			return fmt.Errorf("get after update: %v", err)
+			return fmt.Errorf("get after update: %w", err)
 		}
 		if getResp.SecretString == nil || *getResp.SecretString != newValue {
 			return fmt.Errorf("value not updated: got %q, want %q", aws.ToString(getResp.SecretString), newValue)
@@ -135,12 +124,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "DeleteSecret", func() error {
 		name := tc.uniqueName("DelSecret")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("delete-test"),
-		})
+		_, err := tc.createSecret(name, "delete-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 
 		resp, err := tc.client.DeleteSecret(tc.ctx, &secretsmanager.DeleteSecretInput{
@@ -164,12 +150,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "ListSecrets", func() error {
 		name := tc.uniqueName("ListSecret")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("list-test"),
-		})
+		_, err := tc.createSecret(name, "list-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -209,11 +192,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 		}
 		defer tc.forceDeleteSecret(name)
 
-		resp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		resp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if resp.Description == nil || *resp.Description != desc {
 			return fmt.Errorf("description mismatch: got %q, want %q", aws.ToString(resp.Description), desc)
@@ -233,11 +214,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 		}
 		defer tc.forceDeleteSecret(name)
 
-		resp, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(name),
-		})
+		resp, err := tc.getSecretValue(name)
 		if err != nil {
-			return fmt.Errorf("get: %v", err)
+			return err
 		}
 		if resp.SecretBinary == nil {
 			return fmt.Errorf("SecretBinary is nil")
@@ -250,12 +229,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "CreateSecret_Duplicate", func() error {
 		dupName := tc.uniqueName("DupSecret")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(dupName),
-			SecretString: aws.String("initial-value"),
-		})
+		_, err := tc.createSecret(dupName, "initial-value")
 		if err != nil {
-			return fmt.Errorf("first create: %v", err)
+			return fmt.Errorf("first create: %w", err)
 		}
 		defer tc.forceDeleteSecret(dupName)
 
@@ -289,11 +265,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 			return fmt.Errorf("update: %v", err)
 		}
 
-		resp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		resp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if resp.Description != nil && *resp.Description != "" {
 			return fmt.Errorf("description should be cleared, got %q", aws.ToString(resp.Description))
@@ -303,12 +277,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 
 	results = append(results, r.RunTest("secretsmanager", "RestoreSecret_Basic", func() error {
 		name := tc.uniqueName("RestoreSec")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("restore-test"),
-		})
+		_, err := tc.createSecret(name, "restore-test")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 
 		_, err = tc.client.DeleteSecret(tc.ctx, &secretsmanager.DeleteSecretInput{
@@ -341,11 +312,9 @@ func (r *TestRunner) runSecretsManagerSecretTests(tc *secretsManagerTestContext)
 			return fmt.Errorf("name mismatch after restore")
 		}
 
-		getResp, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(name),
-		})
+		getResp, err := tc.getSecretValue(name)
 		if err != nil {
-			return fmt.Errorf("get after restore: %v", err)
+			return fmt.Errorf("get after restore: %w", err)
 		}
 		if getResp.SecretString == nil || *getResp.SecretString != "restore-test" {
 			return fmt.Errorf("value mismatch after restore")

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/eventbus"
@@ -58,7 +59,7 @@ func userImportLogGroup(userPoolID, userPoolName string) string {
 	return fmt.Sprintf("/aws/cognito/userpools/%s/%s", userPoolID, userPoolName)
 }
 
-func (s *CognitoService) importS3Invoker() eventbus.S3Invoker {
+func (s *CognitoService) importS3Invoker() invokers.S3Invoker {
 	if s.bus == nil {
 		return nil
 	}
@@ -149,7 +150,7 @@ func (s *CognitoService) finalizeStoppedImport(store cognitostore.CognitoStoreIn
 
 // deleteImportCSV removes the uploaded CSV after the job reaches a
 // terminal state, mirroring AWS's post-completion cleanup.
-func (s *CognitoService) deleteImportCSV(s3 eventbus.S3Invoker, region, userPoolID, jobID string) {
+func (s *CognitoService) deleteImportCSV(s3 invokers.S3Invoker, region, userPoolID, jobID string) {
 	if s3 == nil {
 		return
 	}

@@ -23,7 +23,7 @@ type CognitoService struct {
 	storageManager      *storage.RegionStorageManager
 	accountID           string
 	region              string
-	bus                 eventbus.Bus
+	bus                 eventbus.ServiceBus
 	stores              sync.Map // region → cognitostore.CognitoStoreInterface
 	authCodes           sync.Map // code string → authCodeEntry
 	authCodeCleanupOnce sync.Once
@@ -71,13 +71,14 @@ func (s *CognitoService) SetStorageManager(sm *storage.RegionStorageManager) {
 // SetEventBus registers the Cognito trigger handler on the event bus.
 // The handler invokes the Lambda function specified in the trigger event
 // and returns the Lambda response payload.
-func (s *CognitoService) SetEventBus(bus eventbus.Bus) {
+func (s *CognitoService) SetEventBus(bus eventbus.ServiceBus) error {
 	s.bus = bus
 	if bus != nil {
-		_, _ = eventbus.SubscribeTyped[*eventbus.CognitoTriggerEvent](bus, s.handleCognitoTrigger,
-			eventbus.WithCallerPrincipal("cognito-idp.amazonaws.com"),
-		)
+		if _, err := eventbus.SubscribeTyped[*eventbus.CognitoTriggerEvent](bus, s.handleCognitoTrigger); err != nil {
+			return fmt.Errorf("cognito-idp: subscribe CognitoTriggerEvent: %w", err)
+		}
 	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, v interface{}) {

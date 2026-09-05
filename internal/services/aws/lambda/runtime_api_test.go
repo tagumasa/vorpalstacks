@@ -308,3 +308,122 @@ func TestRuntimeAPIAddrCarriesHostGatewayName(t *testing.T) {
 		t.Fatalf("Addr() = %q, want %q", api.Addr(), want)
 	}
 }
+
+func TestRuntimeAPIIdleSignalsParkedNext(t *testing.T) {
+	api, err := newRuntimeAPIServer()
+	if err != nil {
+		t.Fatalf("newRuntimeAPIServer: %v", err)
+	}
+	defer api.Close()
+
+	if api.Idle() {
+		t.Fatalf("a fresh server has no parked /next and must not report idle")
+	}
+
+	done := make(chan int, 1)
+	go func() {
+		rec := httptest.NewRecorder()
+		api.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, runtimeAPINextPath, nil))
+		done <- rec.Code
+	}()
+	waitForCondition(t, 2*time.Second, "a parked /next to make the server idle", func() bool {
+		return api.Idle()
+	})
+
+	// A delivered round consumes the park: the runtime is executing, not
+	// idle, until it loops back to /next.
+	rec2 := newInvocationRecord("fn", "$LATEST", "arn", 128, 3, "")
+	api.BeginRound(rec2, []byte(`{}`))
+	select {
+	case code := <-done:
+		if code != http.StatusOK {
+			t.Fatalf("parked next after BeginRound = %d, want 200", code)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("parked next did not wake after BeginRound")
+	}
+	if api.Idle() {
+		t.Fatalf("a served round must clear the idle signal")
+	}
+}
+
+func TestRuntimeAPIConsecutiveRounds(t *testing.T) {
+	api, err := newRuntimeAPIServer()
+	if err != nil {
+		t.Fatalf("newRuntimeAPIServer: %v", err)
+	}
+	defer api.Close()
+
+	runRound := func(rec invocationRecord, event, answer string) {
+		nextDone := make(chan string, 1)
+		go func() {
+			resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", api.Port(), runtimeAPINextPath))
+			if err != nil {
+				nextDone <- err.Error()
+				return
+			}
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
+			nextDone <- string(body)
+		}()
+		waitForCondition(t, 2*time.Second, "the runtime to park on /next", func() bool {
+			return api.Idle()
+		})
+
+		api.BeginRound(rec, []byte(event))
+		select {
+		case got := <-nextDone:
+			if got != event {
+				t.Fatalf("round delivered %q, want %q", got, event)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("round was not delivered to the parked /next")
+		}
+
+		select {
+		case <-api.Answered():
+			t.Fatalf("Answered must stay open until the round's POST lands")
+		default:
+		}
+		url := fmt.Sprintf("http://127.0.0.1:%d%s%s/response", api.Port(), runtimeAPIInvokePath, rec.RequestID)
+		resp, err := http.Post(url, "application/json", strings.NewReader(answer))
+		if err != nil {
+			t.Fatalf("POST response: %v", err)
+		}
+		resp.Body.Close()
+		select {
+		case <-api.Answered():
+		case <-time.After(2 * time.Second):
+			t.Fatalf("Answered did not close after the round's response POST")
+		}
+	}
+
+	rec1 := newInvocationRecord("fn", "$LATEST", "arn", 128, 3, "")
+	runRound(rec1, `{"round":1}`, `{"ok":1}`)
+	body, kind, ok := api.Captured()
+	if !ok || kind != runtimeAPIResponseKind || string(body) != `{"ok":1}` {
+		t.Fatalf("round 1 captured = (%q, %q, %v)", body, kind, ok)
+	}
+
+	// The runtime loops back to /next, parks again, and the second round's
+	// answer replaces the first — per-round capture, not accumulation.
+	rec2 := newInvocationRecord("fn", "$LATEST", "arn", 128, 3, "")
+	runRound(rec2, `{"round":2}`, `{"ok":2}`)
+	body, kind, ok = api.Captured()
+	if !ok || kind != runtimeAPIResponseKind || string(body) != `{"ok":2}` {
+		t.Fatalf("round 2 captured = (%q, %q, %v), want the second round's answer", body, kind, ok)
+	}
+}
+
+// waitForCondition polls cond until it holds or the deadline expires.
+func waitForCondition(t *testing.T, timeout time.Duration, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", what)
+}

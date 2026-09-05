@@ -367,6 +367,10 @@ func (c *Client) CreateContainerFromConfig(ctx context.Context, cfg AdvancedCont
 		}
 	}
 
+	if lc := convertLogConfig(cfg.LogConfig); lc != nil {
+		hostCfg.LogConfig = *lc
+	}
+
 	networkCfg := &network.NetworkingConfig{}
 	if len(cfg.NetworkAlias) > 0 && cfg.Network != "" {
 		networkCfg.EndpointsConfig = map[string]*network.EndpointSettings{
@@ -766,6 +770,18 @@ func convertUlimits(ulimits []Ulimit) []*container.Ulimit {
 		})
 	}
 	return result
+}
+
+// convertLogConfig maps our log configuration to the moby shape; a nil result
+// keeps the daemon's default logging driver.
+func convertLogConfig(cfg ContainerLogConfig) *container.LogConfig {
+	if cfg.Driver == "" {
+		return nil
+	}
+	return &container.LogConfig{
+		Type:   cfg.Driver,
+		Config: cfg.Options,
+	}
 }
 
 // convertEvent translates a moby events.Message into our ContainerEvent type.

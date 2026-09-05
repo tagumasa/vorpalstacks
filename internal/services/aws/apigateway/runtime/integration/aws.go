@@ -25,12 +25,12 @@ func jsonMarshal(v interface{}) ([]byte, error) {
 type AWSExecutor struct {
 	accountID string
 	region    string
-	bus       eventbus.Bus
+	bus       eventbus.ServiceBus
 }
 
 // NewAWSExecutor creates a new AWSExecutor using the event bus for
 // cross-service invocations.
-func NewAWSExecutor(bus eventbus.Bus, accountID, region string) *AWSExecutor {
+func NewAWSExecutor(bus eventbus.ServiceBus, accountID, region string) *AWSExecutor {
 	return &AWSExecutor{
 		accountID: accountID,
 		region:    region,

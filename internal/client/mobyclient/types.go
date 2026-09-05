@@ -125,6 +125,14 @@ type Ulimit struct {
 	Soft int64
 }
 
+// ContainerLogConfig selects the container's logging driver and its options
+// (json-file rotation bounds: max-size, max-file). An empty driver leaves the
+// daemon default in place.
+type ContainerLogConfig struct {
+	Driver  string
+	Options map[string]string
+}
+
 // AdvancedContainerConfig represents advanced container configuration.
 type AdvancedContainerConfig struct {
 	Name string
@@ -176,6 +184,7 @@ type AdvancedContainerConfig struct {
 	AutoRemove    bool
 	RestartPolicy string
 	StopTimeout   int
+	LogConfig     ContainerLogConfig
 
 	StdinOnce bool
 	OpenStdin bool

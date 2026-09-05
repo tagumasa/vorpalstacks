@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	cwstore "vorpalstacks/internal/store/aws/cloudwatch"
@@ -300,7 +301,7 @@ func (s *CloudWatchService) dispatchAlarmToSQS(ctx context.Context, queueArn str
 	payload := buildAlarmNotificationPayload(result)
 	messageBytes, _ := json.Marshal(payload)
 
-	_, _, err = s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(messageBytes), eventbus.SQSSendOptions{})
+	_, _, err = s.bus.SQSInvoker().SendMessage(ctx, sqsRegion, queueURL, string(messageBytes), invokers.SQSSendOptions{})
 	if err != nil {
 		s.log("SQS dispatch failed for alarm action", "alarm", result.alarm.Name, "queue", queueName, "error", err)
 	}

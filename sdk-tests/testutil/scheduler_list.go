@@ -16,16 +16,8 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		defer tc.deleteIAMRole(rn)
 		schedName := tc.uniqueName("ListSched")
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(schedName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		_, err := tc.createSchedule(schedName, "rate(30 minutes)", tc.defaultTarget(rARN))
+		defer tc.cleanupSchedule(schedName)
 
 		resp, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{})
 		if err != nil {
@@ -58,16 +50,8 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		defer tc.deleteIAMRole(rn)
 		prefixName := tc.uniqueName("PrefixSched")
 
-		_, err := tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
-			Name:               aws.String(prefixName),
-			ScheduleExpression: aws.String("rate(30 minutes)"),
-			Target:             tc.defaultTarget(rARN),
-			FlexibleTimeWindow: &types.FlexibleTimeWindow{Mode: types.FlexibleTimeWindowModeOff},
-		})
-		if err != nil {
-			return err
-		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(prefixName)})
+		_, err := tc.createSchedule(prefixName, "rate(30 minutes)", tc.defaultTarget(rARN))
+		defer tc.cleanupSchedule(prefixName)
 
 		prefix := prefixName[:len(prefixName)-8]
 		resp, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
@@ -95,13 +79,8 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		groupName := tc.uniqueName("AllGroupsGrp")
 		schedName := tc.uniqueName("AllGroupsSched")
 
-		_, err := tc.client.CreateScheduleGroup(tc.ctx, &scheduler.CreateScheduleGroupInput{
-			Name: aws.String(groupName),
-		})
-		if err != nil {
-			return fmt.Errorf("create group: %v", err)
-		}
-		defer tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{Name: aws.String(groupName)})
+		_, err := tc.createScheduleGroup(groupName)
+		defer tc.cleanupScheduleGroup(groupName)
 
 		_, err = tc.client.CreateSchedule(tc.ctx, &scheduler.CreateScheduleInput{
 			Name:               aws.String(schedName),
@@ -170,7 +149,7 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		defer tc.client.DeleteSchedule(tc.ctx, &scheduler.DeleteScheduleInput{Name: aws.String(schedName)})
+		defer tc.cleanupSchedule(schedName)
 
 		resp, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
 			State: types.ScheduleStateDisabled,
@@ -194,23 +173,59 @@ func (tc *schedTestContext) runListTests() []TestResult {
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_NonExistentGroup", func() error {
-		_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
-			GroupName: aws.String("no-such-group-xyz"),
-		})
-		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
-			return err
+	// Addressing a schedule group that does not exist is
+	// ResourceNotFoundException on every operation that scopes by group.
+	results = append(results, tc.runner.RunTest("scheduler", "ScheduleGroup_NonExistent", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{"DeleteScheduleGroup", func() error {
+				_, err := tc.client.DeleteScheduleGroup(tc.ctx, &scheduler.DeleteScheduleGroupInput{
+					Name: aws.String("nonexistent-group-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+			{"ListSchedules", func() error {
+				_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+					GroupName: aws.String("no-such-group-xyz"),
+				})
+				return AssertErrorContains(err, "ResourceNotFoundException")
+			}},
+		}
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %w", row.name, err)
+			}
 		}
 		return nil
 	}))
 
-	results = append(results, tc.runner.RunTest("scheduler", "ListSchedules_MaxResultsOutOfRange", func() error {
-		for _, maxResults := range []int32{0, 101} {
-			_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
-				MaxResults: aws.Int32(maxResults),
-			})
-			if err := AssertErrorContains(err, "ValidationException"); err != nil {
-				return fmt.Errorf("MaxResults=%d: %v", maxResults, err)
+	// Both list operations share the MaxResults range contract: 0 and any
+	// value above 100 are ValidationExceptions.
+	results = append(results, tc.runner.RunTest("scheduler", "List_MaxResultsOutOfRange", func() error {
+		rows := []struct {
+			name string
+			list func(maxResults int32) error
+		}{
+			{"ListSchedules", func(maxResults int32) error {
+				_, err := tc.client.ListSchedules(tc.ctx, &scheduler.ListSchedulesInput{
+					MaxResults: aws.Int32(maxResults),
+				})
+				return AssertErrorContains(err, "ValidationException")
+			}},
+			{"ListScheduleGroups", func(maxResults int32) error {
+				_, err := tc.client.ListScheduleGroups(tc.ctx, &scheduler.ListScheduleGroupsInput{
+					MaxResults: aws.Int32(maxResults),
+				})
+				return AssertErrorContains(err, "ValidationException")
+			}},
+		}
+		for _, row := range rows {
+			for _, maxResults := range []int32{0, 101} {
+				if err := row.list(maxResults); err != nil {
+					return fmt.Errorf("%s MaxResults=%d: %w", row.name, maxResults, err)
+				}
 			}
 		}
 		return nil

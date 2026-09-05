@@ -10,11 +10,11 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/mock"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/http/classifier"
 	"vorpalstacks/internal/store/api"
 	iamstore "vorpalstacks/internal/store/aws/iam"
@@ -46,7 +46,7 @@ type Dispatcher struct {
 	authorizationEnabled      bool
 	accountID                 string
 	cloudTrailRecorderFactory CloudTrailRecorderFactory
-	principalResolver         eventbus.IAMPrincipalResolver
+	principalResolver         invokers.IAMPrincipalResolver
 }
 
 // Handler processes an AWS API request and returns a response or error.
@@ -325,11 +325,11 @@ func (d *Dispatcher) SetCloudTrailRecorderFactory(factory CloudTrailRecorderFact
 }
 
 // SetPrincipalResolver sets the IAM principal resolver for audit logging.
-func (d *Dispatcher) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
+func (d *Dispatcher) SetPrincipalResolver(resolver invokers.IAMPrincipalResolver) {
 	d.principalResolver = resolver
 }
 
 // PrincipalResolver returns the IAM principal resolver.
-func (d *Dispatcher) PrincipalResolver() eventbus.IAMPrincipalResolver {
+func (d *Dispatcher) PrincipalResolver() invokers.IAMPrincipalResolver {
 	return d.principalResolver
 }

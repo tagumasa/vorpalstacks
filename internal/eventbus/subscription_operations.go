@@ -12,8 +12,7 @@ func (b *EventBus) Subscribe(handler func(ctx context.Context, event Event) Hand
 	}
 
 	cfg := &subscribeConfig{
-		authzMode: AuthzNone,
-		async:     false,
+		async: false,
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -46,45 +45,6 @@ func SubscribeTyped[T Event](bus Bus, handler func(ctx context.Context, event T)
 }
 
 func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx context.Context, event Event) HandlerResult) (string, error) {
-
-	if cfg.authzMode == AuthzFull && cfg.targetRoleARN != "" && b.roleResolver != nil {
-		if err := b.roleResolver.ValidateRole(context.Background(), cfg.targetRoleARN); err != nil {
-			return "", fmt.Errorf("eventbus: role validation failed for %q: %w", cfg.targetRoleARN, err)
-		}
-	}
-
-	if cfg.authzMode >= AuthzResourcePolicy && cfg.resourcePolicyFn != nil && b.policyEval != nil {
-		if cfg.callerPrincipal == "" {
-			return "", fmt.Errorf("eventbus: caller principal required for resource policy evaluation")
-		}
-	}
-
-	// Resource policy evaluation at subscribe time is limited: the bus
-	// subscribes to event types (e.g. "sns:deliver"), not to specific
-	// targets. The actual target ARN is only known at dispatch time when
-	// the handler looks up notification configurations. Therefore the
-	// resource policy check here validates the caller principal against
-	// the source resource's own policy (if any), while target-specific
-	// policy evaluation happens at dispatch time via
-	// EvaluateTargetPolicy. This is an intentional architectural
-	// exception to decision #3 in the plan.
-	authorized := true
-	if cfg.authzMode >= AuthzResourcePolicy && cfg.resourcePolicyFn != nil && b.policyEval != nil {
-		policyDoc, err := cfg.resourcePolicyFn(context.Background(), "")
-		if err != nil {
-			return "", fmt.Errorf("eventbus: failed to fetch resource policy: %w", err)
-		}
-		if policyDoc != nil && len(policyDoc.Statement) > 0 {
-			allowed, err := b.policyEval.Evaluate(context.Background(), policyDoc, cfg.callerPrincipal, "eventbus:Subscribe", "*")
-			if err != nil {
-				return "", fmt.Errorf("eventbus: policy evaluation failed: %w", err)
-			}
-			if !allowed {
-				authorized = false
-			}
-		}
-	}
-
 	subID := fmt.Sprintf("sub-%d", b.nextSubID.Add(1))
 
 	var sem chan struct{}
@@ -100,13 +60,11 @@ func (b *EventBus) subscribeInternal(cfg *subscribeConfig, handler func(ctx cont
 	entry := &subscriptionEntry{
 		id:             subID,
 		eventType:      et,
-		filter:         cfg.filter,
 		handler:        handler,
 		async:          cfg.async,
 		priority:       cfg.priority,
 		maxConcurrency: cfg.maxConcurrency,
 		sem:            sem,
-		authorized:     authorized,
 	}
 
 	b.mu.Lock()

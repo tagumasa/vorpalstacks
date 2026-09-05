@@ -2,8 +2,6 @@ package testutil
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
@@ -52,11 +50,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 
 	results = append(results, r.RunTest("s3", "SSES3_PutGetRoundtrip", func() error {
 		bucket := s3Bucket(ts, "enc-aes")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -74,10 +69,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected ServerSideEncryption AES256, got %s", putResp.ServerSideEncryption)
 		}
 
-		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("sse-s3.txt"),
-		})
+		getResp, gotBody, err := s3GetRead(ctx, client, bucket, "sse-s3.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -88,10 +80,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected GetObject ServerSideEncryption AES256, got %s", getResp.ServerSideEncryption)
 		}
 
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("sse-s3.txt"),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucket, "sse-s3.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -103,15 +92,12 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 
 	results = append(results, r.RunTest("s3", "SSES3_BucketDefaultEncryption", func() error {
 		bucket := s3Bucket(ts, "enc-default")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
-		_, err = client.PutBucketEncryption(ctx, &s3.PutBucketEncryptionInput{
+		_, err := client.PutBucketEncryption(ctx, &s3.PutBucketEncryptionInput{
 			Bucket: aws.String(bucket),
 			ServerSideEncryptionConfiguration: &types.ServerSideEncryptionConfiguration{
 				Rules: []types.ServerSideEncryptionRule{
@@ -128,19 +114,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		}
 
 		body := "default-encrypted"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("default-enc.txt"),
-			Body:   strings.NewReader(body),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucket, "default-enc.txt", body); err != nil {
+			return err
 		}
 
-		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("default-enc.txt"),
-		})
+		getResp, gotBody, err := s3GetRead(ctx, client, bucket, "default-enc.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -151,10 +129,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected GetObject ServerSideEncryption AES256, got %s", getResp.ServerSideEncryption)
 		}
 
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("default-enc.txt"),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucket, "default-enc.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -166,21 +141,12 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 
 	results = append(results, r.RunTest("s3", "SSEC_PutGetRoundtrip", func() error {
 		bucket := s3Bucket(ts, "enc-cust")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
-		key := make([]byte, 32)
-		for i := range key {
-			key[i] = byte(i)
-		}
-		encodedKey := base64.StdEncoding.EncodeToString(key)
-		keyMD5 := md5.Sum(key)
-		encodedMD5 := base64.StdEncoding.EncodeToString(keyMD5[:])
+		encodedKey, encodedMD5 := ssecTestKey()
 
 		body := "customer-encrypted-data"
 		putResp, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -251,11 +217,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "enc-kms")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -274,10 +237,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected ServerSideEncryption aws:kms, got %s", putResp.ServerSideEncryption)
 		}
 
-		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("sse-kms.txt"),
-		})
+		getResp, gotBody, err := s3GetRead(ctx, client, bucket, "sse-kms.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -288,10 +248,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected GetObject ServerSideEncryption aws:kms, got %s", getResp.ServerSideEncryption)
 		}
 
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("sse-kms.txt"),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucket, "sse-kms.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -309,11 +266,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "enc-kms-default")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -335,19 +289,11 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		}
 
 		body := "kms-default-encrypted"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("kms-default.txt"),
-			Body:   strings.NewReader(body),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject with bucket default KMS encryption failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucket, "kms-default.txt", body); err != nil {
+			return err
 		}
 
-		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("kms-default.txt"),
-		})
+		getResp, gotBody, err := s3GetRead(ctx, client, bucket, "kms-default.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -368,11 +314,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-sse3")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -388,10 +331,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		}
 		originalETag := aws.ToString(putResp.ETag)
 
-		headBefore, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("uoe.txt"),
-		})
+		headBefore, err := s3HeadObject(ctx, client, bucket, "uoe.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject (before) failed: %w", err)
 		}
@@ -410,10 +350,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("UpdateObjectEncryption failed: %w", err)
 		}
 
-		headAfter, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("uoe.txt"),
-		})
+		headAfter, err := s3HeadObject(ctx, client, bucket, "uoe.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject (after) failed: %w", err)
 		}
@@ -433,10 +370,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("LastModified not preserved: before %v after %v", headBefore.LastModified, headAfter.LastModified)
 		}
 
-		getResp, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("uoe.txt"),
-		})
+		getResp, gotBody, err := s3GetRead(ctx, client, bucket, "uoe.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -460,11 +394,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-prever")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -479,14 +410,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("PutObject SSE-S3 failed: %w", err)
 		}
 
-		_, err = client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-			Bucket: aws.String(bucket),
-			VersioningConfiguration: &types.VersioningConfiguration{
-				Status: types.BucketVersioningStatusEnabled,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("PutBucketVersioning failed: %w", err)
+		if err := s3EnableVersioning(ctx, client, bucket); err != nil {
+			return err
 		}
 
 		_, err = client.UpdateObjectEncryption(ctx, &s3.UpdateObjectEncryptionInput{
@@ -502,10 +427,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("UpdateObjectEncryption on pre-versioning object failed: %w", err)
 		}
 
-		head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("prever.txt"),
-		})
+		head, err := s3HeadObject(ctx, client, bucket, "prever.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -516,10 +438,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected SSEKMSKeyId %s, got %s", keyArn, aws.ToString(head.SSEKMSKeyId))
 		}
 
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("prever.txt"),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, bucket, "prever.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -542,11 +461,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyBCleanup()
 
 		bucket := s3Bucket(ts, "uoe-rotate")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -575,10 +491,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("UpdateObjectEncryption (rotation) failed: %w", err)
 		}
 
-		headResp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("rotate.txt"),
-		})
+		headResp, err := s3HeadObject(ctx, client, bucket, "rotate.txt")
 		if err != nil {
 			return fmt.Errorf("HeadObject failed: %w", err)
 		}
@@ -589,10 +502,7 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 			return fmt.Errorf("expected SSEKMSKeyId %s after rotation, got %s", keyBArn, aws.ToString(headResp.SSEKMSKeyId))
 		}
 
-		_, gotBody, err := s3GetAndRead(ctx, client, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("rotate.txt"),
-		})
+		_, gotBody, err := s3GetRead(ctx, client, bucket, "rotate.txt")
 		if err != nil {
 			return fmt.Errorf("GetObject failed: %w", err)
 		}
@@ -610,21 +520,13 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-plain")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("plain.txt"),
-			Body:   strings.NewReader("unencrypted"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucket, "plain.txt", "unencrypted"); err != nil {
+			return err
 		}
 
 		_, err = client.UpdateObjectEncryption(ctx, &s3.UpdateObjectEncryptionInput{
@@ -653,11 +555,8 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		defer keyCleanup()
 
 		bucket := s3Bucket(ts, "uoe-missing")
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
@@ -678,32 +577,18 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 
 	results = append(results, r.RunTest("s3", "GetObject_SSECOnPlainObject", func() error {
 		bucket := s3Bucket(ts, "ssec-mismatch")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
+		if err := s3CreateBucket(ctx, client, bucket); err != nil {
+			return err
 		}
 		defer s3CleanupBucket(ctx, client, bucket)
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("plain.txt"),
-			Body:   strings.NewReader("unencrypted content"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
+		if _, err := s3PutObject(ctx, client, bucket, "plain.txt", "unencrypted content"); err != nil {
+			return err
 		}
 
-		customerKey := make([]byte, 32)
-		for i := range customerKey {
-			customerKey[i] = byte(i)
-		}
-		encodedKey := base64.StdEncoding.EncodeToString(customerKey)
-		keyMD5 := md5.Sum(customerKey)
-		encodedMD5 := base64.StdEncoding.EncodeToString(keyMD5[:])
+		encodedKey, encodedMD5 := ssecTestKey()
 
-		_, err = client.GetObject(ctx, &s3.GetObjectInput{
+		_, err := client.GetObject(ctx, &s3.GetObjectInput{
 			Bucket:               aws.String(bucket),
 			Key:                  aws.String("plain.txt"),
 			SSECustomerAlgorithm: aws.String("AES256"),
@@ -726,86 +611,57 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		return nil
 	}))
 
-	results = append(results, r.RunTest("s3", "PutObject_EncryptionTypeMismatch_OverwriteWithoutKey", func() error {
-		bucket := s3Bucket(ts, "ssec-overwrite")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
-		}
-		defer s3CleanupBucket(ctx, client, bucket)
+	// Overwriting an object with mismatched SSE settings is rejected with
+	// EncryptionTypeMismatch in both directions: a plain PUT against an
+	// SSE-C object, and an SSE-C PUT against a plain object.
+	results = append(results, r.RunTest("s3", "PutObject_EncryptionTypeMismatch", func() error {
+		for _, c := range []struct {
+			name         string
+			bucketSuffix string
+			firstPutSSEC bool // whether the pre-existing object is SSE-C
+		}{
+			{name: "plain overwrite of an SSE-C object", bucketSuffix: "ssec-overwrite", firstPutSSEC: true},
+			{name: "SSE-C overwrite of a plain object", bucketSuffix: "ssec-plain-src", firstPutSSEC: false},
+		} {
+			bucket := s3Bucket(ts, c.bucketSuffix)
+			if err := s3CreateBucket(ctx, client, bucket); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
+			defer s3CleanupBucket(ctx, client, bucket)
 
-		customerKey := make([]byte, 32)
-		for i := range customerKey {
-			customerKey[i] = byte(i)
-		}
-		encodedKey := base64.StdEncoding.EncodeToString(customerKey)
-		keyMD5 := md5.Sum(customerKey)
-		encodedMD5 := base64.StdEncoding.EncodeToString(keyMD5[:])
+			encodedKey, encodedMD5 := ssecTestKey()
+			ssecPut := func(key, body string) error {
+				_, err := client.PutObject(ctx, &s3.PutObjectInput{
+					Bucket:               aws.String(bucket),
+					Key:                  aws.String(key),
+					Body:                 strings.NewReader(body),
+					SSECustomerAlgorithm: aws.String("AES256"),
+					SSECustomerKey:       aws.String(encodedKey),
+					SSECustomerKeyMD5:    aws.String(encodedMD5),
+				})
+				return err
+			}
 
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:               aws.String(bucket),
-			Key:                  aws.String("ssec.txt"),
-			Body:                 strings.NewReader("customer-encrypted"),
-			SSECustomerAlgorithm: aws.String("AES256"),
-			SSECustomerKey:       aws.String(encodedKey),
-			SSECustomerKeyMD5:    aws.String(encodedMD5),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject SSE-C failed: %w", err)
+			var err error
+			if c.firstPutSSEC {
+				if err = ssecPut("ssec.txt", "customer-encrypted"); err != nil {
+					return fmt.Errorf("%s: PutObject SSE-C failed: %w", c.name, err)
+				}
+				_, err = s3PutObject(ctx, client, bucket, "ssec.txt", "plain overwrite")
+			} else {
+				if _, err := s3PutObject(ctx, client, bucket, "plain.txt", "plain content"); err != nil {
+					return fmt.Errorf("%s: %w", c.name, err)
+				}
+				err = ssecPut("plain.txt", "ssec overwrite")
+			}
+			if err == nil {
+				return fmt.Errorf("%s: expected EncryptionTypeMismatch for the mismatched overwrite, got nil", c.name)
+			}
+			if err := expectAWSErrorCode(err, "EncryptionTypeMismatch"); err != nil {
+				return fmt.Errorf("%s: %v", c.name, err)
+			}
 		}
-
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("ssec.txt"),
-			Body:   strings.NewReader("plain overwrite"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected EncryptionTypeMismatch overwriting SSE-C object without customer key, got nil")
-		}
-		return expectAWSErrorCode(err, "EncryptionTypeMismatch")
-	}))
-
-	results = append(results, r.RunTest("s3", "PutObject_EncryptionTypeMismatch_SSECOverwritePlain", func() error {
-		bucket := s3Bucket(ts, "ssec-plain-src")
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucket),
-		})
-		if err != nil {
-			return fmt.Errorf("CreateBucket failed: %w", err)
-		}
-		defer s3CleanupBucket(ctx, client, bucket)
-
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("plain.txt"),
-			Body:   strings.NewReader("plain content"),
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		customerKey := make([]byte, 32)
-		for i := range customerKey {
-			customerKey[i] = byte(i)
-		}
-		encodedKey := base64.StdEncoding.EncodeToString(customerKey)
-		keyMD5 := md5.Sum(customerKey)
-		encodedMD5 := base64.StdEncoding.EncodeToString(keyMD5[:])
-
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:               aws.String(bucket),
-			Key:                  aws.String("plain.txt"),
-			Body:                 strings.NewReader("ssec overwrite"),
-			SSECustomerAlgorithm: aws.String("AES256"),
-			SSECustomerKey:       aws.String(encodedKey),
-			SSECustomerKeyMD5:    aws.String(encodedMD5),
-		})
-		if err == nil {
-			return fmt.Errorf("expected EncryptionTypeMismatch overwriting plain object with SSE-C parameters, got nil")
-		}
-		return expectAWSErrorCode(err, "EncryptionTypeMismatch")
+		return nil
 	}))
 
 	return results

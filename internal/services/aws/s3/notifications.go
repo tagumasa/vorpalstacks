@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -264,7 +265,7 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 		return
 	}
 
-	if _, _, err := sqsInvoker.SendMessage(ctx, sqsRegion, queueURL, string(payload), eventbus.SQSSendOptions{
+	if _, _, err := sqsInvoker.SendMessage(ctx, sqsRegion, queueURL, string(payload), invokers.SQSSendOptions{
 		MessageAttributes: attrs,
 	}); err != nil {
 		logs.Warn("Failed to send S3 event to SQS queue", logs.String("queue", queueURL), logs.Err(err))

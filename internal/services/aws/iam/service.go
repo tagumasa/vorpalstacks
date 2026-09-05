@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
@@ -21,7 +21,7 @@ type IAMService struct {
 	accountID             string
 	stores                sync.Map // global — single cached instance
 	storageManager        *storage.RegionStorageManager
-	cloudTrailInvoker     eventbus.CloudTrailInvoker
+	cloudTrailInvoker     invokers.CloudTrailInvoker
 	reportWg              sync.WaitGroup
 	slRoleDeletionWg      sync.WaitGroup
 	credentialReportMu    sync.RWMutex
@@ -38,7 +38,7 @@ func NewIAMService(accountID string) *IAMService {
 }
 
 // SetCloudTrailInvoker injects the CloudTrail invoker for last-accessed analysis.
-func (s *IAMService) SetCloudTrailInvoker(invoker eventbus.CloudTrailInvoker) {
+func (s *IAMService) SetCloudTrailInvoker(invoker invokers.CloudTrailInvoker) {
 	s.cloudTrailInvoker = invoker
 }
 

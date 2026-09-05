@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/core/logs"
 )
 
@@ -137,62 +138,29 @@ func WithLogger(logger logs.Logger) BusOption {
 	}
 }
 
-// Bus defines the contract for the internal service event bus, supporting
-// both synchronous and asynchronous publish, subscription management, and
-// cross-service authorisation.
+// Bus defines the contract for the internal service event bus: synchronous
+// and asynchronous publish, subscription management, and dispatch-time
+// cross-service authorisation. The typed invoker registry surface is a
+// separate role, declared in invokers.Registry and composed into
+// ServiceBus for consumers that need both.
 type Bus interface {
 	Publish(ctx context.Context, event Event) error
 	PublishSync(ctx context.Context, event Event) (HandlerResult, error)
 	Subscribe(handler func(ctx context.Context, event Event) HandlerResult, opts ...SubscribeOption) (string, error)
 	Unsubscribe(subscriptionID string) error
-	RegisterInvoker(invoker ServiceInvoker)
-	GetInvoker(serviceType string) (ServiceInvoker, bool)
 	EvaluateTargetPolicy(ctx context.Context, targetARN, serviceType, principal, action, resource string) (bool, error)
 	RoleResolver() RoleResolver
 	Start(ctx context.Context) error
 	Shutdown(ctx context.Context) error
-	LambdaInvoker() LambdaInvoker
-	SQSInvoker() SQSInvoker
-	SNSInvoker() SNSInvoker
-	KinesisInvoker() KinesisInvoker
-	EventsInvoker() EventsInvoker
-	EC2Invoker() EC2Invoker
-	DynamoDBInvoker() DynamoDBInvoker
-	DynamoDBStreamsInvoker() DynamoDBStreamsInvoker
-	NeptuneGraphInvoker() NeptuneGraphInvoker
-	KMSInvoker() KMSInvoker
-	S3Invoker() S3Invoker
-	WAFInvoker() WAFInvoker
-	CloudWatchMetricInvoker() CloudWatchMetricInvoker
-	CloudWatchAlarmInvoker() CloudWatchAlarmInvoker
-	TimestreamInvoker() TimestreamInvoker
-	CloudTrailInvoker() CloudTrailInvoker
-	LogsInvoker() LogsInvoker
-	RDSDataInvoker() RDSDataInvoker
-	CognitoTokenValidator() CognitoTokenValidator
-	SetLambdaInvoker(invoker LambdaInvoker)
-	SetSQSInvoker(invoker SQSInvoker)
-	SetSNSInvoker(invoker SNSInvoker)
-	SetKinesisInvoker(invoker KinesisInvoker)
-	SetEC2Invoker(invoker EC2Invoker)
-	SetEventsInvoker(invoker EventsInvoker)
-	SetDynamoDBInvoker(invoker DynamoDBInvoker)
-	SetDynamoDBStreamsInvoker(invoker DynamoDBStreamsInvoker)
-	SetNeptuneGraphInvoker(invoker NeptuneGraphInvoker)
-	SetKMSInvoker(invoker KMSInvoker)
-	SetS3Invoker(invoker S3Invoker)
-	SetWAFInvoker(invoker WAFInvoker)
-	SetCloudWatchMetricInvoker(invoker CloudWatchMetricInvoker)
-	SetCloudWatchAlarmInvoker(invoker CloudWatchAlarmInvoker)
-	SetTimestreamInvoker(invoker TimestreamInvoker)
-	SetCloudTrailInvoker(invoker CloudTrailInvoker)
-	SetLogsInvoker(invoker LogsInvoker)
-	SetRDSDataInvoker(invoker RDSDataInvoker)
-	SetCognitoTokenValidator(validator CognitoTokenValidator)
-	RegisterSubnetUsageChecker(checker SubnetUsageChecker)
-	RegisterSecurityGroupUsageChecker(checker SecurityGroupUsageChecker)
-	SubnetUsageCheckers() []SubnetUsageChecker
-	SecurityGroupUsageCheckers() []SecurityGroupUsageChecker
+}
+
+// ServiceBus composes the delivery surface with the typed invoker
+// registry. Services are handed this combined view so a single injected
+// object serves both roles; consumers needing only one side accept the
+// narrower interface.
+type ServiceBus interface {
+	Bus
+	invokers.Registry
 }
 
 // EventBus is the central implementation of the Bus interface, managing
@@ -216,30 +184,29 @@ type EventBus struct {
 	startDone               bool
 	stopOnce                sync.Once
 	stopCh                  chan struct{}
-	invokers                map[string]ServiceInvoker
 	invokersMu              sync.RWMutex
-	lambdaInvoker           LambdaInvoker
-	sqsInvoker              SQSInvoker
-	snsInvoker              SNSInvoker
-	kinesisInvoker          KinesisInvoker
-	eventsInvoker           EventsInvoker
-	ec2Invoker              EC2Invoker
-	dynamoDBInvoker         DynamoDBInvoker
-	dynamoDBStreamsInvoker  DynamoDBStreamsInvoker
-	neptuneGraphInvoker     NeptuneGraphInvoker
-	kmsInvoker              KMSInvoker
-	s3Invoker               S3Invoker
-	wafInvoker              WAFInvoker
-	webACLInspector         WebACLInspector
-	cloudWatchMetricInvoker CloudWatchMetricInvoker
-	cloudWatchAlarmInvoker  CloudWatchAlarmInvoker
-	timestreamInvoker       TimestreamInvoker
-	cloudTrailInvoker       CloudTrailInvoker
-	logsInvoker             LogsInvoker
-	rdsDataInvoker          RDSDataInvoker
-	cognitoTokenValidator   CognitoTokenValidator
-	subnetUsageCheckers     []SubnetUsageChecker
-	securityGroupCheckers   []SecurityGroupUsageChecker
+	lambdaInvoker           invokers.LambdaInvoker
+	sqsInvoker              invokers.SQSInvoker
+	snsInvoker              invokers.SNSInvoker
+	kinesisInvoker          invokers.KinesisInvoker
+	eventsInvoker           invokers.EventsInvoker
+	ec2Invoker              invokers.EC2Invoker
+	dynamoDBInvoker         invokers.DynamoDBInvoker
+	dynamoDBStreamsInvoker  invokers.DynamoDBStreamsInvoker
+	neptuneGraphInvoker     invokers.NeptuneGraphInvoker
+	kmsInvoker              invokers.KMSInvoker
+	s3Invoker               invokers.S3Invoker
+	wafInvoker              invokers.WAFInvoker
+	webACLInspector         waf.WebACLInspector
+	cloudWatchMetricInvoker invokers.CloudWatchMetricInvoker
+	cloudWatchAlarmInvoker  invokers.CloudWatchAlarmInvoker
+	timestreamInvoker       invokers.TimestreamInvoker
+	cloudTrailInvoker       invokers.CloudTrailInvoker
+	logsInvoker             invokers.LogsInvoker
+	rdsDataInvoker          invokers.RDSDataInvoker
+	cognitoTokenValidator   invokers.CognitoTokenValidator
+	subnetUsageCheckers     []invokers.SubnetUsageChecker
+	securityGroupCheckers   []invokers.SecurityGroupUsageChecker
 	nextSubID               atomic.Int64
 	asyncCh                 chan *OutboxEntry
 	directCh                chan *directDispatch
@@ -259,7 +226,6 @@ func NewEventBus(opts ...BusOption) *EventBus {
 		maxRetries:    DefaultMaxRetries,
 		maxEventDepth: DefaultMaxEventDepth,
 		stopCh:        make(chan struct{}),
-		invokers:      make(map[string]ServiceInvoker),
 		asyncCh:       make(chan *OutboxEntry, 1024),
 		directCh:      make(chan *directDispatch, 1024),
 		policyFuncs:   make(map[string]ResourcePolicyFunc),
@@ -291,31 +257,26 @@ func generateEventID(eventType string) string {
 	return fmt.Sprintf("%s-%d-%s", eventType, time.Now().UnixNano(), hex.EncodeToString(rnd[:]))
 }
 
+// logFields converts alternating key/value pairs into structured log
+// fields. A trailing key without a value is dropped.
+func logFields(keyvals ...interface{}) []logs.Field {
+	fields := make([]logs.Field, 0, len(keyvals)/2)
+	for i := 0; i+1 < len(keyvals); i += 2 {
+		fields = append(fields, logs.Field{Key: fmt.Sprint(keyvals[i]), Value: keyvals[i+1]})
+	}
+	return fields
+}
+
 func (b *EventBus) logInfo(msg string, keyvals ...interface{}) {
 	if b.logger != nil {
-		fields := make([]logs.Field, 0, len(keyvals)/2)
-		for i := 0; i+1 < len(keyvals); i += 2 {
-			fields = append(fields, logs.Field{Key: fmt.Sprint(keyvals[i]), Value: keyvals[i+1]})
-		}
-		b.logger.Info(msg, fields...)
+		b.logger.Info(msg, logFields(keyvals...)...)
 	}
 }
 
 func (b *EventBus) logWarn(msg string, keyvals ...interface{}) {
 	if b.logger != nil {
-		fields := make([]logs.Field, 0, len(keyvals)/2)
-		for i := 0; i+1 < len(keyvals); i += 2 {
-			fields = append(fields, logs.Field{Key: fmt.Sprint(keyvals[i]), Value: keyvals[i+1]})
-		}
-		b.logger.Warn(msg, fields...)
+		b.logger.Warn(msg, logFields(keyvals...)...)
 	}
 }
 
 var _ Bus = (*EventBus)(nil)
-var _ error = ErrBusShutdown
-var _ error = ErrNilEvent
-var _ error = ErrEmptyType
-var _ error = ErrMaxDepth
-var _ error = ErrNoOutbox
-var _ error = ErrUnknownSub
-var _ = errors.Is

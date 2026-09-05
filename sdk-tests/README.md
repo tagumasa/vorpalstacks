@@ -8,7 +8,7 @@ This directory contains comprehensive SDK-based tests for verifying AWS service 
 
 - **Independent Go Module**: Uses its own `go.mod` file, not inherited from parent project
 - **AWS SDK v2**: Official AWS Go SDK v2 for production-grade testing
-- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,503 test cases (3,421 SDK + 65 cross-service integration + 17 WebSocket)
+- **Comprehensive Coverage**: Tests covering every supported AWS service (list in [docs/services.md](../docs/services.md)) with 3,478 test cases (3,396 SDK + 65 cross-service integration + 17 WebSocket)
 - **Easy to Run**: Simple CLI for running tests per service or all at once
 
 ## Supported Services
@@ -37,15 +37,15 @@ which are separate services in the SDK classification used by
 | IoT | 411 | 100% | ✅ Perfect |
 | Kinesis | 55 | 100% | ✅ Perfect |
 | KMS | 100 | 100% | ✅ Perfect |
-| Lambda | 124 | 100% | ✅ Perfect |
+| Lambda | 127 | 100% | ✅ Perfect |
 | Neptune | 103 | 100% | ✅ Perfect |
 | NeptuneData | 160 | 100% | ✅ Perfect |
 | NeptuneGraph | 49 | 100% | ✅ Perfect |
 | RDS Data | 15 | 100% | ✅ Perfect |
 | Route53 | 59 | 100% | ✅ Perfect |
-| S3 | 154 | 100% | ✅ Perfect |
-| Scheduler | 70 | 100% | ✅ Perfect |
-| SecretsManager | 63 | 100% | ✅ Perfect |
+| S3 | 148 | 100% | ✅ Perfect |
+| Scheduler | 58 | 100% | ✅ Perfect |
+| SecretsManager | 53 | 100% | ✅ Perfect |
 | SESv2 | 95 | 100% | ✅ Perfect |
 | SNS | 84 | 100% | ✅ Perfect |
 | SQS | 87 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,503/3,503 tests passing (100%) — 3,421 SDK + 65 integration + 17 WebSocket** (confirmed 2026-09-05 on main; per-session deltas live in git history)
+**Overall: 3,478/3,478 tests passing (100%) — 3,396 SDK + 65 integration + 17 WebSocket** (confirmed 2026-09-05 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

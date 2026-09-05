@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 	sfnstore "vorpalstacks/internal/store/aws/sfn"
 )
@@ -285,7 +286,7 @@ func TestResolveItemReaderArgs(t *testing.T) {
 // stubItemReaderS3 backs the S3-dependent ItemReader paths in tests.
 type stubItemReaderS3 struct {
 	objects map[string][]byte
-	entries []eventbus.S3ObjectEntry
+	entries []invokers.S3ObjectEntry
 	put     map[string][]byte
 }
 
@@ -297,8 +298,8 @@ func (s *stubItemReaderS3) GetObjectVersion(_ context.Context, _, bucket, key, _
 	return data, nil
 }
 
-func (s *stubItemReaderS3) ListObjectEntries(_ context.Context, _, _, prefix string, _ int) ([]eventbus.S3ObjectEntry, error) {
-	var out []eventbus.S3ObjectEntry
+func (s *stubItemReaderS3) ListObjectEntries(_ context.Context, _, _, prefix string, _ int) ([]invokers.S3ObjectEntry, error) {
+	var out []invokers.S3ObjectEntry
 	for _, e := range s.entries {
 		if prefix == "" || (len(e.Key) >= len(prefix) && e.Key[:len(prefix)] == prefix) {
 			out = append(out, e)
@@ -388,7 +389,7 @@ func TestReadItemReaderItemsEndToEnd(t *testing.T) {
 		t.Errorf("gzip json items = %v", items)
 	}
 
-	stub.entries = []eventbus.S3ObjectEntry{{Key: "data/f1", ETag: "\"e1\"", Size: 10, StorageClass: "STANDARD"}}
+	stub.entries = []invokers.S3ObjectEntry{{Key: "data/f1", ETag: "\"e1\"", Size: 10, StorageClass: "STANDARD"}}
 	state.ItemReader = &sfnstore.ItemReaderConfig{
 		Resource:   "arn:aws:states:::s3:listObjectsV2",
 		Parameters: json.RawMessage(`{"Bucket":"src","Prefix":"data/"}`),

@@ -12,9 +12,9 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
 	"vorpalstacks/internal/common/iam/policy"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/kms/hsm"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	kmsstore "vorpalstacks/internal/store/aws/kms"
@@ -87,7 +87,7 @@ func (ks *kmsStores) CascadeDeleteKey(hsmBackend hsm.Backend, keyID string) erro
 type KMSService struct {
 	hsmBackend        hsm.Backend
 	policyEvaluator   *policy.PolicyEvaluator
-	principalResolver eventbus.IAMPrincipalResolver
+	principalResolver invokers.IAMPrincipalResolver
 	accountID         string
 	region            string
 	stores            sync.Map // region → *kmsStores
@@ -95,7 +95,7 @@ type KMSService struct {
 }
 
 // SetPrincipalResolver registers the IAM principal resolver for grant validation.
-func (s *KMSService) SetPrincipalResolver(resolver eventbus.IAMPrincipalResolver) {
+func (s *KMSService) SetPrincipalResolver(resolver invokers.IAMPrincipalResolver) {
 	s.principalResolver = resolver
 }
 
@@ -459,14 +459,14 @@ func (s *KMSService) EnsureDefaultSSMKey() error {
 	return nil
 }
 
-// kmsBusAdapter adapts KMSService to satisfy eventbus.KMSInvoker without
+// kmsBusAdapter adapts KMSService to satisfy invokers.KMSInvoker without
 // conflicting with the existing GenerateDataKey/Decrypt handler methods.
 type kmsBusAdapter struct {
 	*KMSService
 }
 
 // GenerateDataKey generates a data key encrypted under the specified KMS key.
-func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*eventbus.KMSDataKeyResult, error) {
+func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySpec string, encryptionContext map[string]string, sourceArn string) (*invokers.KMSDataKeyResult, error) {
 	if a.hsmBackend == nil {
 		return nil, fmt.Errorf("KMS HSM backend not configured")
 	}
@@ -482,7 +482,7 @@ func (a *kmsBusAdapter) GenerateDataKey(ctx context.Context, keyID string, keySp
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate data key: %w", err)
 	}
-	return &eventbus.KMSDataKeyResult{
+	return &invokers.KMSDataKeyResult{
 		Plaintext:      result.Plaintext,
 		CiphertextBlob: result.Ciphertext,
 	}, nil
@@ -531,8 +531,8 @@ func (a *kmsBusAdapter) SymmetricEncryptionKeyExists(ctx context.Context, keyID 
 	return key.KeySpec == kmsstore.KeySpecSymmetricDefault && key.KeyUsage == kmsstore.KeyUsageEncryptDecrypt
 }
 
-// KMSBusInvoker returns an eventbus.KMSInvoker backed by this service.
-func (s *KMSService) KMSBusInvoker() eventbus.KMSInvoker {
+// KMSBusInvoker returns an invokers.KMSInvoker backed by this service.
+func (s *KMSService) KMSBusInvoker() invokers.KMSInvoker {
 	return &kmsBusAdapter{s}
 }
 

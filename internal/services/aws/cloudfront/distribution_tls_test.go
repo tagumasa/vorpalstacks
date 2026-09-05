@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"vorpalstacks/internal/eventbus"
+	"vorpalstacks/internal/common/invokers"
 	cfstore "vorpalstacks/internal/store/aws/cloudfront"
 	vcrypto "vorpalstacks/internal/utils/crypto"
 )
@@ -32,15 +32,15 @@ func mustParseURL(path string) *url.URL {
 // acmMaterialProvider is a test ACM certificate provider serving fixed
 // material.
 type acmMaterialProvider struct {
-	material map[string]eventbus.TLSCertificateMaterial
+	material map[string]invokers.TLSCertificateMaterial
 	requests []string
 }
 
-func (p *acmMaterialProvider) CertificateMaterial(ctx context.Context, region, certArn string) (eventbus.TLSCertificateMaterial, error) {
+func (p *acmMaterialProvider) CertificateMaterial(ctx context.Context, region, certArn string) (invokers.TLSCertificateMaterial, error) {
 	p.requests = append(p.requests, region+"/"+certArn)
 	material, ok := p.material[certArn]
 	if !ok {
-		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("certificate not found: %s", certArn)
+		return invokers.TLSCertificateMaterial{}, fmt.Errorf("certificate not found: %s", certArn)
 	}
 	return material, nil
 }
@@ -48,20 +48,20 @@ func (p *acmMaterialProvider) CertificateMaterial(ctx context.Context, region, c
 // iamMaterialProvider is a test IAM server certificate provider serving
 // fixed material.
 type iamMaterialProvider struct {
-	material map[string]eventbus.TLSCertificateMaterial
+	material map[string]invokers.TLSCertificateMaterial
 }
 
-func (p *iamMaterialProvider) ServerCertificateMaterial(ctx context.Context, serverCertificateId string) (eventbus.TLSCertificateMaterial, error) {
+func (p *iamMaterialProvider) ServerCertificateMaterial(ctx context.Context, serverCertificateId string) (invokers.TLSCertificateMaterial, error) {
 	material, ok := p.material[serverCertificateId]
 	if !ok {
-		return eventbus.TLSCertificateMaterial{}, fmt.Errorf("server certificate not found: %s", serverCertificateId)
+		return invokers.TLSCertificateMaterial{}, fmt.Errorf("server certificate not found: %s", serverCertificateId)
 	}
 	return material, nil
 }
 
 // testCertificatePEM generates a self-signed certificate and returns its
 // PEM material.
-func testCertificatePEM(t *testing.T, name string) (eventbus.TLSCertificateMaterial, *rsa.PrivateKey) {
+func testCertificatePEM(t *testing.T, name string) (invokers.TLSCertificateMaterial, *rsa.PrivateKey) {
 	t.Helper()
 	key, err := vcrypto.GenerateRSAKey(2048)
 	if err != nil {
@@ -87,7 +87,7 @@ func testCertificatePEM(t *testing.T, name string) (eventbus.TLSCertificateMater
 	if err != nil {
 		t.Fatal(err)
 	}
-	return eventbus.TLSCertificateMaterial{
+	return invokers.TLSCertificateMaterial{
 		Certificate: string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})),
 		PrivateKey:  keyPEM,
 	}, key
@@ -116,7 +116,7 @@ func TestParseTLSCertificateMaterial(t *testing.T) {
 
 	// A chain certificate is appended after the leaf.
 	chainMaterial, _ := testCertificatePEM(t, "chain.example.com")
-	withChain := eventbus.TLSCertificateMaterial{
+	withChain := invokers.TLSCertificateMaterial{
 		Certificate:      material.Certificate,
 		PrivateKey:       material.PrivateKey,
 		CertificateChain: chainMaterial.Certificate,
@@ -129,13 +129,13 @@ func TestParseTLSCertificateMaterial(t *testing.T) {
 		t.Fatalf("chain not appended: %d blocks", len(cert.Certificate))
 	}
 
-	if _, err := parseTLSCertificateMaterial(eventbus.TLSCertificateMaterial{Certificate: material.Certificate}); err == nil {
+	if _, err := parseTLSCertificateMaterial(invokers.TLSCertificateMaterial{Certificate: material.Certificate}); err == nil {
 		t.Fatal("missing private key must fail")
 	}
-	if _, err := parseTLSCertificateMaterial(eventbus.TLSCertificateMaterial{Certificate: material.Certificate, PrivateKey: "not pem"}); err == nil {
+	if _, err := parseTLSCertificateMaterial(invokers.TLSCertificateMaterial{Certificate: material.Certificate, PrivateKey: "not pem"}); err == nil {
 		t.Fatal("non-PEM private key must fail")
 	}
-	if _, err := parseTLSCertificateMaterial(eventbus.TLSCertificateMaterial{Certificate: "not pem", PrivateKey: material.PrivateKey}); err == nil {
+	if _, err := parseTLSCertificateMaterial(invokers.TLSCertificateMaterial{Certificate: "not pem", PrivateKey: material.PrivateKey}); err == nil {
 		t.Fatal("non-PEM certificate must fail")
 	}
 }
@@ -156,10 +156,10 @@ func newTLSTestServer(t *testing.T, acm *acmMaterialProvider, iam *iamMaterialPr
 func TestTLSCertificateResolvesViewerCertificates(t *testing.T) {
 	acmMaterial, _ := testCertificatePEM(t, "acm.example.com")
 	iamMaterial, _ := testCertificatePEM(t, "iam.example.com")
-	acm := &acmMaterialProvider{material: map[string]eventbus.TLSCertificateMaterial{
+	acm := &acmMaterialProvider{material: map[string]invokers.TLSCertificateMaterial{
 		"arn:aws:acm:us-east-1:123456789012:certificate/aaa": acmMaterial,
 	}}
-	iam := &iamMaterialProvider{material: map[string]eventbus.TLSCertificateMaterial{
+	iam := &iamMaterialProvider{material: map[string]invokers.TLSCertificateMaterial{
 		"ASCAEXAMPLE0001": iamMaterial,
 	}}
 
@@ -236,7 +236,7 @@ func TestTLSCertificateResolvesViewerCertificates(t *testing.T) {
 
 func TestTLSCertificateCachesAndPurges(t *testing.T) {
 	acmMaterial, _ := testCertificatePEM(t, "cached.example.com")
-	acm := &acmMaterialProvider{material: map[string]eventbus.TLSCertificateMaterial{
+	acm := &acmMaterialProvider{material: map[string]invokers.TLSCertificateMaterial{
 		"arn:aws:acm:us-east-1:123456789012:certificate/bbb": acmMaterial,
 	}}
 	server, dist := newTLSTestServer(t, acm, nil, func(cfg *cfstore.DistributionConfig) {

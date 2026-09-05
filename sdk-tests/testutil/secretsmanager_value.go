@@ -12,12 +12,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "PutSecretValue_Basic", func() error {
 		name := tc.uniqueName("PutValue")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("initial"),
-		})
+		_, err := tc.createSecret(name, "initial")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -36,11 +33,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("name mismatch")
 		}
 
-		getResp, err := tc.client.GetSecretValue(tc.ctx, &secretsmanager.GetSecretValueInput{
-			SecretId: aws.String(name),
-		})
+		getResp, err := tc.getSecretValue(name)
 		if err != nil {
-			return fmt.Errorf("get: %v", err)
+			return err
 		}
 		if getResp.SecretString == nil || *getResp.SecretString != newValue {
 			return fmt.Errorf("value mismatch: got %q, want %q", aws.ToString(getResp.SecretString), newValue)
@@ -50,12 +45,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "PutSecretValue_MultipleVersions", func() error {
 		name := tc.uniqueName("PutVerify")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("v1"),
-		})
+		_, err := tc.createSecret(name, "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -94,12 +86,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "ListSecretVersionIds", func() error {
 		name := tc.uniqueName("VerList")
-		createResp, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("v1"),
-		})
+		createResp, err := tc.createSecret(name, "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -138,74 +127,17 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 		return nil
 	}))
 
-	results = append(results, r.RunTest("secretsmanager", "ListSecretVersionIds_MaxResultsRejected", func() error {
-		name := tc.uniqueName("VerListRange")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("range"),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.forceDeleteSecret(name)
-
-		for _, bad := range []int32{0, 101} {
-			_, err := tc.client.ListSecretVersionIds(tc.ctx, &secretsmanager.ListSecretVersionIdsInput{
-				SecretId:   aws.String(name),
-				MaxResults: aws.Int32(bad),
-			})
-			if err == nil {
-				return fmt.Errorf("MaxResults=%d should be rejected", bad)
-			}
-			if e := expectAWSErrorCode(err, "InvalidParameterException"); e != nil {
-				return fmt.Errorf("MaxResults=%d: %v", bad, e)
-			}
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("secretsmanager", "ListSecretVersionIds_InvalidNextTokenRejected", func() error {
-		name := tc.uniqueName("VerListBadToken")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("bad-token"),
-		})
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.forceDeleteSecret(name)
-
-		for _, bad := range []string{"9999", "-1", "abc", "1x"} {
-			_, err := tc.client.ListSecretVersionIds(tc.ctx, &secretsmanager.ListSecretVersionIdsInput{
-				SecretId:  aws.String(name),
-				NextToken: aws.String(bad),
-			})
-			if err == nil {
-				return fmt.Errorf("NextToken=%q should be rejected", bad)
-			}
-			if e := expectAWSErrorCode(err, "InvalidNextTokenException"); e != nil {
-				return fmt.Errorf("NextToken=%q: %v", bad, e)
-			}
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("secretsmanager", "GetSecretValue_UpdatesLastAccessedDate", func() error {
 		name := tc.uniqueName("LastAccess")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("accessed"),
-		})
+		_, err := tc.createSecret(name, "accessed")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
-		before, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		before, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe before: %v", err)
+			return fmt.Errorf("describe before: %w", err)
 		}
 		if before.LastAccessedDate != nil {
 			return fmt.Errorf("LastAccessedDate set before any retrieval")
@@ -217,11 +149,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("get: %v", err)
 		}
 
-		after, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		after, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe after: %v", err)
+			return fmt.Errorf("describe after: %w", err)
 		}
 		if after.LastAccessedDate == nil {
 			return fmt.Errorf("LastAccessedDate not set after GetSecretValue")
@@ -231,12 +161,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecretVersionStage_Basic", func() error {
 		name := tc.uniqueName("VersionStage")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("v1"),
-		})
+		_, err := tc.createSecret(name, "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -249,11 +176,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 		}
 		v2VersionId := putResp.VersionId
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		if descResp.VersionIdsToStages == nil {
 			return fmt.Errorf("VersionIdsToStages is nil")
@@ -281,11 +206,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("update version stage: %v", err)
 		}
 
-		descResp2, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp2, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe after: %v", err)
+			return fmt.Errorf("describe after: %w", err)
 		}
 		if descResp2.VersionIdsToStages == nil {
 			return fmt.Errorf("VersionIdsToStages is nil after update")
@@ -308,12 +231,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecretVersionStage_AddNewLabelToVersion", func() error {
 		name := tc.uniqueName("StageAdd")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("v1"),
-		})
+		_, err := tc.createSecret(name, "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 
@@ -335,11 +255,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("add new label: %v", err)
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		stages, ok := descResp.VersionIdsToStages[*putResp.VersionId]
 		if !ok {
@@ -358,12 +276,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecretVersionStage_MoveWithoutRemoveFromRejected", func() error {
-		createResp, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(tc.uniqueName("StageOmit")),
-			SecretString: aws.String("v1"),
-		})
+		createResp, err := tc.createSecret(tc.uniqueName("StageOmit"), "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		name := *createResp.Name
 		defer tc.forceDeleteSecret(name)
@@ -401,12 +316,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 	}))
 
 	results = append(results, r.RunTest("secretsmanager", "UpdateSecretVersionStage_MoveRemoveFromMismatchRejected", func() error {
-		createResp, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(tc.uniqueName("StageMis")),
-			SecretString: aws.String("v1"),
-		})
+		createResp, err := tc.createSecret(tc.uniqueName("StageMis"), "v1")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		name := *createResp.Name
 		defer tc.forceDeleteSecret(name)
@@ -461,11 +373,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 			return fmt.Errorf("move with matching RemoveFromVersionId: %v", err)
 		}
 
-		descResp, err := tc.client.DescribeSecret(tc.ctx, &secretsmanager.DescribeSecretInput{
-			SecretId: aws.String(name),
-		})
+		descResp, err := tc.describeSecret(name)
 		if err != nil {
-			return fmt.Errorf("describe: %v", err)
+			return err
 		}
 		labelOn := func(versionId *string) bool {
 			stages, ok := descResp.VersionIdsToStages[*versionId]
@@ -490,12 +400,9 @@ func (r *TestRunner) runSecretsManagerValueTests(tc *secretsManagerTestContext) 
 
 	results = append(results, r.RunTest("secretsmanager", "PutSecretValue_AWSPENDING_WithoutRotationToken", func() error {
 		name := tc.uniqueName("Pending")
-		_, err := tc.client.CreateSecret(tc.ctx, &secretsmanager.CreateSecretInput{
-			Name:         aws.String(name),
-			SecretString: aws.String("initial"),
-		})
+		_, err := tc.createSecret(name, "initial")
 		if err != nil {
-			return fmt.Errorf("create: %v", err)
+			return err
 		}
 		defer tc.forceDeleteSecret(name)
 

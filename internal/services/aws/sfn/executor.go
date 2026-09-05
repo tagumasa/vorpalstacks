@@ -24,7 +24,7 @@ type Executor struct {
 	store               *sfnstore.StepFunctionStore
 	accountID           string
 	region              string
-	bus                 eventbus.Bus
+	bus                 eventbus.ServiceBus
 	currentRoleArn      string
 	currentExecution    *sfnstore.Execution
 	currentStateMachine *sfnstore.StateMachine
@@ -43,7 +43,7 @@ func generateTaskToken() string {
 }
 
 // NewExecutor creates a new Step Functions executor with the given store and event bus.
-func NewExecutor(store *sfnstore.StepFunctionStore, bus eventbus.Bus) *Executor {
+func NewExecutor(store *sfnstore.StepFunctionStore, bus eventbus.ServiceBus) *Executor {
 	return &Executor{
 		store: store,
 		bus:   bus,
@@ -51,7 +51,7 @@ func NewExecutor(store *sfnstore.StepFunctionStore, bus eventbus.Bus) *Executor 
 }
 
 // NewExecutorWithStores creates a new Step Functions executor with all dependencies.
-func NewExecutorWithStores(store *sfnstore.StepFunctionStore, bus eventbus.Bus, accountID, region string) *Executor {
+func NewExecutorWithStores(store *sfnstore.StepFunctionStore, bus eventbus.ServiceBus, accountID, region string) *Executor {
 	return &Executor{
 		store:     store,
 		bus:       bus,

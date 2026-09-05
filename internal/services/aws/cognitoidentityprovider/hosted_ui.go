@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/server/fqdnrouter"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
@@ -24,7 +24,7 @@ import (
 
 // HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.
 func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request) {
-	if eventbus.ServeWAFTokenExchange(r.Context(), s.waf.currentInspector(), w, r) {
+	if waf.ServeWAFTokenExchange(r.Context(), s.waf.currentInspector(), w, r) {
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/eventbus"
 )
 
@@ -21,8 +22,8 @@ func (s *stubTriggerInvoker) InvokeForGateway(ctx context.Context, functionName 
 	return 200, s.payload, s.invokeErr
 }
 
-func (s *stubTriggerInvoker) InvokeForTrigger(ctx context.Context, functionName string, payload []byte) (eventbus.LambdaInvocation, error) {
-	return eventbus.LambdaInvocation{
+func (s *stubTriggerInvoker) InvokeForTrigger(ctx context.Context, functionName string, payload []byte) (invokers.LambdaInvocation, error) {
+	return invokers.LambdaInvocation{
 		StatusCode:    200,
 		Payload:       s.payload,
 		FunctionError: s.functionError,
@@ -33,7 +34,7 @@ func (s *stubTriggerInvoker) GetFunctionARN(ctx context.Context, functionName st
 	return functionName, nil
 }
 
-func newTriggerTestService(t *testing.T, invoker eventbus.LambdaInvoker) *CognitoService {
+func newTriggerTestService(t *testing.T, invoker invokers.LambdaInvoker) *CognitoService {
 	t.Helper()
 	bus := eventbus.NewEventBus()
 	if err := bus.Start(context.Background()); err != nil {

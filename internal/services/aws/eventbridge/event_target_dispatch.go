@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -357,7 +358,7 @@ func (s *EventsService) deliverToSQS(ctx context.Context, region string, target 
 		return fmt.Errorf("resource policy denied SQS SendMessage")
 	}
 
-	opts := eventbus.SQSSendOptions{}
+	opts := invokers.SQSSendOptions{}
 	if target.SqsParameters != nil && target.SqsParameters.MessageGroupId != "" {
 		opts.MessageGroupID = target.SqsParameters.MessageGroupId
 	}

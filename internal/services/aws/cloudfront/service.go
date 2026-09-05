@@ -8,9 +8,10 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
+	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	cloudfrontstore "vorpalstacks/internal/store/aws/cloudfront"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -37,8 +38,8 @@ type CloudFrontService struct {
 	stores              sync.Map // global (no region) — single cached instance
 	seedManagedPolicies sync.Once
 	distributionServer  *DistributionServer
-	wafInvoker          eventbus.WAFInvoker
-	acmInvoker          eventbus.ACMInvoker
+	wafInvoker          invokers.WAFInvoker
+	acmInvoker          invokers.ACMInvoker
 }
 
 // NewCloudFrontService creates a new CloudFront service instance.
@@ -87,7 +88,7 @@ func (s *CloudFrontService) DistributionTLSGetCertificate() func(*tls.ClientHell
 // SetTLSCertificateProviders injects the ACM and IAM certificate material
 // providers the distribution TLS plane resolves viewer certificates
 // through. Either argument may be nil.
-func (s *CloudFrontService) SetTLSCertificateProviders(acm eventbus.ACMCertificateProvider, iam eventbus.IAMServerCertificateProvider) {
+func (s *CloudFrontService) SetTLSCertificateProviders(acm invokers.ACMCertificateProvider, iam invokers.IAMServerCertificateProvider) {
 	if s.distributionServer == nil {
 		return
 	}
@@ -153,14 +154,14 @@ func (s *CloudFrontService) GetStoreForRegion(_ string) (*cloudfrontStores, erro
 }
 
 // SetWAFInvoker injects the WAF invoker for cross-service WebACL association.
-func (s *CloudFrontService) SetWAFInvoker(invoker eventbus.WAFInvoker) {
+func (s *CloudFrontService) SetWAFInvoker(invoker invokers.WAFInvoker) {
 	s.wafInvoker = invoker
 }
 
 // SetWebACLInspector injects the WAF request-inspection entry point and
 // forwards it to the distribution server so associated WebACLs are
 // enforced on distribution traffic.
-func (s *CloudFrontService) SetWebACLInspector(inspector eventbus.WebACLInspector) {
+func (s *CloudFrontService) SetWebACLInspector(inspector waf.WebACLInspector) {
 	if s.distributionServer != nil {
 		s.distributionServer.SetWebACLInspector(inspector)
 	}
@@ -169,7 +170,7 @@ func (s *CloudFrontService) SetWebACLInspector(inspector eventbus.WebACLInspecto
 // SetACMInvoker injects the ACM invoker for cross-service certificate usage
 // tracking. When a distribution references an ACM certificate, the invoker
 // records the association so that DeleteCertificate can enforce InUseBy.
-func (s *CloudFrontService) SetACMInvoker(invoker eventbus.ACMInvoker) {
+func (s *CloudFrontService) SetACMInvoker(invoker invokers.ACMInvoker) {
 	s.acmInvoker = invoker
 }
 

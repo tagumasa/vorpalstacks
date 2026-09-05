@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	eventsstore "vorpalstacks/internal/store/aws/eventbridge"
@@ -20,7 +21,7 @@ type recordingKinesisInvoker struct {
 	failNext int
 }
 
-func (r *recordingKinesisInvoker) ListShards(ctx context.Context, streamName string) ([]eventbus.ShardInfo, error) {
+func (r *recordingKinesisInvoker) ListShards(ctx context.Context, streamName string) ([]invokers.ShardInfo, error) {
 	return nil, nil
 }
 
@@ -39,7 +40,7 @@ func (r *recordingKinesisInvoker) CreateShardIterator(ctx context.Context, strea
 	return "", nil
 }
 
-func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]eventbus.KinesisRecord, string, error) {
+func (r *recordingKinesisInvoker) GetRecords(ctx context.Context, streamName string, shardID string, startingSequenceNumber string, limit int32, includeStart bool) ([]invokers.KinesisRecord, string, error) {
 	return nil, "", nil
 }
 

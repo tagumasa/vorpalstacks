@@ -253,6 +253,7 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 				}
 			}
 		}
+		s.sandboxes.drainVersion(function.FunctionArn, qualifier)
 		return mapStoreError(stores.Functions.DeleteVersion(function.FunctionName, qualifier))
 	}
 
@@ -283,6 +284,7 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 		}
 	}
 
+	s.sandboxes.drainFunction(function.FunctionArn)
 	return mapStoreError(stores.Functions.Delete(function.FunctionName))
 }
 

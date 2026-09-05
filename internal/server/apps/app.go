@@ -273,7 +273,9 @@ func New(cfg *Config) (*App, error) {
 	if err := a.initAlwaysOnServices(); err != nil {
 		return nil, err
 	}
-	a.wireCrossServiceDeps()
+	if err := a.wireCrossServiceDeps(); err != nil {
+		return nil, err
+	}
 	if err := a.initOptionalServices(); err != nil {
 		a.Shutdown(context.Background())
 		return nil, err
@@ -334,7 +336,9 @@ func NewWithStorage(cfg *Config, sm *storage.RegionStorageManager) (*App, error)
 	if err := a.initAlwaysOnServices(); err != nil {
 		return nil, err
 	}
-	a.wireCrossServiceDeps()
+	if err := a.wireCrossServiceDeps(); err != nil {
+		return nil, err
+	}
 	if err := a.initOptionalServices(); err != nil {
 		a.Shutdown(context.Background())
 		return nil, err

@@ -163,6 +163,11 @@ func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFu
 		return nil, nil, err
 	}
 
+	// New code invalidates the warm $LATEST sandboxes — an image function's
+	// sandbox runs the image it was built with; published versions get
+	// fresh sandboxes on demand.
+	s.sandboxes.drainVersion(function.FunctionArn, "$LATEST")
+
 	var published *lambdastore.Version
 	if in.Publish {
 		published, err = s.publishVersionWithCode(stores, function, "", in.Region)
@@ -320,6 +325,11 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 				logs.Err(rmErr))
 		}
 	}
+
+	// A sandbox bakes its memory, timeout, environment, and image config at
+	// creation, so the configuration update invalidates the warm $LATEST
+	// sandboxes the same way it recycled the exec container above.
+	s.sandboxes.drainVersion(function.FunctionArn, "$LATEST")
 
 	return function, nil
 }

@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/serviceports"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/services/aws/iot/ca"
 	iotstore "vorpalstacks/internal/store/aws/iot"
 	"vorpalstacks/internal/utils/crypto"
@@ -83,7 +83,7 @@ type registrationLineOutcome struct {
 	Error    string
 }
 
-func (s *IoTService) registrationS3Invoker() eventbus.S3Invoker {
+func (s *IoTService) registrationS3Invoker() invokers.S3Invoker {
 	if s.deps.EventBus == nil {
 		return nil
 	}

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	"vorpalstacks/internal/store/aws/athena"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -34,7 +34,7 @@ const cleanupInterval = 24 * time.Hour
 // AthenaService provides AWS Athena operations.
 type AthenaService struct {
 	accountID      string
-	s3Invoker      eventbus.S3Invoker
+	s3Invoker      invokers.S3Invoker
 	region         string
 	testMode       bool
 	asyncWg        sync.WaitGroup
@@ -55,7 +55,7 @@ func NewAthenaService(accountID string) *AthenaService {
 }
 
 // SetS3Invoker injects the S3 invoker for cross-service S3 operations.
-func (s *AthenaService) SetS3Invoker(invoker eventbus.S3Invoker) {
+func (s *AthenaService) SetS3Invoker(invoker invokers.S3Invoker) {
 	s.s3Invoker = invoker
 }
 

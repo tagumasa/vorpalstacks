@@ -11,9 +11,9 @@ import (
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/eventbus"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	tsstore "vorpalstacks/internal/store/aws/timestream"
 )
@@ -41,7 +41,7 @@ type TimestreamWriteService struct {
 	stores         sync.Map // region → *tsWriteStores
 	batchWg        sync.WaitGroup
 	storageManager *storage.RegionStorageManager
-	s3Invoker      eventbus.S3Invoker
+	s3Invoker      invokers.S3Invoker
 	batchCtx       context.Context
 	batchCancel    context.CancelFunc
 }
@@ -64,7 +64,7 @@ func (s *TimestreamWriteService) SetStorageManager(sm *storage.RegionStorageMana
 }
 
 // SetS3Invoker injects the S3 reader for batch load tasks that load data from S3.
-func (s *TimestreamWriteService) SetS3Invoker(invoker eventbus.S3Invoker) {
+func (s *TimestreamWriteService) SetS3Invoker(invoker invokers.S3Invoker) {
 	s.s3Invoker = invoker
 }
 
