@@ -23,9 +23,22 @@ import (
 	"vorpalstacks/internal/server/fqdnrouter"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/auth"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
+	"vorpalstacks/internal/services/aws/apigateway/runtime/ratelimit"
 	"vorpalstacks/internal/services/aws/apigateway/runtime/validator"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/utils/aws/arn"
+)
+
+// defaultMaxRequestBodyBytes is the AWS default payload limit for execute-api
+// requests (10 MiB); operators override it via the
+// apigateway.max_body_size_bytes configuration key.
+const defaultMaxRequestBodyBytes = 10 * 1024 * 1024
+
+// defaultStageRateLimit and defaultStageBurstLimit are AWS's defaults for a
+// stage throttle that specifies only one of the two members.
+const (
+	defaultStageRateLimit  = 1000.0
+	defaultStageBurstLimit = 2000.0
 )
 
 // RuntimeServer handles API Gateway runtime requests.
@@ -324,7 +337,7 @@ func (s *RuntimeServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// AWS default payload limit is 10 MiB; allow operator override.
-	maxBodyBytes := int64(10 * 1024 * 1024)
+	maxBodyBytes := int64(defaultMaxRequestBodyBytes)
 	if v := config.GetInt("apigateway.max_body_size_bytes"); v > 0 {
 		maxBodyBytes = int64(v)
 	}
@@ -502,26 +515,34 @@ func (s *RuntimeServer) sendResponse(w http.ResponseWriter, resp *integration.In
 // the matched route. If throttling is configured and the rate limit is
 // exceeded, an error is returned resulting in HTTP 429.
 //
-// AWS API Gateway supports wildcard method settings keys. Settings are
-// merged from most general (*/*) to most specific (exact path/method),
-// with non-zero values at each level overriding less specific ones.
+// Method settings keys follow the as-addressed
+// {resource_path}/{http_method} convention (apigatewaystore.MethodSettingsKey):
+// the documented patch ingress stores the escaped pointer form
+// ("~1pets~1{petId}/GET"), while whole-map values supplied through
+// CreateStage or the whole-row replace may carry real-slash spellings
+// ("/pets/GET"), so both spellings of the route key are consulted. Settings
+// are merged from most general (*/*) to most specific (the escaped exact
+// key), with non-zero values at each level overriding less specific ones.
 func (s *RuntimeServer) checkStageThrottling(stage *apigatewaystore.Stage, match *RouteMatch) error {
 	if stage == nil || len(stage.MethodSettings) == 0 {
 		return nil
 	}
 
 	httpMethod := match.HttpMethod
-	encodedPath := strings.ReplaceAll(match.Path, "/", "~1")
-	exactKey := encodedPath + "/" + httpMethod
+	escapedPath := apigatewaystore.EscapeResourcePath(match.Path)
 
 	// Merge throttling settings from most general to most specific.
-	// Non-zero values override inherited values at each level.
+	// Non-zero values override inherited values at each level; the escaped
+	// spelling comes last because it is the form the documented patch rows
+	// store.
 	var rate, burst float64
 	candidates := []string{
 		"*/*",
 		"*/" + httpMethod,
-		encodedPath + "/*",
-		exactKey,
+		match.Path + "/*",
+		match.Path + "/" + httpMethod,
+		escapedPath + "/*",
+		escapedPath + "/" + httpMethod,
 	}
 	for _, key := range candidates {
 		if ms, ok := stage.MethodSettings[key]; ok {
@@ -540,80 +561,27 @@ func (s *RuntimeServer) checkStageThrottling(stage *apigatewaystore.Stage, match
 
 	// Apply AWS defaults for unset values
 	if rate <= 0 {
-		rate = 1000
+		rate = defaultStageRateLimit
 	}
 	if burst <= 0 {
-		burst = 2000
+		burst = defaultStageBurstLimit
 	}
 
-	limiterKey := stage.StageName + ":" + exactKey
-	val, loaded := s.stageThrottlers.LoadOrStore(limiterKey, newStageRateLimiter(rate, burst))
-	limiter, ok := val.(*stageRateLimiter)
+	limiterKey := stage.StageName + ":" + apigatewaystore.MethodSettingsKey(match.Path, httpMethod)
+	val, loaded := s.stageThrottlers.LoadOrStore(limiterKey, ratelimit.New(rate, burst))
+	limiter, ok := val.(*ratelimit.TokenBucket)
 	if !ok {
 		return nil
 	}
 	if loaded {
 		// Refresh limiter with latest settings so that UpdateStage
 		// changes take effect without a server restart.
-		limiter.update(rate, burst)
+		limiter.Update(rate, burst)
 	}
-	if !limiter.allow() {
+	if !limiter.Allow() {
 		return fmt.Errorf("Rate limit exceeded")
 	}
 	return nil
-}
-
-type stageRateLimiter struct {
-	mu         sync.Mutex
-	tokens     float64
-	maxTokens  float64
-	refillRate float64
-	lastRefill time.Time
-}
-
-func newStageRateLimiter(rateLimit, burstLimit float64) *stageRateLimiter {
-	return &stageRateLimiter{
-		tokens:     burstLimit,
-		maxTokens:  burstLimit,
-		refillRate: rateLimit,
-		lastRefill: time.Now(),
-	}
-}
-
-// update adjusts the rate and burst limits on an existing limiter,
-// allowing UpdateStage changes to take effect without a restart.
-func (r *stageRateLimiter) update(rateLimit, burstLimit float64) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	oldMax := r.maxTokens
-	r.refillRate = rateLimit
-	r.maxTokens = burstLimit
-	if burstLimit > oldMax {
-		// Burst capacity increased — replenish immediately so the new
-		// capacity is available without waiting for natural refill.
-		r.tokens = burstLimit
-	} else if r.tokens > r.maxTokens {
-		r.tokens = r.maxTokens
-	}
-}
-
-func (r *stageRateLimiter) allow() bool {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	now := time.Now()
-	elapsed := now.Sub(r.lastRefill).Seconds()
-	r.tokens = r.tokens + elapsed*r.refillRate
-	if r.tokens > r.maxTokens {
-		r.tokens = r.maxTokens
-	}
-	r.lastRefill = now
-
-	if r.tokens >= 1 {
-		r.tokens--
-		return true
-	}
-	return false
 }
 
 func (s *RuntimeServer) sendError(w http.ResponseWriter, statusCode int, message string) {

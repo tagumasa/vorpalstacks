@@ -11,9 +11,9 @@ import (
 func (r *TestRunner) runAPIGatewayValidationTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("apigateway", "Validation_PutIntegration_Mock_NoUri", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+	results = append(results, r.RunTest("apigateway", "Validation_PutIntegration", func() error {
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
 			RestApiId: aws.String(tc.apiID),
@@ -24,131 +24,46 @@ func (r *TestRunner) runAPIGatewayValidationTests(tc *apigwTestContext) []TestRe
 		if len(resources.Items) == 0 {
 			return fmt.Errorf("no resources found")
 		}
-
-		res, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
-			RestApiId: aws.String(tc.apiID),
-			ParentId:  resources.Items[0].Id,
-			PathPart:  aws.String("mocktest"),
-		})
-		if err != nil {
-			return fmt.Errorf("create resource: %v", err)
+		rows := []struct {
+			name     string
+			pathPart string
+			intType  types.IntegrationType
+			wantErr  string // empty means the put must succeed
+		}{
+			// MOCK integration without URI should succeed
+			{name: "mock-without-uri-succeeds", pathPart: "mocktest", intType: types.IntegrationTypeMock},
+			// HTTP integration without URI should fail
+			{name: "http-without-uri-rejected", pathPart: "httptest", intType: types.IntegrationTypeHttp, wantErr: "expected error for HTTP integration without URI"},
+			// Invalid integration type should fail
+			{name: "invalid-type-rejected", pathPart: "invalidtest", intType: types.IntegrationType("INVALID_TYPE"), wantErr: "expected error for invalid integration type"},
 		}
-
-		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
-			RestApiId:         aws.String(tc.apiID),
-			ResourceId:        res.Id,
-			HttpMethod:        aws.String("GET"),
-			AuthorizationType: aws.String("NONE"),
-		})
-		if err != nil {
-			return fmt.Errorf("put method: %v", err)
-		}
-
-		// MOCK integration without URI should succeed
-		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  aws.String(tc.apiID),
-			ResourceId: res.Id,
-			HttpMethod: aws.String("GET"),
-			Type:       types.IntegrationTypeMock,
-		})
-		return err
-	}))
-
-	results = append(results, r.RunTest("apigateway", "Validation_PutIntegration_Http_RequiresUri", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
-		}
-		resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
-			RestApiId: aws.String(tc.apiID),
-		})
-		if err != nil {
-			return fmt.Errorf("get resources: %v", err)
-		}
-		if len(resources.Items) == 0 {
-			return fmt.Errorf("no resources found")
-		}
-
-		res, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
-			RestApiId: aws.String(tc.apiID),
-			ParentId:  resources.Items[0].Id,
-			PathPart:  aws.String("httptest"),
-		})
-		if err != nil {
-			return fmt.Errorf("create resource: %v", err)
-		}
-
-		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
-			RestApiId:         aws.String(tc.apiID),
-			ResourceId:        res.Id,
-			HttpMethod:        aws.String("GET"),
-			AuthorizationType: aws.String("NONE"),
-		})
-		if err != nil {
-			return fmt.Errorf("put method: %v", err)
-		}
-
-		// HTTP integration without URI should fail
-		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  aws.String(tc.apiID),
-			ResourceId: res.Id,
-			HttpMethod: aws.String("GET"),
-			Type:       types.IntegrationTypeHttp,
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for HTTP integration without URI")
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("apigateway", "Validation_PutIntegration_InvalidType", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
-		}
-		resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
-			RestApiId: aws.String(tc.apiID),
-		})
-		if err != nil {
-			return fmt.Errorf("get resources: %v", err)
-		}
-		if len(resources.Items) == 0 {
-			return fmt.Errorf("no resources found")
-		}
-
-		res, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
-			RestApiId: aws.String(tc.apiID),
-			ParentId:  resources.Items[0].Id,
-			PathPart:  aws.String("invalidtest"),
-		})
-		if err != nil {
-			return fmt.Errorf("create resource: %v", err)
-		}
-
-		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
-			RestApiId:         aws.String(tc.apiID),
-			ResourceId:        res.Id,
-			HttpMethod:        aws.String("GET"),
-			AuthorizationType: aws.String("NONE"),
-		})
-		if err != nil {
-			return fmt.Errorf("put method: %v", err)
-		}
-
-		// Invalid integration type should fail
-		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
-			RestApiId:  aws.String(tc.apiID),
-			ResourceId: res.Id,
-			HttpMethod: aws.String("GET"),
-			Type:       types.IntegrationType("INVALID_TYPE"),
-		})
-		if err == nil {
-			return fmt.Errorf("expected error for invalid integration type")
+		for _, row := range rows {
+			resID, err := tc.createResourceWithMethod(tc.apiID, aws.ToString(resources.Items[0].Id), row.pathPart, "GET")
+			if err != nil {
+				return fmt.Errorf("%s: %v", row.name, err)
+			}
+			_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+				RestApiId:  aws.String(tc.apiID),
+				ResourceId: aws.String(resID),
+				HttpMethod: aws.String("GET"),
+				Type:       row.intType,
+			})
+			if row.wantErr == "" {
+				if err != nil {
+					return fmt.Errorf("%s: %v", row.name, err)
+				}
+				continue
+			}
+			if err == nil {
+				return fmt.Errorf("%s: %s", row.name, row.wantErr)
+			}
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "Validation_CreateStage_RequiresDeploymentId", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 
 		_, err := tc.client.CreateStage(tc.ctx, &apigateway.CreateStageInput{
@@ -178,13 +93,13 @@ func (r *TestRunner) runAPIGatewayValidationTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "Validation_CreateModel_DefaultContentType", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 
 		resp, err := tc.client.CreateModel(tc.ctx, &apigateway.CreateModelInput{
 			RestApiId:   aws.String(tc.apiID),
-			Name:        aws.String(fmt.Sprintf("TestModelDefault-%d", 0)),
+			Name:        aws.String(tc.uniqueName("TestModelDefault")),
 			Schema:      aws.String(`{"type": "object"}`),
 			ContentType: aws.String("application/json"),
 		})

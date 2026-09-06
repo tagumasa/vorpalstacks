@@ -115,7 +115,7 @@ func (s *CloudFrontService) deleteCachePolicyCore(stores *cloudfrontStores, id, 
 	}
 	attached, err := isCachePolicyAttached(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check cache policy usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check cache policy usage: " + err.Error())
 	}
 	if attached {
 		return awserrors.NewAWSError("CachePolicyInUse",
@@ -236,7 +236,7 @@ func (s *CloudFrontService) deleteOriginRequestPolicyCore(stores *cloudfrontStor
 	}
 	attached, err := isOriginRequestPolicyAttached(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check origin request policy usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check origin request policy usage: " + err.Error())
 	}
 	if attached {
 		return awserrors.NewAWSError("OriginRequestPolicyInUse",
@@ -320,7 +320,7 @@ func (s *CloudFrontService) listTagsForResourceCore(stores *cloudfrontStores, in
 
 	tags, err := stores.tags.ListTagsForResource(in.Resource)
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalError", err.Error(), 500)
+		return nil, awserrors.NewInternalFailureException(err.Error())
 	}
 	return tags, nil
 }
@@ -346,7 +346,7 @@ func (s *CloudFrontService) tagResourceCore(stores *cloudfrontStores, in TagReso
 	}
 
 	if err := stores.tags.Tag(in.Resource, in.Tags); err != nil {
-		return awserrors.NewAWSError("InternalError", err.Error(), 500)
+		return awserrors.NewInternalFailureException(err.Error())
 	}
 	return nil
 }
@@ -369,7 +369,7 @@ func (s *CloudFrontService) untagResourceCore(stores *cloudfrontStores, in Untag
 	}
 
 	if err := stores.tags.Untag(in.Resource, in.TagKeys); err != nil {
-		return awserrors.NewAWSError("InternalError", err.Error(), 500)
+		return awserrors.NewInternalFailureException(err.Error())
 	}
 	return nil
 }

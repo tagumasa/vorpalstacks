@@ -178,6 +178,97 @@ func (tc *apigwTestContext) allAuthorizers(apiID string) ([]types.Authorizer, er
 	})
 }
 
+// allDomainNames walks every GetDomainNames page.
+func (tc *apigwTestContext) allDomainNames() ([]types.DomainName, error) {
+	return paginate(func(next *string) ([]types.DomainName, *string, error) {
+		resp, err := tc.client.GetDomainNames(tc.ctx, &apigateway.GetDomainNamesInput{
+			Limit:    aws.Int32(500),
+			Position: next,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return resp.Items, resp.Position, nil
+	})
+}
+
+// require reports an order-dependency failure when an identifier a test
+// depends on is empty (the earlier section step that produced it failed).
+func (tc *apigwTestContext) require(ids ...string) error {
+	for _, id := range ids {
+		if id == "" {
+			return fmt.Errorf("required section-head identifier is empty")
+		}
+	}
+	return nil
+}
+
+// createOwnAPI creates a private REST API with a unique name for one
+// scenario. The caller pairs the returned id with deleteAPI.
+func (tc *apigwTestContext) createOwnAPI(prefix string) (string, string, error) {
+	return tc.createAPI(tc.uniqueName(prefix))
+}
+
+// createResourceWithMethod creates a resource under parentID with a
+// NONE-authorised method of the given HTTP method. It is scenario setup
+// for tests whose subject is a different operation.
+func (tc *apigwTestContext) createResourceWithMethod(apiID, parentID, pathPart, httpMethod string) (string, error) {
+	resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+		RestApiId: aws.String(apiID),
+		ParentId:  aws.String(parentID),
+		PathPart:  aws.String(pathPart),
+	})
+	if err != nil {
+		return "", fmt.Errorf("create resource: %w", err)
+	}
+	if resResp.Id == nil {
+		return "", fmt.Errorf("resource ID is nil")
+	}
+	_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+		RestApiId:         aws.String(apiID),
+		ResourceId:        resResp.Id,
+		HttpMethod:        aws.String(httpMethod),
+		AuthorizationType: aws.String("NONE"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("put method: %w", err)
+	}
+	return *resResp.Id, nil
+}
+
+// createOwnUsagePlan creates a usage plan with a unique name. The caller
+// pairs the returned id with deleteUsagePlan.
+func (tc *apigwTestContext) createOwnUsagePlan(prefix string) (string, error) {
+	resp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
+		Name: aws.String(tc.uniqueName(prefix)),
+	})
+	if err != nil {
+		return "", err
+	}
+	if resp.Id == nil {
+		return "", fmt.Errorf("usage plan ID is nil")
+	}
+	return *resp.Id, nil
+}
+
+// deleteUsagePlan deletes a usage plan by id, ignoring an empty id so
+// deferred cleanup stays safe when creation failed before an id was
+// produced.
+func (tc *apigwTestContext) deleteUsagePlan(id string) {
+	if id == "" {
+		return
+	}
+	_, _ = tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{
+		UsagePlanId: aws.String(id),
+	})
+}
+
+// resourceARN builds the apigateway control-plane ARN for a resource id,
+// e.g. arn:aws:apigateway:<region>::/restapis/<id>.
+func (tc *apigwTestContext) resourceARN(kind, id string) string {
+	return fmt.Sprintf("arn:aws:apigateway:%s::/%s/%s", tc.r.region, kind, id)
+}
+
 func (r *TestRunner) RunAPIGatewayTests() []TestResult {
 	var results []TestResult
 

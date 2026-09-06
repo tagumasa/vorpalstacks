@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 	"vorpalstacks/internal/utils/timeutils"
 )
@@ -45,23 +46,27 @@ var validSearchSortByValues = map[string]bool{
 }
 
 // validateSearchSortBy returns an error if sortBy is not a supported value.
+// SearchCertificates declares ValidationException (not
+// InvalidParameterException), so violations surface as ValidationException.
 func validateSearchSortBy(sortBy string) error {
 	if sortBy == "" || sortBy == "CREATED_AT" {
 		return nil
 	}
 	if !validSearchSortByValues[sortBy] {
-		return NewInvalidParameterError(fmt.Sprintf("Invalid SortBy: %s", sortBy))
+		return awserrors.NewValidationException(fmt.Sprintf("Invalid SortBy: %s", sortBy))
 	}
 	return nil
 }
 
 // validateSortOrder validates SortOrder parameter (ASCENDING/DESCENDING).
+// Shared by ListCertificates and SearchCertificates; both declare
+// ValidationException, not InvalidParameterException.
 func validateSortOrder(sortOrder string) error {
 	switch sortOrder {
 	case "ASCENDING", "DESCENDING":
 		return nil
 	default:
-		return NewInvalidParameterError(fmt.Sprintf("Invalid SortOrder: %s. Valid values are ASCENDING, DESCENDING.", sortOrder))
+		return awserrors.NewValidationException(fmt.Sprintf("Invalid SortOrder: %s. Valid values are ASCENDING, DESCENDING.", sortOrder))
 	}
 }
 
@@ -245,7 +250,7 @@ func extractX509Attributes(certPEM string) (map[string]interface{}, error) {
 	attrs := map[string]interface{}{
 		"Subject":      buildDistinguishedName(parsed.Subject),
 		"Issuer":       buildDistinguishedName(parsed.Issuer),
-		"SerialNumber": parsed.SerialNumber.String(),
+		"SerialNumber": formatSerialNumberHex(parsed.SerialNumber),
 		"KeyAlgorithm": keyAlgorithmFromX509(parsed.PublicKey),
 	}
 
@@ -327,8 +332,10 @@ func extKeyUsageEnumsToStrings(ekus []x509.ExtKeyUsage, unknownOIDs []asn1.Objec
 // have a direct 1-to-1 correspondence are included; SGC and other Go EKU
 // constants without an ACM equivalent are omitted (the if-ok check in
 // extKeyUsageEnumsToStrings skips them, and unknown OIDs surface via
-// UnknownExtKeyUsage).
+// UnknownExtKeyUsage). ExtKeyUsageAny is anyExtendedKeyUsage (OID
+// 2.5.29.37.0), the ACM enum's ANY value.
 var extKeyUsageMap = map[x509.ExtKeyUsage]string{
+	x509.ExtKeyUsageAny:             "ANY",
 	x509.ExtKeyUsageServerAuth:      "TLS_WEB_SERVER_AUTHENTICATION",
 	x509.ExtKeyUsageClientAuth:      "TLS_WEB_CLIENT_AUTHENTICATION",
 	x509.ExtKeyUsageCodeSigning:     "CODE_SIGNING",
@@ -338,6 +345,38 @@ var extKeyUsageMap = map[x509.ExtKeyUsage]string{
 	x509.ExtKeyUsageIPSECUser:       "IPSEC_USER",
 	x509.ExtKeyUsageTimeStamping:    "TIME_STAMPING",
 	x509.ExtKeyUsageOCSPSigning:     "OCSP_SIGNING",
+}
+
+// keyUsageList converts ACM KeyUsageName strings to the store's KeyUsage
+// entries.
+func keyUsageList(names []string) []*acmstorelib.KeyUsage {
+	if len(names) == 0 {
+		return nil
+	}
+	kus := make([]*acmstorelib.KeyUsage, len(names))
+	for i, name := range names {
+		kus[i] = &acmstorelib.KeyUsage{Name: name}
+	}
+	return kus
+}
+
+// x509UsageFields extracts the Key Usage and Extended Key Usage store fields
+// from a parsed certificate, so imports persist the same usage data the
+// search response derives from the PEM. Extended usages outside the ACM enum
+// are recorded by OID with no enum name — the filter input is enum-validated,
+// so they correctly match no filter.
+func x509UsageFields(parsed *x509.Certificate) ([]*acmstorelib.KeyUsage, []*acmstorelib.ExtendedKeyUsage) {
+	kus := keyUsageList(keyUsageFlagsToStrings(parsed.KeyUsage))
+	var ekus []*acmstorelib.ExtendedKeyUsage
+	for _, eku := range parsed.ExtKeyUsage {
+		if name, ok := extKeyUsageMap[eku]; ok {
+			ekus = append(ekus, &acmstorelib.ExtendedKeyUsage{Name: name})
+		}
+	}
+	for _, oid := range parsed.UnknownExtKeyUsage {
+		ekus = append(ekus, &acmstorelib.ExtendedKeyUsage{OID: oid.String()})
+	}
+	return kus, ekus
 }
 
 // pkixName is an alias for crypto/x509/pkix.Name to simplify the

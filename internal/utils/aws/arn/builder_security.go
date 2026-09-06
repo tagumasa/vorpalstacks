@@ -76,15 +76,18 @@ func (b *ARNBuilder) ACM() *ACMBuilder { return &ACMBuilder{b} }
 func (b *ACMBuilder) Certificate(id string) string { return b.Build("acm", "certificate/"+id) }
 
 // ParseCertificateID extracts the certificate ID from a certificate ARN.
+// The parse is structural: only ARNs naming the acm service with a
+// non-empty certificate/ resource yield an ID; anything else returns "".
 func (b *ACMBuilder) ParseCertificateID(arn string) string {
-	if !strings.HasPrefix(arn, "arn:") {
-		return arn
+	_, service, _, _, resource := SplitARN(arn)
+	if service != "acm" {
+		return ""
 	}
-	parts := strings.Split(arn, "/")
-	if len(parts) >= 2 {
-		return parts[len(parts)-1]
+	id, ok := strings.CutPrefix(resource, "certificate/")
+	if !ok || id == "" {
+		return ""
 	}
-	return arn
+	return id
 }
 
 // SecretsManagerBuilder provides methods for constructing Secrets Manager ARNs.

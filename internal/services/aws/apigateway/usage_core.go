@@ -1,7 +1,9 @@
 package apigateway
 
 import (
-	"strconv"
+	"encoding/json"
+	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -164,30 +166,81 @@ func (s *APIGatewayService) updateApiKeyCore(
 	}
 
 	for _, po := range patches {
+		handled := false
 		switch {
 		case po.Path == "/name":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			apiKey.Name = po.Value
 		case po.Path == "/description":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			apiKey.Description = po.Value
 		case po.Path == "/customerId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			apiKey.CustomerId = po.Value
 		case po.Path == "/enabled":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			apiKey.Enabled = po.Value == "true"
-		case strings.HasPrefix(po.Path, "/stageKeys/"):
-			if apiKey.StageKeys == nil {
-				apiKey.StageKeys = []string{}
+		case po.Path == "/stages":
+			handled = true
+			// The /stages row of the official UpdateApiKey patch table
+			// documents add and remove; the value uses the stageKeys
+			// member format, restApiId/stageName, that the official CLI
+			// reference output shows.
+			if err := requirePatchOp(po, opAdd|opRemove); err != nil {
+				return nil, err
 			}
-			stageKey := strings.TrimPrefix(po.Path, "/stageKeys/")
-			if (po.Op == "add" || po.Op == "replace") && !validateStageKey(stageKey) {
-				return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + stageKey)
+			if !validateStageKey(po.Value) {
+				return nil, NewBadRequestException("invalid stage format, expected restApiId/stageName: " + po.Value)
 			}
-			if po.Op == "add" || po.Op == "replace" {
-				if !sliceContains(apiKey.StageKeys, stageKey) {
-					apiKey.StageKeys = append(apiKey.StageKeys, stageKey)
+			if po.Op == "add" {
+				if apiKey.StageKeys == nil {
+					apiKey.StageKeys = []string{}
 				}
-			} else if po.Op == "remove" {
-				apiKey.StageKeys = removeString(apiKey.StageKeys, stageKey)
+				if !slices.Contains(apiKey.StageKeys, po.Value) {
+					apiKey.StageKeys = append(apiKey.StageKeys, po.Value)
+				}
+			} else {
+				apiKey.StageKeys = removeString(apiKey.StageKeys, po.Value)
 			}
+		case strings.HasPrefix(po.Path, "/stageKeys/"):
+			handled = true
+			// Not a documented patch form: the table addresses the stages
+			// through the /stages row only.
+			return nil, unknownPatchPathError(po)
+		case po.Path == "/labels":
+			handled = true
+			// The /labels row of the official UpdateApiKey patch table
+			// documents add and remove. ApiKey carries no labels member —
+			// tags is the only string-to-string map the model and the API
+			// reference define, so the row addresses the tags: add sets
+			// them from the JSON object value, remove clears them.
+			if err := requirePatchOp(po, opAdd|opRemove); err != nil {
+				return nil, err
+			}
+			if po.Op == "remove" {
+				apiKey.Tags = nil
+			} else {
+				parsed, err := parseWholeStringMapValue(po, nil, nil)
+				if err != nil {
+					return nil, err
+				}
+				apiKey.Tags = tagsFromMap(parsed)
+			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 	if err := stores.usage.UpdateApiKey(apiKey); err != nil {
@@ -219,6 +272,14 @@ func (s *APIGatewayService) createUsagePlanCore(stores *apiGatewayStores, in *Us
 	}
 
 	for _, as := range in.ApiStages {
+		for _, t := range as.Throttle {
+			if !validateThrottleBurstLimit(t.BurstLimit) {
+				return nil, NewBadRequestException("per-stage throttle burstLimit must be between 0 and 10000")
+			}
+			if !validateThrottleRateLimit(t.RateLimit) {
+				return nil, NewBadRequestException("per-stage throttle rateLimit must be between 0 and 10000")
+			}
+		}
 		stage := apigateway.ApiStage{
 			ApiId:    as.ApiId,
 			Stage:    as.Stage,
@@ -313,14 +374,47 @@ func (s *APIGatewayService) updateUsagePlanCore(
 	}
 
 	for _, po := range patches {
+		handled := false
 		switch {
 		case po.Path == "/name":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			usagePlan.Name = po.Value
 		case po.Path == "/description":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			usagePlan.Description = po.Value
 		case po.Path == "/productCode":
+			handled = true
+			// The row documents add, replace and remove.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			usagePlan.ProductCode = po.Value
+		case po.Path == "/quota":
+			handled = true
+			// The whole-member row documents remove only.
+			if err := requirePatchOp(po, opRemove); err != nil {
+				return nil, err
+			}
+			usagePlan.Quota = nil
+		case po.Path == "/throttle":
+			handled = true
+			// The whole-member row documents remove only.
+			if err := requirePatchOp(po, opRemove); err != nil {
+				return nil, err
+			}
+			usagePlan.Throttle = nil
 		case po.Path == "/quota/limit":
+			handled = true
+			// The row documents add and replace.
+			if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+				return nil, err
+			}
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &apigateway.Quota{}
 			}
@@ -330,6 +424,11 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				usagePlan.Quota.Limit = v
 			}
 		case po.Path == "/quota/period":
+			handled = true
+			// The row documents add and replace.
+			if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+				return nil, err
+			}
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &apigateway.Quota{}
 			}
@@ -338,6 +437,11 @@ func (s *APIGatewayService) updateUsagePlanCore(
 			}
 			usagePlan.Quota.Period = po.Value
 		case po.Path == "/quota/offset":
+			handled = true
+			// The row documents add and replace.
+			if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+				return nil, err
+			}
 			if usagePlan.Quota == nil {
 				usagePlan.Quota = &apigateway.Quota{}
 			}
@@ -347,6 +451,11 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				usagePlan.Quota.Offset = v
 			}
 		case po.Path == "/throttle/burstLimit":
+			handled = true
+			// The row documents add and replace.
+			if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+				return nil, err
+			}
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &apigateway.Throttle{}
 			}
@@ -358,6 +467,11 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				usagePlan.Throttle.BurstLimit = v
 			}
 		case po.Path == "/throttle/rateLimit":
+			handled = true
+			// The row documents add and replace.
+			if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+				return nil, err
+			}
 			if usagePlan.Throttle == nil {
 				usagePlan.Throttle = &apigateway.Throttle{}
 			}
@@ -368,44 +482,51 @@ func (s *APIGatewayService) updateUsagePlanCore(
 			} else {
 				usagePlan.Throttle.RateLimit = v
 			}
-		case strings.HasPrefix(po.Path, "/apiStages/"):
-			rest := strings.TrimPrefix(po.Path, "/apiStages/")
-			parts := strings.SplitN(rest, "/", 2)
-			idxStr := parts[0]
-			var idx int
-			if idxStr == "-" || idxStr == "" {
-				if po.Op != "remove" {
-					usagePlan.ApiStages = append(usagePlan.ApiStages, apigateway.ApiStage{})
-					idx = len(usagePlan.ApiStages) - 1
-				} else {
-					continue
+		case po.Path == "/apiStages":
+			handled = true
+			// The /apiStages row documents add and remove; the developer
+			// guide example carries the value as apiId:stageName.
+			if err := requirePatchOp(po, opAdd|opRemove); err != nil {
+				return nil, err
+			}
+			apiId, stageName, ok := splitApiStageValue(po.Value)
+			if !ok {
+				return nil, NewBadRequestException("invalid apiStages value, expected apiId:stageName: " + po.Value)
+			}
+			if po.Op == "add" {
+				if findApiStage(usagePlan.ApiStages, apiId, stageName) < 0 {
+					usagePlan.ApiStages = append(usagePlan.ApiStages, apigateway.ApiStage{
+						ApiId: apiId,
+						Stage: stageName,
+					})
 				}
 			} else {
-				var err error
-				idx, err = strconv.Atoi(idxStr)
-				if err != nil || idx < 0 {
-					return nil, NewBadRequestException("invalid apiStages index: " + idxStr)
-				}
-				if idx >= len(usagePlan.ApiStages) {
-					if po.Op != "remove" {
-						// Appending placeholder entries up to the requested
-						// index would silently corrupt the plan with empty
-						// stages; reject the out-of-range index instead.
-						return nil, NewBadRequestException("apiStages index out of range: " + idxStr)
-					}
-					continue
-				}
+				usagePlan.ApiStages = removeApiStage(usagePlan.ApiStages, apiId, stageName)
 			}
-			if len(parts) < 2 {
-				continue
+		case strings.HasPrefix(po.Path, "/apiStages/"):
+			handled = true
+			// The documented element addressing is
+			// /apiStages/{apiId}:{stageName}/throttle/... — the numeric
+			// index forms appear nowhere in the official tables.
+			rest := strings.TrimPrefix(po.Path, "/apiStages/")
+			addr := rest
+			if idx := strings.Index(rest, "/"); idx >= 0 {
+				addr = rest[:idx]
 			}
-			field := parts[1]
-			switch {
-			case field == "apiId":
-				usagePlan.ApiStages[idx].ApiId = po.Value
-			case field == "stage":
-				usagePlan.ApiStages[idx].Stage = po.Value
+			apiId, stageName, ok := splitApiStageValue(addr)
+			if !ok {
+				return nil, NewBadRequestException("invalid apiStages address, expected apiId:stageName: " + addr)
 			}
+			stageIdx := findApiStage(usagePlan.ApiStages, apiId, stageName)
+			if stageIdx < 0 {
+				return nil, NewBadRequestException("api stage not found in the usage plan: " + addr)
+			}
+			if err := applyApiStageThrottlePatch(&usagePlan.ApiStages[stageIdx], po); err != nil {
+				return nil, err
+			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
@@ -417,6 +538,172 @@ func (s *APIGatewayService) updateUsagePlanCore(
 		return nil, toApiGatewayError(err)
 	}
 	return usagePlan, nil
+}
+
+// splitApiStageValue splits the apiId:stageName identifier the documented
+// /apiStages patch addressing uses. Both segments must be non-empty and the
+// stage name must be a legal stage name.
+func splitApiStageValue(v string) (string, string, bool) {
+	apiId, stage, ok := strings.Cut(v, ":")
+	if !ok || apiId == "" || !validateStageName(stage) {
+		return "", "", false
+	}
+	return apiId, stage, true
+}
+
+// findApiStage returns the index of the apiStages entry for the api and
+// stage, or -1 when the plan does not carry it.
+func findApiStage(stages []apigateway.ApiStage, apiId, stage string) int {
+	return slices.IndexFunc(stages, func(s apigateway.ApiStage) bool {
+		return s.ApiId == apiId && s.Stage == stage
+	})
+}
+
+// removeApiStage drops the apiStages entry for the api and stage.
+func removeApiStage(stages []apigateway.ApiStage, apiId, stage string) []apigateway.ApiStage {
+	idx := findApiStage(stages, apiId, stage)
+	if idx < 0 {
+		return stages
+	}
+	return slices.Delete(stages, idx, idx+1)
+}
+
+// applyApiStageThrottlePatch applies the documented per-stage throttle patch
+// family to one apiStages entry:
+//
+//	/apiStages/{apiId}:{stage}/throttle                                  add/replace set the whole throttle map from a JSON object; remove clears it
+//	/apiStages/{apiId}:{stage}/throttle/{resourcePath}/{httpMethod}      remove deletes that throttle key
+//	/apiStages/{apiId}:{stage}/throttle/{resourcePath}/{httpMethod}/rateLimit|burstLimit  add/replace set the limit
+//
+// The method key is the as-addressed pointer derivation of methodMapKey: the
+// resource path token arrives JSON Pointer escaped and stays as addressed
+// ("/throttle/~1pets/GET" keys as "~1pets/GET"; the root's empty token keys
+// as "//GET"), matching the key convention the official CLI update-stage
+// example output shows for the stage methodSettings map that documents the
+// same {resource_path}/{http_method} idiom. The whole-throttle JSON value's
+// entry keys are data in the request and pass through unchanged.
+func applyApiStageThrottlePatch(stage *apigateway.ApiStage, po PatchOperation) error {
+	rest := strings.TrimPrefix(po.Path, "/apiStages/")
+	if idx := strings.Index(rest, "/"); idx >= 0 {
+		rest = rest[idx+1:]
+	}
+	if rest != "throttle" && !strings.HasPrefix(rest, "throttle/") {
+		return unknownPatchPathError(po)
+	}
+	body := strings.TrimPrefix(rest, "throttle")
+
+	if body == "" || body == "/" {
+		// The whole-throttle row documents add, replace and remove.
+		if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+			return err
+		}
+		if po.Op == "remove" {
+			stage.Throttle = nil
+			return nil
+		}
+		parsed, err := parseApiStageThrottleValue(po)
+		if err != nil {
+			return err
+		}
+		stage.Throttle = parsed
+		return nil
+	}
+
+	// body addresses one method: "/{resourcePath}/{httpMethod}" with an
+	// optional trailing rateLimit or burstLimit member.
+	field := ""
+	if suffix, ok := strings.CutSuffix(body, "/rateLimit"); ok {
+		field, body = "rateLimit", suffix
+	} else if suffix, ok := strings.CutSuffix(body, "/burstLimit"); ok {
+		field, body = "burstLimit", suffix
+	}
+	tokens := splitPatchTokens(body)
+	if len(tokens) < 2 {
+		return unknownPatchPathError(po)
+	}
+	key := methodMapKey(tokens[:len(tokens)-1], tokens[len(tokens)-1])
+	if field == "" {
+		// The method row without a trailing member documents remove only.
+		if err := requirePatchOp(po, opRemove); err != nil {
+			return err
+		}
+		delete(stage.Throttle, key)
+		return nil
+	}
+	if err := requirePatchOp(po, opAdd|opReplace); err != nil {
+		return err
+	}
+	if stage.Throttle == nil {
+		stage.Throttle = make(map[string]*apigateway.Throttle)
+	}
+	t := stage.Throttle[key]
+	if t == nil {
+		t = &apigateway.Throttle{}
+		stage.Throttle[key] = t
+	}
+	if field == "rateLimit" {
+		v, err := parseFloat64(po.Value)
+		if err != nil {
+			return NewBadRequestException("invalid throttle rateLimit: not a number")
+		}
+		if !validateThrottleRateLimit(v) {
+			return NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+		}
+		t.RateLimit = v
+	} else {
+		v, err := parseInt64(po.Value)
+		if err != nil {
+			return NewBadRequestException("invalid throttle burstLimit: not a number")
+		}
+		if !validateThrottleBurstLimit(v) {
+			return NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+		}
+		t.BurstLimit = v
+	}
+	return nil
+}
+
+// throttleSettingsPatchValue mirrors the JSON form of one throttle entry
+// inside a whole-throttle replace value, with the AWS member names.
+type throttleSettingsPatchValue struct {
+	RateLimit  *float64 `json:"rateLimit"`
+	BurstLimit *int64   `json:"burstLimit"`
+}
+
+// parseApiStageThrottleValue decodes the whole-throttle patch value: a JSON
+// object keyed by "{resourcePath}/{httpMethod}" whose entries carry the AWS
+// member names. The value shape follows the PatchOperation value
+// documentation's JSON-object rule; no official example pins the entry-key
+// form, so the keys pass through as data. Every entry runs through the same
+// validators as the plan-level throttle.
+func parseApiStageThrottleValue(po PatchOperation) (map[string]*apigateway.Throttle, error) {
+	var raw map[string]throttleSettingsPatchValue
+	if err := json.Unmarshal([]byte(po.Value), &raw); err != nil {
+		return nil, NewBadRequestException(fmt.Sprintf(
+			"Invalid patch value for '%s': expected a JSON object of method keys to throttle settings", po.Path))
+	}
+	parsed := make(map[string]*apigateway.Throttle, len(raw))
+	for key, entry := range raw {
+		if key == "" {
+			return nil, NewBadRequestException(fmt.Sprintf(
+				"Invalid patch value for '%s': entry keys must not be empty", po.Path))
+		}
+		t := &apigateway.Throttle{}
+		if entry.RateLimit != nil {
+			if !validateThrottleRateLimit(*entry.RateLimit) {
+				return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+			}
+			t.RateLimit = *entry.RateLimit
+		}
+		if entry.BurstLimit != nil {
+			if !validateThrottleBurstLimit(*entry.BurstLimit) {
+				return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+			}
+			t.BurstLimit = *entry.BurstLimit
+		}
+		parsed[key] = t
+	}
+	return parsed, nil
 }
 
 // createUsagePlanKeyCore attaches an API key to a usage plan. The API key
@@ -442,7 +729,7 @@ func (s *APIGatewayService) createUsagePlanKeyCore(
 
 	apiKey, err := stores.usage.GetApiKey(in.KeyId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	key := &apigateway.UsagePlanKey{
@@ -469,7 +756,7 @@ func (s *APIGatewayService) getUsagePlanKeyCore(stores *apiGatewayStores, usageP
 	}
 	key, err := stores.usage.GetUsagePlanKey(usagePlanId, keyId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return key, nil
 }
@@ -483,7 +770,7 @@ func (s *APIGatewayService) deleteUsagePlanKeyCore(stores *apiGatewayStores, usa
 		return NewBadRequestException("keyId is required")
 	}
 	if err := stores.usage.DeleteUsagePlanKey(usagePlanId, keyId); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 	return nil
 }
@@ -525,24 +812,34 @@ func (s *APIGatewayService) getUsageCore(
 	if startTime.After(endTime) {
 		return nil, NewBadRequestException("startDate must not be after endDate")
 	}
-	if endTime.Sub(startTime).Hours()/24 > 90 {
+	if endTime.Sub(startTime).Hours()/24 > maxUsageDateRangeDays {
 		return nil, NewBadRequestException("The date range must not exceed 90 days")
 	}
 
 	if _, err := stores.usage.GetUsagePlan(usagePlanId); err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	var apiKeys []string
 	if keyId != "" {
 		apiKeys = []string{keyId}
 	} else {
-		allKeys, err := common.ListMatching[apigateway.UsagePlanKey](stores.usage.BaseStore, "usageplankey#"+usagePlanId+"#", nil)
-		if err != nil {
-			return nil, toApiGatewayError(err)
-		}
-		for _, key := range allKeys {
-			apiKeys = append(apiKeys, key.Id)
+		// Page through the store's own listing API rather than reaching into
+		// its key space: the key schema stays an implementation detail of
+		// the UsageStore.
+		marker := ""
+		for {
+			page, err := stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{Marker: marker})
+			if err != nil {
+				return nil, toApiGatewayError(err)
+			}
+			for _, key := range page.Items {
+				apiKeys = append(apiKeys, key.Id)
+			}
+			if !page.IsTruncated {
+				break
+			}
+			marker = page.NextMarker
 		}
 	}
 

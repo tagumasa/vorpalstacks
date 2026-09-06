@@ -16,8 +16,6 @@ type ListFilters struct {
 // CertificateStoreInterface defines operations for managing ACM certificates.
 type CertificateStoreInterface interface {
 	Get(arn string) (*Certificate, error)
-	List(marker string, maxItems int) (*CertificateListResult, error)
-	ListByStatus(statuses []string, marker string, maxItems int) (*CertificateListResult, error)
 	ListWithFilters(filters ListFilters, nextToken string, maxItems int) (*CertificateListResult, error)
 	ListAll() ([]*Certificate, error)
 	Create(cert *Certificate) error

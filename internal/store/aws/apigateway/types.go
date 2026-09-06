@@ -40,6 +40,8 @@ type RestApi struct {
 type EndpointConfiguration struct {
 	Types          []string `json:"types,omitempty"`
 	VpcEndpointIds []string `json:"vpc_endpoint_ids,omitempty"`
+	// IpAddressType carries the model's IpAddressType enum (ipv4|dualstack).
+	IpAddressType string `json:"ip_address_type,omitempty"`
 }
 
 // Resource represents an API Gateway resource.
@@ -222,16 +224,21 @@ type Stage struct {
 
 // MethodSetting defines the method-level settings for caching and throttling.
 type MethodSetting struct {
-	MetricsEnabled                      bool              `json:"metrics_enabled"`
-	LoggingLevel                        string            `json:"logging_level,omitempty"`
-	DataTraceEnabled                    bool              `json:"data_trace_enabled"`
-	ThrottlingBurstLimit                int32             `json:"throttling_burst_limit,omitempty"`
-	ThrottlingRateLimit                 float64           `json:"throttling_rate_limit,omitempty"`
-	CachingEnabled                      bool              `json:"caching_enabled"`
-	CacheTtlInSeconds                   int32             `json:"cache_ttl_in_seconds,omitempty"`
-	CacheDataEncrypted                  bool              `json:"cache_data_encrypted"`
-	RequireAuthorizationForCacheControl bool              `json:"require_authorization_for_cache_control"`
-	UnreservedCacheParameters           map[string]string `json:"unreserved_cache_parameters,omitempty"`
+	MetricsEnabled                      bool    `json:"metrics_enabled"`
+	LoggingLevel                        string  `json:"logging_level,omitempty"`
+	DataTraceEnabled                    bool    `json:"data_trace_enabled"`
+	ThrottlingBurstLimit                int32   `json:"throttling_burst_limit,omitempty"`
+	ThrottlingRateLimit                 float64 `json:"throttling_rate_limit,omitempty"`
+	CachingEnabled                      bool    `json:"caching_enabled"`
+	CacheTtlInSeconds                   int32   `json:"cache_ttl_in_seconds,omitempty"`
+	CacheDataEncrypted                  bool    `json:"cache_data_encrypted"`
+	RequireAuthorizationForCacheControl bool    `json:"require_authorization_for_cache_control"`
+	// UnauthorizedCacheControlHeaderStrategy carries the model's
+	// UnauthorizedCacheControlHeaderStrategy enum
+	// (FAIL_WITH_403|SUCCEED_WITH_RESPONSE_HEADER|
+	// SUCCEED_WITHOUT_RESPONSE_HEADER).
+	UnauthorizedCacheControlHeaderStrategy string            `json:"unauthorized_cache_control_header_strategy,omitempty"`
+	UnreservedCacheParameters              map[string]string `json:"unreserved_cache_parameters,omitempty"`
 }
 
 // AccessLogSettings defines the access log settings for a stage.

@@ -2,8 +2,6 @@ package apigateway
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	"strings"
 
 	"vorpalstacks/internal/store/aws/apigateway"
@@ -37,7 +35,7 @@ func (s *APIGatewayService) createResourceCore(
 
 	parentResource, err := stores.restApis.GetResource(apiId, parentId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	path := parentResource.Path
@@ -70,7 +68,7 @@ func (s *APIGatewayService) getResourceCore(stores *apiGatewayStores, apiId, res
 	}
 	resource, err := stores.restApis.GetResource(apiId, resourceId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return resource, nil
 }
@@ -85,20 +83,16 @@ func (s *APIGatewayService) deleteResourceCore(stores *apiGatewayStores, apiId, 
 	if err == nil {
 		return nil
 	}
-	var storeErr *storecommon.StoreError
-	if errors.As(err, &storeErr) {
-		msg := storeErr.Err.Error()
-		if strings.Contains(msg, "cannot delete resource with child resources") {
-			return NewBadRequestException("Resource has child resources")
-		}
-		if strings.Contains(msg, "cannot delete the root resource") {
-			return NewBadRequestException("Cannot delete the root resource")
-		}
+	if errors.Is(err, apigateway.ErrResourceHasChildren) {
+		return NewBadRequestException("Resource has child resources")
+	}
+	if errors.Is(err, apigateway.ErrRootResource) {
+		return NewBadRequestException("Cannot delete the root resource")
 	}
 	if storecommon.IsNotFound(err) {
 		return ErrNotFoundException
 	}
-	return NewApiGatewayError("InternalServerError", fmt.Sprintf("Failed to delete resource: %v", err), http.StatusInternalServerError)
+	return toApiGatewayError(err)
 }
 
 // updateResourceCore applies JSON Patch operations to a resource under the
@@ -117,12 +111,17 @@ func (s *APIGatewayService) updateResourceCore(
 
 	resource, err := stores.restApis.GetResource(apiId, resourceId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch po.Path {
 		case "/pathPart":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			// The root resource's path part is the API's root path ("/") and
 			// is immutable in AWS; DeleteResource already rejects deleting it.
 			if resource.ParentId == "" {
@@ -137,7 +136,7 @@ func (s *APIGatewayService) updateResourceCore(
 			// Check for path collision with siblings under the same parent.
 			siblings, err := stores.restApis.ListResources(apiId)
 			if err != nil {
-				return nil, err
+				return nil, toApiGatewayError(err)
 			}
 			for _, sib := range siblings {
 				if sib.Id != resourceId && sib.ParentId == resource.ParentId && sib.PathPart == po.Value {
@@ -155,6 +154,48 @@ func (s *APIGatewayService) updateResourceCore(
 			}
 			parentPath := strings.TrimRight(parent.Path, "/")
 			resource.Path = parentPath + "/" + po.Value
+		case "/parentId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
+			if po.Value == "" {
+				return nil, NewBadRequestException("parentId cannot be empty")
+			}
+			if po.Value == resourceId {
+				return nil, NewBadRequestException("a resource cannot be its own parent")
+			}
+			parent, err := stores.restApis.GetResource(apiId, po.Value)
+			if err != nil {
+				return nil, NewBadRequestException("parent resource not found")
+			}
+			// Re-parenting under the resource's own subtree would create
+			// a cycle; walk up from the candidate parent to the root.
+			for p := parent; p.ParentId != ""; {
+				if p.ParentId == resourceId {
+					return nil, NewBadRequestException("cannot move a resource under its own subtree")
+				}
+				next, err := stores.restApis.GetResource(apiId, p.ParentId)
+				if err != nil {
+					return nil, toApiGatewayError(err)
+				}
+				p = next
+			}
+			// Check for path collision with the new siblings.
+			siblings, err := stores.restApis.ListResources(apiId)
+			if err != nil {
+				return nil, toApiGatewayError(err)
+			}
+			for _, sib := range siblings {
+				if sib.Id != resourceId && sib.ParentId == po.Value && sib.PathPart == resource.PathPart {
+					return nil, NewConflictException("pathPart already exists under this parent")
+				}
+			}
+			resource.ParentId = po.Value
+			resource.Path = strings.TrimRight(parent.Path, "/") + "/" + resource.PathPart
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 

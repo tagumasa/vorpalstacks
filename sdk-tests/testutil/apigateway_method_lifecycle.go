@@ -138,6 +138,47 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 				return fmt.Errorf("type mismatch, expected %s got %s", intType, getResp.Type)
 			}
 		}
+
+		// A non-MOCK integration accepts the documented uri replace (the
+		// loop leaves an AWS_PROXY integration in place).
+		_, err = tc.client.UpdateIntegration(tc.ctx, &apigateway.UpdateIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
+			ResourceId: resResp.Id,
+			HttpMethod: aws.String("POST"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/uri"), Value: aws.String("http://example.com/updated")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("uri replace on a non-MOCK integration: %v", err)
+		}
+
+		// A VPC_LINK integration references a VpcLink over a Network Load
+		// Balancer; no such substrate exists on this platform, so the
+		// connection type rejects on both the create and the replace path.
+		_, err = tc.client.PutIntegration(tc.ctx, &apigateway.PutIntegrationInput{
+			RestApiId:      aws.String(ownAPI),
+			ResourceId:     resResp.Id,
+			HttpMethod:     aws.String("POST"),
+			Type:           types.IntegrationTypeHttp,
+			Uri:            aws.String("http://example.com/test"),
+			ConnectionType: types.ConnectionTypeVpcLink,
+			ConnectionId:   aws.String("abc123"),
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for a VPC_LINK integration, got: %v", err)
+		}
+		_, err = tc.client.UpdateIntegration(tc.ctx, &apigateway.UpdateIntegrationInput{
+			RestApiId:  aws.String(ownAPI),
+			ResourceId: resResp.Id,
+			HttpMethod: aws.String("POST"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/connectionType"), Value: aws.String("VPC_LINK")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for a VPC_LINK connectionType replace, got: %v", err)
+		}
 		return nil
 	}))
 

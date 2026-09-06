@@ -12,14 +12,8 @@ var (
 	ErrCertificateNotFound = errors.New("certificate not found")
 	// ErrCertificateExists is returned when a certificate already exists.
 	ErrCertificateExists = errors.New("certificate already exists")
-	// ErrCertificateInUse is returned when a certificate is in use.
-	ErrCertificateInUse = errors.New("certificate is in use")
 	// ErrInvalidArn is returned when an ARN is invalid.
 	ErrInvalidArn = errors.New("invalid ARN")
-	// ErrInvalidDomain is returned when a domain name is invalid.
-	ErrInvalidDomain = errors.New("invalid domain name")
-	// ErrInvalidState is returned when a certificate state is invalid.
-	ErrInvalidState = errors.New("invalid state")
 )
 
 // NewStoreError creates a new store error for ACM operations.
@@ -36,9 +30,4 @@ func IsNotFound(err error) bool {
 // IsAlreadyExists checks whether the error indicates a certificate already exists.
 func IsAlreadyExists(err error) bool {
 	return errors.Is(err, ErrCertificateExists)
-}
-
-// IsInUse checks whether the error indicates a certificate is in use.
-func IsInUse(err error) bool {
-	return errors.Is(err, ErrCertificateInUse)
 }

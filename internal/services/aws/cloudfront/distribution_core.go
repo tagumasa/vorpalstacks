@@ -169,7 +169,7 @@ func ensureCNAMEsAvailable(stores *cloudfrontStores, config *cloudfrontstore.Dis
 		}
 		return false
 	}); err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to scan distributions for CNAME conflicts: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to scan distributions for CNAME conflicts: " + err.Error())
 	}
 	for _, alias := range config.Aliases.Items {
 		if alias == "" {

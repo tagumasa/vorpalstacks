@@ -71,7 +71,7 @@ func (s *CloudFrontService) createInvalidationCore(stores *cloudfrontStores, in 
 
 	inv, err := stores.invalidations.Create(in.Id, in.CallerReference, in.Paths)
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalError", fmt.Sprintf("Failed to create invalidation: %v", err), 500)
+		return nil, awserrors.NewInternalFailureException(fmt.Sprintf("Failed to create invalidation: %v", err))
 	}
 
 	// The invalidation takes effect on the live edge cache immediately.
@@ -140,7 +140,7 @@ func (s *CloudFrontService) listInvalidationsCore(stores *cloudfrontStores, in L
 
 	result, err := stores.invalidations.List(in.Id, in.Marker, in.MaxItems)
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalError", fmt.Sprintf("Failed to list invalidations: %v", err), 500)
+		return nil, awserrors.NewInternalFailureException(fmt.Sprintf("Failed to list invalidations: %v", err))
 	}
 	return result, nil
 }

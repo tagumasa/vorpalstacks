@@ -27,7 +27,6 @@ func TestFactories_ErrorTypes(t *testing.T) {
 		{"ResourceAlreadyExistsException", NewResourceAlreadyExistsException("q1"), "ResourceAlreadyExistsException", http.StatusConflict, "q1 already exists", "Client"},
 		{"LimitExceededException", NewLimitExceededException("too many"), "LimitExceededException", http.StatusBadRequest, "too many", "Client"},
 		{"BadRequestException", NewBadRequestException("bad req"), "BadRequestException", http.StatusBadRequest, "bad req", "Client"},
-		{"InternalErrorException", NewInternalErrorException("oops"), "InternalError", http.StatusInternalServerError, "oops", "Server"},
 		{"InternalFailureException", NewInternalFailureException("fail"), "InternalFailure", http.StatusInternalServerError, "fail", "Server"},
 		{"NoSuchEntityException", NewNoSuchEntityException("User", "bob"), "NoSuchEntity", http.StatusNotFound, "The User with name bob cannot be found.", "Client"},
 		{"EntityAlreadyExistsException", NewEntityAlreadyExistsException("u1"), "EntityAlreadyExists", http.StatusConflict, "u1 already exists", "Client"},

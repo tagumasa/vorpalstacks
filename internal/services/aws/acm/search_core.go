@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 )
 
@@ -36,7 +35,7 @@ type SearchCertificatesResult struct {
 // searchCertificatesCore is the single validation + persistence path for
 // SearchCertificates: token and MaxResults validation, filter evaluation,
 // sort validation, and offset-based pagination.
-func (s *ACMService) searchCertificatesCore(reqCtx *request.RequestContext, in SearchCertificatesInput) (*SearchCertificatesResult, error) {
+func (s *ACMService) searchCertificatesCore(stores *acmStores, in SearchCertificatesInput) (*SearchCertificatesResult, error) {
 	if err := validateNextToken(in.NextToken); err != nil {
 		return nil, err
 	}
@@ -47,11 +46,6 @@ func (s *ACMService) searchCertificatesCore(reqCtx *request.RequestContext, in S
 			return nil, awserrors.NewValidationException(fmt.Sprintf("MaxResults must be between 1 and %d, got %d", searchMaxResultsLimit, in.MaxResults))
 		}
 		maxResults = in.MaxResults
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
 	}
 
 	allCerts, err := stores.certificates.ListAll()
@@ -81,10 +75,10 @@ func (s *ACMService) searchCertificatesCore(reqCtx *request.RequestContext, in S
 	if in.NextToken != "" {
 		n, parseErr := parseIntToken(in.NextToken)
 		if parseErr != nil {
-			return nil, NewInvalidParameterError(fmt.Sprintf("Invalid NextToken: %s", in.NextToken))
+			return nil, awserrors.NewValidationException(fmt.Sprintf("Invalid NextToken: %s", in.NextToken))
 		}
 		if n < 0 {
-			return nil, NewInvalidParameterError("Invalid NextToken: negative offset")
+			return nil, awserrors.NewValidationException("Invalid NextToken: negative offset")
 		}
 		offset = n
 	}

@@ -46,15 +46,15 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 	}
 
 	nextToken := req.Msg.GetNexttoken()
-	maxItems := int(req.Msg.GetMaxitems())
-	if maxItems <= 0 {
-		maxItems = 100
+	input := ListCertificatesInput{
+		NextToken: nextToken,
+	}
+	if req.Msg.Maxitems != nil {
+		input.MaxItems = int(req.Msg.GetMaxitems())
+		input.MaxItemsSet = true
 	}
 
-	result, err := h.service.listCertificatesCore(stores, ListCertificatesInput{
-		NextToken: nextToken,
-		MaxItems:  maxItems,
-	})
+	result, err := h.service.listCertificatesCore(stores, input)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -170,7 +170,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		}
 	}
 
-	certArn, err := h.service.requestCertificateCore(ctx, stores, input)
+	certArn, err := h.service.requestCertificateCore(stores, input)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

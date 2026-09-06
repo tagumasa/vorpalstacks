@@ -1,9 +1,9 @@
 package apigateway
 
 import (
-	"strconv"
 	"strings"
 
+	integration "vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	"vorpalstacks/internal/store/aws/apigateway"
 )
 
@@ -111,7 +111,7 @@ func (s *APIGatewayService) getMethodCore(stores *apiGatewayStores, apiId, resou
 	}
 	method, err := stores.restApis.GetMethod(apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return method, nil
 }
@@ -125,7 +125,7 @@ func (s *APIGatewayService) deleteMethodCore(stores *apiGatewayStores, apiId, re
 		return NewBadRequestException("httpMethod is required")
 	}
 	if err := stores.restApis.DeleteMethod(apiId, resourceId, httpMethod); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 	return nil
 }
@@ -167,13 +167,20 @@ func (s *APIGatewayService) putIntegrationCore(
 	if in.ConnectionType != "" && !validateConnectionType(in.ConnectionType) {
 		return nil, NewBadRequestException("Invalid connectionType: " + in.ConnectionType)
 	}
+	// A VPC_LINK integration routes through a VpcLink, whose target is a
+	// Network Load Balancer; no such substrate or consumer exists on this
+	// platform, so the connection type rejects instead of storing inert
+	// configuration.
+	if in.ConnectionType == "VPC_LINK" {
+		return nil, NewBadRequestException("connectionType VPC_LINK is not supported: VpcLink targets a Network Load Balancer, which this platform does not provide")
+	}
 	if in.ResponseTransferMode != "" && !validateResponseTransferMode(in.ResponseTransferMode) {
 		return nil, NewBadRequestException("Invalid responseTransferMode: must be BUFFERED or STREAM")
 	}
 
 	timeout := in.TimeoutInMillis
 	if timeout <= 0 {
-		timeout = 29000
+		timeout = integration.DefaultIntegrationTimeoutMillis
 	}
 	if !validateTimeoutInMillis(timeout) {
 		return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
@@ -215,7 +222,7 @@ func (s *APIGatewayService) getIntegrationCore(stores *apiGatewayStores, apiId, 
 	}
 	integration, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return integration, nil
 }
@@ -229,7 +236,7 @@ func (s *APIGatewayService) deleteIntegrationCore(stores *apiGatewayStores, apiI
 		return NewBadRequestException("httpMethod is required")
 	}
 	if err := stores.restApis.DeleteIntegration(apiId, resourceId, httpMethod); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 	return nil
 }
@@ -284,7 +291,7 @@ func (s *APIGatewayService) getIntegrationResponseCore(
 	}
 	response, err := stores.restApis.GetIntegrationResponse(apiId, resourceId, httpMethod, statusCode)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return response, nil
 }
@@ -305,65 +312,116 @@ func (s *APIGatewayService) updateMethodCore(
 
 	method, err := stores.restApis.GetMethod(apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch {
 		case po.Path == "/authorizationType":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateAuthorizationType(po.Value) {
 				return nil, NewBadRequestException("Invalid authorization type: " + po.Value)
 			}
 			method.AuthorizationType = po.Value
 		case po.Path == "/authorizerId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			method.AuthorizerId = po.Value
 		case po.Path == "/apiKeyRequired":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			method.ApiKeyRequired = po.Value == "true"
 		case po.Path == "/requestValidatorId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			method.RequestValidatorId = po.Value
 		case po.Path == "/operationName":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			method.OperationName = po.Value
+		case po.Path == "/requestParameters":
+			handled = true
+			// Whole-member row of the official UpdateMethod patch table:
+			// add, replace — except for MOCK integrations — and remove.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if po.Op == "replace" {
+				if integration, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod); err == nil && integration.Type == "MOCK" {
+					return nil, NewBadRequestException("requestParameters replace is not supported for MOCK integrations")
+				}
+			}
+			if err := applyWholeBoolMapPatch(&method.RequestParameters, po); err != nil {
+				return nil, err
+			}
 		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if method.RequestParameters == nil {
 				method.RequestParameters = make(map[string]bool)
 			}
-			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
-			paramName = strings.ReplaceAll(paramName, "~1", "/")
-			if po.Op == "remove" {
-				delete(method.RequestParameters, paramName)
-			} else {
-				method.RequestParameters[paramName] = po.Value == "true"
+			if err := applyBoolMapPatch(method.RequestParameters, po, "/requestParameters/", nil, nil); err != nil {
+				return nil, err
+			}
+		case po.Path == "/requestModels":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&method.RequestModels, po, nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/requestModels/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if method.RequestModels == nil {
 				method.RequestModels = make(map[string]string)
 			}
-			modelName := strings.TrimPrefix(po.Path, "/requestModels/")
-			modelName = strings.ReplaceAll(modelName, "~1", "/")
-			if po.Op == "remove" {
-				delete(method.RequestModels, modelName)
-			} else {
-				method.RequestModels[modelName] = po.Value
+			if err := applyMapPatch(method.RequestModels, po, "/requestModels/", nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/authorizationScopes"):
-			if po.Op == "remove" {
-				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/authorizationScopes/")); err == nil && idx < len(method.AuthorizationScopes) {
-					method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], method.AuthorizationScopes[idx+1:]...)
+			handled = true
+			rest := strings.TrimPrefix(po.Path, "/authorizationScopes")
+			switch {
+			case rest == "":
+				// Whole-member form of the official UpdateMethod patch
+				// table: add appends the value, remove clears the list;
+				// replace is not supported there.
+				if err := requirePatchOp(po, opAdd|opRemove); err != nil {
+					return nil, err
 				}
-			} else {
-				idxStr := strings.TrimPrefix(po.Path, "/authorizationScopes/")
-				if idxStr == "-" || idxStr == "" {
-					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
-				} else if idx, err := strconv.Atoi(idxStr); err == nil {
-					if idx >= len(method.AuthorizationScopes) {
-						method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
-					} else {
-						method.AuthorizationScopes = append(method.AuthorizationScopes[:idx], append([]string{po.Value}, method.AuthorizationScopes[idx:]...)...)
-					}
+				if po.Op == "remove" {
+					method.AuthorizationScopes = nil
 				} else {
 					method.AuthorizationScopes = append(method.AuthorizationScopes, po.Value)
 				}
+			default:
+				// Numeric index addressing appears nowhere in the official
+				// patch tables — the documented list ops address the whole
+				// member only.
+				return nil, unknownPatchPathError(po)
 			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
@@ -391,91 +449,204 @@ func (s *APIGatewayService) updateIntegrationCore(
 
 	integrationRec, err := stores.restApis.GetIntegration(apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch {
 		case po.Path == "/uri":
+			handled = true
+			// The row documents replace, except for MOCK integrations.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
+			if integrationRec.Type == "MOCK" {
+				return nil, NewBadRequestException("uri replace is not supported for MOCK integrations")
+			}
 			integrationRec.Uri = po.Value
 		case po.Path == "/type":
-			if !validateIntegrationType(po.Value) {
-				return nil, NewBadRequestException("Invalid integration type: " + po.Value)
-			}
-			integrationRec.Type = po.Value
+			handled = true
+			// The row marks every operation Not supported: the
+			// integration type is immutable through patching.
+			return nil, unknownPatchPathError(po)
 		case po.Path == "/httpMethod":
+			handled = true
+			// The row documents replace, except for MOCK integrations.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
+			if integrationRec.Type == "MOCK" {
+				return nil, NewBadRequestException("httpMethod replace is not supported for MOCK integrations")
+			}
 			if po.Value != "" && !validateHTTPMethod(po.Value) {
 				return nil, NewBadRequestException("Invalid integration HTTP method: " + po.Value)
 			}
 			integrationRec.IntegrationHttpMethod = po.Value
+		case po.Path == "/integrationTarget":
+			handled = true
+			// The row documents replace only.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
+			integrationRec.IntegrationTarget = po.Value
+		case po.Path == "/responseTransferMode":
+			handled = true
+			// The row documents replace only.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
+			if po.Value != "" && !validateResponseTransferMode(po.Value) {
+				return nil, NewBadRequestException("Invalid responseTransferMode: must be BUFFERED or STREAM")
+			}
+			integrationRec.ResponseTransferMode = po.Value
 		case po.Path == "/credentials":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			integrationRec.Credentials = po.Value
 		case po.Path == "/passthroughBehavior":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validatePassthroughBehavior(po.Value) {
 				return nil, NewBadRequestException("Invalid passthroughBehavior: " + po.Value)
 			}
 			integrationRec.PassthroughBehavior = po.Value
 		case po.Path == "/contentHandling":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateContentHandling(po.Value) {
 				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
 			}
 			integrationRec.ContentHandling = po.Value
 		case po.Path == "/cacheNamespace":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			integrationRec.CacheNamespace = po.Value
 		case po.Path == "/connectionType":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateConnectionType(po.Value) {
 				return nil, NewBadRequestException("Invalid connectionType: " + po.Value)
 			}
+			// Same substrate bound as the create path: a VPC_LINK
+			// integration would reference a VpcLink over a Network Load
+			// Balancer this platform does not provide.
+			if po.Value == "VPC_LINK" {
+				return nil, NewBadRequestException("connectionType VPC_LINK is not supported: VpcLink targets a Network Load Balancer, which this platform does not provide")
+			}
 			integrationRec.ConnectionType = po.Value
 		case po.Path == "/connectionId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			integrationRec.ConnectionId = po.Value
 		case po.Path == "/timeoutInMillis":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			v, err := parseInt32(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid timeoutInMillis: not a number")
 			}
 			if v <= 0 {
-				v = 29000
+				v = integration.DefaultIntegrationTimeoutMillis
 			}
-			if v < 50 || v > 30000 {
+			if !validateTimeoutInMillis(v) {
 				return nil, NewBadRequestException("timeoutInMillis must be between 50 and 30000")
 			}
 			integrationRec.TimeoutInMillis = v
+		case po.Path == "/requestParameters":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&integrationRec.RequestParameters, po, nil, nil); err != nil {
+				return nil, err
+			}
 		case strings.HasPrefix(po.Path, "/requestParameters/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if integrationRec.RequestParameters == nil {
 				integrationRec.RequestParameters = make(map[string]string)
 			}
-			paramName := strings.TrimPrefix(po.Path, "/requestParameters/")
-			paramName = strings.ReplaceAll(paramName, "~1", "/")
-			if po.Op == "remove" {
-				delete(integrationRec.RequestParameters, paramName)
-			} else {
-				integrationRec.RequestParameters[paramName] = po.Value
+			if err := applyMapPatch(integrationRec.RequestParameters, po, "/requestParameters/", nil, nil); err != nil {
+				return nil, err
+			}
+		case po.Path == "/requestTemplates":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&integrationRec.RequestTemplates, po, nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/requestTemplates/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if integrationRec.RequestTemplates == nil {
 				integrationRec.RequestTemplates = make(map[string]string)
 			}
-			tplName := strings.TrimPrefix(po.Path, "/requestTemplates/")
-			tplName = strings.ReplaceAll(tplName, "~1", "/")
-			if po.Op == "remove" {
-				delete(integrationRec.RequestTemplates, tplName)
-			} else {
-				integrationRec.RequestTemplates[tplName] = po.Value
+			if err := applyMapPatch(integrationRec.RequestTemplates, po, "/requestTemplates/", nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/cacheKeyParameters"):
-			if po.Op == "remove" {
-				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/cacheKeyParameters/")); err == nil && idx < len(integrationRec.CacheKeyParameters) {
-					integrationRec.CacheKeyParameters = append(integrationRec.CacheKeyParameters[:idx], integrationRec.CacheKeyParameters[idx+1:]...)
+			handled = true
+			rest := strings.TrimPrefix(po.Path, "/cacheKeyParameters")
+			switch {
+			case rest == "":
+				// Whole-member row: add appends the value, remove clears
+				// the list, replace sets it from a JSON array of strings.
+				if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+					return nil, err
 				}
-			} else {
-				integrationRec.CacheKeyParameters = append(integrationRec.CacheKeyParameters, po.Value)
+				switch po.Op {
+				case "remove":
+					integrationRec.CacheKeyParameters = nil
+				case "add":
+					integrationRec.CacheKeyParameters = append(integrationRec.CacheKeyParameters, po.Value)
+				default:
+					parsed, err := parseWholeStringListValue(po)
+					if err != nil {
+						return nil, err
+					}
+					integrationRec.CacheKeyParameters = parsed
+				}
+			default:
+				// Numeric index addressing appears nowhere in the official
+				// patch tables — the documented list ops address the whole
+				// member only.
+				return nil, unknownPatchPathError(po)
 			}
 		case po.Path == "/tlsConfig/insecureSkipVerification":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if integrationRec.TlsConfig == nil {
 				integrationRec.TlsConfig = &apigateway.TlsConfig{}
 			}
 			integrationRec.TlsConfig.InsecureSkipVerification = po.Value == "true"
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
@@ -502,40 +673,70 @@ func (s *APIGatewayService) updateIntegrationResponseCore(
 
 	intResp, err := stores.restApis.GetIntegrationResponse(apiId, resourceId, httpMethod, statusCode)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch {
 		case po.Path == "/selectionPattern":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			intResp.SelectionPattern = po.Value
 		case po.Path == "/contentHandling":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateContentHandling(po.Value) {
 				return nil, NewBadRequestException("Invalid contentHandling: " + po.Value)
 			}
 			intResp.ContentHandling = po.Value
+		case po.Path == "/responseParameters":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&intResp.ResponseParameters, po, nil, nil); err != nil {
+				return nil, err
+			}
 		case strings.HasPrefix(po.Path, "/responseParameters/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if intResp.ResponseParameters == nil {
 				intResp.ResponseParameters = make(map[string]string)
 			}
-			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
-			paramName = strings.ReplaceAll(paramName, "~1", "/")
-			if po.Op == "remove" {
-				delete(intResp.ResponseParameters, paramName)
-			} else {
-				intResp.ResponseParameters[paramName] = po.Value
+			if err := applyMapPatch(intResp.ResponseParameters, po, "/responseParameters/", nil, nil); err != nil {
+				return nil, err
+			}
+		case po.Path == "/responseTemplates":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&intResp.ResponseTemplates, po, nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/responseTemplates/"):
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if intResp.ResponseTemplates == nil {
 				intResp.ResponseTemplates = make(map[string]string)
 			}
-			tplName := strings.TrimPrefix(po.Path, "/responseTemplates/")
-			tplName = strings.ReplaceAll(tplName, "~1", "/")
-			if po.Op == "remove" {
-				delete(intResp.ResponseTemplates, tplName)
-			} else {
-				intResp.ResponseTemplates[tplName] = po.Value
+			if err := applyMapPatch(intResp.ResponseTemplates, po, "/responseTemplates/", nil, nil); err != nil {
+				return nil, err
 			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
@@ -561,7 +762,7 @@ func (s *APIGatewayService) deleteIntegrationResponseCore(
 		return NewBadRequestException("statusCode is required")
 	}
 	if err := stores.restApis.DeleteIntegrationResponse(apiId, resourceId, httpMethod, statusCode); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 	return nil
 }

@@ -2,8 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -68,8 +66,8 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetApiKey", func() error {
-		if apiKeyID == "" {
-			return fmt.Errorf("api key ID not available")
+		if err := tc.require(apiKeyID); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
 			ApiKey:       aws.String(apiKeyID),
@@ -88,8 +86,8 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateApiKey", func() error {
-		if apiKeyID == "" {
-			return fmt.Errorf("api key ID not available")
+		if err := tc.require(apiKeyID); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
@@ -107,12 +105,120 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 		if resp.Name == nil || *resp.Name != "updated-api-key" {
 			return fmt.Errorf("name not updated, got %v", resp.Name)
 		}
+
+		// The /labels row documents add and remove; ApiKey's only
+		// string-to-string map is tags, and the value travels as a JSON
+		// object.
+		_, err = tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/labels"), Value: aws.String(`{"team":"platform"}`)},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		keyResp, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+		})
+		if err != nil {
+			return fmt.Errorf("get api key: %v", err)
+		}
+		if keyResp.Tags == nil || keyResp.Tags["team"] != "platform" {
+			return fmt.Errorf("labels add did not set the tags, got %v", keyResp.Tags)
+		}
+
+		_, err = tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpRemove, Path: aws.String("/labels")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		keyResp, err = tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+		})
+		if err != nil {
+			return fmt.Errorf("get api key after remove: %v", err)
+		}
+		if len(keyResp.Tags) != 0 {
+			return fmt.Errorf("labels remove did not clear the tags, got %v", keyResp.Tags)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "UpdateApiKey_StageAssociation", func() error {
+		if err := tc.require(apiKeyID); err != nil {
+			return err
+		}
+		// The /stages row of the official patch table documents add and
+		// remove; the value uses the stageKeys member format,
+		// restApiId/stageName.
+		stage := tc.apiID + "/test"
+		_, err := tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/stages"), Value: aws.String(stage)},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+		})
+		if err != nil {
+			return fmt.Errorf("get api key: %v", err)
+		}
+		found := false
+		for _, sk := range resp.StageKeys {
+			if sk == stage {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("stage %q missing from stageKeys, got %v", stage, resp.StageKeys)
+		}
+
+		// The /stageKeys/ path is not a documented patch form.
+		_, err = tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/stageKeys/" + tc.apiID + "~1other")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for the stageKeys path, got: %v", err)
+		}
+
+		_, err = tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpRemove, Path: aws.String("/stages"), Value: aws.String(stage)},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		resp, err = tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+		})
+		if err != nil {
+			return fmt.Errorf("get api key after remove: %v", err)
+		}
+		for _, sk := range resp.StageKeys {
+			if sk == stage {
+				return fmt.Errorf("stage %q still associated after remove, got %v", stage, resp.StageKeys)
+			}
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteApiKey", func() error {
-		if apiKeyID == "" {
-			return fmt.Errorf("api key ID not available")
+		if err := tc.require(apiKeyID); err != nil {
+			return err
 		}
 		_, err := tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
@@ -123,17 +229,14 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 		_, err = tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{
 			ApiKey: aws.String(apiKeyID),
 		})
-		if err == nil {
-			return fmt.Errorf("GetApiKey should fail after delete")
-		}
-		if !strings.Contains(err.Error(), "NotFoundException") {
-			return fmt.Errorf("expected NotFoundException after delete, got: %v", err)
+		if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+			return fmt.Errorf("GetApiKey should fail with NotFoundException after delete: %v", aerr)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "CreateApiKey_DefaultEnabled", func() error {
-		keyName := fmt.Sprintf("default-key-%d", time.Now().UnixNano())
+		keyName := tc.uniqueName("default-key")
 		resp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
 			Name: aws.String(keyName),
 		})

@@ -2,7 +2,10 @@ package apigateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,11 +51,42 @@ var validCacheClusterSizes = map[string]bool{
 	"237":  true,
 }
 
+// validCacheClusterSizesMessage renders the accepted cacheClusterSize set
+// for error messages, derived from validCacheClusterSizes so the map remains
+// the single source of the set. Sizes are listed in numeric order.
+func validCacheClusterSizesMessage() string {
+	sizes := make([]string, 0, len(validCacheClusterSizes))
+	for size := range validCacheClusterSizes {
+		sizes = append(sizes, size)
+	}
+	sort.Slice(sizes, func(i, j int) bool {
+		fi, _ := strconv.ParseFloat(sizes[i], 64)
+		fj, _ := strconv.ParseFloat(sizes[j], 64)
+		return fi < fj
+	})
+	return "Invalid cacheClusterSize: must be one of " + strings.Join(sizes, ", ")
+}
+
 // validLoggingLevels is the set of accepted logging level values.
 var validLoggingLevels = map[string]bool{
 	"OFF":   true,
 	"ERROR": true,
 	"INFO":  true,
+}
+
+// validUnauthorizedCacheControlHeaderStrategies is the set of accepted
+// unauthorizedCacheControlHeaderStrategy values per the model's
+// UnauthorizedCacheControlHeaderStrategy enum.
+var validUnauthorizedCacheControlHeaderStrategies = map[string]bool{
+	"FAIL_WITH_403":                   true,
+	"SUCCEED_WITH_RESPONSE_HEADER":    true,
+	"SUCCEED_WITHOUT_RESPONSE_HEADER": true,
+}
+
+// validateUnauthorizedCacheControlHeaderStrategy returns true if the value
+// is a recognised strategy.
+func validateUnauthorizedCacheControlHeaderStrategy(s string) bool {
+	return validUnauthorizedCacheControlHeaderStrategies[s]
 }
 
 // validIntegrationTypes is the set of accepted integration types.
@@ -186,6 +220,47 @@ func validateStageKey(sk string) bool {
 	return stageKeyPattern.MatchString(sk)
 }
 
+// stageVariableNamePattern matches the documented stage variable name
+// constraint: "Variable names can have alphanumeric and underscore
+// characters" (official Stage variables member documentation).
+var stageVariableNamePattern = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+
+// validateStageVariableName returns true if the name is a legal stage
+// variable name. Canary stageVariableOverrides entries are stage
+// variables, so the same constraint governs them.
+func validateStageVariableName(name string) bool {
+	return stageVariableNamePattern.MatchString(name)
+}
+
+// stageVariableValuePattern matches the documented stage variable value
+// constraint: values must match [A-Za-z0-9-._~:/?#&=,]+ — the official Stage
+// variables member documentation requires a non-empty value.
+var stageVariableValuePattern = regexp.MustCompile(`^[A-Za-z0-9-._~:/?#&=,]+$`)
+
+// validateStageVariableValue returns true if the value is a legal stage
+// variable value.
+func validateStageVariableValue(value string) bool {
+	return stageVariableValuePattern.MatchString(value)
+}
+
+// validateStageVariables checks a whole stage variables map at the ingress
+// points that set it as a unit — CreateStage, CreateDeployment's embedded
+// stage, and the canary settings input (the overrides are stage variables,
+// so the same documented constraints govern them).
+func validateStageVariables(vars map[string]string) error {
+	for name, value := range vars {
+		if !validateStageVariableName(name) {
+			return NewBadRequestException(fmt.Sprintf(
+				"Invalid stage variable name '%s': names can have alphanumeric and underscore characters", name))
+		}
+		if !validateStageVariableValue(value) {
+			return NewBadRequestException(fmt.Sprintf(
+				"Invalid stage variable value for '%s': values must match [A-Za-z0-9-._~:/?#&=,]+", name))
+		}
+	}
+	return nil
+}
+
 // pathParamPattern matches valid path parameter syntax: {name} or {name+}
 // (greedy). A pathPart that does not use braces is always valid.
 var pathParamPattern = regexp.MustCompile(`^\{[a-zA-Z0-9_-]+\+\}$|^\{[a-zA-Z0-9_-]+\}$`)
@@ -228,6 +303,19 @@ var validContentHandlingStrategies = map[string]bool{
 var validResponseTransferModes = map[string]bool{
 	"BUFFERED": true,
 	"STREAM":   true,
+}
+
+// validIpAddressTypes is the set of accepted endpointConfiguration
+// ipAddressType values per the model's IpAddressType enum.
+var validIpAddressTypes = map[string]bool{
+	"ipv4":      true,
+	"dualstack": true,
+}
+
+// validateIpAddressType returns true if the value is a recognised IP
+// address type.
+func validateIpAddressType(t string) bool {
+	return validIpAddressTypes[t]
 }
 
 // validateResponseTransferMode returns true if the response transfer mode is
@@ -344,16 +432,28 @@ func validateMinimumCompressionSize(v int32) bool {
 	return v >= 0 && v <= maxMinimumCompressionSize
 }
 
+// minIntegrationTimeoutMillis is the lower bound for the integration
+// timeoutInMillis member.
+const minIntegrationTimeoutMillis = 50
+
+// maxIntegrationTimeoutMillis is AWS's upper bound (30 seconds) for the
+// integration timeoutInMillis member.
+const maxIntegrationTimeoutMillis = 30000
+
 // validateTimeoutInMillis returns true if the value is within the accepted
-// range [50, 30000] for integration timeout.
+// range for integration timeout.
 func validateTimeoutInMillis(v int32) bool {
-	return v >= 50 && v <= 30000
+	return v >= minIntegrationTimeoutMillis && v <= maxIntegrationTimeoutMillis
 }
 
+// maxCacheTtlInSeconds is the upper bound for method-setting cache TTL
+// (AWS: 24 hours).
+const maxCacheTtlInSeconds = 86400
+
 // validateCacheTtlInSeconds returns true if the value is within the
-// accepted range [0, 86400] for method-setting cache TTL.
+// accepted range [0, maxCacheTtlInSeconds] for method-setting cache TTL.
 func validateCacheTtlInSeconds(v int32) bool {
-	return v >= 0 && v <= 86400
+	return v >= 0 && v <= maxCacheTtlInSeconds
 }
 
 // validatePercentTraffic returns true if the value is within the accepted
@@ -362,17 +462,32 @@ func validatePercentTraffic(v float64) bool {
 	return v >= 0 && v <= 100
 }
 
+// maxAuthorizerTtl is the upper bound for the authorizer result TTL
+// (AWS: 1 hour).
+const maxAuthorizerTtl = 3600
+
 // validateAuthorizerTtl returns true if the value is within the accepted
-// range [0, 3600] for authorizer result TTL.
+// range [0, maxAuthorizerTtl] for authorizer result TTL.
 func validateAuthorizerTtl(v int32) bool {
-	return v >= 0 && v <= 3600
+	return v >= 0 && v <= maxAuthorizerTtl
 }
 
+// maxUsagePlanNameLength is the upper bound for usage plan names.
+const maxUsagePlanNameLength = 255
+
 // validateUsagePlanNameLen returns true if the name length is within the
-// accepted range [1, 255].
+// accepted range [1, maxUsagePlanNameLength].
 func validateUsagePlanNameLen(name string) bool {
-	return len(name) >= 1 && len(name) <= 255
+	return len(name) >= 1 && len(name) <= maxUsagePlanNameLength
 }
+
+// maxRequestValidatorNameLength is the upper bound for request validator
+// names.
+const maxRequestValidatorNameLength = 128
+
+// maxUsageDateRangeDays is GetUsage's maximum start-to-end date range
+// (AWS: 90 days).
+const maxUsageDateRangeDays = 90
 
 // maxMethodSettingThrottleBurstLimit is the upper bound for per-method
 // throttle burst limit in stage method settings (distinct from the

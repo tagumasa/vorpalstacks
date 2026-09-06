@@ -1,6 +1,7 @@
 package apigateway
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -64,7 +65,10 @@ func (s *APIGatewayService) createDeploymentCore(
 			return nil, NewBadRequestException("Invalid stage name: must be alphanumeric, underscore, or hyphen, max 128 characters")
 		}
 		if !validateCacheClusterSize(in.CacheClusterSize) {
-			return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+			return nil, NewBadRequestException(validCacheClusterSizesMessage())
+		}
+		if err := validateStageVariables(in.Variables); err != nil {
+			return nil, err
 		}
 	}
 
@@ -93,7 +97,14 @@ func (s *APIGatewayService) createDeploymentCore(
 			Tags:                tagsFromMap(in.Tags),
 		}
 		if in.CanarySettings != nil {
-			stage.CanarySettings = canarySettingsFromInput(in.CanarySettings, created.Id)
+			canary, err := canarySettingsFromInput(in.CanarySettings, created.Id)
+			if err != nil {
+				// Compensating delete, as below: a validation failure must
+				// not leave an orphaned deployment.
+				_ = stores.restApis.DeleteDeployment(apiId, created.Id)
+				return nil, err
+			}
+			stage.CanarySettings = canary
 		}
 		if _, err := stores.restApis.CreateStage(apiId, stage); err != nil {
 			// Compensating delete: roll back the deployment so that a
@@ -158,13 +169,21 @@ func (s *APIGatewayService) updateDeploymentCore(
 
 	deployment, err := stores.restApis.GetDeployment(apiId, deploymentId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch po.Path {
 		case "/description":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			deployment.Description = po.Value
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
@@ -199,10 +218,13 @@ func (s *APIGatewayService) createStageCore(stores *apiGatewayStores, apiId stri
 		return nil, NewBadRequestException("Invalid stage name: must be alphanumeric, underscore, or hyphen, max 128 characters")
 	}
 	if !validateCacheClusterSize(in.CacheClusterSize) {
-		return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+		return nil, NewBadRequestException(validCacheClusterSizesMessage())
 	}
 	if in.DeploymentId == "" {
 		return nil, NewBadRequestException("deploymentId is required")
+	}
+	if err := validateStageVariables(in.Variables); err != nil {
+		return nil, err
 	}
 
 	stage := &apigateway.Stage{
@@ -217,7 +239,11 @@ func (s *APIGatewayService) createStageCore(stores *apiGatewayStores, apiId stri
 		Tags:                 tagsFromMap(in.Tags),
 	}
 	if in.CanarySettings != nil {
-		stage.CanarySettings = canarySettingsFromInput(in.CanarySettings, "")
+		canary, err := canarySettingsFromInput(in.CanarySettings, "")
+		if err != nil {
+			return nil, err
+		}
+		stage.CanarySettings = canary
 	}
 
 	created, err := stores.restApis.CreateStage(apiId, stage)
@@ -237,7 +263,7 @@ func (s *APIGatewayService) getStageCore(stores *apiGatewayStores, apiId, stageN
 	}
 	stage, err := stores.restApis.GetStage(apiId, stageName)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 	return stage, nil
 }
@@ -252,7 +278,7 @@ func (s *APIGatewayService) deleteStageCore(stores *apiGatewayStores, apiId, sta
 		return NewBadRequestException("stageName is required")
 	}
 	if err := stores.restApis.DeleteStage(apiId, stageName); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 	if s.runtimeServer != nil {
 		s.runtimeServer.CleanupStageThrottlers(stageName)
@@ -291,40 +317,116 @@ func (s *APIGatewayService) updateStageCore(
 	}
 
 	for _, po := range patches {
+		handled := false
 		switch {
 		case po.Path == "/description":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			stage.Description = po.Value
 		case po.Path == "/deploymentId":
-			if po.Value != "" {
-				if _, err := stores.restApis.GetDeployment(apiId, po.Value); err != nil {
-					return nil, NewBadRequestException("deployment not found")
+			handled = true
+			// The official row documents replace and copy; the copy form
+			// promotes the canary deployment — the documented example in
+			// the PatchOperation from member description.
+			if po.Op == "copy" {
+				if po.From != "/canarySettings/deploymentId" {
+					return nil, unknownPatchPathError(po)
 				}
+				if stage.CanarySettings == nil || stage.CanarySettings.DeploymentId == "" {
+					return nil, NewBadRequestException("cannot promote the canary deployment: the stage has no canary deploymentId")
+				}
+				stage.DeploymentId = stage.CanarySettings.DeploymentId
+			} else {
+				if err := requirePatchOp(po, opReplace); err != nil {
+					return nil, err
+				}
+				if po.Value != "" {
+					if _, err := stores.restApis.GetDeployment(apiId, po.Value); err != nil {
+						return nil, NewBadRequestException("deployment not found")
+					}
+				}
+				stage.DeploymentId = po.Value
 			}
-			stage.DeploymentId = po.Value
 		case po.Path == "/cacheClusterEnabled":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			stage.CacheClusterEnabled = po.Value == "true"
 		case po.Path == "/cacheClusterSize":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateCacheClusterSize(po.Value) {
-				return nil, NewBadRequestException("Invalid cacheClusterSize: must be one of 0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237")
+				return nil, NewBadRequestException(validCacheClusterSizesMessage())
 			}
 			stage.CacheClusterSize = po.Value
 		case po.Path == "/tracingEnabled":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			stage.TracingEnabled = po.Value == "true"
 		case po.Path == "/clientCertificateId":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			stage.ClientCertificateId = po.Value
 		case po.Path == "/documentationVersion":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			stage.DocumentationVersion = po.Value
+		case po.Path == "/variables":
+			handled = true
+			// Whole-member row of the official UpdateStage patch table:
+			// replace sets the map from the JSON object value, remove
+			// clears it; every other operation is unsupported there.
+			if err := requirePatchOp(po, opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if po.Op == "remove" {
+				stage.Variables = nil
+			} else {
+				parsed, err := parseWholeStringMapValue(po, validateStageVariableName, validateStageVariableValue)
+				if err != nil {
+					return nil, err
+				}
+				stage.Variables = parsed
+			}
 		case strings.HasPrefix(po.Path, "/variables/"):
+			handled = true
+			// The /variables/* row documents replace only, and the
+			// per-key form enforces the documented stage variable name
+			// and value constraints on the unescaped key and the value.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if stage.Variables == nil {
 				stage.Variables = make(map[string]string)
 			}
-			varName := strings.TrimPrefix(po.Path, "/variables/")
-			if po.Op == "remove" {
-				delete(stage.Variables, varName)
-			} else {
-				stage.Variables[varName] = po.Value
+			if err := applyMapPatch(stage.Variables, po, "/variables/", validateStageVariableName, validateStageVariableValue); err != nil {
+				return nil, err
 			}
+		case po.Path == "/accessLogSettings":
+			handled = true
+			// The whole-member row documents remove only.
+			if err := requirePatchOp(po, opRemove); err != nil {
+				return nil, err
+			}
+			stage.AccessLogSettings = nil
 		case strings.HasPrefix(po.Path, "/accessLogSettings/"):
+			handled = true
+			// The destinationArn and format rows document add, replace
+			// and remove.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			if stage.AccessLogSettings == nil {
 				stage.AccessLogSettings = &apigateway.AccessLogSettings{}
 			}
@@ -336,14 +438,43 @@ func (s *APIGatewayService) updateStageCore(
 				stage.AccessLogSettings.DestinationArn = po.Value
 			case "format":
 				stage.AccessLogSettings.Format = po.Value
+			default:
+				return nil, unknownPatchPathError(po)
 			}
-		case strings.HasPrefix(po.Path, "/methodSettings/"):
-			if err := applyMethodSettingsPatch(stage, po); err != nil {
-				return nil, toApiGatewayError(err)
+		case po.Path == "/methodSettings":
+			handled = true
+			// The whole-member row documents replace only.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
 			}
+			settings, err := parseWholeMethodSettingsValue(po)
+			if err != nil {
+				return nil, err
+			}
+			stage.MethodSettings = settings
+		case po.Path == "/canarySettings":
+			handled = true
+			// The whole-member row documents remove only.
+			if err := requirePatchOp(po, opRemove); err != nil {
+				return nil, err
+			}
+			stage.CanarySettings = nil
 		case strings.HasPrefix(po.Path, "/canarySettings/"):
+			handled = true
 			if err := applyCanarySettingsPatch(stage, po); err != nil {
 				return nil, toApiGatewayError(err)
+			}
+		}
+		if !handled {
+			// The documented setting family addresses members as
+			// /{resourcePath}/{httpMethod}/{group}/{member}, which no fixed
+			// prefix can single out — parse it before rejecting the path.
+			setting, ok := parseMethodSettingsSettingPath(po.Path)
+			if !ok {
+				return nil, unknownPatchPathError(po)
+			}
+			if err := applyMethodSettingsSetting(stage, po, setting); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -354,76 +485,168 @@ func (s *APIGatewayService) updateStageCore(
 	return stage, nil
 }
 
-func applyMethodSettingsPatch(stage *apigateway.Stage, po PatchOperation) error {
+// methodSettingPatchValue mirrors the JSON form of one MethodSetting entry
+// inside a whole-member /methodSettings replace value: AWS member names,
+// pointer members so an omitted field keeps the zero value distinct from
+// an explicitly set one.
+type methodSettingPatchValue struct {
+	MetricsEnabled                      *bool             `json:"metricsEnabled"`
+	LoggingLevel                        *string           `json:"loggingLevel"`
+	DataTraceEnabled                    *bool             `json:"dataTraceEnabled"`
+	ThrottlingBurstLimit                *int64            `json:"throttlingBurstLimit"`
+	ThrottlingRateLimit                 *float64          `json:"throttlingRateLimit"`
+	CachingEnabled                      *bool             `json:"cachingEnabled"`
+	CacheTtlInSeconds                   *int64            `json:"cacheTtlInSeconds"`
+	CacheDataEncrypted                  *bool             `json:"cacheDataEncrypted"`
+	RequireAuthorizationForCacheControl *bool             `json:"requireAuthorizationForCacheControl"`
+	UnreservedCacheParameters           map[string]string `json:"unreservedCacheParameters"`
+}
+
+// parseWholeMethodSettingsValue decodes the whole-member /methodSettings
+// replace value: a JSON object whose keys are {resource_path}/{http_method}
+// method-setting keys with real slashes (they are data, not JSON Pointer
+// tokens, so no unescaping applies) and whose entries use the AWS member
+// names. Every entry runs through the same validators as the per-setting
+// patch form.
+func parseWholeMethodSettingsValue(po PatchOperation) (map[string]*apigateway.MethodSetting, error) {
+	var raw map[string]methodSettingPatchValue
+	if err := json.Unmarshal([]byte(po.Value), &raw); err != nil {
+		return nil, NewBadRequestException(
+			"Invalid patch value for '/methodSettings': expected a JSON object of method-setting keys to settings objects")
+	}
+	parsed := make(map[string]*apigateway.MethodSetting, len(raw))
+	for key, entry := range raw {
+		if key == "" {
+			return nil, NewBadRequestException(
+				"Invalid patch value for '/methodSettings': entry keys must not be empty")
+		}
+		ms := &apigateway.MethodSetting{
+			UnreservedCacheParameters: entry.UnreservedCacheParameters,
+		}
+		if entry.MetricsEnabled != nil {
+			ms.MetricsEnabled = *entry.MetricsEnabled
+		}
+		if entry.LoggingLevel != nil {
+			if !validateLoggingLevel(*entry.LoggingLevel) {
+				return nil, NewBadRequestException("Invalid loggingLevel: must be OFF, ERROR, or INFO")
+			}
+			ms.LoggingLevel = *entry.LoggingLevel
+		}
+		if entry.DataTraceEnabled != nil {
+			ms.DataTraceEnabled = *entry.DataTraceEnabled
+		}
+		if entry.ThrottlingBurstLimit != nil {
+			if !validateMethodSettingThrottleBurstLimit(*entry.ThrottlingBurstLimit) {
+				return nil, NewBadRequestException("throttlingBurstLimit must be between 0 and 100000")
+			}
+			ms.ThrottlingBurstLimit = int32(*entry.ThrottlingBurstLimit)
+		}
+		if entry.ThrottlingRateLimit != nil {
+			if !validateMethodSettingThrottleRateLimit(*entry.ThrottlingRateLimit) {
+				return nil, NewBadRequestException("throttlingRateLimit must be between 0 and 100000")
+			}
+			ms.ThrottlingRateLimit = *entry.ThrottlingRateLimit
+		}
+		if entry.CachingEnabled != nil {
+			ms.CachingEnabled = *entry.CachingEnabled
+		}
+		if entry.CacheTtlInSeconds != nil {
+			if !validateCacheTtlInSeconds(int32(*entry.CacheTtlInSeconds)) {
+				return nil, NewBadRequestException("cacheTtlInSeconds must be between 0 and 86400")
+			}
+			ms.CacheTtlInSeconds = int32(*entry.CacheTtlInSeconds)
+		}
+		if entry.CacheDataEncrypted != nil {
+			ms.CacheDataEncrypted = *entry.CacheDataEncrypted
+		}
+		if entry.RequireAuthorizationForCacheControl != nil {
+			ms.RequireAuthorizationForCacheControl = *entry.RequireAuthorizationForCacheControl
+		}
+		parsed[key] = ms
+	}
+	return parsed, nil
+}
+
+// methodSettingsSettingPath is one parsed setting address of the documented
+// UpdateStage patch family /{resourcePath}/{httpMethod}/{group}/{member} —
+// e.g. /pets/GET/logging/loglevel, the root as //GET/metrics/enabled, an
+// escaped resource path as /~1pets~1{petId}/GET/throttling/burstLimit, and
+// the all-methods wildcard /*/*/logging/dataTrace of the CLI reference
+// example. Every row of the family documents replace only.
+type methodSettingsSettingPath struct {
+	resourceTokens []string
+	httpMethod     string
+	group          string
+	member         string
+}
+
+// methodSettingsGroups are the setting groups the documented family
+// addresses; the member token is validated against the row set instead.
+var methodSettingsGroups = map[string]bool{
+	"logging":    true,
+	"metrics":    true,
+	"throttling": true,
+	"caching":    true,
+}
+
+// isMethodSettingsMethodToken reports whether a path token addresses the
+// httpMethod position: an HTTP verb (ANY included) or the documented
+// all-methods wildcard "*".
+func isMethodSettingsMethodToken(token string) bool {
+	return token == "*" || validHTTPMethods[token]
+}
+
+// parseMethodSettingsSettingPath matches a path against the documented
+// setting family. One or more resource tokens precede the method token,
+// which a group token and a member token follow exactly; anything else is
+// not a row of the family and rejects as an unknown patch path.
+func parseMethodSettingsSettingPath(path string) (methodSettingsSettingPath, bool) {
+	tokens := splitPatchTokens(path)
+	for i := 1; i+2 < len(tokens); i++ {
+		if !isMethodSettingsMethodToken(tokens[i]) || !methodSettingsGroups[tokens[i+1]] {
+			continue
+		}
+		if len(tokens) != i+3 {
+			return methodSettingsSettingPath{}, false
+		}
+		return methodSettingsSettingPath{
+			resourceTokens: tokens[:i],
+			httpMethod:     tokens[i],
+			group:          tokens[i+1],
+			member:         tokens[i+2],
+		}, true
+	}
+	return methodSettingsSettingPath{}, false
+}
+
+// applyMethodSettingsSetting applies one documented setting replace. The
+// settings map is keyed by the as-addressed method key (methodMapKey): the
+// official CLI update-stage example output shows the keys as the addressed
+// pointer token ("~1resourceName/GET") and the wildcard ("*/*").
+func applyMethodSettingsSetting(stage *apigateway.Stage, po PatchOperation, p methodSettingsSettingPath) *ApiGatewayError {
+	if err := requirePatchOp(po, opReplace); err != nil {
+		return err
+	}
 	if stage.MethodSettings == nil {
 		stage.MethodSettings = make(map[string]*apigateway.MethodSetting)
 	}
-
-	rest := strings.TrimPrefix(po.Path, "/methodSettings/")
-	parts := strings.SplitN(rest, "/", 3)
-
-	resourcePath := parts[0]
-	httpMethod := ""
-	settingName := ""
-	if len(parts) >= 2 {
-		httpMethod = parts[1]
-	}
-	if len(parts) >= 3 {
-		settingName = parts[2]
-	}
-
-	key := resourcePath + "/" + httpMethod
-
-	// "remove" on the entire entry (no settingName) deletes the entry.
-	if po.Op == "remove" && settingName == "" {
-		delete(stage.MethodSettings, key)
-		return nil
-	}
-
+	key := methodMapKey(p.resourceTokens, p.httpMethod)
 	ms, ok := stage.MethodSettings[key]
 	if !ok {
 		ms = &apigateway.MethodSetting{}
 		stage.MethodSettings[key] = ms
 	}
-
-	if po.Op == "remove" {
-		switch settingName {
-		case "metricsEnabled":
-			ms.MetricsEnabled = false
-		case "loggingLevel":
-			ms.LoggingLevel = ""
-		case "dataTraceEnabled":
-			ms.DataTraceEnabled = false
-		case "throttlingBurstLimit":
-			ms.ThrottlingBurstLimit = 0
-		case "throttlingRateLimit":
-			ms.ThrottlingRateLimit = 0
-		case "cachingEnabled":
-			ms.CachingEnabled = false
-		case "cacheTtlInSeconds":
-			ms.CacheTtlInSeconds = 0
-		case "cacheDataEncrypted":
-			ms.CacheDataEncrypted = false
-		case "requireAuthorizationForCacheControl":
-			ms.RequireAuthorizationForCacheControl = false
-		}
-		if isMethodSettingEmpty(ms) {
-			delete(stage.MethodSettings, key)
-		}
-		return nil
-	}
-
-	switch settingName {
-	case "metricsEnabled":
-		ms.MetricsEnabled = po.Value == "true"
-	case "loggingLevel":
+	switch p.group + "/" + p.member {
+	case "logging/loglevel":
 		if !validateLoggingLevel(po.Value) {
 			return NewBadRequestException("Invalid loggingLevel: must be OFF, ERROR, or INFO")
 		}
 		ms.LoggingLevel = po.Value
-	case "dataTraceEnabled":
+	case "logging/dataTrace":
 		ms.DataTraceEnabled = po.Value == "true"
-	case "throttlingBurstLimit":
+	case "metrics/enabled":
+		ms.MetricsEnabled = po.Value == "true"
+	case "throttling/burstLimit":
 		v, err := strconv.ParseInt(po.Value, 10, 32)
 		if err != nil {
 			return NewBadRequestException("Invalid throttlingBurstLimit: not a number")
@@ -432,7 +655,7 @@ func applyMethodSettingsPatch(stage *apigateway.Stage, po PatchOperation) error 
 			return NewBadRequestException("throttlingBurstLimit must be between 0 and 100000")
 		}
 		ms.ThrottlingBurstLimit = int32(v)
-	case "throttlingRateLimit":
+	case "throttling/rateLimit":
 		v, err := strconv.ParseFloat(po.Value, 64)
 		if err != nil {
 			return NewBadRequestException("Invalid throttlingRateLimit: not a number")
@@ -441,9 +664,11 @@ func applyMethodSettingsPatch(stage *apigateway.Stage, po PatchOperation) error 
 			return NewBadRequestException("throttlingRateLimit must be between 0 and 100000")
 		}
 		ms.ThrottlingRateLimit = v
-	case "cachingEnabled":
+	case "caching/enabled":
 		ms.CachingEnabled = po.Value == "true"
-	case "cacheTtlInSeconds":
+	case "caching/dataEncrypted":
+		ms.CacheDataEncrypted = po.Value == "true"
+	case "caching/ttlInSeconds":
 		v, err := strconv.ParseInt(po.Value, 10, 32)
 		if err != nil {
 			return NewBadRequestException("Invalid cacheTtlInSeconds: not a number")
@@ -452,25 +677,17 @@ func applyMethodSettingsPatch(stage *apigateway.Stage, po PatchOperation) error 
 			return NewBadRequestException("cacheTtlInSeconds must be between 0 and 86400")
 		}
 		ms.CacheTtlInSeconds = int32(v)
-	case "cacheDataEncrypted":
-		ms.CacheDataEncrypted = po.Value == "true"
-	case "requireAuthorizationForCacheControl":
+	case "caching/requireAuthorizationForCacheControl":
 		ms.RequireAuthorizationForCacheControl = po.Value == "true"
+	case "caching/unauthorizedCacheControlHeaderStrategy":
+		if !validateUnauthorizedCacheControlHeaderStrategy(po.Value) {
+			return NewBadRequestException("Invalid unauthorizedCacheControlHeaderStrategy: must be FAIL_WITH_403, SUCCEED_WITH_RESPONSE_HEADER, or SUCCEED_WITHOUT_RESPONSE_HEADER")
+		}
+		ms.UnauthorizedCacheControlHeaderStrategy = po.Value
+	default:
+		return unknownPatchPathError(po)
 	}
 	return nil
-}
-
-func isMethodSettingEmpty(ms *apigateway.MethodSetting) bool {
-	return !ms.MetricsEnabled &&
-		ms.LoggingLevel == "" &&
-		!ms.DataTraceEnabled &&
-		ms.ThrottlingBurstLimit == 0 &&
-		ms.ThrottlingRateLimit == 0 &&
-		!ms.CachingEnabled &&
-		ms.CacheTtlInSeconds == 0 &&
-		!ms.CacheDataEncrypted &&
-		!ms.RequireAuthorizationForCacheControl &&
-		len(ms.UnreservedCacheParameters) == 0
 }
 
 func applyCanarySettingsPatch(stage *apigateway.Stage, po PatchOperation) error {
@@ -483,43 +700,58 @@ func applyCanarySettingsPatch(stage *apigateway.Stage, po PatchOperation) error 
 
 	switch parts[0] {
 	case "percentTraffic":
-		if po.Op == "remove" {
-			stage.CanarySettings.PercentTraffic = 0
-		} else {
-			v, err := strconv.ParseFloat(po.Value, 64)
-			if err != nil {
-				return NewBadRequestException("Invalid percentTraffic: not a number")
-			}
-			if !validatePercentTraffic(v) {
-				return NewBadRequestException("percentTraffic must be between 0 and 100")
-			}
-			stage.CanarySettings.PercentTraffic = v
+		// The row documents replace only.
+		if err := requirePatchOp(po, opReplace); err != nil {
+			return err
 		}
+		v, err := strconv.ParseFloat(po.Value, 64)
+		if err != nil {
+			return NewBadRequestException("Invalid percentTraffic: not a number")
+		}
+		if !validatePercentTraffic(v) {
+			return NewBadRequestException("percentTraffic must be between 0 and 100")
+		}
+		stage.CanarySettings.PercentTraffic = v
 	case "deploymentId":
-		if po.Op == "remove" {
-			stage.CanarySettings.DeploymentId = ""
-		} else {
-			stage.CanarySettings.DeploymentId = po.Value
+		// The row documents replace only.
+		if err := requirePatchOp(po, opReplace); err != nil {
+			return err
 		}
+		stage.CanarySettings.DeploymentId = po.Value
 	case "useStageCache":
-		if po.Op == "remove" {
-			stage.CanarySettings.UseStageCache = false
-		} else {
-			stage.CanarySettings.UseStageCache = po.Value == "true"
+		// The row documents replace only.
+		if err := requirePatchOp(po, opReplace); err != nil {
+			return err
 		}
+		stage.CanarySettings.UseStageCache = po.Value == "true"
 	case "stageVariableOverrides":
 		if len(parts) < 2 {
+			// Whole-member form: the official patch table documents
+			// replace only. The overrides are stage variables, so the
+			// documented name and value constraints apply.
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return err
+			}
+			parsed, err := parseWholeStringMapValue(po, validateStageVariableName, validateStageVariableValue)
+			if err != nil {
+				return err
+			}
+			stage.CanarySettings.StageVariableOverrides = parsed
 			return nil
 		}
 		if stage.CanarySettings.StageVariableOverrides == nil {
 			stage.CanarySettings.StageVariableOverrides = make(map[string]string)
 		}
-		varName := parts[1]
-		if po.Op == "remove" {
-			delete(stage.CanarySettings.StageVariableOverrides, varName)
-		} else {
-			stage.CanarySettings.StageVariableOverrides[varName] = po.Value
+		// The per-key override form admits the same operations the
+		// /variables/* row admits for stage variables: replace only —
+		// the overrides are stage variables and no other row governs
+		// their per-key form.
+		if err := requirePatchOp(po, opReplace); err != nil {
+			return err
 		}
+		return applyMapPatch(stage.CanarySettings.StageVariableOverrides, po, "/canarySettings/stageVariableOverrides/", validateStageVariableName, validateStageVariableValue)
+	default:
+		return unknownPatchPathError(po)
 	}
 	return nil
 }

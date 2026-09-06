@@ -120,7 +120,7 @@ func (s *CloudFrontService) deleteOriginAccessControlCore(stores *cloudfrontStor
 	}
 	attached, err := isOriginAccessControlAttached(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check origin access control usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check origin access control usage: " + err.Error())
 	}
 	if attached {
 		return awserrors.NewAWSError("OriginAccessControlInUse",

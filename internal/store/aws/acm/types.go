@@ -129,8 +129,7 @@ type CertificateListResult struct {
 
 // AccountConfiguration represents the ACM account-level configuration.
 type AccountConfiguration struct {
-	ExpiryEvents             ExpiryEventsConfiguration `json:"ExpiryEvents"`
-	CertVisibilityPreference string                    `json:"CertVisibilityPreference,omitempty"`
+	ExpiryEvents ExpiryEventsConfiguration `json:"ExpiryEvents"`
 }
 
 // ExpiryEventsConfiguration represents the configuration for expiration events.

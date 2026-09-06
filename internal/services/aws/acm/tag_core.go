@@ -6,10 +6,9 @@ import (
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
-	acmstorelib "vorpalstacks/internal/store/aws/acm"
 )
 
-func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHandlerConfig {
+func (s *ACMService) acmTagConfig(stores *acmStores) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{
 		Param: tagutil.TagOperationConfig{
 			ResourceParam:    "CertificateArn",
@@ -23,20 +22,14 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 			UseQueryFallback: true,
 		},
 		ResourceKey: func(rawKey string) string {
-			return arn
+			return rawKey
 		},
 		ValidateResource: func(ctx context.Context, resourceKey string) error {
-			_, err := stores.certificates.Get(arn)
-			if err != nil {
-				if acmstorelib.IsNotFound(err) {
-					return awserrors.NewResourceNotFoundException("certificate", arn)
-				}
-				return err
-			}
-			return nil
+			_, err := s.fetchCertificate(stores, resourceKey)
+			return err
 		},
 		TagFunc: func(ctx context.Context, resourceKey string, tagList []tagutil.Tag) error {
-			cert, err := stores.certificates.Get(resourceKey)
+			cert, err := s.fetchCertificate(stores, resourceKey)
 			if err != nil {
 				return err
 			}
@@ -52,7 +45,7 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 			return keys
 		},
 		UntagFunc: func(ctx context.Context, resourceKey string, tagKeys []string) error {
-			cert, err := stores.certificates.Get(resourceKey)
+			cert, err := s.fetchCertificate(stores, resourceKey)
 			if err != nil {
 				return err
 			}
@@ -64,7 +57,7 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 			return stores.certificates.Update(cert)
 		},
 		ListFunc: func(ctx context.Context, resourceKey string) ([]tagutil.Tag, error) {
-			cert, err := stores.certificates.Get(resourceKey)
+			cert, err := s.fetchCertificate(stores, resourceKey)
 			if err != nil {
 				return nil, err
 			}
@@ -96,8 +89,8 @@ func (s *ACMService) acmTagConfig(stores *acmStores, arn string) tagutil.TagHand
 // UntagResource / ListTagsForResource operations. These use "ResourceArn" as
 // the resource parameter and "TagKeys" (a plain list of key strings) for
 // untagging, instead of the certificate-specific parameter names.
-func (s *ACMService) acmGenericTagConfig(stores *acmStores, arn string) tagutil.TagHandlerConfig {
-	config := s.acmTagConfig(stores, arn)
+func (s *ACMService) acmGenericTagConfig(stores *acmStores) tagutil.TagHandlerConfig {
+	config := s.acmTagConfig(stores)
 	config.Param.ResourceParam = "ResourceArn"
 	config.Param.TagKeysParam = "TagKeys"
 	config.ParseTagKeys = func(params map[string]interface{}) []string {

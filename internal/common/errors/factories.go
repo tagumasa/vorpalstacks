@@ -69,11 +69,6 @@ func NewBadRequestException(message string) *AWSError {
 	return NewAWSError("BadRequestException", message, http.StatusBadRequest)
 }
 
-// NewInternalErrorException creates a new InternalError exception error.
-func NewInternalErrorException(message string) *AWSError {
-	return NewAWSError("InternalError", message, http.StatusInternalServerError)
-}
-
 // NewInternalServerException builds the InternalServerException error shape
 // for services whose Smithy model names its server-fault error that way.
 func NewInternalServerException(message string) *AWSError {

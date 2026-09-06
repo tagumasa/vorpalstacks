@@ -86,7 +86,10 @@ func (s *DomainStore) CreateDomainName(domain *DomainName) (*DomainName, error) 
 func (s *DomainStore) GetDomainName(domainName string) (*DomainName, error) {
 	var domain DomainName
 	if err := s.BaseStore.Get("domain#"+domainName, &domain); err != nil {
-		return nil, ErrDomainNameNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrDomainNameNotFound
+		}
+		return nil, err
 	}
 	return &domain, nil
 }
@@ -183,7 +186,10 @@ func (s *DomainStore) CreateBasePathMapping(domainName string, mapping *BasePath
 func (s *DomainStore) GetBasePathMapping(domainName, basePath string) (*BasePathMapping, error) {
 	var mapping BasePathMapping
 	if err := s.BaseStore.Get("mapping#"+domainName+"#"+basePath, &mapping); err != nil {
-		return nil, ErrBasePathMappingNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrBasePathMappingNotFound
+		}
+		return nil, err
 	}
 	return &mapping, nil
 }
@@ -257,22 +263,34 @@ func (s *DomainStore) GetDomainNameTags(domainName string) ([]tags.Tag, error) {
 
 // RemoveBasePathMappingsForApi deletes all base path mappings that reference
 // the given restApiId across all domain names. This is called when an API is
-// deleted to prevent dangling references.
+// deleted to prevent dangling references. Both the domain walk and the
+// per-domain mapping walk use ForEachAll so every page is visited — a
+// fixed-page listing leaves mappings beyond the first page as dangling
+// references.
 func (s *DomainStore) RemoveBasePathMappingsForApi(restApiId string) error {
-	domains, err := s.ListDomainNames(common.ListOptions{MaxItems: 500})
+	type mappingRef struct {
+		domain   string
+		basePath string
+	}
+	var targets []mappingRef
+	err := common.ForEachAll[DomainName](s.BaseStore, "domain#", nil, func(d *DomainName) error {
+		// Best-effort per domain: a listing failure for one domain must not
+		// abort the sweep of the remaining domains.
+		_ = common.ForEachAll[BasePathMapping](s.BaseStore, "mapping#"+d.DomainName+"#", nil, func(m *BasePathMapping) error {
+			if m.RestApiId == restApiId {
+				targets = append(targets, mappingRef{domain: d.DomainName, basePath: m.BasePath})
+			}
+			return nil
+		})
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-	for _, domain := range domains.Items {
-		mappings, err := s.ListBasePathMappings(domain.DomainName, common.ListOptions{MaxItems: 500})
-		if err != nil {
-			continue
-		}
-		for _, mapping := range mappings.Items {
-			if mapping.RestApiId == restApiId {
-				_ = s.DeleteBasePathMapping(domain.DomainName, mapping.BasePath)
-			}
-		}
+	// Deletions run after the walk so the iterator never observes its own
+	// writes.
+	for _, t := range targets {
+		_ = s.DeleteBasePathMapping(t.domain, t.basePath)
 	}
 	return nil
 }

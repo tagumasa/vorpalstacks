@@ -12,91 +12,186 @@ import (
 func (r *TestRunner) runAPIGatewayEdgeTests(tc *apigwTestContext) []TestResult {
 	var results []TestResult
 
-	results = append(results, r.RunTest("apigateway", "TagResource_UntagResource_ListTags", func() error {
-		ownAPI, _, err := tc.createAPI(tc.uniqueName("TagAPI"))
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.deleteAPI(ownAPI)
+	results = append(results, r.RunTest("apigateway", "TagResource_UntagResource", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{name: "restapi-plane", probe: func() error {
+				ownAPI, _, err := tc.createOwnAPI("TagAPI")
+				if err != nil {
+					return fmt.Errorf("create: %v", err)
+				}
+				defer tc.deleteAPI(ownAPI)
 
-		arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/%s", tc.r.region, ownAPI)
+				arn := tc.resourceARN("restapis", ownAPI)
 
-		_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
-			ResourceArn: aws.String(arn),
-			Tags: map[string]string{
-				"key1": "value1",
-				"key2": "value2",
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("tag: %v", err)
-		}
+				_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
+					ResourceArn: aws.String(arn),
+					Tags: map[string]string{
+						"key1": "value1",
+						"key2": "value2",
+					},
+				})
+				if err != nil {
+					return fmt.Errorf("tag: %v", err)
+				}
 
-		tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
-			ResourceArn: aws.String(arn),
-		})
-		if err != nil {
-			return fmt.Errorf("get tags: %v", err)
-		}
-		if tagResp.Tags == nil || tagResp.Tags["key1"] != "value1" {
-			return fmt.Errorf("tags mismatch, got %v", tagResp.Tags)
-		}
+				tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+					ResourceArn: aws.String(arn),
+				})
+				if err != nil {
+					return fmt.Errorf("get tags: %v", err)
+				}
+				if tagResp.Tags == nil || tagResp.Tags["key1"] != "value1" {
+					return fmt.Errorf("tags mismatch, got %v", tagResp.Tags)
+				}
 
-		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
-			ResourceArn: aws.String(arn),
-			TagKeys:     []string{"key2"},
-		})
-		if err != nil {
-			return fmt.Errorf("untag: %v", err)
-		}
+				_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
+					ResourceArn: aws.String(arn),
+					TagKeys:     []string{"key2"},
+				})
+				if err != nil {
+					return fmt.Errorf("untag: %v", err)
+				}
 
-		tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
-			ResourceArn: aws.String(arn),
-		})
-		if err != nil {
-			return fmt.Errorf("get tags after untag: %v", err)
+				tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+					ResourceArn: aws.String(arn),
+				})
+				if err != nil {
+					return fmt.Errorf("get tags after untag: %v", err)
+				}
+				if _, exists := tagResp2.Tags["key2"]; exists {
+					return fmt.Errorf("key2 should have been removed")
+				}
+				if tagResp2.Tags["key1"] != "value1" {
+					return fmt.Errorf("key1 should still exist")
+				}
+				return nil
+			}},
+			{name: "usageplan-plane", probe: func() error {
+				planID, err := tc.createOwnUsagePlan("TagPlan")
+				if err != nil {
+					return fmt.Errorf("create usage plan: %v", err)
+				}
+				defer tc.deleteUsagePlan(planID)
+
+				arn := tc.resourceARN("usageplans", planID)
+
+				_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
+					ResourceArn: aws.String(arn),
+					Tags: map[string]string{
+						"env":  "test",
+						"team": "qa",
+					},
+				})
+				if err != nil {
+					return fmt.Errorf("tag usage plan: %v", err)
+				}
+
+				tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+					ResourceArn: aws.String(arn),
+				})
+				if err != nil {
+					return fmt.Errorf("get tags: %v", err)
+				}
+				if tagResp.Tags["env"] != "test" || tagResp.Tags["team"] != "qa" {
+					return fmt.Errorf("tags mismatch: %v", tagResp.Tags)
+				}
+
+				_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
+					ResourceArn: aws.String(arn),
+					TagKeys:     []string{"team"},
+				})
+				if err != nil {
+					return fmt.Errorf("untag: %v", err)
+				}
+
+				tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+					ResourceArn: aws.String(arn),
+				})
+				if err != nil {
+					return fmt.Errorf("get tags after untag: %v", err)
+				}
+				if _, exists := tagResp2.Tags["team"]; exists {
+					return fmt.Errorf("team should have been removed")
+				}
+				if tagResp2.Tags["env"] != "test" {
+					return fmt.Errorf("env should still exist")
+				}
+				return nil
+			}},
 		}
-		if _, exists := tagResp2.Tags["key2"]; exists {
-			return fmt.Errorf("key2 should have been removed")
-		}
-		if tagResp2.Tags["key1"] != "value1" {
-			return fmt.Errorf("key1 should still exist")
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %v", row.name, err)
+			}
 		}
 		return nil
 	}))
 
-	results = append(results, r.RunTest("apigateway", "GetRestApi_NonExistent", func() error {
-		_, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
-			RestApiId: aws.String("nonexistent_xyz"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
+	// Operations against resources that do not exist fail with the
+	// modelled NotFoundException, as the service model specifies —
+	// including tag operations against a stage that does not exist.
+	results = append(results, r.RunTest("apigateway", "NonExistentResources", func() error {
+		rows := []struct {
+			name  string
+			probe func() error
+		}{
+			{name: "GetRestApi", probe: func() error {
+				_, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{
+					RestApiId: aws.String("nonexistent_xyz"),
+				})
+				return AssertErrorContains(err, "NotFoundException")
+			}},
+			{name: "DeleteRestApi", probe: func() error {
+				_, err := tc.client.DeleteRestApi(tc.ctx, &apigateway.DeleteRestApiInput{
+					RestApiId: aws.String("nonexistent_xyz"),
+				})
+				return AssertErrorContains(err, "NotFoundException")
+			}},
+			{name: "GetStage", probe: func() error {
+				ownAPI, _, err := tc.createOwnAPI("TmpAPI")
+				if err != nil {
+					return fmt.Errorf("create: %v", err)
+				}
+				defer tc.deleteAPI(ownAPI)
+				_, err = tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
+					RestApiId: aws.String(ownAPI),
+					StageName: aws.String("nonexistent_stage"),
+				})
+				return AssertErrorContains(err, "NotFoundException")
+			}},
+			{name: "TagResource_NonExistentStage", probe: func() error {
+				arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/no-such-api-%d/stages/prod",
+					tc.r.region, time.Now().UnixNano())
+				_, err := tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
+					ResourceArn: aws.String(arn),
+					Tags:        map[string]string{"Environment": "test"},
+				})
+				if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+					return fmt.Errorf("TagResource: %v", aerr)
+				}
+				_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
+					ResourceArn: aws.String(arn),
+					TagKeys:     []string{"Environment"},
+				})
+				if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+					return fmt.Errorf("UntagResource: %v", aerr)
+				}
+				_, err = tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
+					ResourceArn: aws.String(arn),
+				})
+				if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+					return fmt.Errorf("GetTags: %v", aerr)
+				}
+				return nil
+			}},
 		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("apigateway", "DeleteRestApi_NonExistent", func() error {
-		_, err := tc.client.DeleteRestApi(tc.ctx, &apigateway.DeleteRestApiInput{
-			RestApiId: aws.String("nonexistent_xyz"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("apigateway", "GetStage_NonExistent", func() error {
-		ownAPI, _, err := tc.createAPI(tc.uniqueName("TmpAPI"))
-		if err != nil {
-			return fmt.Errorf("create: %v", err)
-		}
-		defer tc.deleteAPI(ownAPI)
-		_, err = tc.client.GetStage(tc.ctx, &apigateway.GetStageInput{
-			RestApiId: aws.String(ownAPI),
-			StageName: aws.String("nonexistent_stage"),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return err
+		for _, row := range rows {
+			if err := row.probe(); err != nil {
+				return fmt.Errorf("%s: %v", row.name, err)
+			}
 		}
 		return nil
 	}))
@@ -108,16 +203,11 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "PutMethod_AuthorizationScopes_RoundTrip", func() error {
-		ownAPI, _, err := tc.createAPI(tc.uniqueName("AuthScopeAPI"))
+		ownAPI, rootId, err := tc.createOwnAPI("AuthScopeAPI")
 		if err != nil {
 			return fmt.Errorf("create api: %v", err)
 		}
 		defer tc.deleteAPI(ownAPI)
-
-		rootId, err := tc.findRootResource(ownAPI)
-		if err != nil {
-			return err
-		}
 
 		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
 			RestApiId:           aws.String(ownAPI),
@@ -149,16 +239,11 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("apigateway", "PutIntegration_TlsConfig_Timeout_RoundTrip", func() error {
-		ownAPI, _, err := tc.createAPI(tc.uniqueName("TlsAPI"))
+		ownAPI, rootId, err := tc.createOwnAPI("TlsAPI")
 		if err != nil {
 			return fmt.Errorf("create api: %v", err)
 		}
 		defer tc.deleteAPI(ownAPI)
-
-		rootId, err := tc.findRootResource(ownAPI)
-		if err != nil {
-			return err
-		}
 
 		_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
 			RestApiId:         aws.String(ownAPI),
@@ -205,66 +290,9 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 		return nil
 	}))
 
-	results = append(results, r.RunTest("apigateway", "TagResource_UsagePlan", func() error {
-		planName := fmt.Sprintf("TagPlan-%d", time.Now().UnixNano())
-		createResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
-			Name: aws.String(planName),
-		})
-		if err != nil {
-			return fmt.Errorf("create usage plan: %v", err)
-		}
-		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
-
-		arn := fmt.Sprintf("arn:aws:apigateway:%s::/usageplans/%s", tc.r.region, *createResp.Id)
-
-		_, err = tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
-			ResourceArn: aws.String(arn),
-			Tags: map[string]string{
-				"env":  "test",
-				"team": "qa",
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("tag usage plan: %v", err)
-		}
-
-		tagResp, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
-			ResourceArn: aws.String(arn),
-		})
-		if err != nil {
-			return fmt.Errorf("get tags: %v", err)
-		}
-		if tagResp.Tags["env"] != "test" || tagResp.Tags["team"] != "qa" {
-			return fmt.Errorf("tags mismatch: %v", tagResp.Tags)
-		}
-
-		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
-			ResourceArn: aws.String(arn),
-			TagKeys:     []string{"team"},
-		})
-		if err != nil {
-			return fmt.Errorf("untag: %v", err)
-		}
-
-		tagResp2, err := tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
-			ResourceArn: aws.String(arn),
-		})
-		if err != nil {
-			return fmt.Errorf("get tags after untag: %v", err)
-		}
-		if _, exists := tagResp2.Tags["team"]; exists {
-			return fmt.Errorf("team should have been removed")
-		}
-		if tagResp2.Tags["env"] != "test" {
-			return fmt.Errorf("env should still exist")
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("apigateway", "CreateUsagePlan_QuotaOffset", func() error {
-		planName := fmt.Sprintf("OffsetPlan-%d", time.Now().UnixNano())
 		createResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
-			Name: aws.String(planName),
+			Name: aws.String(tc.uniqueName("OffsetPlan")),
 			Quota: &types.QuotaSettings{
 				Limit:  1000,
 				Offset: 10,
@@ -274,7 +302,7 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
-		defer tc.client.DeleteUsagePlan(tc.ctx, &apigateway.DeleteUsagePlanInput{UsagePlanId: createResp.Id})
+		defer tc.deleteUsagePlan(aws.ToString(createResp.Id))
 
 		plan, err := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: createResp.Id,
@@ -318,34 +346,6 @@ func (r *TestRunner) runAPIGatewayDeepAuditTests(tc *apigwTestContext) []TestRes
 		}
 		if *api.MinimumCompressionSize != 0 {
 			return fmt.Errorf("expected minimumCompressionSize 0, got %d", *api.MinimumCompressionSize)
-		}
-		return nil
-	}))
-
-	// Tag operations against a stage that does not exist fail with the
-	// modelled NotFoundException, as the service model specifies.
-	results = append(results, r.RunTest("apigateway", "TagResource_NonExistentStage", func() error {
-		arn := fmt.Sprintf("arn:aws:apigateway:%s::/restapis/no-such-api-%d/stages/prod",
-			tc.r.region, time.Now().UnixNano())
-		_, err := tc.client.TagResource(tc.ctx, &apigateway.TagResourceInput{
-			ResourceArn: aws.String(arn),
-			Tags:        map[string]string{"Environment": "test"},
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("TagResource: %v", err)
-		}
-		_, err = tc.client.UntagResource(tc.ctx, &apigateway.UntagResourceInput{
-			ResourceArn: aws.String(arn),
-			TagKeys:     []string{"Environment"},
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("UntagResource: %v", err)
-		}
-		_, err = tc.client.GetTags(tc.ctx, &apigateway.GetTagsInput{
-			ResourceArn: aws.String(arn),
-		})
-		if err := AssertErrorContains(err, "NotFoundException"); err != nil {
-			return fmt.Errorf("GetTags: %v", err)
 		}
 		return nil
 	}))

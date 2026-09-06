@@ -310,6 +310,14 @@ func (s *RestApiStore) PutMethodResponse(apiId, resourceId, httpMethod, statusCo
 	if method.MethodResponses == nil {
 		method.MethodResponses = make(map[string]*MethodResponse)
 	}
+	// Normalise the nested maps so a response created without them never
+	// persists nil maps — later patch appliers write into them.
+	if response.ResponseParameters == nil {
+		response.ResponseParameters = make(map[string]bool)
+	}
+	if response.ResponseModels == nil {
+		response.ResponseModels = make(map[string]string)
+	}
 	method.MethodResponses[statusCode] = response
 
 	if err := s.updateLocked(api); err != nil {

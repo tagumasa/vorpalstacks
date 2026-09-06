@@ -1,7 +1,7 @@
 package apigateway
 
 import (
-	"strconv"
+	"slices"
 	"strings"
 
 	"vorpalstacks/internal/store/aws/apigateway"
@@ -147,28 +147,62 @@ func (s *APIGatewayService) updateAuthorizerCore(
 	}
 
 	for _, po := range patches {
+		handled := false
 		switch {
 		case po.Path == "/name":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			existing.Name = po.Value
 		case po.Path == "/type":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateAuthorizerType(po.Value) {
 				return nil, NewBadRequestException("Invalid authorizer type: " + po.Value)
 			}
 			existing.Type = po.Value
 		case po.Path == "/authType":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			existing.AuthType = po.Value
 		case po.Path == "/authorizerUri":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if po.Value != "" && !strings.HasPrefix(po.Value, "arn:") {
 				return nil, NewBadRequestException("authorizerUri must be a valid ARN")
 			}
 			existing.AuthorizerUri = po.Value
 		case po.Path == "/authorizerCredentials":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			existing.AuthorizerCredentials = po.Value
 		case po.Path == "/identitySource":
+			handled = true
+			// The row documents add, replace and remove.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
 			existing.IdentitySource = po.Value
 		case po.Path == "/identityValidationExpression":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			existing.IdentityValidationExpression = po.Value
 		case po.Path == "/authorizerResultTtlInSeconds":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			v, err := parseInt64(po.Value)
 			if err != nil {
 				return nil, NewBadRequestException("invalid authorizerResultTtlInSeconds: not a number")
@@ -178,15 +212,25 @@ func (s *APIGatewayService) updateAuthorizerCore(
 			}
 			existing.AuthorizerResultTtlInSeconds = int32(v)
 		case strings.HasPrefix(po.Path, "/providerARNs"):
-			if po.Op == "remove" {
-				if idx, err := strconv.Atoi(strings.TrimPrefix(po.Path, "/providerARNs/")); err == nil && idx < len(existing.ProviderArns) {
-					existing.ProviderArns = append(existing.ProviderArns[:idx], existing.ProviderArns[idx+1:]...)
-				}
-			} else {
-				if !sliceContains(existing.ProviderArns, po.Value) {
-					existing.ProviderArns = append(existing.ProviderArns, po.Value)
-				}
+			handled = true
+			if strings.TrimPrefix(po.Path, "/providerARNs") != "" {
+				// Numeric index addressing appears nowhere in the official
+				// patch tables — the row addresses the whole member.
+				return nil, unknownPatchPathError(po)
 			}
+			// The whole-member row documents add and remove: add appends
+			// the value, remove clears the list.
+			if err := requirePatchOp(po, opAdd|opRemove); err != nil {
+				return nil, err
+			}
+			if po.Op == "remove" {
+				existing.ProviderArns = nil
+			} else if !slices.Contains(existing.ProviderArns, po.Value) {
+				existing.ProviderArns = append(existing.ProviderArns, po.Value)
+			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 

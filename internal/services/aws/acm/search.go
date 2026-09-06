@@ -22,7 +22,11 @@ func (s *ACMService) SearchCertificates(ctx context.Context, reqCtx *request.Req
 		in.MaxResultsSet = true
 	}
 
-	result, err := s.searchCertificatesCore(reqCtx, in)
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.searchCertificatesCore(stores, in)
 	if err != nil {
 		return nil, err
 	}

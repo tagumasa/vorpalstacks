@@ -3,6 +3,7 @@ package ssm
 import (
 	"context"
 	"errors"
+	"net/http"
 	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -237,7 +238,9 @@ func (s *SSMService) deleteParameterCore(store ssmstore.SSMStoreInterface, name 
 		}
 		logs.Error("Failed to delete parameter from store",
 			logs.String("name", name), logs.Err(err))
-		return awserrors.NewInternalErrorException("failed to delete parameter")
+		// InternalServerError is the error DeleteParameter declares in the
+		// Smithy model (awsJson protocol: the wire code is the shape name).
+		return awserrors.NewAWSError("InternalServerError", "failed to delete parameter", http.StatusInternalServerError)
 	}
 	return nil
 }

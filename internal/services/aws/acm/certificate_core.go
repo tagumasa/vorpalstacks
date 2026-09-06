@@ -1,14 +1,13 @@
 package acm
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/common/pagination"
 	types "vorpalstacks/internal/common/tags"
 	acmstorelib "vorpalstacks/internal/store/aws/acm"
 
@@ -67,7 +66,7 @@ type CertificateOptionsInput struct {
 // logic shared by the HTTP API and the admin gRPC handler. It performs all
 // Smithy-conformant validation, generates the X.509 material, and persists
 // the certificate to the store.
-func (s *ACMService) requestCertificateCore(ctx context.Context, stores *acmStores, in RequestCertificateInput) (string, error) {
+func (s *ACMService) requestCertificateCore(stores *acmStores, in RequestCertificateInput) (string, error) {
 	// 1. DomainName (Smithy DomainNameString: REQUIRED).
 	domainName, err := validateDomainName(in.DomainName)
 	if err != nil {
@@ -237,11 +236,8 @@ func (s *ACMService) deleteCertificateCore(stores *acmStores, arn string) error 
 		return err
 	}
 
-	cert, err := stores.certificates.Get(arn)
+	cert, err := s.fetchCertificate(stores, arn)
 	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return awserrors.NewResourceNotFoundException("certificate", arn)
-		}
 		return err
 	}
 
@@ -264,6 +260,7 @@ func (s *ACMService) deleteCertificateCore(stores *acmStores, arn string) error 
 type ListCertificatesInput struct {
 	NextToken        string
 	MaxItems         int
+	MaxItemsSet      bool
 	Statuses         []string
 	KeyTypes         []string
 	KeyUsage         []string
@@ -271,6 +268,7 @@ type ListCertificatesInput struct {
 	ExportOption     string
 	ManagedBy        string
 	Origins          []string
+	OriginsProvided  bool
 	SortBy           string
 	SortOrder        string
 }
@@ -315,14 +313,79 @@ type ListCertificatesResult struct {
 // ---------------------------------------------------------------------------
 
 // listCertificatesCore is the single entry point for certificate listing
-// shared by the HTTP API and the admin gRPC handler. The HTTP API passes
-// filters parsed from request parameters; the admin handler passes empty
-// filters to list all certificates.
+// shared by the HTTP API and the admin gRPC handler. All parameter
+// validation happens here so both planes enforce identical rules; the
+// HTTP API passes filters parsed from request parameters, the admin
+// handler passes proto-extracted values.
 func (s *ACMService) listCertificatesCore(stores *acmStores, in ListCertificatesInput) (*ListCertificatesResult, error) {
-	// Smithy MaxItems: @range(1, 1000). Enforce upper bound; default is
-	// applied by the caller when maxItems <= 0.
-	if in.MaxItems > 1000 {
-		return nil, awserrors.NewValidationException("MaxItems must not exceed 1000")
+	if err := validateNextToken(in.NextToken); err != nil {
+		return nil, err
+	}
+
+	// Smithy MaxItems: @range(1-1000). When explicitly provided, validate
+	// the range; when absent, default to pagination.DefaultMaxItems.
+	maxItems := pagination.DefaultMaxItems
+	if in.MaxItemsSet {
+		if in.MaxItems < 1 || in.MaxItems > listCertificatesMaxItems {
+			return nil, awserrors.NewValidationException(
+				fmt.Sprintf("MaxItems must be between 1 and %d", listCertificatesMaxItems))
+		}
+		maxItems = in.MaxItems
+	}
+
+	// Smithy SortBy enum for ListCertificates only permits CREATED_AT.
+	// ListCertificates declares InvalidArgsException and ValidationException
+	// only, so constraint violations surface as ValidationException.
+	if in.SortBy != "" && in.SortBy != "CREATED_AT" {
+		return nil, awserrors.NewValidationException(fmt.Sprintf("Invalid SortBy: %s. Valid values are CREATED_AT.", in.SortBy))
+	}
+	if in.SortOrder != "" {
+		if err := validateSortOrder(in.SortOrder); err != nil {
+			return nil, err
+		}
+	}
+	// Both sort members document the pair as mandatory: "If you specify
+	// SortBy, you must also specify SortOrder." and the reverse.
+	if (in.SortBy != "") != (in.SortOrder != "") {
+		return nil, awserrors.NewValidationException("If you specify SortBy, you must also specify SortOrder; if you specify SortOrder, you must also specify SortBy.")
+	}
+
+	if err := validateEnumList(in.Statuses, "CertificateStatuses", validCertificateStatuses); err != nil {
+		return nil, err
+	}
+
+	// Smithy CertificateKeyPairOrigins: @length(1-3) when provided.
+	if in.OriginsProvided {
+		if len(in.Origins) == 0 {
+			return nil, awserrors.NewValidationException("CertificateKeyPairOrigins must contain at least 1 entry when provided")
+		}
+		if len(in.Origins) > 3 {
+			return nil, awserrors.NewValidationException("CertificateKeyPairOrigins must not exceed 3 entries")
+		}
+	}
+	if err := validateEnumList(in.Origins, "CertificateKeyPairOrigins", validKeyPairOrigins); err != nil {
+		return nil, err
+	}
+
+	if err := validateEnumList(in.KeyTypes, "keyTypes", validKeyAlgorithmsMap); err != nil {
+		return nil, err
+	}
+	if err := validateEnumList(in.KeyUsage, "keyUsage", validKeyUsageNames); err != nil {
+		return nil, err
+	}
+	if err := validateEnumList(in.ExtendedKeyUsage, "extendedKeyUsage", validExtendedKeyUsageNames); err != nil {
+		return nil, err
+	}
+	// Validate single-value enum filters that are not lists.
+	if in.ExportOption != "" {
+		if err := validateSingleEnum(in.ExportOption, "exportOption", validExportOptionValues); err != nil {
+			return nil, err
+		}
+	}
+	if in.ManagedBy != "" {
+		if err := validateSingleEnum(in.ManagedBy, "managedBy", validManagedByValues); err != nil {
+			return nil, err
+		}
 	}
 
 	filters := acmstorelib.ListFilters{
@@ -337,7 +400,7 @@ func (s *ACMService) listCertificatesCore(stores *acmStores, in ListCertificates
 		SortOrder:        in.SortOrder,
 	}
 
-	storeResult, err := stores.certificates.ListWithFilters(filters, in.NextToken, in.MaxItems)
+	storeResult, err := stores.certificates.ListWithFilters(filters, in.NextToken, maxItems)
 	if err != nil {
 		return nil, err
 	}
@@ -408,18 +471,10 @@ func requireCertificateArn(arn, paramName string) error {
 	return validateCertificateArn(arn)
 }
 
-// getCertificateCore fetches a certificate by ARN, mapping a missing
-// certificate to ResourceNotFoundException. Shared by the GetCertificate and
-// DescribeCertificate handlers.
-func (s *ACMService) getCertificateCore(reqCtx *request.RequestContext, arn string) (*acmstorelib.Certificate, error) {
-	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
-		return nil, err
-	}
-
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
+// fetchCertificate loads a certificate by ARN with the shared not-found
+// mapping: a missing certificate is reported as ResourceNotFoundException
+// and real storage errors propagate unchanged.
+func (s *ACMService) fetchCertificate(stores *acmStores, arn string) (*acmstorelib.Certificate, error) {
 	cert, err := stores.certificates.Get(arn)
 	if err != nil {
 		if acmstorelib.IsNotFound(err) {
@@ -428,6 +483,16 @@ func (s *ACMService) getCertificateCore(reqCtx *request.RequestContext, arn stri
 		return nil, err
 	}
 	return cert, nil
+}
+
+// getCertificateCore fetches a certificate by ARN, mapping a missing
+// certificate to ResourceNotFoundException. Shared by the GetCertificate and
+// DescribeCertificate handlers.
+func (s *ACMService) getCertificateCore(stores *acmStores, arn string) (*acmstorelib.Certificate, error) {
+	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
+		return nil, err
+	}
+	return s.fetchCertificate(stores, arn)
 }
 
 // ResendValidationEmailInput carries the wire-extracted fields of
@@ -440,20 +505,12 @@ type ResendValidationEmailInput struct {
 
 // resendValidationEmailCore is the single validation + persistence path for
 // ResendValidationEmail.
-func (s *ACMService) resendValidationEmailCore(reqCtx *request.RequestContext, in ResendValidationEmailInput) error {
+func (s *ACMService) resendValidationEmailCore(stores *acmStores, in ResendValidationEmailInput) error {
 	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
 		return err
 	}
-
-	stores, err := s.store(reqCtx)
+	cert, err := s.fetchCertificate(stores, in.CertificateArn)
 	if err != nil {
-		return err
-	}
-	cert, err := stores.certificates.Get(in.CertificateArn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
-		}
 		return err
 	}
 
@@ -508,7 +565,7 @@ type ImportCertificateInput struct {
 // importCertificateCore imports a certificate into ACM. When ExistingArn is
 // provided, the existing certificate is updated (re-import); otherwise a new
 // IMPORTED certificate is created.
-func (s *ACMService) importCertificateCore(reqCtx *request.RequestContext, in ImportCertificateInput) (string, error) {
+func (s *ACMService) importCertificateCore(stores *acmStores, in ImportCertificateInput) (string, error) {
 	certificate := in.Certificate
 	if certificate == "" {
 		return "", awserrors.NewValidationException("Certificate is required")
@@ -551,21 +608,13 @@ func (s *ACMService) importCertificateCore(reqCtx *request.RequestContext, in Im
 		}
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return "", err
-	}
-
 	// --- Re-import path: update an existing certificate ---
 	if existingArn != "" {
 		if err := validateCertificateArn(existingArn); err != nil {
 			return "", err
 		}
-		existing, err := stores.certificates.Get(existingArn)
+		existing, err := s.fetchCertificate(stores, existingArn)
 		if err != nil {
-			if acmstorelib.IsNotFound(err) {
-				return "", awserrors.NewResourceNotFoundException("certificate", existingArn)
-			}
 			return "", err
 		}
 
@@ -605,10 +654,8 @@ func (s *ACMService) importCertificateCore(reqCtx *request.RequestContext, in Im
 			existing.SignatureAlgorithm = determineSignatureAlgorithmFromParsed(parsedCert)
 			existing.Subject = parsedCert.Subject.String()
 			existing.Issuer = parsedCert.Issuer.String()
-			if len(parsedCert.DNSNames) > 0 {
-				existing.DomainName = parsedCert.DNSNames[0]
-			} else if parsedCert.Subject.CommonName != "" {
-				existing.DomainName = parsedCert.Subject.CommonName
+			if domain, err := domainFromParsedCert(parsedCert); err == nil {
+				existing.DomainName = domain
 			}
 		}
 
@@ -628,40 +675,44 @@ func (s *ACMService) importCertificateCore(reqCtx *request.RequestContext, in Im
 	certId := acmstorelib.GenerateCertificateId()
 	certificateArn := stores.arnBuilder.BuildCertificateARN(certId)
 
-	now := time.Now().UTC()
-	domainName, err := extractDomainFromCert(certificate)
+	// Parse the PEM once and derive every X.509-derived field from the
+	// single result; the divergent silent fallbacks of the former
+	// per-field helpers (empty serial, default key algorithm) were
+	// dead-in-practice branches around this same parse.
+	parsedCert, err := vcrypto.ParseCertificatePEM([]byte(certificate))
+	if err != nil {
+		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid certificate: failed to parse certificate: %v", err))
+	}
+	domainName, err := domainFromParsedCert(parsedCert)
 	if err != nil {
 		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid certificate: %v", err))
 	}
+	now := time.Now().UTC()
+	certKeyUsages, certExtKeyUsages := x509UsageFields(parsedCert)
 	cert := &acmstorelib.Certificate{
 		CertificateArn:           certificateArn,
 		DomainName:               domainName,
-		Serial:                   extractSerialFromPEM(certificate),
+		Serial:                   formatSerialNumberHex(parsedCert.SerialNumber),
 		Status:                   "ISSUED",
 		Type:                     "IMPORTED",
-		KeyAlgorithm:             determineKeyAlgorithm(certificate),
-		SignatureAlgorithm:       "SHA256WITHRSA",
+		KeyAlgorithm:             determineKeyAlgorithmFromParsed(parsedCert),
+		SignatureAlgorithm:       determineSignatureAlgorithmFromParsed(parsedCert),
 		RenewalEligibility:       "INELIGIBLE",
 		CreatedAt:                now,
 		ImportedAt:               now,
-		NotBefore:                now,
-		NotAfter:                 now.AddDate(1, 0, 0),
+		NotBefore:                parsedCert.NotBefore,
+		NotAfter:                 parsedCert.NotAfter,
+		KeyUsages:                certKeyUsages,
+		ExtendedKeyUsages:        certExtKeyUsages,
 		Certificate:              certificate,
 		CertificateChain:         certificateChain,
 		PrivateKey:               privateKey,
 		Tags:                     tags,
-		AccountID:                reqCtx.GetAccountID(),
-		Region:                   reqCtx.GetRegion(),
+		Subject:                  parsedCert.Subject.String(),
+		Issuer:                   parsedCert.Issuer.String(),
+		AccountID:                stores.accountID,
+		Region:                   stores.region,
 		CertificateKeyPairOrigin: "CUSTOMER_PROVIDED",
-	}
-
-	if parsedCert, _ := vcrypto.ParseCertificatePEM([]byte(certificate)); parsedCert != nil {
-		cert.NotBefore = parsedCert.NotBefore
-		cert.NotAfter = parsedCert.NotAfter
-		cert.KeyAlgorithm = determineKeyAlgorithmFromParsed(parsedCert)
-		cert.SignatureAlgorithm = determineSignatureAlgorithmFromParsed(parsedCert)
-		cert.Subject = parsedCert.Subject.String()
-		cert.Issuer = parsedCert.Issuer.String()
 	}
 
 	if err := stores.certificates.Create(cert); err != nil {
@@ -683,20 +734,12 @@ type UpdateCertificateOptionsInput struct {
 
 // updateCertificateOptionsCore is the single validation + persistence path for
 // UpdateCertificateOptions.
-func (s *ACMService) updateCertificateOptionsCore(reqCtx *request.RequestContext, in UpdateCertificateOptionsInput) error {
+func (s *ACMService) updateCertificateOptionsCore(stores *acmStores, in UpdateCertificateOptionsInput) error {
 	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
 		return err
 	}
-
-	stores, err := s.store(reqCtx)
+	cert, err := s.fetchCertificate(stores, in.CertificateArn)
 	if err != nil {
-		return err
-	}
-	cert, err := stores.certificates.Get(in.CertificateArn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
-		}
 		return err
 	}
 
@@ -729,20 +772,12 @@ func (s *ACMService) updateCertificateOptionsCore(reqCtx *request.RequestContext
 
 // renewCertificateCore is the single validation + persistence path for
 // RenewCertificate.
-func (s *ACMService) renewCertificateCore(reqCtx *request.RequestContext, arn string) error {
+func (s *ACMService) renewCertificateCore(stores *acmStores, arn string) error {
 	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
 		return err
 	}
-
-	stores, err := s.store(reqCtx)
+	cert, err := s.fetchCertificate(stores, arn)
 	if err != nil {
-		return err
-	}
-	cert, err := stores.certificates.Get(arn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return awserrors.NewResourceNotFoundException("certificate", arn)
-		}
 		return err
 	}
 
@@ -818,20 +853,12 @@ type ExportCertificateResult struct {
 
 // exportCertificateCore is the single validation + persistence path for
 // ExportCertificate.
-func (s *ACMService) exportCertificateCore(reqCtx *request.RequestContext, in ExportCertificateInput) (*ExportCertificateResult, error) {
+func (s *ACMService) exportCertificateCore(stores *acmStores, in ExportCertificateInput) (*ExportCertificateResult, error) {
 	if err := requireCertificateArn(in.CertificateArn, "CertificateArn"); err != nil {
 		return nil, err
 	}
-
-	stores, err := s.store(reqCtx)
+	cert, err := s.fetchCertificate(stores, in.CertificateArn)
 	if err != nil {
-		return nil, err
-	}
-	cert, err := stores.certificates.Get(in.CertificateArn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return nil, awserrors.NewResourceNotFoundException("certificate", in.CertificateArn)
-		}
 		return nil, err
 	}
 
@@ -891,21 +918,13 @@ type RevokeCertificateInput struct {
 
 // revokeCertificateCore is the single validation + persistence path for
 // RevokeCertificate. It returns the ARN of the revoked certificate.
-func (s *ACMService) revokeCertificateCore(reqCtx *request.RequestContext, in RevokeCertificateInput) (string, error) {
+func (s *ACMService) revokeCertificateCore(stores *acmStores, in RevokeCertificateInput) (string, error) {
 	arn := in.CertificateArn
 	if err := requireCertificateArn(arn, "CertificateArn"); err != nil {
 		return "", err
 	}
-
-	stores, err := s.store(reqCtx)
+	cert, err := s.fetchCertificate(stores, arn)
 	if err != nil {
-		return "", err
-	}
-	cert, err := stores.certificates.Get(arn)
-	if err != nil {
-		if acmstorelib.IsNotFound(err) {
-			return "", awserrors.NewResourceNotFoundException("certificate", arn)
-		}
 		return "", err
 	}
 
@@ -929,7 +948,7 @@ func (s *ACMService) revokeCertificateCore(reqCtx *request.RequestContext, in Re
 	}
 	reason, ok := in.RevocationReasonRaw.(string)
 	if !ok || !isValidRevocationReason(reason) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid RevocationReason: %v", in.RevocationReasonRaw))
+		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid RevocationReason: %v", in.RevocationReasonRaw))
 	}
 	cert.RevocationReason = reason
 	cert.Status = "REVOKED"

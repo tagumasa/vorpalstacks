@@ -3,12 +3,8 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
-
-	"vorpalstacks/pkg/vtl"
 )
 
 const (
@@ -103,37 +99,11 @@ func (e *MockExecutor) renderBody(tmpl string, req *IntegrationRequest) ([]byte,
 		return []byte(defaultMockBody), nil
 	}
 
-	engine := vtl.NewEngine()
-
-	engine.GetContext().Body = string(req.Body)
-	if len(req.Body) > 0 {
-		var bodyObj interface{}
-		if err := json.Unmarshal(req.Body, &bodyObj); err == nil {
-			engine.GetContext().JSONBody = bodyObj
-		}
-	}
-
-	params := make(map[string]string)
-	for k, v := range req.PathParams {
-		params[k] = v
-	}
-	for k, v := range req.QueryParams {
-		params[k] = v
-	}
-	for k, v := range req.Headers {
-		params[k] = v
-	}
-	engine.GetContext().Params = params
-
-	engine.GetContext().Context = map[string]interface{}{
-		"stage":     req.StageName,
-		"apiId":     req.RestApiId,
-		"requestId": fmt.Sprintf("%x", time.Now().UnixNano()),
-		"path":      req.Path,
-		"method":    req.Method,
-	}
-
-	engine.GetContext().StageVars = req.StageVariables
+	engine := newIntegrationVTLEngine(req, req.Body)
+	// The mock executor has no real backend, so its templates also see the
+	// request's own path and method.
+	engine.GetContext().Context["path"] = req.Path
+	engine.GetContext().Context["method"] = req.Method
 
 	result, err := engine.Transform(tmpl)
 	if err != nil {

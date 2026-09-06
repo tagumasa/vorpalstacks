@@ -15,10 +15,14 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
-// acmStores holds the various ACM stores.
+// acmStores holds the various ACM stores together with the account/region
+// binding they were constructed for, so Core functions operating on a
+// resolved stores value never need the transport request context.
 type acmStores struct {
 	certificates acmstore.CertificateStoreInterface
 	arnBuilder   *acmstore.ARNBuilder
+	accountID    string
+	region       string
 }
 
 // ACMService provides ACM (AWS Certificate Manager) operations for managing certificates.
@@ -42,38 +46,43 @@ func (s *ACMService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
 }
 
+// createStores builds the per-region ACM store bundle. Called by both
+// store() and GetStoreForRegion() so a single construction path defines
+// what an acmStores carries.
+func (s *ACMService) createStores(st storage.BasicStorage, region string) *acmStores {
+	return &acmStores{
+		certificates: acmstore.NewCertificateStore(st, s.accountID, region),
+		arnBuilder:   acmstore.NewARNBuilder(s.accountID, region),
+		accountID:    s.accountID,
+		region:       region,
+	}
+}
+
 func (s *ACMService) store(reqCtx *request.RequestContext) (*acmStores, error) {
 	return storecommon.GetOrCreateStoreE(&s.stores, reqCtx.GetRegion(), func() (*acmStores, error) {
 		storage, err := reqCtx.GetStorage()
 		if err != nil {
 			return nil, err
 		}
-		return &acmStores{
-			certificates: acmstore.NewCertificateStore(storage, s.accountID, reqCtx.GetRegion()),
-			arnBuilder:   acmstore.NewARNBuilder(s.accountID, reqCtx.GetRegion()),
-		}, nil
+		return s.createStores(storage, reqCtx.GetRegion()), nil
 	})
 }
 
 // GetStoreForRegion returns the cached ACM stores for the given region,
-// creating a new store instance if not already cached.
+// creating a new store instance if not already cached. Invoker-facing entry
+// (cross-service certificate registration, admin console); shares the same
+// per-region cache and the same construction path as store().
 func (s *ACMService) GetStoreForRegion(region string) (*acmStores, error) {
-	if v, ok := s.stores.Load(region); ok {
-		return v.(*acmStores), nil
-	}
-	if s.storageManager == nil {
-		return nil, fmt.Errorf("acm storage manager not initialised")
-	}
-	st, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	stores := &acmStores{
-		certificates: acmstore.NewCertificateStore(st, s.accountID, region),
-		arnBuilder:   acmstore.NewARNBuilder(s.accountID, region),
-	}
-	actual, _ := s.stores.LoadOrStore(region, stores)
-	return actual.(*acmStores), nil
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*acmStores, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("acm storage manager not initialised")
+		}
+		st, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return s.createStores(st, region), nil
+	})
 }
 
 // RegisterHandlers registers all ACM operation handlers with the dispatcher.

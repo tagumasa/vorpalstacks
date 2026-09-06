@@ -201,6 +201,71 @@ func validateX509Filter(filter interface{}) error {
 			}
 		}
 	}
+	// X509AttributeFilter is a union: exactly one member is set. The
+	// remaining six members must be validated with the same rigour the
+	// evaluator applies, so a malformed filter fails with ValidationException
+	// instead of silently matching nothing. Error style mirrors the metadata
+	// half of this validator.
+	if keyAlgo, ok := filterMap["KeyAlgorithm"]; ok {
+		algoStr, ok := keyAlgo.(string)
+		if !ok {
+			return awserrors.NewValidationException("KeyAlgorithm filter value must be a string")
+		}
+		if !validKeyAlgorithmsMap[algoStr] {
+			return awserrors.NewValidationException(fmt.Sprintf("Invalid KeyAlgorithm filter value: %s", algoStr))
+		}
+	}
+	if keyUsage, ok := filterMap["KeyUsage"]; ok {
+		kuStr, ok := keyUsage.(string)
+		if !ok {
+			return awserrors.NewValidationException("KeyUsage filter value must be a string")
+		}
+		if !validKeyUsageNames[kuStr] {
+			return awserrors.NewValidationException(fmt.Sprintf("Invalid KeyUsage filter value: %s", kuStr))
+		}
+	}
+	if extKeyUsage, ok := filterMap["ExtendedKeyUsage"]; ok {
+		ekuStr, ok := extKeyUsage.(string)
+		if !ok {
+			return awserrors.NewValidationException("ExtendedKeyUsage filter value must be a string")
+		}
+		if !validExtendedKeyUsageNames[ekuStr] {
+			return awserrors.NewValidationException(fmt.Sprintf("Invalid ExtendedKeyUsage filter value: %s", ekuStr))
+		}
+	}
+	if serial, ok := filterMap["SerialNumber"]; ok {
+		serialStr, ok := serial.(string)
+		if !ok {
+			return awserrors.NewValidationException("SerialNumber filter must be a string")
+		}
+		// Smithy SerialNumber: @length(2-59) and the colon-separated
+		// hexadecimal byte-pair pattern.
+		if l := utf8.RuneCountInString(serialStr); l < 2 || l > 59 {
+			return awserrors.NewValidationException(fmt.Sprintf("SerialNumber length must be between 2 and 59, but got %d", l))
+		}
+		if !serialNumberPattern.MatchString(serialStr) {
+			return awserrors.NewValidationException("SerialNumber must be colon-separated hexadecimal byte pairs")
+		}
+	}
+	for _, member := range []string{"NotAfter", "NotBefore"} {
+		tsRange, ok := filterMap[member]
+		if !ok {
+			continue
+		}
+		rangeMap, ok := tsRange.(map[string]interface{})
+		if !ok {
+			return awserrors.NewValidationException(member + " filter must be a TimestampRange structure")
+		}
+		// The evaluator reads Start/End as epoch numbers; anything else
+		// would silently exclude every certificate.
+		for _, bound := range []string{"Start", "End"} {
+			if v, ok := rangeMap[bound]; ok {
+				if _, ok := v.(float64); !ok {
+					return awserrors.NewValidationException(member + "." + bound + " must be a timestamp")
+				}
+			}
+		}
+	}
 	return nil
 }
 

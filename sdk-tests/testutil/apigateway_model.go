@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -13,8 +12,8 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 	var results []TestResult
 
 	results = append(results, r.RunTest("apigateway", "CreateModel", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resp, err := tc.client.CreateModel(tc.ctx, &apigateway.CreateModelInput{
 			RestApiId:   aws.String(tc.apiID),
@@ -45,8 +44,8 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetModel", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetModel(tc.ctx, &apigateway.GetModelInput{
 			RestApiId: aws.String(tc.apiID),
@@ -71,8 +70,8 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateModel", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateModel(tc.ctx, &apigateway.UpdateModelInput{
 			RestApiId: aws.String(tc.apiID),
@@ -91,12 +90,24 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 		if resp.Description == nil || *resp.Description != "updated model" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
 		}
+
+		// The /description row documents replace only: remove rejects.
+		_, err = tc.client.UpdateModel(tc.ctx, &apigateway.UpdateModelInput{
+			RestApiId: aws.String(tc.apiID),
+			ModelName: aws.String("UserModel"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpRemove, Path: aws.String("/description")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for remove on /description, got: %v", err)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetModels", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		items, err := tc.allModels(tc.apiID)
 		if err != nil {
@@ -109,8 +120,8 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteModel", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		_, err := tc.client.DeleteModel(tc.ctx, &apigateway.DeleteModelInput{
 			RestApiId: aws.String(tc.apiID),
@@ -123,11 +134,8 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 			RestApiId: aws.String(tc.apiID),
 			ModelName: aws.String("UserModel"),
 		})
-		if err == nil {
-			return fmt.Errorf("GetModel should fail after delete")
-		}
-		if !strings.Contains(err.Error(), "NotFoundException") {
-			return fmt.Errorf("expected NotFoundException after delete, got: %v", err)
+		if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+			return fmt.Errorf("GetModel should fail with NotFoundException after delete: %v", aerr)
 		}
 		return nil
 	}))

@@ -8,6 +8,29 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
+// apiStageInputFromPb maps a proto API stage into the transport-agnostic
+// ApiStageInput, including the per-stage throttle the HTTP plane accepts, so
+// the console can set it too. Bounds validation lives in the Core.
+func apiStageInputFromPb(as *pb.ApiStage) ApiStageInput {
+	in := ApiStageInput{
+		ApiId: as.Apiid,
+		Stage: as.Stage,
+	}
+	for method, ts := range as.Throttle {
+		if ts == nil {
+			continue
+		}
+		if in.Throttle == nil {
+			in.Throttle = make(map[string]*apigatewaystore.Throttle)
+		}
+		in.Throttle[method] = &apigatewaystore.Throttle{
+			BurstLimit: int64(ts.GetBurstlimit()),
+			RateLimit:  ts.Ratelimit,
+		}
+	}
+	return in
+}
+
 func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 	pbApi := &pb.RestApi{
 		Id:                     api.Id,

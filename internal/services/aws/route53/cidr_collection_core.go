@@ -91,12 +91,13 @@ type ChangeCidrCollectionResult struct {
 // Core functions — single validation + persistence path
 // ---------------------------------------------------------------------------
 
-// cidrCollectionStore returns the CIDR collection store or the InternalError
-// AWS error when the substrate is unavailable.
+// cidrCollectionStore returns the CIDR collection store or the
+// InternalFailure AWS error (the only 500 the Route 53 contract documents)
+// when the substrate is unavailable.
 func cidrCollectionStore(st *route53store.Route53Stores) (*route53store.CidrCollectionStore, error) {
 	cidrStore := st.CidrCollections()
 	if cidrStore == nil {
-		return nil, awserrors.NewAWSError("InternalError", "CIDR collection store not available", 500)
+		return nil, awserrors.NewInternalFailureException("CIDR collection store not available")
 	}
 	return cidrStore, nil
 }

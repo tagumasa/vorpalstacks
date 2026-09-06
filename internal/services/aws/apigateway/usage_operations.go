@@ -200,16 +200,10 @@ func (s *APIGatewayService) CreateUsagePlan(ctx context.Context, reqCtx *request
 								case float64:
 									t.BurstLimit = int64(bv)
 								}
-								if !validateThrottleBurstLimit(t.BurstLimit) {
-									return nil, NewBadRequestException("per-stage throttle burstLimit must be between 0 and 10000")
-								}
 							}
 							if rl, ok := ts["rateLimit"]; ok {
 								if rv, ok := rl.(float64); ok {
 									t.RateLimit = rv
-								}
-								if !validateThrottleRateLimit(t.RateLimit) {
-									return nil, NewBadRequestException("per-stage throttle rateLimit must be between 0 and 10000")
 								}
 							}
 							stage.Throttle[k] = t

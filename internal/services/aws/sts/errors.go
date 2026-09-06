@@ -196,8 +196,10 @@ var (
 	ErrJWTPayloadSizeExceeded = errors.NewAWSError("JWTPayloadSizeExceededException", "The payload size of the JWT token exceeds the allowed size.", http.StatusBadRequest)
 	// ErrInternalError is returned when the service encounters an
 	// infrastructure failure (e.g. storage unavailable). This must
-	// not be masked as an authentication error.
-	ErrInternalError = errors.NewAWSError("InternalError", "An internal error occurred.", http.StatusInternalServerError)
+	// not be masked as an authentication error. InternalFailure is
+	// the only 500 code the STS contract documents (Common Error
+	// Types).
+	ErrInternalError = errors.NewAWSError("InternalFailure", "The request can't be processed right now because of an internal server issue.", http.StatusInternalServerError)
 	// ErrExpiredToken is returned when the caller's temporary credentials
 	// or the supplied web identity / SAML token has expired. Smithy
 	// awsQueryError code "ExpiredTokenException", httpResponseCode 400.

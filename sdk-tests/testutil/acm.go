@@ -2,6 +2,8 @@ package testutil
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strings"
 	"time"
@@ -150,6 +152,68 @@ func (tc *acmTestContext) deleteCert(arn string) {
 	tc.client.DeleteCertificate(tc.ctx, &acm.DeleteCertificateInput{
 		CertificateArn: aws.String(arn),
 	})
+}
+
+// describeCert returns the certificate detail for arn.
+func (tc *acmTestContext) describeCert(arn string) (*types.CertificateDetail, error) {
+	resp, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Certificate, nil
+}
+
+// requestOwnDNSCert requests a DNS-validated certificate under a uniquely
+// prefixed domain; the caller pairs the returned arn with deleteCert.
+func (tc *acmTestContext) requestOwnDNSCert(prefix string) (string, string, error) {
+	domain := acmUniqueDomain(prefix)
+	arn, err := tc.requestDNSCert(domain)
+	if err != nil {
+		return "", "", err
+	}
+	return arn, domain, nil
+}
+
+// waitIssuedPEM polls GetCertificate until the PEM body is available
+// (up to 10 tries; the platform issues certificates immediately, so the
+// first try normally succeeds).
+func (tc *acmTestContext) waitIssuedPEM(arn string) (string, error) {
+	for i := 0; i < 10; i++ {
+		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{
+			CertificateArn: aws.String(arn),
+		})
+		if err == nil && aws.ToString(getResp.Certificate) != "" {
+			return aws.ToString(getResp.Certificate), nil
+		}
+	}
+	return "", fmt.Errorf("certificate not issued after retries")
+}
+
+// parsePEMCertificate decodes and parses a PEM certificate body.
+func parsePEMCertificate(pemStr string) (*x509.Certificate, error) {
+	block, _ := pem.Decode([]byte(pemStr))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode certificate PEM")
+	}
+	parsed, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+	return parsed, nil
+}
+
+// listTags lists the tags on a certificate.
+func (tc *acmTestContext) listTags(arn string) ([]types.Tag, error) {
+	resp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Tags, nil
+}
+
+// acmUniqueToken builds a unique idempotency token.
+func acmUniqueToken(prefix string) string {
+	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixNano())
 }
 
 func (r *TestRunner) RunACMTests() []TestResult {

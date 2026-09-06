@@ -31,13 +31,14 @@ func (e *ApiGatewayError) ToJSON() string {
 	return e.AWSError.ToJSONWithFormat("rest-json")
 }
 
-// GetApiGatewayError converts a generic error to an ApiGatewayError.
 var (
 	ErrNotFoundException        = NewApiGatewayError("NotFoundException", "The resource specified in the request does not exist.", http.StatusNotFound)
 	ErrBadRequestException      = NewApiGatewayError("BadRequestException", "The request is not valid.", http.StatusBadRequest)
 	ErrConflictException        = NewApiGatewayError("ConflictException", "The resource already exists.", http.StatusConflict)
 	ErrTooManyRequestsException = NewApiGatewayError("TooManyRequestsException", "Too many requests have been made.", http.StatusTooManyRequests)
-	ErrServiceException         = NewApiGatewayError("ServiceException", "An internal service error occurred.", http.StatusInternalServerError)
+	// InternalFailure is the only 500 code the API Gateway contract documents
+	// (Common Error Types); it is the service-wide internal-failure taxonomy.
+	ErrInternalFailureException = NewApiGatewayError("InternalFailure", "The request can't be processed right now because of an internal server issue.", http.StatusInternalServerError)
 	ErrAccessDeniedException    = NewApiGatewayError("AccessDeniedException", "Access denied.", http.StatusForbidden)
 	ErrUnauthorizedException    = NewApiGatewayError("UnauthorizedException", "Unauthorized.", http.StatusUnauthorized)
 	ErrLimitExceededException   = NewApiGatewayError("LimitExceededException", "The limit has been exceeded.", http.StatusTooManyRequests)
@@ -61,6 +62,12 @@ func NewUnauthorizedException(message string) *ApiGatewayError {
 // NewConflictException creates a new conflict exception with the specified message.
 func NewConflictException(message string) *ApiGatewayError {
 	return NewApiGatewayError("ConflictException", message, http.StatusConflict)
+}
+
+// NewInternalFailureException creates a new internal failure exception with
+// the specified message.
+func NewInternalFailureException(message string) *ApiGatewayError {
+	return NewApiGatewayError("InternalFailure", message, http.StatusInternalServerError)
 }
 
 // storeErrorMappings maps store-level sentinel errors to API Gateway API
@@ -108,7 +115,7 @@ func GetApiGatewayError(err error) *ApiGatewayError {
 	if _, ok := mapped.(*ApiGatewayError); ok {
 		return mapped.(*ApiGatewayError)
 	}
-	return ErrServiceException
+	return ErrInternalFailureException
 }
 
 // toApiGatewayError converts a generic error to an ApiGatewayError,

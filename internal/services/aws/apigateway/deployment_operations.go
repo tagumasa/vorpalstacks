@@ -351,16 +351,17 @@ func (s *APIGatewayService) toStageResponse(st *apigateway.Stage) map[string]int
 		methodSettings := make(map[string]interface{})
 		for key, ms := range st.MethodSettings {
 			methodSettings[key] = map[string]interface{}{
-				"metricsEnabled":                      ms.MetricsEnabled,
-				"loggingLevel":                        ms.LoggingLevel,
-				"dataTraceEnabled":                    ms.DataTraceEnabled,
-				"throttlingBurstLimit":                ms.ThrottlingBurstLimit,
-				"throttlingRateLimit":                 ms.ThrottlingRateLimit,
-				"cachingEnabled":                      ms.CachingEnabled,
-				"cacheTtlInSeconds":                   ms.CacheTtlInSeconds,
-				"cacheDataEncrypted":                  ms.CacheDataEncrypted,
-				"requireAuthorizationForCacheControl": ms.RequireAuthorizationForCacheControl,
-				"unreservedCacheParameters":           ms.UnreservedCacheParameters,
+				"metricsEnabled":                         ms.MetricsEnabled,
+				"loggingLevel":                           ms.LoggingLevel,
+				"dataTraceEnabled":                       ms.DataTraceEnabled,
+				"throttlingBurstLimit":                   ms.ThrottlingBurstLimit,
+				"throttlingRateLimit":                    ms.ThrottlingRateLimit,
+				"cachingEnabled":                         ms.CachingEnabled,
+				"cacheTtlInSeconds":                      ms.CacheTtlInSeconds,
+				"cacheDataEncrypted":                     ms.CacheDataEncrypted,
+				"requireAuthorizationForCacheControl":    ms.RequireAuthorizationForCacheControl,
+				"unauthorizedCacheControlHeaderStrategy": ms.UnauthorizedCacheControlHeaderStrategy,
+				"unreservedCacheParameters":              ms.UnreservedCacheParameters,
 			}
 		}
 		response["methodSettings"] = methodSettings

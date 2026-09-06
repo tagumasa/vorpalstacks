@@ -78,7 +78,7 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 	}
 	created, err := s.createDomainNameCore(ctx, stores, reqCtx.GetRegion(), in)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toDomainNameResponse(created), nil
 }
@@ -92,7 +92,7 @@ func (s *APIGatewayService) GetDomainName(ctx context.Context, reqCtx *request.R
 	domainName, domainNameId := domainNameRequestParams(req)
 	domain, err := s.getDomainNameCore(stores, domainName, domainNameId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toDomainNameResponse(domain), nil
 }
@@ -105,7 +105,7 @@ func (s *APIGatewayService) DeleteDomainName(ctx context.Context, reqCtx *reques
 	}
 	domainName, domainNameId := domainNameRequestParams(req)
 	if err := s.deleteDomainNameCore(ctx, stores, reqCtx.GetRegion(), domainName, domainNameId); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return response.EmptyResponse(), nil
 }
@@ -123,7 +123,7 @@ func (s *APIGatewayService) UpdateDomainName(ctx context.Context, reqCtx *reques
 	domainName, domainNameId := domainNameRequestParams(req)
 	domain, err := s.updateDomainNameCore(ctx, stores, reqCtx.GetRegion(), domainName, domainNameId, ops)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toDomainNameResponse(domain), nil
 }
@@ -142,7 +142,7 @@ func (s *APIGatewayService) GetDomainNames(ctx context.Context, reqCtx *request.
 	}
 	result, err := s.listDomainNamesCore(stores, marker, maxItems)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	items := make([]interface{}, 0, len(result.Items))
@@ -236,9 +236,13 @@ func (s *APIGatewayService) toDomainNameResponse(d *apigateway.DomainName) map[s
 		response["managementPolicy"] = d.ManagementPolicy
 	}
 	if d.EndpointConfiguration != nil {
-		response["endpointConfiguration"] = map[string]interface{}{
+		endpointConfig := map[string]interface{}{
 			"types": d.EndpointConfiguration.Types,
 		}
+		if d.EndpointConfiguration.IpAddressType != "" {
+			endpointConfig["ipAddressType"] = d.EndpointConfiguration.IpAddressType
+		}
+		response["endpointConfiguration"] = endpointConfig
 	}
 	if len(d.Tags) > 0 {
 		response["tags"] = tagutil.ToMap(d.Tags)
@@ -262,7 +266,7 @@ func (s *APIGatewayService) CreateBasePathMapping(ctx context.Context, reqCtx *r
 	}
 	created, err := s.createBasePathMappingCore(stores, domainName, domainNameId, in)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toBasePathMappingResponse(created), nil
 }
@@ -276,7 +280,7 @@ func (s *APIGatewayService) GetBasePathMapping(ctx context.Context, reqCtx *requ
 	domainName, domainNameId := domainNameRequestParams(req)
 	mapping, err := s.getBasePathMappingCore(stores, domainName, domainNameId, basePathRequestParam(req))
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toBasePathMappingResponse(mapping), nil
 }
@@ -289,7 +293,7 @@ func (s *APIGatewayService) DeleteBasePathMapping(ctx context.Context, reqCtx *r
 	}
 	domainName, domainNameId := domainNameRequestParams(req)
 	if err := s.deleteBasePathMappingCore(stores, domainName, domainNameId, basePathRequestParam(req)); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return response.EmptyResponse(), nil
 }
@@ -307,7 +311,7 @@ func (s *APIGatewayService) UpdateBasePathMapping(ctx context.Context, reqCtx *r
 	domainName, domainNameId := domainNameRequestParams(req)
 	mapping, err := s.updateBasePathMappingCore(stores, domainName, domainNameId, basePathRequestParam(req), ops)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toBasePathMappingResponse(mapping), nil
 }
@@ -321,7 +325,7 @@ func (s *APIGatewayService) GetBasePathMappings(ctx context.Context, reqCtx *req
 	domainName, domainNameId := domainNameRequestParams(req)
 	domainName, err = s.resolveDomainNameCore(stores, domainName, domainNameId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	maxItems, err := ResolvePaginationLimit(req.Parameters)
@@ -332,7 +336,7 @@ func (s *APIGatewayService) GetBasePathMappings(ctx context.Context, reqCtx *req
 
 	result, err := s.listBasePathMappingsCore(stores, domainName, marker, maxItems)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	items := make([]interface{}, 0, len(result.Items))

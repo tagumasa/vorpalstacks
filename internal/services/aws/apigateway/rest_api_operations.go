@@ -2,18 +2,32 @@ package apigateway
 
 import (
 	"context"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
 	store "vorpalstacks/internal/store/aws/apigateway"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-var apiGatewayArnRegex = regexp.MustCompile(`restapis/([^/]+)`)
+// apiIdFromResourceArn extracts the restApiId from an API Gateway resource
+// ARN by structural parsing: the parsed ARN's service must be apigateway and
+// its resource path must carry a non-empty first segment after /restapis/.
+// Anything else yields "".
+func apiIdFromResourceArn(resourceArn string) string {
+	_, service, _, _, resource := svcarn.SplitARN(resourceArn)
+	if service != "apigateway" {
+		return ""
+	}
+	_, rest, ok := strings.Cut(resource, "/restapis/")
+	if !ok {
+		return ""
+	}
+	id, _, _ := strings.Cut(rest, "/")
+	return id
+}
 
 func getPathParam(req *request.ParsedRequest, key string) string {
 	if req.PathParams != nil {
@@ -22,20 +36,16 @@ func getPathParam(req *request.ParsedRequest, key string) string {
 	return ""
 }
 
-// resolveBinaryMediaTypeToRemove determines which media type to remove based on
-// the JSON Patch path. The path may be an index ("/binaryMediaTypes/2"), a
-// value ("/binaryMediaTypes/image~1png"), or empty ("/binaryMediaTypes/-").
-func resolveBinaryMediaTypeToRemove(path, value string, current []string) string {
-	segment := strings.TrimPrefix(path, "/binaryMediaTypes/")
-	segment = strings.ReplaceAll(segment, "~1", "/")
-	segment = strings.ReplaceAll(segment, "~0", "~")
-	if idx, err := strconv.Atoi(segment); err == nil && idx < len(current) {
-		return current[idx]
+// resolveBinaryMediaTypeToRemove determines which media type to remove based
+// on the JSON Patch path: a value token ("/binaryMediaTypes/image~1png")
+// names the media type, and the bare whole-member path removes by the
+// operation's value. Numeric index addressing was removed with the element
+// token gate in applyBinaryMediaTypePatch.
+func resolveBinaryMediaTypeToRemove(path, value string) string {
+	if rest, ok := strings.CutPrefix(path, "/binaryMediaTypes/"); ok {
+		return unescapePointerToken(rest)
 	}
-	if segment == "" || segment == "-" {
-		return value
-	}
-	return segment
+	return value
 }
 
 // removeString returns a new slice with all occurrences of target removed.
@@ -55,16 +65,10 @@ func getRestApiId(req *request.ParsedRequest) string {
 		apiId = getPathParam(req, "restApiId")
 	}
 	if apiId == "" {
-		if arnStr := getPathParam(req, "resourceArn"); arnStr != "" {
-			if matches := apiGatewayArnRegex.FindStringSubmatch(arnStr); len(matches) > 1 {
-				apiId = matches[1]
-			}
-		}
+		apiId = apiIdFromResourceArn(getPathParam(req, "resourceArn"))
 	}
 	if apiId == "" {
-		if matches := apiGatewayArnRegex.FindStringSubmatch(request.GetStringParam(req.Parameters, "resourceArn")); len(matches) > 1 {
-			apiId = matches[1]
-		}
+		apiId = apiIdFromResourceArn(request.GetStringParam(req.Parameters, "resourceArn"))
 	}
 	return apiId
 }
@@ -249,9 +253,13 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 		response["binaryMediaTypes"] = api.BinaryMediaTypes
 	}
 	if api.EndpointConfiguration != nil {
-		response["endpointConfiguration"] = map[string]interface{}{
+		endpointConfig := map[string]interface{}{
 			"types": api.EndpointConfiguration.Types,
 		}
+		if api.EndpointConfiguration.IpAddressType != "" {
+			endpointConfig["ipAddressType"] = api.EndpointConfiguration.IpAddressType
+		}
+		response["endpointConfiguration"] = endpointConfig
 	} else {
 		response["endpointConfiguration"] = map[string]interface{}{
 			"types": []string{"REGIONAL"},

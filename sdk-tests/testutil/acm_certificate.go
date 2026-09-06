@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"strings"
 
@@ -22,12 +21,12 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if len(desc.Certificate.SubjectAlternativeNames) != 2 {
-			return fmt.Errorf("expected 2 SANs, got %d", len(desc.Certificate.SubjectAlternativeNames))
+		if len(cert.SubjectAlternativeNames) != 2 {
+			return fmt.Errorf("expected 2 SANs, got %d", len(cert.SubjectAlternativeNames))
 		}
 		return nil
 	}))
@@ -46,15 +45,15 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if desc.Certificate.Options == nil {
+		if cert.Options == nil {
 			return fmt.Errorf("options is nil")
 		}
-		if desc.Certificate.Options.CertificateTransparencyLoggingPreference != types.CertificateTransparencyLoggingPreferenceDisabled {
-			return fmt.Errorf("expected DISABLED, got %s", desc.Certificate.Options.CertificateTransparencyLoggingPreference)
+		if cert.Options.CertificateTransparencyLoggingPreference != types.CertificateTransparencyLoggingPreferenceDisabled {
+			return fmt.Errorf("expected DISABLED, got %s", cert.Options.CertificateTransparencyLoggingPreference)
 		}
 		return nil
 	}))
@@ -67,14 +66,14 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if len(desc.Certificate.DomainValidationOptions) != 1 {
-			return fmt.Errorf("expected 1 DVO, got %d", len(desc.Certificate.DomainValidationOptions))
+		if len(cert.DomainValidationOptions) != 1 {
+			return fmt.Errorf("expected 1 DVO, got %d", len(cert.DomainValidationOptions))
 		}
-		dvo := desc.Certificate.DomainValidationOptions[0]
+		dvo := cert.DomainValidationOptions[0]
 		if dvo.ValidationMethod != types.ValidationMethodEmail {
 			return fmt.Errorf("expected EMAIL validation method, got %s", dvo.ValidationMethod)
 		}
@@ -85,8 +84,7 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "RequestCertificate_VerifyArnFormat", func() error {
-		domain := acmUniqueDomain("arn-test")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("arn-test")
 		if err != nil {
 			return err
 		}
@@ -102,18 +100,13 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "DescribeCertificate_AMAZON_ISSUED_Fields", func() error {
-		domain := acmUniqueDomain("desc-ai")
-		arn, err := tc.requestDNSCert(domain)
+		arn, domain, err := tc.requestOwnDNSCert("desc-ai")
 		if err != nil {
 			return err
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
-		if err != nil {
-			return err
-		}
-		c := desc.Certificate
+		c, err := tc.describeCert(arn)
 		if c.Status != types.CertificateStatusIssued {
 			return fmt.Errorf("expected ISSUED, got %s", c.Status)
 		}
@@ -148,21 +141,20 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "DescribeCertificate_DomainValidationOptions_DNS", func() error {
-		domain := acmUniqueDomain("dv-dns")
-		arn, err := tc.requestDNSCert(domain)
+		arn, domain, err := tc.requestOwnDNSCert("dv-dns")
 		if err != nil {
 			return err
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if len(desc.Certificate.DomainValidationOptions) != 1 {
-			return fmt.Errorf("expected 1 DVO, got %d", len(desc.Certificate.DomainValidationOptions))
+		if len(cert.DomainValidationOptions) != 1 {
+			return fmt.Errorf("expected 1 DVO, got %d", len(cert.DomainValidationOptions))
 		}
-		dvo := desc.Certificate.DomainValidationOptions[0]
+		dvo := cert.DomainValidationOptions[0]
 		if dvo.ValidationMethod != types.ValidationMethodDns {
 			return fmt.Errorf("expected DNS, got %s", dvo.ValidationMethod)
 		}
@@ -188,11 +180,10 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		c, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		c := desc.Certificate
 		if c.Status != types.CertificateStatusIssued {
 			return fmt.Errorf("expected ISSUED, got %s", c.Status)
 		}
@@ -287,13 +278,9 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		block, _ := pem.Decode([]byte(aws.ToString(getResp.Certificate)))
-		if block == nil {
-			return fmt.Errorf("failed to decode certificate PEM")
-		}
-		parsed, err := x509.ParseCertificate(block.Bytes)
+		parsed, err := parsePEMCertificate(aws.ToString(getResp.Certificate))
 		if err != nil {
-			return fmt.Errorf("failed to parse certificate: %w", err)
+			return err
 		}
 		dnsSet := make(map[string]bool)
 		for _, d := range parsed.DNSNames {
@@ -324,25 +311,21 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if desc.Certificate.KeyAlgorithm != types.KeyAlgorithmEcPrime256v1 {
-			return fmt.Errorf("expected EC_prime256v1, got %s", desc.Certificate.KeyAlgorithm)
+		if cert.KeyAlgorithm != types.KeyAlgorithmEcPrime256v1 {
+			return fmt.Errorf("expected EC_prime256v1, got %s", cert.KeyAlgorithm)
 		}
 		// Verify the actual cert uses ECDSA
 		getResp, err := tc.client.GetCertificate(tc.ctx, &acm.GetCertificateInput{CertificateArn: aws.String(arn)})
 		if err != nil {
 			return err
 		}
-		block, _ := pem.Decode([]byte(aws.ToString(getResp.Certificate)))
-		if block == nil {
-			return fmt.Errorf("failed to decode certificate PEM")
-		}
-		parsed, err := x509.ParseCertificate(block.Bytes)
+		parsed, err := parsePEMCertificate(aws.ToString(getResp.Certificate))
 		if err != nil {
-			return fmt.Errorf("failed to parse certificate: %w", err)
+			return err
 		}
 		if parsed.PublicKeyAlgorithm != x509.ECDSA {
 			return fmt.Errorf("expected ECDSA public key, got %s", parsed.PublicKeyAlgorithm)
@@ -363,12 +346,12 @@ func (r *TestRunner) runACMCertificateTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		desc, err := tc.client.DescribeCertificate(tc.ctx, &acm.DescribeCertificateInput{CertificateArn: aws.String(arn)})
+		cert, err := tc.describeCert(arn)
 		if err != nil {
 			return err
 		}
-		if desc.Certificate.KeyAlgorithm != types.KeyAlgorithmRsa4096 {
-			return fmt.Errorf("expected RSA_4096, got %s", desc.Certificate.KeyAlgorithm)
+		if cert.KeyAlgorithm != types.KeyAlgorithmRsa4096 {
+			return fmt.Errorf("expected RSA_4096, got %s", cert.KeyAlgorithm)
 		}
 		return nil
 	}))

@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
-	"vorpalstacks/pkg/vtl"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 var lambdaFunctionRegex = regexp.MustCompile(`functions/(.+?)/invocations`)
@@ -42,27 +43,18 @@ func NewAWSExecutor(bus eventbus.ServiceBus, accountID, region string) *AWSExecu
 func (e *AWSExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	req.URI = substituteStageVariables(req.URI, req.StageVariables)
 
-	if isLambdaURI(req.URI) {
+	switch awsServiceFromURI(req.URI) {
+	case "lambda":
 		return e.executeLambda(ctx, req)
-	}
-
-	if isSQSURI(req.URI) {
+	case "sqs":
 		return e.executeSQS(ctx, req)
-	}
-
-	if isSNSURI(req.URI) {
+	case "sns":
 		return e.executeSNS(ctx, req)
-	}
-
-	if isDynamoDBURI(req.URI) {
+	case "dynamodb":
 		return e.executeDynamoDB(ctx, req)
-	}
-
-	if isKinesisURI(req.URI) {
+	case "kinesis":
 		return e.executeKinesis(ctx, req)
-	}
-
-	if isSFNURI(req.URI) {
+	case "states":
 		return e.executeStepFunctions(ctx, req)
 	}
 
@@ -73,8 +65,25 @@ func (e *AWSExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*In
 	}
 }
 
-func isLambdaURI(uri string) bool {
-	return strings.Contains(uri, "lambda:")
+// awsServiceFromURI resolves the backend AWS service an AWS-type integration
+// URI addresses. The URI is an ARN of the form
+// arn:aws:apigateway:{region}:{backend-service}:{path|action}/... — the
+// backend name occupies the ARN's account field and the resource segment
+// starts with the path/action marker; dispatch therefore parses the ARN and
+// reads those fields instead of substring-probing the whole string. An empty
+// string means the URI is not a parseable API Gateway integration ARN.
+func awsServiceFromURI(uri string) string {
+	parsed, err := svcarn.ParseARN(uri)
+	if err != nil {
+		return ""
+	}
+	if parsed.Service != "apigateway" || parsed.AccountID == "" {
+		return ""
+	}
+	if !strings.HasPrefix(parsed.Resource, "path/") && !strings.HasPrefix(parsed.Resource, "action/") {
+		return ""
+	}
+	return parsed.AccountID
 }
 
 // LambdaProxyResponse represents the response from a Lambda proxy integration.
@@ -259,35 +268,7 @@ func (e *AWSExecutor) buildLambdaProxyEvent(req *IntegrationRequest) *LambdaProx
 // applyRequestTemplate applies a VTL request template with $input, $context,
 // and $stageVariables substitutions.
 func applyRequestTemplate(tmpl string, req *IntegrationRequest) ([]byte, error) {
-	engine := vtl.NewEngine()
-
-	engine.GetContext().Body = string(req.Body)
-	if len(req.Body) > 0 {
-		var bodyObj interface{}
-		if err := json.Unmarshal(req.Body, &bodyObj); err == nil {
-			engine.GetContext().JSONBody = bodyObj
-		}
-	}
-
-	params := make(map[string]string)
-	for k, v := range req.PathParams {
-		params[k] = v
-	}
-	for k, v := range req.QueryParams {
-		params[k] = v
-	}
-	for k, v := range req.Headers {
-		params[k] = v
-	}
-	engine.GetContext().Params = params
-
-	engine.GetContext().Context = map[string]interface{}{
-		"stage":     req.StageName,
-		"apiId":     req.RestApiId,
-		"requestId": fmt.Sprintf("%x", time.Now().UnixNano()),
-	}
-
-	engine.GetContext().StageVars = req.StageVariables
+	engine := newIntegrationVTLEngine(req, req.Body)
 
 	result, err := engine.Transform(tmpl)
 	if err != nil {
@@ -322,7 +303,7 @@ func matchIntegrationResponse(responses map[string]*IntegrationResponseConfig, s
 			// Log invalid regex patterns rather than silently skipping.
 			// The response configuration stays as a non-match, falling through
 			// to the default or status-code-keyed response.
-			fmt.Printf("warn: invalid selectionPattern regex %q: %v\n", resp.SelectionPattern, err)
+			logs.Warn("invalid selectionPattern regex", logs.String("selectionPattern", resp.SelectionPattern), logs.Err(err))
 			continue
 		}
 		if matched {
@@ -341,35 +322,7 @@ func matchIntegrationResponse(responses map[string]*IntegrationResponseConfig, s
 // applyResponseTemplate applies a VTL response template with $input, $context,
 // and $stageVariables substitutions.
 func applyResponseTemplate(tmpl string, responseBody []byte, req *IntegrationRequest) ([]byte, error) {
-	engine := vtl.NewEngine()
-
-	engine.GetContext().Body = string(responseBody)
-	if len(responseBody) > 0 {
-		var bodyObj interface{}
-		if err := json.Unmarshal(responseBody, &bodyObj); err == nil {
-			engine.GetContext().JSONBody = bodyObj
-		}
-	}
-
-	params := make(map[string]string)
-	for k, v := range req.PathParams {
-		params[k] = v
-	}
-	for k, v := range req.QueryParams {
-		params[k] = v
-	}
-	for k, v := range req.Headers {
-		params[k] = v
-	}
-	engine.GetContext().Params = params
-
-	engine.GetContext().Context = map[string]interface{}{
-		"stage":     req.StageName,
-		"apiId":     req.RestApiId,
-		"requestId": fmt.Sprintf("%x", time.Now().UnixNano()),
-	}
-
-	engine.GetContext().StageVars = req.StageVariables
+	engine := newIntegrationVTLEngine(req, responseBody)
 
 	result, err := engine.Transform(tmpl)
 	if err != nil {

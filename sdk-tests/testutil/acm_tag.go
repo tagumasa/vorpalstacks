@@ -26,15 +26,15 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+		tags, err := tc.listTags(arn)
 		if err != nil {
 			return err
 		}
-		if len(tagResp.Tags) != 2 {
-			return fmt.Errorf("expected 2 tags, got %d", len(tagResp.Tags))
+		if len(tags) != 2 {
+			return fmt.Errorf("expected 2 tags, got %d", len(tags))
 		}
 		tagMap := make(map[string]string)
-		for _, t := range tagResp.Tags {
+		for _, t := range tags {
 			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
 		}
 		if tagMap["Env"] != "prod" {
@@ -47,8 +47,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_UpdateExistingTag", func() error {
-		domain := acmUniqueDomain("tagupd")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("tagupd")
 		if err != nil {
 			return err
 		}
@@ -62,11 +61,11 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("Env"), Value: aws.String("prod")}},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+		tags, err := tc.listTags(arn)
 		if err != nil {
 			return err
 		}
-		for _, t := range tagResp.Tags {
+		for _, t := range tags {
 			if aws.ToString(t.Key) == "Env" {
 				if aws.ToString(t.Value) != "prod" {
 					return fmt.Errorf("expected Env=prod, got %s", aws.ToString(t.Value))
@@ -78,8 +77,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 	}))
 
 	results = append(results, r.RunTest("acm", "AddTagsToCertificate_VerifyContent", func() error {
-		domain := acmUniqueDomain("tagver")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("tagver")
 		if err != nil {
 			return err
 		}
@@ -92,19 +90,18 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 				{Key: aws.String("Key2"), Value: aws.String("Val2")},
 			},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+		tags, err := tc.listTags(arn)
 		if err != nil {
 			return err
 		}
-		if len(tagResp.Tags) != 2 {
-			return fmt.Errorf("expected 2 tags, got %d", len(tagResp.Tags))
+		if len(tags) != 2 {
+			return fmt.Errorf("expected 2 tags, got %d", len(tags))
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("acm", "RemoveTagsFromCertificate_VerifyEmpty", func() error {
-		domain := acmUniqueDomain("tagrm")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("tagrm")
 		if err != nil {
 			return err
 		}
@@ -118,12 +115,12 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 			CertificateArn: aws.String(arn),
 			Tags:           []types.Tag{{Key: aws.String("X")}},
 		})
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+		tags, err := tc.listTags(arn)
 		if err != nil {
 			return err
 		}
-		if len(tagResp.Tags) != 0 {
-			return fmt.Errorf("expected 0 tags after removal, got %d", len(tagResp.Tags))
+		if len(tags) != 0 {
+			return fmt.Errorf("expected 0 tags after removal, got %d", len(tags))
 		}
 		return nil
 	}))
@@ -144,15 +141,15 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 		}
 		defer tc.deleteCert(arn)
 
-		tagResp, err := tc.client.ListTagsForCertificate(tc.ctx, &acm.ListTagsForCertificateInput{CertificateArn: aws.String(arn)})
+		tags, err := tc.listTags(arn)
 		if err != nil {
 			return err
 		}
-		if len(tagResp.Tags) != 3 {
-			return fmt.Errorf("expected 3 tags, got %d", len(tagResp.Tags))
+		if len(tags) != 3 {
+			return fmt.Errorf("expected 3 tags, got %d", len(tags))
 		}
 		tagMap := make(map[string]string)
-		for _, t := range tagResp.Tags {
+		for _, t := range tags {
 			tagMap[aws.ToString(t.Key)] = aws.ToString(t.Value)
 		}
 		if tagMap["A"] != "1" || tagMap["B"] != "2" || tagMap["C"] != "3" {
@@ -163,8 +160,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	// Generic tag API: TagResource / UntagResource / ListTagsForResource
 	results = append(results, r.RunTest("acm", "TagResource_AddAndList", func() error {
-		domain := acmUniqueDomain("generic-tag")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("generic-tag")
 		if err != nil {
 			return err
 		}
@@ -233,8 +229,7 @@ func (r *TestRunner) runACMTagTests(tc *acmTestContext) []TestResult {
 
 	// SearchCertificates
 	results = append(results, r.RunTest("acm", "SearchCertificates_ReturnsResults", func() error {
-		domain := acmUniqueDomain("search-test")
-		arn, err := tc.requestDNSCert(domain)
+		arn, _, err := tc.requestOwnDNSCert("search-test")
 		if err != nil {
 			return err
 		}

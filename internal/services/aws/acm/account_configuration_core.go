@@ -2,13 +2,8 @@ package acm
 
 import (
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
 	acmstore "vorpalstacks/internal/store/aws/acm"
 )
-
-// defaultDaysBeforeExpiry mirrors the AWS default: accounts receive expiry
-// events starting 45 days before certificate expiration.
-const defaultDaysBeforeExpiry = 45
 
 // AccountConfigurationResult is the transport-agnostic account configuration.
 type AccountConfigurationResult struct {
@@ -17,13 +12,8 @@ type AccountConfigurationResult struct {
 
 // getAccountConfigurationCore is the single read path for the ACM account
 // configuration, shared by the HTTP API handler.
-func (s *ACMService) getAccountConfigurationCore(reqCtx *request.RequestContext) (*AccountConfigurationResult, error) {
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := stores.certificates.GetAccountConfiguration(reqCtx.GetAccountID(), reqCtx.GetRegion())
+func (s *ACMService) getAccountConfigurationCore(stores *acmStores) (*AccountConfigurationResult, error) {
+	config, err := stores.certificates.GetAccountConfiguration(stores.accountID, stores.region)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +34,7 @@ type PutAccountConfigurationInput struct {
 
 // putAccountConfigurationCore is the single validation + persistence path for
 // PutAccountConfiguration.
-func (s *ACMService) putAccountConfigurationCore(reqCtx *request.RequestContext, in PutAccountConfigurationInput) error {
+func (s *ACMService) putAccountConfigurationCore(stores *acmStores, in PutAccountConfigurationInput) error {
 	// IdempotencyToken is @required per Smithy model.
 	// Validate both presence and format (@length(1-32) + @pattern(^\w+$)).
 	if in.IdempotencyToken == "" {
@@ -54,7 +44,7 @@ func (s *ACMService) putAccountConfigurationCore(reqCtx *request.RequestContext,
 		return err
 	}
 
-	daysBeforeExpiry := defaultDaysBeforeExpiry
+	daysBeforeExpiry := acmstore.DefaultDaysBeforeExpiry
 	if in.DaysBeforeExpirySet {
 		switch val := in.DaysBeforeExpiryRaw.(type) {
 		case float64:
@@ -77,10 +67,5 @@ func (s *ACMService) putAccountConfigurationCore(reqCtx *request.RequestContext,
 		},
 	}
 
-	stores, err := s.store(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	return stores.certificates.PutAccountConfiguration(reqCtx.GetAccountID(), reqCtx.GetRegion(), config)
+	return stores.certificates.PutAccountConfiguration(stores.accountID, stores.region, config)
 }

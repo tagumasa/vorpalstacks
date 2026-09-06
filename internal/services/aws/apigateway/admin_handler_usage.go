@@ -111,10 +111,7 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 	}
 	for _, as := range req.Msg.Apistages {
 		if as != nil {
-			in.ApiStages = append(in.ApiStages, ApiStageInput{
-				ApiId: as.Apiid,
-				Stage: as.Stage,
-			})
+			in.ApiStages = append(in.ApiStages, apiStageInputFromPb(as))
 		}
 	}
 	if req.Msg.Quota != nil {

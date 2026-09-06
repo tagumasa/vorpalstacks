@@ -517,6 +517,10 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 		return r.runSNSToLambda(ic, ts)
 	}))
 
+	results = append(results, r.runIntegWithTimeout("APIGateway_TestInvoke_SQS", func() TestResult {
+		return r.runAPIGatewayTestInvokeToSQS(ic, ts)
+	}))
+
 	// WAFv2 enforcement across the four protected-resource planes.
 	results = append(results, r.runIntegWithTimeout("WAF_Enforcement_CloudFront", func() TestResult {
 		return r.runWAFEnforcementCloudFront(ic, ts)

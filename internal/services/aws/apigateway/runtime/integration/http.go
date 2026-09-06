@@ -56,7 +56,7 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*I
 		}
 	}
 
-	timeout := 29 * time.Second
+	timeout := time.Duration(DefaultIntegrationTimeoutMillis) * time.Millisecond
 	if req.TimeoutInMillis > 0 {
 		timeout = time.Duration(req.TimeoutInMillis) * time.Millisecond
 	}

@@ -18,6 +18,14 @@ const maxFilterStringLength = 256
 // characters.
 const maxNextTokenLength = 10000
 
+// listCertificatesMaxItems is the Smithy MaxItems @range(1-1000) upper bound
+// for ListCertificates.
+const listCertificatesMaxItems = 1000
+
+// serialNumberPattern validates certificate serial numbers per the Smithy
+// SerialNumber @pattern constraint (colon-separated hexadecimal byte pairs).
+var serialNumberPattern = regexp.MustCompile(`^[0-9a-f]{2}(:[0-9a-f]{2}){1,19}$`)
+
 // ---------------------------------------------------------------------------
 // Smithy-derived patterns
 // ---------------------------------------------------------------------------

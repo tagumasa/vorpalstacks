@@ -35,7 +35,7 @@ func (s *APIGatewayService) createRequestValidatorCore(
 	if in.Name == "" {
 		return nil, NewBadRequestException("name is required")
 	}
-	if len(in.Name) > 128 {
+	if len(in.Name) > maxRequestValidatorNameLength {
 		return nil, NewBadRequestException("name must be 1 to 128 characters")
 	}
 
@@ -47,7 +47,7 @@ func (s *APIGatewayService) createRequestValidatorCore(
 
 	created, err := stores.restApis.CreateRequestValidator(apiId, validator)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	return created, nil
@@ -64,7 +64,7 @@ func (s *APIGatewayService) getRequestValidatorCore(stores *apiGatewayStores, ap
 
 	validator, err := stores.restApis.GetRequestValidator(apiId, validatorId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return validator, nil
@@ -80,7 +80,7 @@ func (s *APIGatewayService) deleteRequestValidatorCore(stores *apiGatewayStores,
 	}
 
 	if err := stores.restApis.DeleteRequestValidator(apiId, validatorId); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 
 	return nil
@@ -105,22 +105,38 @@ func (s *APIGatewayService) updateRequestValidatorCore(
 
 	validator, err := stores.restApis.GetRequestValidator(apiId, validatorId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch po.Path {
 		case "/name":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			validator.Name = po.Value
 		case "/validateRequestBody":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			validator.ValidateRequestBody = po.Value == "true"
 		case "/validateRequestParameters":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			validator.ValidateRequestParameters = po.Value == "true"
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 
 	if err := stores.restApis.UpdateRequestValidator(apiId, validator); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	return validator, nil
@@ -168,7 +184,7 @@ func (s *APIGatewayService) createModelCore(
 
 	created, err := stores.restApis.CreateModel(apiId, model)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	return created, nil
@@ -185,7 +201,7 @@ func (s *APIGatewayService) getModelCore(stores *apiGatewayStores, apiId, modelN
 
 	model, err := stores.restApis.GetModel(apiId, modelName)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	return model, nil
@@ -201,7 +217,7 @@ func (s *APIGatewayService) deleteModelCore(stores *apiGatewayStores, apiId, mod
 	}
 
 	if err := stores.restApis.DeleteModel(apiId, modelName); err != nil {
-		return ErrNotFoundException
+		return toApiGatewayError(err)
 	}
 
 	return nil
@@ -226,18 +242,30 @@ func (s *APIGatewayService) updateModelCore(
 
 	model, err := stores.restApis.GetModel(apiId, modelName)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch po.Path {
 		case "/description":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			model.Description = po.Value
 		case "/schema":
+			handled = true
+			if err := requirePatchOp(po, opReplace); err != nil {
+				return nil, err
+			}
 			if !validateModelSchemaSize(po.Value) {
 				return nil, NewBadRequestException("schema must not exceed 400 KB")
 			}
 			model.Schema = po.Value
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 

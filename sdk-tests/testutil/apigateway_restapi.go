@@ -97,6 +97,17 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 		if getResp.Description == nil || *getResp.Description != "Updated API" {
 			return fmt.Errorf("description not updated, got %v", getResp.Description)
 		}
+
+		// The /name row documents replace only: add rejects.
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(tc.apiID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/name"), Value: aws.String("nope")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for add on /name, got: %v", err)
+		}
 		return nil
 	}))
 
@@ -140,7 +151,7 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRestApi_BinaryMediaTypes", func() error {
-		apiID, _, err := tc.createAPI(tc.uniqueName("BmAPI"))
+		apiID, _, err := tc.createOwnAPI("BmAPI")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -197,7 +208,7 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRestApi_MinimumCompressionSize", func() error {
-		apiID, _, err := tc.createAPI(tc.uniqueName("McAPI"))
+		apiID, _, err := tc.createOwnAPI("McAPI")
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
@@ -226,6 +237,86 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 		}
 		if resp.MinimumCompressionSize == nil || *resp.MinimumCompressionSize != 2048 {
 			return fmt.Errorf("minimumCompressionSize mismatch, got %v", resp.MinimumCompressionSize)
+		}
+
+		// The table footnote's disable form: a replace with the value
+		// property set to null (or omitted) clears the setting.
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/minimumCompressionSize")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("disable update: %v", err)
+		}
+		resp, err = tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{RestApiId: aws.String(apiID)})
+		if err != nil {
+			return fmt.Errorf("get after disable: %v", err)
+		}
+		if resp.MinimumCompressionSize != nil {
+			return fmt.Errorf("minimumCompressionSize should be nil after the disable form, got %d", *resp.MinimumCompressionSize)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "UpdateRestApi_EndpointAndCompressionPatches", func() error {
+		apiID, _, err := tc.createOwnAPI("EcAPI")
+		if err != nil {
+			return fmt.Errorf("create: %v", err)
+		}
+		defer tc.deleteAPI(apiID)
+
+		// The ipAddressType row: replace only, ipv4|dualstack.
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/endpointConfiguration/ipAddressType"), Value: aws.String("dualstack")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		resp, err := tc.client.GetRestApi(tc.ctx, &apigateway.GetRestApiInput{RestApiId: aws.String(apiID)})
+		if err != nil {
+			return err
+		}
+		if resp.EndpointConfiguration == nil || string(resp.EndpointConfiguration.IpAddressType) != "dualstack" {
+			return fmt.Errorf("ipAddressType not applied, got %+v", resp.EndpointConfiguration)
+		}
+		for _, po := range []types.PatchOperation{
+			{Op: types.OpReplace, Path: aws.String("/endpointConfiguration/ipAddressType"), Value: aws.String("ipv6")},
+			{Op: types.OpAdd, Path: aws.String("/endpointConfiguration/ipAddressType"), Value: aws.String("ipv4")},
+		} {
+			_, err := tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+				RestApiId:       aws.String(apiID),
+				PatchOperations: []types.PatchOperation{po},
+			})
+			if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+				return fmt.Errorf("expected BadRequestException for op %s on %s, got: %v", po.Op, *po.Path, err)
+			}
+		}
+
+		// Numeric index element addressing rejects for binaryMediaTypes and
+		// vpcEndpointIds: no official patch table carries index rows.
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/binaryMediaTypes"), Value: aws.String("image/png")},
+				{Op: types.OpRemove, Path: aws.String("/binaryMediaTypes/0")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for binaryMediaTypes index remove, got: %v", err)
+		}
+		_, err = tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(apiID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/endpointConfiguration/vpcEndpointIds/0"), Value: aws.String("vpce-1")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for vpcEndpointIds sub-path, got: %v", err)
 		}
 		return nil
 	}))

@@ -9,7 +9,11 @@ import (
 
 // GetAccountConfiguration retrieves the account configuration for ACM.
 func (s *ACMService) GetAccountConfiguration(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	result, err := s.getAccountConfigurationCore(reqCtx)
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.getAccountConfigurationCore(stores)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +37,11 @@ func (s *ACMService) PutAccountConfiguration(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	if err := s.putAccountConfigurationCore(reqCtx, in); err != nil {
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.putAccountConfigurationCore(stores, in); err != nil {
 		return nil, err
 	}
 	return response.EmptyResponse(), nil

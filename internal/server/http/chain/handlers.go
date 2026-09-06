@@ -240,8 +240,10 @@ func HandleServiceError(ctx *RequestContext, err error) error {
 	}
 
 	statusCode := http.StatusInternalServerError
+	// InternalFailure is the documented 500 code on the JSON error plane;
+	// plain (non-AWSError) failures must not emit an undocumented code.
 	errorBody := map[string]interface{}{
-		"__type":  "InternalError",
+		"__type":  "InternalFailure",
 		"message": "An internal error occurred",
 	}
 

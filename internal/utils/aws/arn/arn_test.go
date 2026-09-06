@@ -1088,3 +1088,25 @@ func TestWAFARNBuilder(t *testing.T) {
 		}
 	}
 }
+
+func TestParseCertificateID(t *testing.T) {
+	builder := NewARNBuilder("123456789012", "us-east-1").ACM()
+	cases := []struct {
+		name string
+		arn  string
+		want string
+	}{
+		{"certificate arn", "arn:aws:acm:us-east-1:123456789012:certificate/0000000000000001", "0000000000000001"},
+		{"wrong service", "arn:aws:iam::123456789012:user/alice", ""},
+		{"wrong resource prefix", "arn:aws:acm:us-east-1:123456789012:key/abc", ""},
+		{"empty id after prefix", "arn:aws:acm:us-east-1:123456789012:certificate/", ""},
+		{"bare id", "0000000000000001", ""},
+		{"empty", "", ""},
+		{"too few arn fields", "arn:aws:acm:certificate/abc", ""},
+	}
+	for _, c := range cases {
+		if got := builder.ParseCertificateID(c.arn); got != c.want {
+			t.Errorf("%s: ParseCertificateID(%q) = %q, want %q", c.name, c.arn, got, c.want)
+		}
+	}
+}

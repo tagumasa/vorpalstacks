@@ -28,36 +28,36 @@ func parseTaggableArn(arnStr string) (taggableResource, error) {
 	_, _, _, _, resource := svcarn.SplitARN(arnStr)
 	switch {
 	case strings.Contains(resource, "/stages/"):
-		apiId := extractResourceFromArn(arnStr, "/restapis/")
-		stageName := extractResourceFromArn(arnStr, "/stages/")
+		apiId := extractResourceSegment(resource, "/restapis/")
+		stageName := extractResourceSegment(resource, "/stages/")
 		if apiId == "" || stageName == "" {
 			return taggableResource{}, NewBadRequestException("invalid stage ARN")
 		}
 		return taggableResource{kind: "stage", id1: apiId, id2: stageName}, nil
 
 	case strings.Contains(resource, "/usageplans/"):
-		usagePlanId := extractResourceFromArn(arnStr, "/usageplans/")
+		usagePlanId := extractResourceSegment(resource, "/usageplans/")
 		if usagePlanId == "" {
 			return taggableResource{}, NewBadRequestException("invalid usage plan ARN")
 		}
 		return taggableResource{kind: "usageplan", id1: usagePlanId}, nil
 
 	case strings.Contains(resource, "/apikeys/"):
-		apiKeyId := extractResourceFromArn(arnStr, "/apikeys/")
+		apiKeyId := extractResourceSegment(resource, "/apikeys/")
 		if apiKeyId == "" {
 			return taggableResource{}, NewBadRequestException("invalid API key ARN")
 		}
 		return taggableResource{kind: "apikey", id1: apiKeyId}, nil
 
 	case strings.Contains(resource, "/domainnames/"):
-		domainName := extractResourceFromArn(arnStr, "/domainnames/")
+		domainName := extractResourceSegment(resource, "/domainnames/")
 		if domainName == "" {
 			return taggableResource{}, NewBadRequestException("invalid domain name ARN")
 		}
 		return taggableResource{kind: "domainname", id1: domainName}, nil
 
 	case strings.Contains(resource, "/restapis/"):
-		apiId := extractResourceFromArn(arnStr, "/restapis/")
+		apiId := extractResourceSegment(resource, "/restapis/")
 		if apiId == "" {
 			return taggableResource{}, NewBadRequestException("invalid REST API ARN")
 		}
@@ -135,16 +135,18 @@ func (s *APIGatewayService) getResourceTagsCore(stores *apiGatewayStores, arnStr
 	}
 }
 
-func extractResourceFromArn(arnStr, suffix string) string {
-	idx := strings.Index(arnStr, suffix)
-	if idx < 0 {
+// extractResourceSegment returns the first path segment of the (already
+// split) ARN resource field after the given marker — e.g. marker "/restapis/"
+// on "/restapis/{id}/stages/{name}" yields "{id}". Operating on the split
+// resource keeps the extraction structural: marker text in the ARN's service
+// or account fields can never match.
+func extractResourceSegment(resource, marker string) string {
+	_, rest, ok := strings.Cut(resource, marker)
+	if !ok {
 		return ""
 	}
-	rest := arnStr[idx+len(suffix):]
-	if slashIdx := strings.Index(rest, "/"); slashIdx >= 0 {
-		return rest[:slashIdx]
-	}
-	return rest
+	seg, _, _ := strings.Cut(rest, "/")
+	return seg
 }
 
 // apiGatewayMapTagError maps framework-level tag errors to API Gateway errors.

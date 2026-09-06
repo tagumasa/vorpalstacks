@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
 	"vorpalstacks/internal/core/logs"
+	"vorpalstacks/internal/services/aws/apigateway/runtime/ratelimit"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	storagecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -81,7 +83,7 @@ func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue stri
 	}
 
 	stageKey := fmt.Sprintf("%s/%s", restAPIID, stageName)
-	if !containsStage(apiKey.StageKeys, stageKey) {
+	if !slices.Contains(apiKey.StageKeys, stageKey) {
 		return &AuthError{
 			Message:  "API Key is not authorized for this stage",
 			Type:     "ForbiddenException",
@@ -201,15 +203,15 @@ func (a *APIKeyAuthenticator) getQuotaUsageCount(planId, apiKeyId, period string
 	}
 }
 
-func (a *APIKeyAuthenticator) getRateLimiter(apiKeyId string, rateLimit float64, burstLimit int64) *rateLimiter {
+func (a *APIKeyAuthenticator) getRateLimiter(apiKeyId string, rateLimit float64, burstLimit int64) *ratelimit.TokenBucket {
 	if actual, loaded := a.rateLimiters.Load(apiKeyId); loaded {
-		if typed, ok := actual.(*rateLimiter); ok {
+		if typed, ok := actual.(*ratelimit.TokenBucket); ok {
 			return typed
 		}
 	}
-	limiter := newRateLimiter(rateLimit, burstLimit)
+	limiter := ratelimit.New(rateLimit, float64(burstLimit))
 	if actual, loaded := a.rateLimiters.LoadOrStore(apiKeyId, limiter); loaded {
-		if typed, ok := actual.(*rateLimiter); ok {
+		if typed, ok := actual.(*ratelimit.TokenBucket); ok {
 			return typed
 		}
 	}
@@ -240,55 +242,4 @@ func (a *APIKeyAuthenticator) recordUsage(ctx context.Context, apiKey *apigatewa
 			logs.Debug("failed to record usage", logs.String("usagePlanId", plan.Id), logs.Err(err))
 		}
 	}
-}
-
-func containsStage(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-type rateLimiter struct {
-	mu         sync.Mutex
-	tokens     float64
-	maxTokens  float64
-	refillRate float64
-	lastRefill time.Time
-}
-
-func newRateLimiter(rateLimit float64, burstLimit int64) *rateLimiter {
-	return &rateLimiter{
-		tokens:     float64(burstLimit),
-		maxTokens:  float64(burstLimit),
-		refillRate: rateLimit,
-		lastRefill: time.Now(),
-	}
-}
-
-// Allow attempts to consume a token from the rate limiter.
-// Returns true if a token was consumed, false if the rate limit has been exceeded.
-func (r *rateLimiter) Allow() bool {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	now := time.Now()
-	elapsed := now.Sub(r.lastRefill).Seconds()
-	r.tokens = min(r.maxTokens, r.tokens+elapsed*r.refillRate)
-	r.lastRefill = now
-
-	if r.tokens >= 1 {
-		r.tokens--
-		return true
-	}
-	return false
-}
-
-func min(a, b float64) float64 {
-	if a < b {
-		return a
-	}
-	return b
 }

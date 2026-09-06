@@ -124,7 +124,7 @@ func (s *CloudFrontService) deleteKeyGroupCore(stores *cloudfrontStores, id, ifM
 	}
 	referenced, err := isKeyGroupReferenced(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check key group usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check key group usage: " + err.Error())
 	}
 	if referenced {
 		return awserrors.NewAWSError("ResourceInUse",

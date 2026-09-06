@@ -88,22 +88,52 @@ func (s *APIGatewayService) updateMethodResponseCore(
 	}
 
 	for _, po := range ops {
+		handled := false
 		switch {
+		case po.Path == "/responseParameters":
+			handled = true
+			// Whole-member row of the official UpdateMethodResponse patch
+			// table: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeBoolMapPatch(&methodResp.ResponseParameters, po); err != nil {
+				return nil, err
+			}
 		case strings.HasPrefix(po.Path, "/responseParameters/"):
-			paramName := strings.TrimPrefix(po.Path, "/responseParameters/")
-			if po.Op == "remove" {
-				delete(methodResp.ResponseParameters, paramName)
-			} else {
-				b := po.Value == "true"
-				methodResp.ResponseParameters[paramName] = b
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if methodResp.ResponseParameters == nil {
+				methodResp.ResponseParameters = make(map[string]bool)
+			}
+			if err := applyBoolMapPatch(methodResp.ResponseParameters, po, "/responseParameters/", nil, nil); err != nil {
+				return nil, err
+			}
+		case po.Path == "/responseModels":
+			handled = true
+			// Whole-member row: add, replace and remove are all supported.
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
+			}
+			if err := applyWholeStringMapPatch(&methodResp.ResponseModels, po, nil, nil); err != nil {
+				return nil, err
 			}
 		case strings.HasPrefix(po.Path, "/responseModels/"):
-			modelName := strings.TrimPrefix(po.Path, "/responseModels/")
-			if po.Op == "remove" {
-				delete(methodResp.ResponseModels, modelName)
-			} else {
-				methodResp.ResponseModels[modelName] = po.Value
+			handled = true
+			if err := requirePatchOp(po, opAdd|opReplace|opRemove); err != nil {
+				return nil, err
 			}
+			if methodResp.ResponseModels == nil {
+				methodResp.ResponseModels = make(map[string]string)
+			}
+			if err := applyMapPatch(methodResp.ResponseModels, po, "/responseModels/", nil, nil); err != nil {
+				return nil, err
+			}
+		}
+		if !handled {
+			return nil, unknownPatchPathError(po)
 		}
 	}
 

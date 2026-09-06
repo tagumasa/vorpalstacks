@@ -23,6 +23,14 @@ var (
 	// that already exists.
 	ErrResourceAlreadyExists = errors.New("resource already exists")
 
+	// ErrResourceHasChildren is returned when attempting to delete a resource
+	// that still has child resources.
+	ErrResourceHasChildren = errors.New("cannot delete resource with child resources")
+
+	// ErrRootResource is returned when attempting to delete an API's root
+	// resource, which is immutable.
+	ErrRootResource = errors.New("cannot delete the root resource")
+
 	// ErrMethodNotFound is returned when the specified API method does not exist.
 	ErrMethodNotFound = errors.New("method not found")
 

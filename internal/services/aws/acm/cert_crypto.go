@@ -13,7 +13,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -25,82 +27,47 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-// renewCertificateMaterial regenerates the X.509 certificate material (new
-// key pair, new serial, new PEM blob) for an existing AMAZON_ISSUED
-// certificate during renewal. The ARN is preserved per AWS specification.
-// The caller is responsible for setting RenewalSummary and persisting via
-// stores.certificates.Update afterwards.
-func renewCertificateMaterial(cert *acmstorelib.Certificate) error {
-	key, err := generateKeyForKeyAlgorithm(cert.KeyAlgorithm)
+// errUnsupportedKeyAlgorithm marks a key-algorithm string the issuance
+// pipeline cannot generate a key pair for; issuance maps it to
+// InvalidParameterException while renewal maps every pipeline failure to an
+// internal error.
+var errUnsupportedKeyAlgorithm = errors.New("unsupported key algorithm")
+
+// issuedCertMaterial is the freshly generated X.509 material produced by
+// issueCertificateMaterial.
+type issuedCertMaterial struct {
+	certPEM   string
+	keyPEM    string
+	serial    string
+	notBefore time.Time
+	notAfter  time.Time
+	// keyUsages carries the KeyUsageName strings granted by the issuance
+	// template so callers persist them alongside the PEM.
+	keyUsages []string
+}
+
+// issueCertificateMaterial runs the issuance pipeline shared by certificate
+// issuance and renewal: a new key pair, a new serial, and a one-year
+// self-signed certificate for domainName plus its SANs, returned as PEM
+// blobs. Callers stamp their own certificate fields onto the result.
+func issueCertificateMaterial(domainName string, sans []string, keyAlgorithm string) (*issuedCertMaterial, error) {
+	key, err := generateKeyForKeyAlgorithm(keyAlgorithm)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("%w %s: %v", errUnsupportedKeyAlgorithm, keyAlgorithm, err)
 	}
 
 	serialBigInt, err := vcrypto.GenerateSerialNumber()
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("generate serial: %w", err)
 	}
 
 	now := time.Now().UTC()
 	notAfter := now.AddDate(1, 0, 0)
 
-	dnsNames := make([]string, 0, 1+len(cert.SubjectAlternativeNames))
-	dnsNames = append(dnsNames, cert.DomainName)
-	dnsNames = append(dnsNames, cert.SubjectAlternativeNames...)
-
-	template := &x509.Certificate{
-		SerialNumber: serialBigInt,
-		Subject:      pkix.Name{CommonName: cert.DomainName},
-		NotBefore:    now,
-		NotAfter:     notAfter,
-		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		DNSNames:     dnsNames,
-	}
-
-	certDER, err := vcrypto.CreateCertificate(template, template, key.Public(), key)
-	if err != nil {
-		return err
-	}
-
-	// The renewed key pair replaces the stored one so TLS termination on
-	// cross-service listeners keeps serving the renewed certificate.
-	keyPEM, err := vcrypto.EncodePrivateKeyPEM(key)
-	if err != nil {
-		return err
-	}
-
-	cert.Serial = serialBigInt.String()
-	cert.Certificate = vcrypto.EncodeCertificatePEM(certDER)
-	cert.PrivateKey = keyPEM
-	cert.Status = "ISSUED"
-	cert.NotBefore = now
-	cert.NotAfter = notAfter
-	cert.IssuedAt = now
-	cert.SignatureAlgorithm = signatureAlgorithmForKeyAlgorithm(cert.KeyAlgorithm)
-	return nil
-}
-
-// generateAmazonIssuedCert generates a self-signed AMAZON_ISSUED certificate
-// with the given parameters. Shared by the HTTP API (RequestCertificate) and
-// the admin handler. The caller is responsible for setting AccountID, Region,
-// Tags, ManagedBy, CertificateAuthorityArn, and Options afterwards.
-func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgorithm, validationMethod string) (*acmstorelib.Certificate, error) {
-	// Build the complete DNSNames list for the certificate template.
 	dnsNames := make([]string, 0, 1+len(sans))
 	dnsNames = append(dnsNames, domainName)
 	dnsNames = append(dnsNames, sans...)
 
-	now := time.Now().UTC()
-	key, err := generateKeyForKeyAlgorithm(keyAlgorithm)
-	if err != nil {
-		return nil, NewInvalidParameterError(fmt.Sprintf("Unsupported KeyAlgorithm: %s", keyAlgorithm))
-	}
-
-	serialBigInt, err := vcrypto.GenerateSerialNumber()
-	if err != nil {
-		return nil, NewInternalServerException("Failed to generate serial")
-	}
-	notAfter := now.AddDate(1, 0, 0)
 	template := &x509.Certificate{
 		SerialNumber: serialBigInt,
 		Subject:      pkix.Name{CommonName: domainName},
@@ -112,19 +79,83 @@ func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgo
 
 	certDER, err := vcrypto.CreateCertificate(template, template, key.Public(), key)
 	if err != nil {
-		return nil, NewInternalServerException("Failed to create certificate")
+		return nil, fmt.Errorf("create certificate: %w", err)
 	}
 
-	certPEM := vcrypto.EncodeCertificatePEM(certDER)
-
-	// The issuing key pair is persisted with the certificate: TLS
-	// termination on cross-service listeners (CloudFront, API Gateway)
-	// needs it to serve the certificate, mirroring how AWS deploys
-	// ACM-held key pairs to its edges. ExportCertificate keeps the
-	// material unavailable to callers through the certificate-type guard.
 	keyPEM, err := vcrypto.EncodePrivateKeyPEM(key)
 	if err != nil {
-		return nil, NewInternalServerException("Failed to encode the issuing private key")
+		return nil, fmt.Errorf("encode private key: %w", err)
+	}
+
+	return &issuedCertMaterial{
+		certPEM:   vcrypto.EncodeCertificatePEM(certDER),
+		keyPEM:    keyPEM,
+		serial:    formatSerialNumberHex(serialBigInt),
+		notBefore: now,
+		notAfter:  notAfter,
+		keyUsages: keyUsageFlagsToStrings(template.KeyUsage),
+	}, nil
+}
+
+// formatSerialNumberHex renders an X.509 serial number in the ACM wire
+// form: colon-separated lowercase hex byte pairs, the single representation
+// the Smithy SerialNumber shape defines (pattern
+// ^[0-9a-f]{2}(:[0-9a-f]{2}){1,19}$ — at least two byte pairs). Storage,
+// the DescribeCertificate Serial field, the X509Attributes.SerialNumber
+// output, and the search filter all carry this form, so a filter value
+// compares equal to what the response emitted. Serials shorter than two
+// bytes are zero-padded so every rendered value satisfies the pattern.
+func formatSerialNumberHex(n *big.Int) string {
+	serialBytes := n.Bytes()
+	for len(serialBytes) < 2 {
+		serialBytes = append([]byte{0}, serialBytes...)
+	}
+	pairs := make([]string, len(serialBytes))
+	for i, b := range serialBytes {
+		pairs[i] = fmt.Sprintf("%02x", b)
+	}
+	return strings.Join(pairs, ":")
+}
+
+// renewCertificateMaterial regenerates the X.509 certificate material (new
+// key pair, new serial, new PEM blob) for an existing AMAZON_ISSUED
+// certificate during renewal. The ARN is preserved per AWS specification.
+// The caller is responsible for setting RenewalSummary and persisting via
+// stores.certificates.Update afterwards.
+func renewCertificateMaterial(cert *acmstorelib.Certificate) error {
+	material, err := issueCertificateMaterial(cert.DomainName, cert.SubjectAlternativeNames, cert.KeyAlgorithm)
+	if err != nil {
+		return err
+	}
+
+	// The renewed key pair replaces the stored one so TLS termination on
+	// cross-service listeners keeps serving the renewed certificate. The
+	// renewal template grants no extended usages, so the reissued material
+	// determines both usage fields.
+	cert.Serial = material.serial
+	cert.Certificate = material.certPEM
+	cert.PrivateKey = material.keyPEM
+	cert.Status = "ISSUED"
+	cert.NotBefore = material.notBefore
+	cert.NotAfter = material.notAfter
+	cert.IssuedAt = material.notBefore
+	cert.SignatureAlgorithm = signatureAlgorithmForKeyAlgorithm(cert.KeyAlgorithm)
+	cert.KeyUsages = keyUsageList(material.keyUsages)
+	cert.ExtendedKeyUsages = nil
+	return nil
+}
+
+// generateAmazonIssuedCert generates a self-signed AMAZON_ISSUED certificate
+// with the given parameters. Shared by the HTTP API (RequestCertificate) and
+// the admin handler. The caller is responsible for setting AccountID, Region,
+// Tags, ManagedBy, CertificateAuthorityArn, and Options afterwards.
+func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgorithm, validationMethod string) (*acmstorelib.Certificate, error) {
+	material, err := issueCertificateMaterial(domainName, sans, keyAlgorithm)
+	if err != nil {
+		if errors.Is(err, errUnsupportedKeyAlgorithm) {
+			return nil, NewInvalidParameterError(fmt.Sprintf("Unsupported KeyAlgorithm: %s", keyAlgorithm))
+		}
+		return nil, NewInternalServerException(fmt.Sprintf("Failed to generate certificate material: %v", err))
 	}
 
 	// Build domain validation options. ACM creates certs in PENDING_VALIDATION
@@ -135,23 +166,29 @@ func generateAmazonIssuedCert(certArn, domainName string, sans []string, keyAlgo
 		domainValidationOptions[i].ValidationStatus = "SUCCESS"
 	}
 
+	// The issuing key pair is persisted with the certificate: TLS
+	// termination on cross-service listeners (CloudFront, API Gateway)
+	// needs it to serve the certificate, mirroring how AWS deploys
+	// ACM-held key pairs to its edges. ExportCertificate keeps the
+	// material unavailable to callers through the certificate-type guard.
 	return &acmstorelib.Certificate{
 		CertificateArn:           certArn,
 		DomainName:               domainName,
-		Serial:                   serialBigInt.String(),
+		Serial:                   material.serial,
 		Status:                   "ISSUED",
 		Type:                     "AMAZON_ISSUED",
 		KeyAlgorithm:             keyAlgorithm,
 		SignatureAlgorithm:       signatureAlgorithmForKeyAlgorithm(keyAlgorithm),
 		RenewalEligibility:       "ELIGIBLE",
-		CreatedAt:                now,
+		CreatedAt:                material.notBefore,
 		Subject:                  domainName,
 		Issuer:                   domainName,
-		Certificate:              certPEM,
-		PrivateKey:               keyPEM,
-		NotBefore:                now,
-		NotAfter:                 notAfter,
-		IssuedAt:                 now,
+		Certificate:              material.certPEM,
+		PrivateKey:               material.keyPEM,
+		NotBefore:                material.notBefore,
+		NotAfter:                 material.notAfter,
+		IssuedAt:                 material.notBefore,
+		KeyUsages:                keyUsageList(material.keyUsages),
 		SubjectAlternativeNames:  sans,
 		DomainValidationOptions:  domainValidationOptions,
 		CertificateKeyPairOrigin: "AWS_MANAGED",
@@ -228,12 +265,10 @@ func signatureAlgorithmForKeyAlgorithm(keyAlgorithm string) string {
 	}
 }
 
-func extractDomainFromCert(cert string) (string, error) {
-	parsed, err := vcrypto.ParseCertificatePEM([]byte(cert))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse certificate: %w", err)
-	}
-
+// domainFromParsedCert selects the certificate's primary domain from an
+// already-parsed certificate: the first DNS SAN, falling back to the
+// subject CommonName.
+func domainFromParsedCert(parsed *x509.Certificate) (string, error) {
 	if len(parsed.DNSNames) > 0 {
 		return parsed.DNSNames[0], nil
 	}
@@ -243,24 +278,6 @@ func extractDomainFromCert(cert string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no domain name found in certificate")
-}
-
-// extractSerialFromPEM parses the certificate PEM and returns the X.509
-// SerialNumber as a decimal string. Returns an empty string if parsing fails.
-func extractSerialFromPEM(certPEM string) string {
-	parsed, err := vcrypto.ParseCertificatePEM([]byte(certPEM))
-	if err != nil || parsed == nil {
-		return ""
-	}
-	return parsed.SerialNumber.String()
-}
-
-func determineKeyAlgorithm(cert string) string {
-	parsed, err := vcrypto.ParseCertificatePEM([]byte(cert))
-	if err != nil || parsed == nil {
-		return "RSA_2048"
-	}
-	return determineKeyAlgorithmFromParsed(parsed)
 }
 
 func determineKeyAlgorithmFromParsed(cert *x509.Certificate) string {

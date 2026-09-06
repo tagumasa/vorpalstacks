@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"vorpalstacks/internal/core/storage"
@@ -38,73 +37,17 @@ func NewCertificateStore(store storage.BasicStorage, accountId, region string) *
 	}
 }
 
-func (s *CertificateStore) extractCertificateId(arn string) string {
-	if arn == "" {
-		return ""
-	}
-	parts := strings.Split(arn, "/")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return arn
-}
-
 // Get retrieves an ACM certificate by its ARN from the store.
 func (s *CertificateStore) Get(arn string) (*Certificate, error) {
-	certId := s.extractCertificateId(arn)
+	certId, err := s.arnBuilder.ParseCertificateArn(arn)
+	if err != nil {
+		return nil, NewStoreError("get_certificate", err)
+	}
 	var cert Certificate
 	if err := s.BaseStore.Get(certId, &cert); err != nil {
 		return nil, NewStoreError("get_certificate", err)
 	}
 	return &cert, nil
-}
-
-// List returns a paginated list of ACM certificates from the store.
-func (s *CertificateStore) List(marker string, maxItems int) (*CertificateListResult, error) {
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	}
-	result, err := common.List[Certificate](s.BaseStore, opts, nil)
-	if err != nil {
-		return nil, err
-	}
-	summaries := make([]*CertificateSummary, len(result.Items))
-	for i, cert := range result.Items {
-		summaries[i] = CertificateToSummary(cert)
-	}
-	return &CertificateListResult{
-		Certificates: summaries,
-		IsTruncated:  result.IsTruncated,
-		NextToken:    result.NextMarker,
-	}, nil
-}
-
-// ListByStatus returns a paginated list of ACM certificates filtered by status.
-func (s *CertificateStore) ListByStatus(statuses []string, marker string, maxItems int) (*CertificateListResult, error) {
-	statusSet := make(map[string]bool, len(statuses))
-	for _, s := range statuses {
-		statusSet[s] = true
-	}
-	opts := common.ListOptions{
-		Marker:   marker,
-		MaxItems: maxItems,
-	}
-	result, err := common.List[Certificate](s.BaseStore, opts, func(cert *Certificate) bool {
-		return statusSet[cert.Status]
-	})
-	if err != nil {
-		return nil, err
-	}
-	summaries := make([]*CertificateSummary, len(result.Items))
-	for i, cert := range result.Items {
-		summaries[i] = CertificateToSummary(cert)
-	}
-	return &CertificateListResult{
-		Certificates: summaries,
-		IsTruncated:  result.IsTruncated,
-		NextToken:    result.NextMarker,
-	}, nil
 }
 
 // ListAll returns all ACM certificates from the store.
@@ -275,12 +218,15 @@ func matchOrigins(cert *Certificate, origins []string) bool {
 
 // Create creates a new ACM certificate in the store.
 func (s *CertificateStore) Create(cert *Certificate) error {
-	certId := s.extractCertificateId(cert.CertificateArn)
+	certId, err := s.arnBuilder.ParseCertificateArn(cert.CertificateArn)
+	if err != nil {
+		return NewStoreError("create_certificate", err)
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.Exists(certId) {
+	if s.BaseStore.Exists(certId) {
 		return NewStoreError("create_certificate", ErrCertificateExists)
 	}
 	if err := s.BaseStore.Put(certId, cert); err != nil {
@@ -291,12 +237,15 @@ func (s *CertificateStore) Create(cert *Certificate) error {
 
 // Update updates an existing ACM certificate in the store.
 func (s *CertificateStore) Update(cert *Certificate) error {
-	certId := s.extractCertificateId(cert.CertificateArn)
+	certId, err := s.arnBuilder.ParseCertificateArn(cert.CertificateArn)
+	if err != nil {
+		return NewStoreError("update_certificate", err)
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.Exists(certId) {
+	if !s.BaseStore.Exists(certId) {
 		return NewStoreError("update_certificate", ErrCertificateNotFound)
 	}
 	if err := s.BaseStore.Put(certId, cert); err != nil {
@@ -307,12 +256,15 @@ func (s *CertificateStore) Update(cert *Certificate) error {
 
 // Delete deletes an ACM certificate by its ARN from the store.
 func (s *CertificateStore) Delete(arn string) error {
-	certId := s.extractCertificateId(arn)
+	certId, err := s.arnBuilder.ParseCertificateArn(arn)
+	if err != nil {
+		return NewStoreError("delete_certificate", err)
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if !s.Exists(certId) {
+	if !s.BaseStore.Exists(certId) {
 		return NewStoreError("delete_certificate", ErrCertificateNotFound)
 	}
 	if err := s.BaseStore.Delete(certId); err != nil {
@@ -323,7 +275,10 @@ func (s *CertificateStore) Delete(arn string) error {
 
 // Exists checks whether an ACM certificate exists in the store by its ARN.
 func (s *CertificateStore) Exists(arn string) bool {
-	certId := s.extractCertificateId(arn)
+	certId, err := s.arnBuilder.ParseCertificateArn(arn)
+	if err != nil {
+		return false
+	}
 	return s.BaseStore.Exists(certId)
 }
 
@@ -373,6 +328,17 @@ func CertificateToSummary(cert *Certificate) *CertificateSummary {
 	summary.ManagedBy = cert.ManagedBy
 	summary.CertificateKeyPairOrigin = cert.CertificateKeyPairOrigin
 
+	for _, ku := range cert.KeyUsages {
+		summary.KeyUsages = append(summary.KeyUsages, ku.Name)
+	}
+	// Extended usages recorded by OID only (no enum name) stay out of the
+	// summary — it is a list of ExtendedKeyUsageName values.
+	for _, eku := range cert.ExtendedKeyUsages {
+		if eku.Name != "" {
+			summary.ExtendedKeyUsages = append(summary.ExtendedKeyUsages, eku.Name)
+		}
+	}
+
 	if !cert.RevokedAt.IsZero() {
 		summary.RevokedAt = timeutils.FormatEpochSeconds(cert.RevokedAt)
 	}
@@ -384,16 +350,26 @@ func accountConfigKey(accountID, region string) string {
 	return accountID + "/" + region
 }
 
+// DefaultDaysBeforeExpiry is the AWS default account configuration: by
+// default, accounts receive expiry events starting 45 days before
+// certificate expiration (ACM API reference, ExpiryEventsConfiguration).
+const DefaultDaysBeforeExpiry = 45
+
 // GetAccountConfiguration retrieves the account configuration for ACM certificates.
+// A never-configured account returns the AWS default (expiry events start
+// 45 days before expiration); any other storage failure propagates.
 func (s *CertificateStore) GetAccountConfiguration(accountID, region string) (*AccountConfiguration, error) {
 	key := accountConfigKey(accountID, region)
 	var config AccountConfiguration
 	if err := s.configStore.Get(key, &config); err != nil {
-		return &AccountConfiguration{
-			ExpiryEvents: ExpiryEventsConfiguration{
-				DaysBeforeExpiry: 45,
-			},
-		}, nil
+		if common.IsNotFound(err) {
+			return &AccountConfiguration{
+				ExpiryEvents: ExpiryEventsConfiguration{
+					DaysBeforeExpiry: DefaultDaysBeforeExpiry,
+				},
+			}, nil
+		}
+		return nil, NewStoreError("get_account_configuration", err)
 	}
 	return &config, nil
 }
@@ -409,14 +385,17 @@ func (s *CertificateStore) PutAccountConfiguration(accountID, region string, con
 // consumers (CloudFront, API Gateway, etc.) via the ACMInvoker when they
 // associate an ACM certificate with a resource.
 func (s *CertificateStore) AddInUseBy(certArn, resourceArn string) error {
-	certId := s.extractCertificateId(certArn)
+	certId, err := s.arnBuilder.ParseCertificateArn(certArn)
+	if err != nil {
+		return NewStoreError("add_in_use_by", err)
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var cert Certificate
 	if err := s.BaseStore.Get(certId, &cert); err != nil {
-		return NewStoreError("add_in_use_by", ErrCertificateNotFound)
+		return NewStoreError("add_in_use_by", err)
 	}
 	for _, existing := range cert.InUseBy {
 		if existing == resourceArn {
@@ -434,14 +413,17 @@ func (s *CertificateStore) AddInUseBy(certArn, resourceArn string) error {
 // This is called when a cross-service consumer disassociates an ACM
 // certificate from a resource (e.g. deleting a CloudFront distribution).
 func (s *CertificateStore) RemoveInUseBy(certArn, resourceArn string) error {
-	certId := s.extractCertificateId(certArn)
+	certId, err := s.arnBuilder.ParseCertificateArn(certArn)
+	if err != nil {
+		return NewStoreError("remove_in_use_by", err)
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var cert Certificate
 	if err := s.BaseStore.Get(certId, &cert); err != nil {
-		return NewStoreError("remove_in_use_by", ErrCertificateNotFound)
+		return NewStoreError("remove_in_use_by", err)
 	}
 	filtered := cert.InUseBy[:0]
 	for _, existing := range cert.InUseBy {

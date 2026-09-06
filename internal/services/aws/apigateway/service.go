@@ -12,6 +12,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	svcapigatewayruntime "vorpalstacks/internal/services/aws/apigateway/runtime"
+	"vorpalstacks/internal/services/aws/apigateway/runtime/integration"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -32,6 +33,10 @@ type APIGatewayService struct {
 	storageManager *storage.RegionStorageManager
 	runtimeServer  *svcapigatewayruntime.RuntimeServer
 	acmInvoker     invokers.ACMInvoker
+	// testInvokeFactory builds executors for TestInvokeMethod with the live
+	// event bus, so test invocations of AWS-type integrations reach the same
+	// backends (Lambda, SQS, SNS, ...) as the runtime server's requests.
+	testInvokeFactory *integration.ExecutorFactory
 	// webACLInspector is held on the service because the WAF wiring
 	// runs before InitRuntimeServer creates the runtime server; the
 	// runtime instance receives the inspector at creation.
@@ -58,6 +63,18 @@ func (s *APIGatewayService) SetACMInvoker(invoker invokers.ACMInvoker) {
 	s.acmInvoker = invoker
 }
 
+// createStores builds the per-region store bundle. It is the single
+// construction path: adding a store to apiGatewayStores means editing this
+// function only. KeyLocker's zero value is functional, so the bundle carries
+// no explicit initialisation for it.
+func (s *APIGatewayService) createStores(st storage.BasicStorage, region string) *apiGatewayStores {
+	return &apiGatewayStores{
+		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
+		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
+		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
+	}
+}
+
 // InitRuntimeServer creates the runtime server using the same stores as the
 // management service.
 func (s *APIGatewayService) InitRuntimeServer(bus eventbus.ServiceBus) {
@@ -69,11 +86,7 @@ func (s *APIGatewayService) InitRuntimeServer(bus eventbus.ServiceBus) {
 		return
 	}
 
-	stores := &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, s.region),
-		usage:    apigatewaystore.NewUsageStore(st, s.accountID, s.region),
-		domains:  apigatewaystore.NewDomainStore(st, s.accountID, s.region),
-	}
+	stores := s.createStores(st, s.region)
 	if actual, loaded := s.stores.LoadOrStore(s.region, stores); loaded {
 		stores = actual.(*apiGatewayStores)
 	}
@@ -84,6 +97,10 @@ func (s *APIGatewayService) InitRuntimeServer(bus eventbus.ServiceBus) {
 	if s.webACLInspector != nil {
 		s.runtimeServer.SetWebACLInspector(s.webACLInspector)
 	}
+
+	factory := integration.NewExecutorFactory(bus)
+	factory.SetAccountAndRegion(s.accountID, s.region)
+	s.testInvokeFactory = factory
 }
 
 // SetWebACLInspector injects the WAF request-inspection entry point and
@@ -120,11 +137,7 @@ func (s *APIGatewayService) store(reqCtx *request.RequestContext) (*apiGatewaySt
 		if err != nil {
 			return nil, err
 		}
-		return &apiGatewayStores{
-			restApis: apigatewaystore.NewRestApiStore(st, s.accountID, reqCtx.GetRegion()),
-			usage:    apigatewaystore.NewUsageStore(st, s.accountID, reqCtx.GetRegion()),
-			domains:  apigatewaystore.NewDomainStore(st, s.accountID, reqCtx.GetRegion()),
-		}, nil
+		return s.createStores(st, reqCtx.GetRegion()), nil
 	})
 }
 
@@ -139,11 +152,7 @@ func (s *APIGatewayService) GetStoreForRegion(region string) (*apiGatewayStores,
 	if err != nil {
 		return nil, err
 	}
-	stores := &apiGatewayStores{
-		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
-		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
-		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
-	}
+	stores := s.createStores(st, region)
 	actual, _ := s.stores.LoadOrStore(region, stores)
 	return actual.(*apiGatewayStores), nil
 }

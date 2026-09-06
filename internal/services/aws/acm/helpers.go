@@ -14,20 +14,22 @@ import (
 )
 
 // validateEnumList validates that every value in the list is a member of the
-// given enum set. Returns nil if the list is empty.
+// given enum set. Returns nil if the list is empty. The callers serve
+// operations that declare ValidationException (not InvalidParameterException),
+// so violations surface as ValidationException.
 func validateEnumList(values []string, paramName string, validSet map[string]bool) error {
 	return paramvalidation.EnumList(paramName, values, validSet,
 		func(field, value string) error {
-			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", field, value))
+			return awserrors.NewValidationException(fmt.Sprintf("Invalid %s: %s", field, value))
 		})
 }
 
-// validateSingleEnum validates a single-value enum parameter. Returns nil if
-// the value is empty (parameter not provided).
+// validateSingleEnum validates a single-value enum parameter. Returns nil
+// if the value is empty (parameter not provided).
 func validateSingleEnum(value, paramName string, validSet map[string]bool) error {
 	return paramvalidation.EnumValue(paramName, value, validSet,
 		func(field, value string) error {
-			return NewInvalidParameterError(fmt.Sprintf("Invalid %s: %s", field, value))
+			return awserrors.NewValidationException(fmt.Sprintf("Invalid %s: %s", field, value))
 		})
 }
 
@@ -99,7 +101,7 @@ func parseCertificateTransparencyLoggingPreference(params map[string]interface{}
 		return "ENABLED", nil
 	}
 	if !isValidCertificateTransparencyLoggingPreference(pref) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid CertificateTransparencyLoggingPreference: %s. Valid values are ENABLED, DISABLED.", pref))
+		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid CertificateTransparencyLoggingPreference: %s. Valid values are ENABLED, DISABLED.", pref))
 	}
 	return pref, nil
 }
@@ -110,7 +112,7 @@ func parseExportOption(params map[string]interface{}) (string, error) {
 		return "DISABLED", nil
 	}
 	if !isValidExportOption(export) {
-		return "", NewInvalidParameterError(fmt.Sprintf("Invalid Export: %s. Valid values are ENABLED, DISABLED.", export))
+		return "", awserrors.NewValidationException(fmt.Sprintf("Invalid Export: %s. Valid values are ENABLED, DISABLED.", export))
 	}
 	return export, nil
 }

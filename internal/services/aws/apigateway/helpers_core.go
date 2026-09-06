@@ -16,10 +16,15 @@ func tagsFromMap(m map[string]string) []tags.Tag {
 }
 
 // canarySettingsFromInput copies the transport-agnostic canary settings
-// into the store-layer struct. deploymentIdOverride, when non-empty,
-// forces the embedded deploymentId (used by CreateDeployment to attach
-// the new deployment to its canary); pass "" to honour the input value.
-func canarySettingsFromInput(in *CanarySettingsInput, deploymentIdOverride string) *apigateway.CanarySettings {
+// into the store-layer struct, validating the stage variable overrides
+// against the documented stage variable constraints. deploymentIdOverride,
+// when non-empty, forces the embedded deploymentId (used by
+// CreateDeployment to attach the new deployment to its canary); pass ""
+// to honour the input value.
+func canarySettingsFromInput(in *CanarySettingsInput, deploymentIdOverride string) (*apigateway.CanarySettings, error) {
+	if err := validateStageVariables(in.StageVariableOverrides); err != nil {
+		return nil, err
+	}
 	deploymentId := in.DeploymentId
 	if deploymentIdOverride != "" {
 		deploymentId = deploymentIdOverride
@@ -29,5 +34,5 @@ func canarySettingsFromInput(in *CanarySettingsInput, deploymentIdOverride strin
 		DeploymentId:           deploymentId,
 		StageVariableOverrides: in.StageVariableOverrides,
 		UseStageCache:          in.UseStageCache,
-	}
+	}, nil
 }

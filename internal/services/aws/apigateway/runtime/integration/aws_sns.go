@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,15 +20,20 @@ var (
 	sqsActionRegex = regexp.MustCompile(`sqs:action/[^/]+/([^/]+)`)
 )
 
+// Clamps for the SQS receive parameters an integration may pass as request
+// headers, matching the SQS API's own limits (cross-service store imports
+// are prohibited, so the integration package owns its copies).
+const (
+	maxSQSReceiveMessageCount      = 10
+	maxSQSWaitTimeSeconds          = 20
+	maxSQSVisibilityTimeoutSeconds = 43200
+)
+
 // SQSIntegrationRequest represents a request for SQS integration in API Gateway.
 type SQSIntegrationRequest struct {
 	Action      string `json:"Action"`
 	MessageBody string `json:"MessageBody"`
 	QueueUrl    string `json:"QueueUrl,omitempty"`
-}
-
-func isSQSURI(uri string) bool {
-	return strings.Contains(uri, ":sqs:")
 }
 
 func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
@@ -119,8 +125,8 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 	if maxMessages < 1 {
 		maxMessages = 1
 	}
-	if maxMessages > 10 {
-		maxMessages = 10
+	if maxMessages > maxSQSReceiveMessageCount {
+		maxMessages = maxSQSReceiveMessageCount
 	}
 
 	waitTime := int32(0)
@@ -130,8 +136,8 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 	if waitTime < 0 {
 		waitTime = 0
 	}
-	if waitTime > 20 {
-		waitTime = 20
+	if waitTime > maxSQSWaitTimeSeconds {
+		waitTime = maxSQSWaitTimeSeconds
 	}
 
 	visibilityTimeout := int32(30)
@@ -141,8 +147,8 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 	if visibilityTimeout < 0 {
 		visibilityTimeout = 0
 	}
-	if visibilityTimeout > 43200 {
-		visibilityTimeout = 43200
+	if visibilityTimeout > maxSQSVisibilityTimeoutSeconds {
+		visibilityTimeout = maxSQSVisibilityTimeoutSeconds
 	}
 
 	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, e.region, queueURL, maxMessages, &visibilityTimeout, waitTime)
@@ -199,27 +205,33 @@ func extractSQSMessageAttributes(headers, queryParams map[string]string, body []
 		DataType    string
 	})
 
+	var (
+		sqsMsgAttrNameRegex  = regexp.MustCompile(`^MessageAttribute\.(\d+)\.Name$`)
+		sqsMsgAttrValueRegex = regexp.MustCompile(`^MessageAttribute\.(\d+)\.Value\.StringValue$`)
+		sqsMsgAttrTypeRegex  = regexp.MustCompile(`^MessageAttribute\.(\d+)\.Value\.DataType$`)
+	)
+
 	extractFromMap := func(m map[string]string) {
 		for k, v := range m {
-			if matches := regexp.MustCompile(`^MessageAttribute\.(\d+)\.Name$`).FindStringSubmatch(k); matches != nil {
-				var idx int
-				if _, err := fmt.Sscanf(matches[1], "%d", &idx); err != nil {
+			if matches := sqsMsgAttrNameRegex.FindStringSubmatch(k); matches != nil {
+				idx, err := strconv.Atoi(matches[1])
+				if err != nil {
 					continue
 				}
 				attrNames[idx] = v
 			}
-			if matches := regexp.MustCompile(`^MessageAttribute\.(\d+)\.Value\.StringValue$`).FindStringSubmatch(k); matches != nil {
-				var idx int
-				if _, err := fmt.Sscanf(matches[1], "%d", &idx); err != nil {
+			if matches := sqsMsgAttrValueRegex.FindStringSubmatch(k); matches != nil {
+				idx, err := strconv.Atoi(matches[1])
+				if err != nil {
 					continue
 				}
 				val := attrValues[idx]
 				val.StringValue = v
 				attrValues[idx] = val
 			}
-			if matches := regexp.MustCompile(`^MessageAttribute\.(\d+)\.Value\.DataType$`).FindStringSubmatch(k); matches != nil {
-				var idx int
-				if _, err := fmt.Sscanf(matches[1], "%d", &idx); err != nil {
+			if matches := sqsMsgAttrTypeRegex.FindStringSubmatch(k); matches != nil {
+				idx, err := strconv.Atoi(matches[1])
+				if err != nil {
 					continue
 				}
 				val := attrValues[idx]
@@ -300,10 +312,6 @@ var (
 	snsPathRegex   = regexp.MustCompile(`sns:path/[^/]+/([^/]+)`)
 	snsActionRegex = regexp.MustCompile(`sns:action/[^/]+/([^/]+)`)
 )
-
-func isSNSURI(uri string) bool {
-	return strings.Contains(uri, ":sns:")
-}
 
 func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	if e.bus == nil || e.bus.SNSInvoker() == nil {

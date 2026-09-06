@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -14,8 +13,8 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 
 	var validatorID string
 	results = append(results, r.RunTest("apigateway", "CreateRequestValidator", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resp, err := tc.client.CreateRequestValidator(tc.ctx, &apigateway.CreateRequestValidatorInput{
 			RestApiId:                 aws.String(tc.apiID),
@@ -40,8 +39,8 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetRequestValidator", func() error {
-		if tc.apiID == "" || validatorID == "" {
-			return fmt.Errorf("API ID or validator ID not available")
+		if err := tc.require(tc.apiID, validatorID); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetRequestValidator(tc.ctx, &apigateway.GetRequestValidatorInput{
 			RestApiId:          aws.String(tc.apiID),
@@ -57,8 +56,8 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateRequestValidator", func() error {
-		if tc.apiID == "" || validatorID == "" {
-			return fmt.Errorf("API ID or validator ID not available")
+		if err := tc.require(tc.apiID, validatorID); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateRequestValidator(tc.ctx, &apigateway.UpdateRequestValidatorInput{
 			RestApiId:          aws.String(tc.apiID),
@@ -77,12 +76,24 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 		if resp.Name == nil || *resp.Name != "updated-validator" {
 			return fmt.Errorf("name not updated, got %v", resp.Name)
 		}
+
+		// The /name row documents replace only: add rejects.
+		_, err = tc.client.UpdateRequestValidator(tc.ctx, &apigateway.UpdateRequestValidatorInput{
+			RestApiId:          aws.String(tc.apiID),
+			RequestValidatorId: aws.String(validatorID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/name"), Value: aws.String("nope")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for add on /name, got: %v", err)
+		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetRequestValidators", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 
 		// Exercise both single-flag combinations alongside the both-flags
@@ -118,8 +129,8 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteRequestValidator", func() error {
-		if tc.apiID == "" || validatorID == "" {
-			return fmt.Errorf("API ID or validator ID not available")
+		if err := tc.require(tc.apiID, validatorID); err != nil {
+			return err
 		}
 		_, err := tc.client.DeleteRequestValidator(tc.ctx, &apigateway.DeleteRequestValidatorInput{
 			RestApiId:          aws.String(tc.apiID),
@@ -132,11 +143,8 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 			RestApiId:          aws.String(tc.apiID),
 			RequestValidatorId: aws.String(validatorID),
 		})
-		if err == nil {
-			return fmt.Errorf("GetRequestValidator should fail after delete")
-		}
-		if !strings.Contains(err.Error(), "NotFoundException") {
-			return fmt.Errorf("expected NotFoundException after delete, got: %v", err)
+		if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+			return fmt.Errorf("GetRequestValidator should fail with NotFoundException after delete: %v", aerr)
 		}
 		return nil
 	}))

@@ -97,7 +97,7 @@ func (s *CloudFrontService) deletePublicKeyCore(stores *cloudfrontStores, id, if
 	}
 	referenced, err := isPublicKeyReferenced(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check public key usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check public key usage: " + err.Error())
 	}
 	if referenced {
 		return awserrors.NewAWSError("PublicKeyInUse",

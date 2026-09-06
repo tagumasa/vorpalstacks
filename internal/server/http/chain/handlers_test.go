@@ -206,6 +206,21 @@ func TestHandleServiceError(t *testing.T) {
 	if !rc.IsHandled() {
 		t.Error("expected request to be handled")
 	}
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
+	}
+
+	var body map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("failed to decode error body: %v", err)
+	}
+	if body["__type"] != "InternalFailure" {
+		t.Errorf("expected __type InternalFailure for a plain error, got %q", body["__type"])
+	}
+	if body["message"] != "An internal error occurred" {
+		t.Errorf("expected fallback message, got %q", body["message"])
+	}
 }
 
 func TestHandleInternalFailure(t *testing.T) {

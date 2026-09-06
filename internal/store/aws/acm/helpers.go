@@ -1,11 +1,9 @@
 package acm
 
 import (
-	"crypto/md5"
 	cryptorand "crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -23,19 +21,6 @@ var certificateCounter uint64 = 0
 func GenerateCertificateId() string {
 	newCount := atomic.AddUint64(&certificateCounter, 1)
 	return fmt.Sprintf("%016x", newCount)
-}
-
-// GenerateCertificateSerial generates a unique certificate serial number.
-func GenerateCertificateSerial() string {
-	counter := atomic.LoadUint64(&certificateCounter)
-	ts := time.Now().UnixNano()
-	hash := md5.Sum([]byte(fmt.Sprintf("%d-%d", counter, ts)))
-	hexStr := fmt.Sprintf("%x", hash)
-	parts := make([]string, 0, len(hexStr)/2)
-	for i := 0; i+1 < len(hexStr); i += 2 {
-		parts = append(parts, hexStr[i:i+2])
-	}
-	return strings.Join(parts, ":")
 }
 
 func generateValidationToken() string {

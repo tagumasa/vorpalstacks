@@ -40,7 +40,7 @@ func (s *CloudFrontService) listDistributionsByReference(ctx context.Context, re
 		return dist.DistributionConfig != nil && matches(dist.DistributionConfig)
 	})
 	if err != nil {
-		return nil, awserrors.NewAWSError("InternalError", "Failed to list distributions by reference: "+err.Error(), 500)
+		return nil, awserrors.NewInternalFailureException("Failed to list distributions by reference: " + err.Error())
 	}
 
 	skipCount := 0

@@ -100,7 +100,7 @@ func (s *CloudFrontService) deleteResponseHeadersPolicyCore(stores *cloudfrontSt
 	}
 	attached, err := isResponseHeadersPolicyAttached(stores, id)
 	if err != nil {
-		return awserrors.NewAWSError("InternalError", "Failed to check response headers policy usage: "+err.Error(), 500)
+		return awserrors.NewInternalFailureException("Failed to check response headers policy usage: " + err.Error())
 	}
 	if attached {
 		return awserrors.NewAWSError("ResponseHeadersPolicyInUse",

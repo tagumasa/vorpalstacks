@@ -95,7 +95,7 @@ func newFailedPreconditionError(format string, args ...interface{}) error {
 }
 
 func newInternalError(format string, args ...interface{}) error {
-	return awserrors.NewInternalErrorException(fmt.Sprintf(format, args...))
+	return awserrors.NewInternalFailureException(fmt.Sprintf(format, args...))
 }
 
 // sortParameters sorts a slice of protobuf Parameters by name. Used by

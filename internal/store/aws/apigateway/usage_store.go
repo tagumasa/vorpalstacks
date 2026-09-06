@@ -87,7 +87,10 @@ func (s *UsageStore) CreateApiKey(apiKey *ApiKey) (*ApiKey, error) {
 func (s *UsageStore) GetApiKey(apiKeyId string) (*ApiKey, error) {
 	var apiKey ApiKey
 	if err := s.BaseStore.Get("apikey#"+apiKeyId, &apiKey); err != nil {
-		return nil, ErrApiKeyNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrApiKeyNotFound
+		}
+		return nil, err
 	}
 	return &apiKey, nil
 }
@@ -170,7 +173,10 @@ func (s *UsageStore) CreateUsagePlan(usagePlan *UsagePlan) (*UsagePlan, error) {
 func (s *UsageStore) GetUsagePlan(usagePlanId string) (*UsagePlan, error) {
 	var usagePlan UsagePlan
 	if err := s.BaseStore.Get("usageplan#"+usagePlanId, &usagePlan); err != nil {
-		return nil, ErrUsagePlanNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrUsagePlanNotFound
+		}
+		return nil, err
 	}
 	return &usagePlan, nil
 }
@@ -257,7 +263,10 @@ func (s *UsageStore) CreateUsagePlanKey(usagePlanId string, key *UsagePlanKey) (
 func (s *UsageStore) GetUsagePlanKey(usagePlanId, keyId string) (*UsagePlanKey, error) {
 	var key UsagePlanKey
 	if err := s.BaseStore.Get("usageplankey#"+usagePlanId+"#"+keyId, &key); err != nil {
-		return nil, ErrUsagePlanKeyNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrUsagePlanKeyNotFound
+		}
+		return nil, err
 	}
 	return &key, nil
 }

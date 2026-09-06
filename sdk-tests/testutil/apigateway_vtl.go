@@ -20,28 +20,14 @@ type vtlTest struct {
 }
 
 func (r *TestRunner) invokeMock(tc *apigwTestContext, pathPart, template, body string, respTmpl string) (string, error) {
-	resResp, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
-		RestApiId: aws.String(tc.apiID),
-		ParentId:  aws.String(tc.rootResourceID),
-		PathPart:  aws.String(pathPart),
-	})
+	resID, err := tc.createResourceWithMethod(tc.apiID, tc.rootResourceID, pathPart, "POST")
 	if err != nil {
-		return "", fmt.Errorf("create resource: %w", err)
-	}
-
-	_, err = tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
-		RestApiId:         aws.String(tc.apiID),
-		ResourceId:        resResp.Id,
-		HttpMethod:        aws.String("POST"),
-		AuthorizationType: aws.String("NONE"),
-	})
-	if err != nil {
-		return "", fmt.Errorf("put method: %w", err)
+		return "", err
 	}
 
 	putIntInput := &apigateway.PutIntegrationInput{
 		RestApiId:  aws.String(tc.apiID),
-		ResourceId: resResp.Id,
+		ResourceId: aws.String(resID),
 		HttpMethod: aws.String("POST"),
 		Type:       types.IntegrationTypeMock,
 		RequestTemplates: map[string]string{
@@ -56,7 +42,7 @@ func (r *TestRunner) invokeMock(tc *apigwTestContext, pathPart, template, body s
 	if respTmpl != "" {
 		_, err = tc.client.PutIntegrationResponse(tc.ctx, &apigateway.PutIntegrationResponseInput{
 			RestApiId:         aws.String(tc.apiID),
-			ResourceId:        resResp.Id,
+			ResourceId:        aws.String(resID),
 			HttpMethod:        aws.String("POST"),
 			StatusCode:        aws.String("200"),
 			ResponseTemplates: map[string]string{"application/json": respTmpl},
@@ -72,7 +58,7 @@ func (r *TestRunner) invokeMock(tc *apigwTestContext, pathPart, template, body s
 	}
 	resp, err := tc.client.TestInvokeMethod(tc.ctx, &apigateway.TestInvokeMethodInput{
 		RestApiId:  aws.String(tc.apiID),
-		ResourceId: resResp.Id,
+		ResourceId: aws.String(resID),
 		HttpMethod: aws.String("POST"),
 		Body:       aws.String(testBody),
 	})

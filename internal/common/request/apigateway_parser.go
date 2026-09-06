@@ -151,6 +151,8 @@ func extractResourceOperation(parts []string, method string) string {
 				return "PutMethodResponse"
 			case "DELETE":
 				return "DeleteMethodResponse"
+			case "PATCH":
+				return "UpdateMethodResponse"
 			}
 			return ""
 		}

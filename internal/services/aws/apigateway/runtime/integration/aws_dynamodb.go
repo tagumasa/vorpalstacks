@@ -14,10 +14,6 @@ import (
 
 var dynamodbRegex = regexp.MustCompile(`dynamodb:action/[^/]+/([^/]+)`)
 
-func isDynamoDBURI(uri string) bool {
-	return strings.Contains(uri, ":dynamodb:")
-}
-
 func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	if e.bus == nil || e.bus.DynamoDBInvoker() == nil {
 		return nil, &IntegrationError{
@@ -526,10 +522,6 @@ func toFloat64(v interface{}) (float64, bool) {
 
 var kinesisRegex = regexp.MustCompile(`kinesis:action/[^/]+/([^/]+)`)
 
-func isKinesisURI(uri string) bool {
-	return strings.Contains(uri, ":kinesis:")
-}
-
 func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	if e.bus == nil || e.bus.KinesisInvoker() == nil {
 		return nil, &IntegrationError{
@@ -655,10 +647,6 @@ func buildExecutionArn(stateMachineArn, executionName string) string {
 }
 
 var sfnRegex = regexp.MustCompile(`states:action/[^/]+/([^/]+)`)
-
-func isSFNURI(uri string) bool {
-	return strings.Contains(uri, ":states:")
-}
 
 func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *IntegrationRequest) (*IntegrationResponse, error) {
 	if e.bus == nil {

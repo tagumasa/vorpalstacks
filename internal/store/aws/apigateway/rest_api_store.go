@@ -9,8 +9,6 @@ import (
 	"vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
-
-	"github.com/google/uuid"
 )
 
 // maxRestApiBlobSize is the upper bound on the serialised size of a single
@@ -130,7 +128,10 @@ func (s *RestApiStore) Create(api *RestApi) (*RestApi, error) {
 func (s *RestApiStore) Get(apiId string) (*RestApi, error) {
 	var api RestApi
 	if err := s.BaseStore.Get(apiId, &api); err != nil {
-		return nil, ErrRestApiNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrRestApiNotFound
+		}
+		return nil, err
 	}
 	return &api, nil
 }
@@ -212,15 +213,6 @@ func (s *RestApiStore) Delete(apiId string) error {
 // List returns all REST APIs.
 func (s *RestApiStore) List(opts common.ListOptions) (*common.ListResult[RestApi], error) {
 	return common.List[RestApi](s.BaseStore, opts, nil)
-}
-
-// GetTags retrieves tags for a REST API.
-func (s *RestApiStore) GetTags(apiId string) ([]tags.Tag, error) {
-	api, err := s.Get(apiId)
-	if err != nil {
-		return nil, err
-	}
-	return api.Tags, nil
 }
 
 // TagResource adds tags to a REST API.
@@ -317,11 +309,6 @@ func (s *RestApiStore) GetResourceTags(apiId string) ([]tags.Tag, error) {
 		return nil, err
 	}
 	return api.Tags, nil
-}
-
-// GenerateRevisionId generates a new revision ID.
-func (s *RestApiStore) GenerateRevisionId() string {
-	return uuid.New().String()
 }
 
 // CreateRequestValidator creates a new request validator for a REST API.

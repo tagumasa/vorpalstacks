@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -14,8 +13,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 
 	var authorizerID string
 	results = append(results, r.RunTest("apigateway", "CreateAuthorizer", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		resp, err := tc.client.CreateAuthorizer(tc.ctx, &apigateway.CreateAuthorizerInput{
 			RestApiId:                    aws.String(tc.apiID),
@@ -51,8 +50,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetAuthorizer", func() error {
-		if tc.apiID == "" || authorizerID == "" {
-			return fmt.Errorf("API ID or authorizer ID not available")
+		if err := tc.require(tc.apiID, authorizerID); err != nil {
+			return err
 		}
 		resp, err := tc.client.GetAuthorizer(tc.ctx, &apigateway.GetAuthorizerInput{
 			RestApiId:    aws.String(tc.apiID),
@@ -80,8 +79,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "UpdateAuthorizer", func() error {
-		if tc.apiID == "" || authorizerID == "" {
-			return fmt.Errorf("API ID or authorizer ID not available")
+		if err := tc.require(tc.apiID, authorizerID); err != nil {
+			return err
 		}
 		resp, err := tc.client.UpdateAuthorizer(tc.ctx, &apigateway.UpdateAuthorizerInput{
 			RestApiId:    aws.String(tc.apiID),
@@ -99,6 +98,18 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 		}
 		if resp.Name == nil || *resp.Name != "updated-authorizer" {
 			return fmt.Errorf("name not updated, got %v", resp.Name)
+		}
+
+		// The /name row documents replace only: add rejects.
+		_, err = tc.client.UpdateAuthorizer(tc.ctx, &apigateway.UpdateAuthorizerInput{
+			RestApiId:    aws.String(tc.apiID),
+			AuthorizerId: aws.String(authorizerID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/name"), Value: aws.String("nope")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for add on /name, got: %v", err)
 		}
 
 		// Verify a TTL change persists via a fresh read of the authorizer.
@@ -131,8 +142,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetAuthorizers", func() error {
-		if tc.apiID == "" {
-			return fmt.Errorf("API ID not available")
+		if err := tc.require(tc.apiID); err != nil {
+			return err
 		}
 		items, err := tc.allAuthorizers(tc.apiID)
 		if err != nil {
@@ -145,8 +156,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "TestInvokeAuthorizer", func() error {
-		if tc.apiID == "" || authorizerID == "" {
-			return fmt.Errorf("API ID or authorizer ID not available")
+		if err := tc.require(tc.apiID, authorizerID); err != nil {
+			return err
 		}
 		resp, err := tc.client.TestInvokeAuthorizer(tc.ctx, &apigateway.TestInvokeAuthorizerInput{
 			RestApiId:    aws.String(tc.apiID),
@@ -168,8 +179,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "DeleteAuthorizer", func() error {
-		if tc.apiID == "" || authorizerID == "" {
-			return fmt.Errorf("API ID or authorizer ID not available")
+		if err := tc.require(tc.apiID, authorizerID); err != nil {
+			return err
 		}
 		_, err := tc.client.DeleteAuthorizer(tc.ctx, &apigateway.DeleteAuthorizerInput{
 			RestApiId:    aws.String(tc.apiID),
@@ -182,11 +193,8 @@ func (r *TestRunner) runAPIGatewayAuthorizerTests(tc *apigwTestContext) []TestRe
 			RestApiId:    aws.String(tc.apiID),
 			AuthorizerId: aws.String(authorizerID),
 		})
-		if err == nil {
-			return fmt.Errorf("GetAuthorizer should fail after delete")
-		}
-		if !strings.Contains(err.Error(), "NotFoundException") {
-			return fmt.Errorf("expected NotFoundException after delete, got: %v", err)
+		if aerr := AssertErrorContains(err, "NotFoundException"); aerr != nil {
+			return fmt.Errorf("GetAuthorizer should fail with NotFoundException after delete: %v", aerr)
 		}
 		return nil
 	}))

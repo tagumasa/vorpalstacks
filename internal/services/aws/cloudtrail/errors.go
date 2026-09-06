@@ -21,7 +21,9 @@ var (
 	// ErrAccessDenied is returned when access is denied.
 	ErrAccessDenied = awserrors.NewAWSError("AccessDeniedException", "Access denied.", http.StatusForbidden)
 	// ErrInternalError is returned when an internal server error occurs.
-	ErrInternalError = awserrors.NewAWSError("InternalError", "Internal server error.", http.StatusInternalServerError)
+	// InternalFailure is the only 500 code the CloudTrail contract
+	// documents (Common Error Types).
+	ErrInternalError = awserrors.NewAWSError("InternalFailure", "The request can't be processed right now because of an internal server issue.", http.StatusInternalServerError)
 	// ErrConflictException is returned when an operation conflicts with the current state.
 	ErrConflictException = awserrors.NewAWSError("ConflictException", "Operation conflicts with current state.", http.StatusConflict)
 	// ErrEventDataStoreNotFoundException is returned when the specified event data store does not exist.

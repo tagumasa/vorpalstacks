@@ -43,7 +43,7 @@ func (s *APIGatewayService) testInvokeMethodCore(
 
 	method, err := stores.restApis.GetMethod(apiId, resourceId, httpMethod)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	body := p.Body
@@ -84,6 +84,7 @@ func (s *APIGatewayService) testInvokeMethodCore(
 
 		intReq := &integration.IntegrationRequest{
 			Method:               httpMethod,
+			URI:                  mi.Uri,
 			Headers:              headers,
 			Body:                 []byte(body),
 			PathParams:           make(map[string]string),
@@ -98,26 +99,42 @@ func (s *APIGatewayService) testInvokeMethodCore(
 		}
 
 		var executor integration.Executor
-		switch mi.Type {
-		case "MOCK":
-			executor = integration.NewMockExecutor()
-		case "HTTP", "HTTP_PROXY":
-			executor = integration.NewHTTPExecutor()
-		case "AWS", "AWS_PROXY":
-			executor = integration.NewAWSExecutor(nil, s.accountID, s.region)
-		default:
-			executor = integration.NewMockExecutor()
+		if s.testInvokeFactory != nil {
+			created, createErr := s.testInvokeFactory.CreateExecutor(mi.Type)
+			if createErr != nil {
+				executor = nil
+				responseStatus = 502
+				responseBody = fmt.Sprintf(`{"message": "Integration execution failed: %v"}`, createErr)
+				logEntries = append(logEntries, fmt.Sprintf("Execution failed: %v", createErr))
+			} else {
+				executor = created
+			}
+		} else {
+			// InitRuntimeServer has not run (no bus wired): fall back to the
+			// bus-less executors so the operation remains testable.
+			switch mi.Type {
+			case "MOCK":
+				executor = integration.NewMockExecutor()
+			case "HTTP", "HTTP_PROXY":
+				executor = integration.NewHTTPExecutor()
+			case "AWS", "AWS_PROXY":
+				executor = integration.NewAWSExecutor(nil, s.accountID, s.region)
+			default:
+				executor = integration.NewMockExecutor()
+			}
 		}
 
-		resp, execErr := executor.Execute(ctx, intReq)
-		if execErr != nil {
-			responseStatus = 502
-			responseBody = fmt.Sprintf(`{"message": "Integration execution failed: %v"}`, execErr)
-			logEntries = append(logEntries, fmt.Sprintf("Execution failed: %v", execErr))
-		} else {
-			responseStatus = resp.StatusCode
-			responseBody = string(resp.Body)
-			logEntries = append(logEntries, "Execution completed successfully")
+		if executor != nil {
+			resp, execErr := executor.Execute(ctx, intReq)
+			if execErr != nil {
+				responseStatus = 502
+				responseBody = fmt.Sprintf(`{"message": "Integration execution failed: %v"}`, execErr)
+				logEntries = append(logEntries, fmt.Sprintf("Execution failed: %v", execErr))
+			} else {
+				responseStatus = resp.StatusCode
+				responseBody = string(resp.Body)
+				logEntries = append(logEntries, "Execution completed successfully")
+			}
 		}
 	} else {
 		responseStatus = 502
@@ -170,7 +187,7 @@ func (s *APIGatewayService) testInvokeAuthorizerCore(
 
 	authorizer, err := stores.restApis.GetAuthorizer(apiId, authorizerId)
 	if err != nil {
-		return nil, ErrNotFoundException
+		return nil, toApiGatewayError(err)
 	}
 
 	headers := p.Headers

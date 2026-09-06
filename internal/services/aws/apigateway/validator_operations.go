@@ -24,7 +24,7 @@ func (s *APIGatewayService) CreateRequestValidator(ctx context.Context, reqCtx *
 	}
 	created, err := s.createRequestValidatorCore(stores, apiId, in)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toRequestValidatorResponse(created), nil
 }
@@ -43,7 +43,7 @@ func (s *APIGatewayService) GetRequestValidator(ctx context.Context, reqCtx *req
 	}
 	validator, err := s.getRequestValidatorCore(stores, apiId, validatorId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toRequestValidatorResponse(validator), nil
 }
@@ -61,7 +61,7 @@ func (s *APIGatewayService) DeleteRequestValidator(ctx context.Context, reqCtx *
 		return nil, err
 	}
 	if err := s.deleteRequestValidatorCore(stores, apiId, validatorId); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return response.EmptyResponse(), nil
 }
@@ -84,7 +84,7 @@ func (s *APIGatewayService) UpdateRequestValidator(ctx context.Context, reqCtx *
 	}
 	validator, err := s.updateRequestValidatorCore(stores, apiId, validatorId, ops)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toRequestValidatorResponse(validator), nil
 }
@@ -105,7 +105,7 @@ func (s *APIGatewayService) GetRequestValidators(ctx context.Context, reqCtx *re
 	}
 	validators, err := s.listRequestValidatorsCore(stores, apiId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	items := make([]interface{}, 0, len(validators))
@@ -151,7 +151,7 @@ func (s *APIGatewayService) CreateModel(ctx context.Context, reqCtx *request.Req
 	}
 	created, err := s.createModelCore(stores, apiId, in)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toModelResponse(created), nil
 }
@@ -170,7 +170,7 @@ func (s *APIGatewayService) GetModel(ctx context.Context, reqCtx *request.Reques
 	}
 	model, err := s.getModelCore(stores, apiId, modelName)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return s.toModelResponse(model), nil
 }
@@ -188,7 +188,7 @@ func (s *APIGatewayService) DeleteModel(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 	if err := s.deleteModelCore(stores, apiId, modelName); err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 	return response.EmptyResponse(), nil
 }
@@ -209,7 +209,7 @@ func (s *APIGatewayService) GetModels(ctx context.Context, reqCtx *request.Reque
 	}
 	models, err := s.listModelsCore(stores, apiId)
 	if err != nil {
-		return nil, err
+		return nil, toApiGatewayError(err)
 	}
 
 	items := make([]interface{}, 0, len(models))
